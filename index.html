@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="description" content="Minha Festa — Aplicativo de montagem de decorações pegue-monte para decoradores de festa." />
+  <title>Minha Festa — Simulador Pegue-Monte</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="stylesheet" href="/src/styles/main.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Header Superior -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="app-brand">
+          <div class="brand-icon">🎈</div>
+          <div class="brand-title">
+            <span>Minha Festa</span>
+            <span class="brand-subtitle" id="project-title-display">Novo Cenário</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-header-projects" class="btn-header btn-header-ghost" title="Salvar / Abrir Projetos">
+          📂 <span>Projetos</span>
+        </button>
+        <button id="btn-header-clear" class="btn-header btn-header-ghost" title="Limpar Cenário">
+          🗑️
+        </button>
+        <button id="btn-header-export" class="btn-header btn-header-primary" title="Exportar e WhatsApp">
+          ✨ <span>Exportar</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Palco Central / Canvas -->
+    <main class="workspace-stage">
+      <!-- Indicador da peça selecionada -->
+      <div id="selection-badge" class="selection-badge">
+        <span>📍</span>
+        <span id="selection-badge-name">Peça</span>
+      </div>
+
+      <!-- Container do Konva -->
+      <div id="konva-container"></div>
+
+      <!-- Barra Flutuante Contextual de Ação do Item -->
+      <div id="item-toolbar" class="item-floating-toolbar">
+        <button id="btn-action-cover" class="item-toolbar-btn btn-cover">
+          🎨 Capa
+        </button>
+        <div class="toolbar-divider"></div>
+        <button id="btn-action-forward" class="item-toolbar-btn" title="Trazer para Frente">
+          ⬆️
+        </button>
+        <button id="btn-action-backward" class="item-toolbar-btn" title="Enviar para Trás">
+          ⬇️
+        </button>
+        <button id="btn-action-flip" class="item-toolbar-btn" title="Espelhar">
+          🔄
+        </button>
+        <button id="btn-action-duplicate" class="item-toolbar-btn" title="Duplicar">
+          📋
+        </button>
+        <div class="toolbar-divider"></div>
+        <button id="btn-action-delete" class="item-toolbar-btn btn-delete" title="Excluir">
+          🗑️
+        </button>
+      </div>
+    </main>
+
+    <!-- Gaveta Deslizante (Bottom Sheet) -->
+    <section id="bottom-sheet" class="bottom-sheet">
+      <div id="sheet-handle-bar" class="sheet-handle-bar">
+        <div class="sheet-handle"></div>
+      </div>
+      <div class="sheet-header">
+        <div class="sheet-title" id="sheet-current-title">✨ Peças Base</div>
+        <button id="btn-close-sheet" class="sheet-close-btn">✕</button>
+      </div>
+      <div id="sheet-categories-bar" class="category-pills"></div>
+      <div id="sheet-body-content" class="sheet-body"></div>
+    </section>
+
+    <!-- Barra de Navegação Inferior (Dock Fixo) -->
+    <nav class="bottom-dock">
+      <button class="dock-tab-btn" data-tab="presets">
+        <span class="tab-icon">✨</span>
+        <span>Presets</span>
+      </button>
+      <button class="dock-tab-btn" data-tab="my-items">
+        <span class="tab-icon">📦</span>
+        <span>Meu Acervo</span>
+      </button>
+      <button class="dock-tab-btn" data-tab="covers">
+        <span class="tab-icon">🎨</span>
+        <span>Capas</span>
+      </button>
+      <button class="dock-tab-btn" data-tab="environment">
+        <span class="tab-icon">🏠</span>
+        <span>Cenário</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- MODAL: Aplicar / Trocar Capa -->
+  <div id="cover-modal" class="modal-backdrop">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">🎨 Capas & Estampas</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);" id="cover-modal-subtitle">Escolha uma estampa para vestir a peça</div>
+        </div>
+        <button id="btn-close-cover-modal" class="modal-close-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; gap: 10px;">
+          <button id="btn-upload-cover-trigger" class="btn-primary" style="flex: 1;">
+            📸 Subir Foto da Galeria
+          </button>
+          <button id="btn-remove-cover" class="btn-secondary" style="flex: 1;">
+            Restaurar Base
+          </button>
+          <input type="file" id="cover-upload-input" accept="image/*" style="display: none;" />
+        </div>
+        <div class="covers-grid" id="covers-modal-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Cadastrar Peça no Meu Acervo -->
+  <div id="inventory-modal" class="modal-backdrop">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title">📦 Cadastrar Nova Peça</div>
+        <button id="btn-close-inventory-modal" class="modal-close-btn">✕</button>
+      </div>
+      <form id="inventory-form" class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Foto da Peça (Câmera ou Galeria)</label>
+          <div id="image-upload-box" class="image-upload-box">
+            <div id="upload-placeholder" style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <span class="upload-icon">📷</span>
+              <span class="upload-text">Toque para tirar foto ou escolher imagem</span>
+            </div>
+            <img id="upload-preview-img" class="upload-preview-img" style="display: none;" alt="Preview" />
+          </div>
+          <input type="file" id="item-image-input" accept="image/*" style="display: none;" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="item-name-input">Nome da Peça</label>
+          <input type="text" id="item-name-input" class="form-input" placeholder="Ex: Mesa Sextavada Dourada" required />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="item-category-input">Categoria</label>
+            <select id="item-category-input" class="form-select">
+              <option value="mesas">Mesas & Móveis</option>
+              <option value="paineis">Painéis</option>
+              <option value="cilindros">Cilindros</option>
+              <option value="displays">Displays</option>
+              <option value="baloes">Balões</option>
+              <option value="acessorios">Acessórios / Mesa</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="item-stock-input">Qtd. Estoque</label>
+            <input type="number" id="item-stock-input" class="form-input" value="1" min="1" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="item-width-input">Largura (cm)</label>
+            <input type="number" id="item-width-input" class="form-input" value="60" min="10" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="item-height-input">Altura (cm)</label>
+            <input type="number" id="item-height-input" class="form-input" value="80" min="10" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="item-price-input">Valor Locação (R$ opcional)</label>
+          <input type="number" id="item-price-input" class="form-input" placeholder="Ex: 35.00" step="0.01" />
+        </div>
+
+        <button type="submit" class="btn-primary" style="margin-top: 6px; width: 100%;">
+          Salvar no Meu Acervo
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Exportar HD, Romaneio e WhatsApp -->
+  <div id="export-modal" class="modal-backdrop">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title">✨ Exportar & Orçamento</div>
+        <button id="btn-close-export-modal" class="modal-close-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- Prévia do Cenário em Imagem HD -->
+        <div style="width: 100%; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-subtle); background: #000; box-shadow: var(--shadow-sm);">
+          <img id="export-preview-img" style="width: 100%; height: auto; display: block;" alt="Prévia da Decoração" />
+        </div>
+
+        <button id="btn-download-image" class="btn-secondary" style="width: 100%;">
+          📥 Baixar Foto da Decoração (PNG)
+        </button>
+
+        <!-- Romaneio Automático -->
+        <div class="checklist-card">
+          <div class="checklist-title">
+            <span>📋 Romaneio de Separação</span>
+            <span id="export-total-badge" class="checklist-item-qty">0 peças</span>
+          </div>
+          <ul id="export-checklist-items" class="checklist-items"></ul>
+        </div>
+
+        <!-- Dados do Cliente para WhatsApp -->
+        <div class="form-group">
+          <label class="form-label" for="export-client-name">Nome do Cliente (opcional)</label>
+          <input type="text" id="export-client-name" class="form-input" placeholder="Ex: Juliana Silva" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="export-client-phone">WhatsApp do Cliente (DDD + Número)</label>
+          <input type="tel" id="export-client-phone" class="form-input" placeholder="Ex: 16999998888" />
+        </div>
+
+        <button id="btn-share-whatsapp" class="btn-whatsapp">
+          💬 Enviar Romaneio no WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Projetos Salvos -->
+  <div id="projects-modal" class="modal-backdrop">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title">📂 Meus Projetos & Cenários</div>
+        <button id="btn-close-projects-modal" class="modal-close-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="project-save-title" class="form-input" placeholder="Nome do Cenário (ex: Safári Pedro 1 Ano)" />
+          <button id="btn-save-project-action" class="btn-primary" style="white-space: nowrap;">
+            💾 Salvar Atual
+          </button>
+        </div>
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-top: 10px;">Projetos Salvos Anteriormente:</div>
+        <div id="saved-projects-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script Principal -->
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+:root {
+  /* Paleta Principal Studio Decor */
+  --primary: #ec4899;
+  --primary-hover: #db2777;
+  --primary-light: #fdf2f8;
+  --primary-glow: rgba(236, 72, 153, 0.25);
+
+  --accent-gold: #d97706;
+  --accent-purple: #8b5cf6;
+  --accent-teal: #0d9488;
+
+  /* Escala Neutra Dark / Light */
+  --bg-app: #0f172a;
+  --bg-surface: #1e293b;
+  --bg-surface-elevated: #334155;
+  --bg-surface-glass: rgba(30, 41, 59, 0.85);
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(236, 72, 153, 0.5);
+
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+
+  --status-danger: #ef4444;
+  --status-success: #10b981;
+  --status-warning: #f59e0b;
+
+  /* Geometria e Dimensões Mobile */
+  --touch-target-min: 44px;
+  --header-height: 58px;
+  --bottom-bar-height: 64px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+
+  /* Sombras */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.5);
+
+  /* Transições fluidas */
+  --transition-fast: 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  --transition-smooth: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}

@@ -1,0 +1,87 @@
+/* Barra Flutuante Contextual de Ação do Item Selecionado */
+.item-floating-toolbar {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  z-index: 25;
+  background-color: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-full);
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  pointer-events: none;
+  transition: all var(--transition-smooth);
+}
+
+.item-floating-toolbar.active {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+.item-toolbar-btn {
+  height: 38px;
+  min-width: 38px;
+  padding: 0 8px;
+  border-radius: var(--radius-full);
+  color: var(--text-main);
+  background-color: rgba(255, 255, 255, 0.05);
+  font-size: 0.76rem;
+  font-weight: 600;
+  gap: 5px;
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.item-toolbar-btn:active {
+  transform: scale(0.92);
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.item-toolbar-btn.btn-cover {
+  background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+  color: #fff;
+  padding: 0 12px;
+}
+
+.item-toolbar-btn.btn-delete {
+  color: #fca5a5;
+}
+
+.item-toolbar-btn.btn-delete:active {
+  background-color: rgba(239, 68, 68, 0.2);
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background-color: var(--border-subtle);
+  margin: 0 2px;
+}
+
+/* Indicador de Item Selecionado */
+.selection-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+  padding: 5px 12px;
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid var(--border-focus);
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  color: #fdf2f8;
+  font-weight: 600;
+  display: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.selection-badge.visible {
+  display: inline-flex;
+}

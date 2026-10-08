@@ -45,31 +45,31 @@
         </div>
         <div id="konva-container"></div>
       </div>
-
-      <!-- Barra Flutuante de Ação da Peça (Sobreposta embaixo no Cenário) -->
-      <div id="item-toolbar" class="item-actions-floating">
-        <button id="btn-action-delete" class="item-action-btn btn-delete-direct" title="Excluir Peça">
-          🗑️ Excluir
-        </button>
-        <button id="btn-action-cover" class="item-action-btn btn-cover-direct" title="Vestir Capa / Estampa">
-          🎨 Capa
-        </button>
-        <button id="btn-action-front" class="item-action-btn" title="Trazer para Frente">
-          ⬆️ Frente
-        </button>
-        <button id="btn-action-back" class="item-action-btn" title="Enviar para Trás">
-          ⬇️ Trás
-        </button>
-        <button id="btn-action-flip" class="item-action-btn" title="Espelhar Horizontalmente">
-          🔄 Espelhar
-        </button>
-        <button id="btn-action-duplicate" class="item-action-btn" title="Duplicar">
-          📋 Copiar
-        </button>
-      </div>
     </main>
 
-    <!-- Gaveta Deslizante Retrátil (Abre por cima sob demanda sem poluir a visão) -->
+    <!-- BARRA FLUTUANTE DE AÇÕES DA PEÇA (FILHO DIRETO - Z-INDEX 50) -->
+    <div id="item-toolbar" class="item-actions-floating">
+      <button id="btn-action-delete" class="item-action-btn btn-delete-direct" title="Excluir Peça">
+        🗑️ Excluir
+      </button>
+      <button id="btn-action-cover" class="item-action-btn btn-cover-direct" title="Vestir Capa / Estampa">
+        🎨 Capa
+      </button>
+      <button id="btn-action-front" class="item-action-btn" title="Trazer para Frente">
+        ⬆️ Frente
+      </button>
+      <button id="btn-action-back" class="item-action-btn" title="Enviar para Trás">
+        ⬇️ Trás
+      </button>
+      <button id="btn-action-flip" class="item-action-btn" title="Espelhar Horizontalmente">
+        🔄 Espelhar
+      </button>
+      <button id="btn-action-duplicate" class="item-action-btn" title="Duplicar">
+        📋 Copiar
+      </button>
+    </div>
+
+    <!-- Gaveta Deslizante Retrátil (Oculta quando fechada) -->
     <section id="bottom-sheet" class="bottom-sheet">
       <div id="sheet-handle-bar" class="sheet-handle-bar">
         <div class="sheet-handle"></div>
@@ -193,7 +193,7 @@
   <div id="export-modal" class="modal-backdrop">
     <div class="modal-container">
       <div class="modal-header">
-        <div class="modal-title">✨ Exportar Cenário (16:9)</div>
+        <div class="modal-title">✨ Exportar Cenário (9:16)</div>
         <button id="btn-close-export-modal" class="modal-close-btn">✕</button>
       </div>
       <div class="modal-body">

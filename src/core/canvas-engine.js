@@ -63,7 +63,7 @@ export class CanvasEngine {
     this.renderEnvironment();
     this.fitToView();
 
-    this.stage.on('tap click', (e) => {
+    this.stage.on('tap click pointerdown', (e) => {
       if (e.target === this.stage || e.target.hasName('bg-element') || e.target === this.viewport) {
         this.deselect();
       }
@@ -80,7 +80,6 @@ export class CanvasEngine {
     const containerW = this.stage.width();
     const containerH = this.stage.height();
 
-    // Escala proporcional exata para caber no container do celular
     const scale = Math.min(containerW / this.VIRTUAL_WIDTH, containerH / this.VIRTUAL_HEIGHT);
 
     this.viewport.scale({ x: scale, y: scale });
@@ -133,7 +132,7 @@ export class CanvasEngine {
     this.transformer = new Konva.Transformer({
       rotateAnchorOffset: 30,
       enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
-      anchorSize: 26, // Alças grandes e confortáveis para o polegar no celular
+      anchorSize: 26,
       anchorCornerRadius: 13,
       anchorStroke: '#ec4899',
       anchorFill: '#ffffff',
@@ -151,7 +150,6 @@ export class CanvasEngine {
     const widthPx = Math.max(70, (itemData.widthCm || 60) * this.pxPerCm);
     const heightPx = Math.max(70, (itemData.heightCm || 60) * this.pxPerCm);
 
-    // Posição no chão da cena vertical
     const posX = position ? position.x : (this.VIRTUAL_WIDTH / 2 - widthPx / 2 + (Math.random() * 40 - 20));
     const posY = position ? position.y : (this.WALL_HEIGHT + 80 - heightPx + (Math.random() * 30 - 15));
 
@@ -162,7 +160,6 @@ export class CanvasEngine {
       height: heightPx,
       draggable: true,
       name: 'decor-item',
-      // Trava para manter dentro do cenário vertical 9:16
       dragBoundFunc: (pos) => {
         const stageScale = this.viewport.scaleX();
         const stageX = this.viewport.x();
@@ -199,12 +196,9 @@ export class CanvasEngine {
       await this.attachCoverToNode(group, itemData.customCoverUrl);
     }
 
-    group.on('tap click', (e) => {
+    // DISPARO IMEDIATO AO TOCAR NO ITEM
+    group.on('pointerdown tap click dragstart', (e) => {
       e.cancelBubble = true;
-      this.selectNode(group);
-    });
-
-    group.on('dragstart', () => {
       this.selectNode(group);
     });
 
@@ -218,8 +212,6 @@ export class CanvasEngine {
   }
 
   selectNode(node) {
-    if (this.selectedNode === node) return;
-
     this.selectedNode = node;
     this.transformer.nodes(node ? [node] : []);
     this.mainLayer.batchDraw();

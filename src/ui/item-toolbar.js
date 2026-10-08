@@ -1,30 +1,31 @@
-// Barra Flutuante Contextual de Ações do Item Selecionado (Com Camadas estilo Canva e Exclusão Segura)
+// Barra de Ações Rápidas da Peça Selecionada para Mobile
 
 export class ItemToolbar {
-  constructor(canvasEngine, onOpenCoverModal, onOpenLayersDrawer, confirmModal) {
+  constructor(canvasEngine, onOpenCoverModal) {
     this.canvasEngine = canvasEngine;
     this.onOpenCoverModal = onOpenCoverModal;
-    this.onOpenLayersDrawer = onOpenLayersDrawer;
-    this.confirmModal = confirmModal;
-    this.element = null;
+    this.container = document.getElementById('item-actions-bar');
     this.selectedMeta = null;
+
     this.setupUI();
   }
 
   setupUI() {
-    this.element = document.getElementById('item-toolbar');
-    if (!this.element) return;
+    if (!this.container) return;
 
+    const btnDelete = document.getElementById('btn-action-delete');
     const btnCover = document.getElementById('btn-action-cover');
-    const btnBringForward = document.getElementById('btn-action-forward');
-    const btnSendBackward = document.getElementById('btn-action-backward');
-    const btnBringToFront = document.getElementById('btn-action-front');
-    const btnSendToBack = document.getElementById('btn-action-back');
+    const btnFront = document.getElementById('btn-action-front');
+    const btnBack = document.getElementById('btn-action-back');
     const btnFlip = document.getElementById('btn-action-flip');
     const btnDuplicate = document.getElementById('btn-action-duplicate');
-    const btnLock = document.getElementById('btn-action-lock');
-    const btnOpenLayers = document.getElementById('btn-action-layers');
-    const btnDelete = document.getElementById('btn-action-delete');
+
+    // EXCLUSÃO RÁPIDA E DIRETA
+    btnDelete?.addEventListener('click', () => {
+      if (this.selectedMeta) {
+        this.canvasEngine.deleteSelected();
+      }
+    });
 
     btnCover?.addEventListener('click', () => {
       if (this.onOpenCoverModal && this.selectedMeta) {
@@ -32,20 +33,12 @@ export class ItemToolbar {
       }
     });
 
-    btnBringForward?.addEventListener('click', () => {
+    btnFront?.addEventListener('click', () => {
       this.canvasEngine.bringForward();
     });
 
-    btnSendBackward?.addEventListener('click', () => {
+    btnBack?.addEventListener('click', () => {
       this.canvasEngine.sendBackward();
-    });
-
-    btnBringToFront?.addEventListener('click', () => {
-      this.canvasEngine.bringToFront();
-    });
-
-    btnSendToBack?.addEventListener('click', () => {
-      this.canvasEngine.sendToBack();
     });
 
     btnFlip?.addEventListener('click', () => {
@@ -56,32 +49,6 @@ export class ItemToolbar {
       this.canvasEngine.duplicateSelected();
     });
 
-    btnLock?.addEventListener('click', () => {
-      const isLocked = this.canvasEngine.toggleLockNode();
-      btnLock.textContent = isLocked ? '🔒' : '🔓';
-      btnLock.title = isLocked ? 'Destravar Peça' : 'Bloquear Posição';
-    });
-
-    btnOpenLayers?.addEventListener('click', () => {
-      if (this.onOpenLayersDrawer) {
-        this.onOpenLayersDrawer();
-      }
-    });
-
-    btnDelete?.addEventListener('click', async () => {
-      if (!this.selectedMeta) return;
-
-      const confirmed = await this.confirmModal.ask(
-        'Excluir Peça?',
-        `Deseja realmente remover <strong>${this.selectedMeta.name}</strong> da decoração?`
-      );
-
-      if (confirmed) {
-        this.canvasEngine.deleteSelected();
-      }
-    });
-
-    // Escutar eventos de seleção no motor do canvas
     this.canvasEngine.onSelectionChange = (meta, node) => {
       this.updateSelection(meta, node);
     };
@@ -89,33 +56,30 @@ export class ItemToolbar {
 
   updateSelection(meta, node) {
     this.selectedMeta = meta;
+    const actionsRow = document.getElementById('item-actions-row');
+    const emptyNotice = document.getElementById('item-actions-empty');
     const badge = document.getElementById('selection-badge');
     const badgeName = document.getElementById('selection-badge-name');
-    const btnLock = document.getElementById('btn-action-lock');
+    const btnCover = document.getElementById('btn-action-cover');
 
     if (!node || !meta) {
-      this.element.classList.remove('active');
+      if (actionsRow) actionsRow.style.display = 'none';
+      if (emptyNotice) emptyNotice.style.display = 'block';
       badge?.classList.remove('visible');
       return;
     }
 
-    this.element.classList.add('active');
+    if (actionsRow) actionsRow.style.display = 'flex';
+    if (emptyNotice) emptyNotice.style.display = 'none';
 
     if (badge && badgeName) {
       badgeName.textContent = meta.name;
       badge.classList.add('visible');
     }
 
-    if (btnLock) {
-      const isLocked = !node.draggable();
-      btnLock.textContent = isLocked ? '🔒' : '🔓';
-    }
-
-    // Adaptar botão de capa dependendo do tipo de peça
-    const btnCover = document.getElementById('btn-action-cover');
     if (btnCover) {
-      const isCylinderOrPanel = ['cylinder', 'panel_round', 'panel_arch'].includes(meta.type);
-      btnCover.innerHTML = isCylinderOrPanel ? '🎨 Capa' : '🖼️ Imagem';
+      const isCoverable = ['cylinder', 'panel_round', 'panel_arch'].includes(meta.type);
+      btnCover.innerHTML = isCoverable ? '🎨 Vestir Capa' : '🖼️ Imagem';
     }
   }
 }

@@ -4,15 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
-  <meta name="description" content="Minha Festa — Aplicativo de montagem de decorações pegue-monte para decoradores de festa." />
-  <title>Minha Festa — Simulador Pegue-Monte</title>
+  <meta name="description" content="Minha Festa — Aplicativo mobile para montagem de decorações pegue-monte." />
+  <title>Minha Festa — Montagem Pegue-Monte</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="stylesheet" href="/src/styles/main.css" />
 </head>
 <body>
   <div class="app-shell">
-    <!-- Header Superior -->
+    <!-- Header Superior Mobile -->
     <header class="app-header">
       <div class="header-left">
         <div class="app-brand">
@@ -24,13 +24,10 @@
         </div>
       </div>
       <div class="header-actions">
-        <button id="btn-header-layers" class="btn-header btn-header-ghost" title="Lista de Camadas">
-          📑 <span>Camadas</span>
-        </button>
-        <button id="btn-header-projects" class="btn-header btn-header-ghost" title="Salvar / Abrir Projetos">
+        <button id="btn-header-projects" class="btn-header btn-header-ghost" title="Salvar / Abrir">
           📂 <span>Projetos</span>
         </button>
-        <button id="btn-header-clear" class="btn-header btn-header-ghost" title="Limpar Cenário">
+        <button id="btn-header-clear" class="btn-header btn-header-ghost" title="Limpar Tudo">
           🗑️
         </button>
         <button id="btn-header-export" class="btn-header btn-header-primary" title="Exportar e WhatsApp">
@@ -39,91 +36,56 @@
       </div>
     </header>
 
-    <!-- Palco Central / Canvas -->
-    <main class="workspace-stage">
-      <!-- Indicador da peça selecionada -->
-      <div id="selection-badge" class="selection-badge">
-        <span>📍</span>
-        <span id="selection-badge-name">Peça</span>
-      </div>
-
-      <!-- Controles de Câmera e Navegação (Pan & Zoom) -->
-      <div class="camera-controls">
-        <button id="btn-cam-reset" class="camera-btn" title="Centralizar Cenário 4:3">🎯</button>
-        <button id="btn-cam-pan" class="camera-btn" title="Arrastar Fundo (Mão)">✋</button>
-        <button id="btn-cam-zoom-in" class="camera-btn" title="Aumentar Zoom">➕</button>
-        <button id="btn-cam-zoom-out" class="camera-btn" title="Diminuir Zoom">➖</button>
-      </div>
-
-      <!-- Container do Konva -->
-      <div id="konva-container"></div>
-
-      <!-- Barra Flutuante Contextual de Ação do Item (Estilo Canva) -->
-      <div id="item-toolbar" class="item-floating-toolbar">
-        <button id="btn-action-cover" class="item-toolbar-btn btn-cover" title="Vestir Capa / Estampa">
-          🎨 Capa
-        </button>
-        <div class="toolbar-divider"></div>
-        <button id="btn-action-front" class="item-toolbar-btn" title="Trazer para o Topo Absoluto">
-          🔝
-        </button>
-        <button id="btn-action-forward" class="item-toolbar-btn" title="Avançar 1 Camada">
-          ⬆️
-        </button>
-        <button id="btn-action-backward" class="item-toolbar-btn" title="Recuar 1 Camada">
-          ⬇️
-        </button>
-        <button id="btn-action-back" class="item-toolbar-btn" title="Enviar para o Fundo Absoluto">
-          🔚
-        </button>
-        <div class="toolbar-divider"></div>
-        <button id="btn-action-flip" class="item-toolbar-btn" title="Espelhar Horizontalmente">
-          🔄
-        </button>
-        <button id="btn-action-duplicate" class="item-toolbar-btn" title="Duplicar Peça">
-          📋
-        </button>
-        <button id="btn-action-lock" class="item-toolbar-btn" title="Bloquear / Destravar Posição">
-          🔓
-        </button>
-        <button id="btn-action-layers" class="item-toolbar-btn" title="Ver Lista de Camadas">
-          📑
-        </button>
-        <div class="toolbar-divider"></div>
-        <button id="btn-action-delete" class="item-toolbar-btn btn-delete" title="Excluir Peça">
-          🗑️
-        </button>
-      </div>
-    </main>
-
-    <!-- Gaveta Oculta de Camadas (Estilo Canva) -->
-    <aside id="layers-drawer" class="layers-drawer">
-      <div class="layers-header">
-        <div class="layers-title">
-          <span>📑 Camadas do Cenário</span>
-          <span id="layers-count-badge" class="layers-count-badge">0 itens</span>
+    <!-- Palco 16:9 Central -->
+    <section class="stage-section">
+      <div class="stage-viewport-box">
+        <div id="selection-badge" class="selection-badge">
+          <span>📍</span>
+          <span id="selection-badge-name">Peça</span>
         </div>
-        <button id="btn-close-layers-drawer" class="sheet-close-btn">✕</button>
+        <div id="konva-container"></div>
       </div>
-      <div id="layers-list-items" class="layers-list"></div>
-    </aside>
+    </section>
 
-    <!-- Gaveta Deslizante (Bottom Sheet) -->
-    <section id="bottom-sheet" class="bottom-sheet">
-      <div id="sheet-handle-bar" class="sheet-handle-bar">
-        <div class="sheet-handle"></div>
+    <!-- Barra de Ações da Peça Selecionada (Abaixo do Palco) -->
+    <div id="item-actions-bar" class="item-actions-panel">
+      <div id="item-actions-empty" class="item-actions-empty">
+        👆 Toque em uma peça para mover, vestir capa ou excluir
       </div>
+      <div id="item-actions-row" style="display: none; align-items: center; gap: 6px; width: 100%;">
+        <button id="btn-action-delete" class="item-action-pill btn-delete-pill" title="Remover Peça">
+          🗑️ Excluir
+        </button>
+        <button id="btn-action-cover" class="item-action-pill btn-cover-pill" title="Trocar Capa / Foto">
+          🎨 Vestir Capa
+        </button>
+        <button id="btn-action-front" class="item-action-pill" title="Trazer para Frente">
+          ⬆️ Frente
+        </button>
+        <button id="btn-action-back" class="item-action-pill" title="Enviar para Trás">
+          ⬇️ Trás
+        </button>
+        <button id="btn-action-flip" class="item-action-pill" title="Espelhar Horizontalmente">
+          🔄 Espelhar
+        </button>
+        <button id="btn-action-duplicate" class="item-action-pill" title="Duplicar">
+          📋 Copiar
+        </button>
+      </div>
+    </div>
+
+    <!-- Área de Conteúdo Inferior Flexível -->
+    <main class="bottom-content-area">
       <div class="sheet-header">
         <div class="sheet-title" id="sheet-current-title">✨ Peças Base</div>
-        <button id="btn-close-sheet" class="sheet-close-btn">✕</button>
       </div>
       <div id="sheet-categories-bar" class="category-pills"></div>
       <div id="sheet-body-content" class="sheet-body"></div>
-    </section>
+    </main>
 
-    <!-- Barra de Navegação Inferior (Dock Fixo) -->
+    <!-- Barra de Navegação Inferior Fixa (Dock) -->
     <nav class="bottom-dock">
-      <button class="dock-tab-btn" data-tab="presets">
+      <button class="dock-tab-btn active" data-tab="presets">
         <span class="tab-icon">✨</span>
         <span>Presets</span>
       </button>
@@ -142,40 +104,20 @@
     </nav>
   </div>
 
-  <!-- MODAL: Confirmação de Exclusão Segura -->
-  <div id="confirm-modal" class="modal-backdrop">
-    <div class="modal-container" style="max-width: 380px;">
-      <div class="modal-header">
-        <div class="modal-title" id="confirm-modal-title">Excluir Peça?</div>
-      </div>
-      <div class="modal-body">
-        <p id="confirm-modal-message" style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.4;">
-          Deseja realmente remover esta peça?
-        </p>
-      </div>
-      <div class="modal-footer">
-        <button id="btn-confirm-cancel" class="btn-secondary">Cancelar</button>
-        <button id="btn-confirm-ok" class="btn-primary" style="background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);">
-          Sim, Excluir
-        </button>
-      </div>
-    </div>
-  </div>
-
   <!-- MODAL: Aplicar / Trocar Capa -->
   <div id="cover-modal" class="modal-backdrop">
     <div class="modal-container">
       <div class="modal-header">
         <div>
           <div class="modal-title">🎨 Capas & Estampas</div>
-          <div style="font-size: 0.72rem; color: var(--text-muted);" id="cover-modal-subtitle">Escolha uma estampa para vestir a peça</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);" id="cover-modal-subtitle">Toque na estampa para vestir a peça</div>
         </div>
         <button id="btn-close-cover-modal" class="modal-close-btn">✕</button>
       </div>
       <div class="modal-body">
-        <div style="display: flex; gap: 10px;">
+        <div style="display: flex; gap: 8px;">
           <button id="btn-upload-cover-trigger" class="btn-primary" style="flex: 1;">
-            📸 Subir Foto da Galeria
+            📸 Subir da Galeria
           </button>
           <button id="btn-remove-cover" class="btn-secondary" style="flex: 1;">
             Restaurar Base
@@ -200,7 +142,7 @@
           <div id="image-upload-box" class="image-upload-box">
             <div id="upload-placeholder" style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
               <span class="upload-icon">📷</span>
-              <span class="upload-text">Toque para tirar foto ou escolher imagem</span>
+              <span class="upload-text">Toque para tirar foto ou escolher da galeria</span>
             </div>
             <img id="upload-preview-img" class="upload-preview-img" style="display: none;" alt="Preview" />
           </div>
@@ -241,11 +183,6 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="item-price-input">Valor Locação (R$ opcional)</label>
-          <input type="number" id="item-price-input" class="form-input" placeholder="Ex: 35.00" step="0.01" />
-        </div>
-
         <button type="submit" class="btn-primary" style="margin-top: 6px; width: 100%;">
           Salvar no Meu Acervo
         </button>
@@ -257,7 +194,7 @@
   <div id="export-modal" class="modal-backdrop">
     <div class="modal-container">
       <div class="modal-header">
-        <div class="modal-title">✨ Exportar & Orçamento</div>
+        <div class="modal-title">✨ Exportar Cenário (16:9)</div>
         <button id="btn-close-export-modal" class="modal-close-btn">✕</button>
       </div>
       <div class="modal-body">
@@ -266,10 +203,9 @@
         </div>
 
         <button id="btn-download-image" class="btn-secondary" style="width: 100%;">
-          📥 Baixar Foto da Decoração (PNG 4:3)
+          📥 Baixar Foto da Decoração (PNG HD)
         </button>
 
-        <!-- Romaneio Automático -->
         <div class="checklist-card">
           <div class="checklist-title">
             <span>📋 Romaneio de Separação</span>
@@ -278,7 +214,6 @@
           <ul id="export-checklist-items" class="checklist-items"></ul>
         </div>
 
-        <!-- Dados do Cliente para WhatsApp -->
         <div class="form-group">
           <label class="form-label" for="export-client-name">Nome do Cliente (opcional)</label>
           <input type="text" id="export-client-name" class="form-input" placeholder="Ex: Juliana Silva" />
@@ -299,18 +234,18 @@
   <div id="projects-modal" class="modal-backdrop">
     <div class="modal-container">
       <div class="modal-header">
-        <div class="modal-title">📂 Meus Projetos & Cenários</div>
+        <div class="modal-title">📂 Meus Cenários Salvos</div>
         <button id="btn-close-projects-modal" class="modal-close-btn">✕</button>
       </div>
       <div class="modal-body">
         <div style="display: flex; gap: 8px;">
-          <input type="text" id="project-save-title" class="form-input" placeholder="Nome do Cenário (ex: Safári Pedro 1 Ano)" />
+          <input type="text" id="project-save-title" class="form-input" placeholder="Nome (ex: Safári Pedro 1 Ano)" />
           <button id="btn-save-project-action" class="btn-primary" style="white-space: nowrap;">
-            💾 Salvar Atual
+            💾 Salvar
           </button>
         </div>
-        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-top: 10px;">Projetos Salvos Anteriormente:</div>
-        <div id="saved-projects-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+        <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-top: 8px;">Cenários Salvos:</div>
+        <div id="saved-projects-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
       </div>
     </div>
   </div>

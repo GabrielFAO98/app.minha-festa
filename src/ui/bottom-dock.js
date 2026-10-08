@@ -1,16 +1,8 @@
 import { getAllItems, getItemsByCategory, getAllCovers } from '../core/db.js';
 import {
   REALISTIC_ENVIRONMENTS,
-  TEXTURE_WALL_BOISERIE,
-  TEXTURE_WALL_BRICK,
-  TEXTURE_WALL_FAIRY_LIGHTS,
-  TEXTURE_WALL_WOOD_SLATS,
-  TEXTURE_WALL_CONCRETE,
-  TEXTURE_WALL_CLEAN,
-  TEXTURE_FLOOR_WOOD,
-  TEXTURE_FLOOR_MARBLE,
-  TEXTURE_FLOOR_GRASS,
-  TEXTURE_FLOOR_CONCRETE
+  WALL_OPTIONS,
+  FLOOR_OPTIONS
 } from '../core/textures-data.js';
 
 export class BottomDock {
@@ -19,35 +11,25 @@ export class BottomDock {
     this.onOpenInventoryModal = onOpenInventoryModal;
     this.onOpenCoverModal = onOpenCoverModal;
 
-    this.activeTab = null;
+    this.activeTab = 'presets'; // Inicia aberto em Presets
     this.currentCategory = 'todos';
 
-    this.sheetEl = document.getElementById('bottom-sheet');
     this.sheetBody = document.getElementById('sheet-body-content');
     this.sheetTitle = document.getElementById('sheet-current-title');
     this.categoriesBar = document.getElementById('sheet-categories-bar');
-    this.btnCloseSheet = document.getElementById('btn-close-sheet');
-    this.sheetHandle = document.getElementById('sheet-handle-bar');
 
     this.setupEvents();
+    this.openTab('presets');
   }
 
   setupEvents() {
-    // Botões das abas da barra fixa inferior
     const dockButtons = document.querySelectorAll('.dock-tab-btn');
     dockButtons.forEach((btn) => {
       btn.addEventListener('click', () => {
         const tab = btn.dataset.tab;
-        if (this.activeTab === tab && this.sheetEl.classList.contains('open')) {
-          this.closeSheet();
-        } else {
-          this.openTab(tab);
-        }
+        this.openTab(tab);
       });
     });
-
-    this.btnCloseSheet?.addEventListener('click', () => this.closeSheet());
-    this.sheetHandle?.addEventListener('click', () => this.closeSheet());
   }
 
   openTab(tabName) {
@@ -56,8 +38,6 @@ export class BottomDock {
     document.querySelectorAll('.dock-tab-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.tab === tabName);
     });
-
-    this.sheetEl.classList.add('open');
 
     if (tabName === 'presets') {
       this.renderPresetsTab();
@@ -70,15 +50,9 @@ export class BottomDock {
     }
   }
 
-  closeSheet() {
-    this.activeTab = null;
-    this.sheetEl.classList.remove('open');
-    document.querySelectorAll('.dock-tab-btn').forEach((b) => b.classList.remove('active'));
-  }
-
   // ABA 1: Presets Base de Fábrica
   async renderPresetsTab() {
-    this.sheetTitle.innerHTML = '✨ Peças Base (Presets)';
+    this.sheetTitle.innerHTML = '✨ Peças Base para Adicionar';
     this.categoriesBar.style.display = 'flex';
     this.renderCategoryPills();
 
@@ -93,10 +67,10 @@ export class BottomDock {
       { id: 'todos', label: 'Todos' },
       { id: 'paineis', label: 'Painéis' },
       { id: 'cilindros', label: 'Cilindros' },
-      { id: 'mesas', label: 'Mesas & Móveis' },
+      { id: 'mesas', label: 'Mesas' },
       { id: 'baloes', label: 'Balões' },
       { id: 'displays', label: 'Displays' },
-      { id: 'acessorios', label: 'Peças & Mesa' }
+      { id: 'acessorios', label: 'Acessórios' }
     ];
 
     this.categoriesBar.innerHTML = '';
@@ -121,9 +95,9 @@ export class BottomDock {
     const customItems = all.filter((i) => i.isCustom);
 
     let html = `
-      <div style="display: flex; gap: 10px; margin-bottom: 14px;">
-        <button id="btn-add-inventory-item" class="btn-primary" style="flex: 1; height: 44px;">
-          ➕ Cadastrar Nova Peça
+      <div style="margin-bottom: 12px;">
+        <button id="btn-add-inventory-item" class="btn-primary" style="width: 100%; height: 42px;">
+          ➕ Cadastrar Nova Peça com Foto
         </button>
       </div>
     `;
@@ -132,7 +106,7 @@ export class BottomDock {
       html += `
         <div class="empty-state">
           <div class="empty-state-icon">📸</div>
-          <div class="empty-state-text">Você ainda não tem peças cadastradas no seu acervo. Toque no botão acima para fotografar suas peças reais!</div>
+          <div class="empty-state-text">Você ainda não tem peças cadastradas. Toque no botão acima para fotografar suas peças reais!</div>
         </div>
       `;
       this.sheetBody.innerHTML = html;
@@ -154,15 +128,15 @@ export class BottomDock {
 
   // ABA 3: Catálogo de Capas & Estampas
   async renderCoversTab() {
-    this.sheetTitle.innerHTML = '🎨 Temas & Capas';
+    this.sheetTitle.innerHTML = '🎨 Temas & Capas Disponíveis';
     this.categoriesBar.style.display = 'none';
 
     const covers = await getAllCovers();
 
     this.sheetBody.innerHTML = `
-      <div style="display: flex; gap: 10px; margin-bottom: 14px;">
-        <button id="btn-add-new-cover" class="btn-primary" style="flex: 1; height: 44px;">
-          ➕ Adicionar Nova Estampa
+      <div style="margin-bottom: 12px;">
+        <button id="btn-add-new-cover" class="btn-primary" style="width: 100%; height: 42px;">
+          📸 Subir Estampa da Galeria
         </button>
       </div>
       <div class="covers-grid" id="sheet-covers-grid"></div>
@@ -179,9 +153,8 @@ export class BottomDock {
       card.addEventListener('click', async () => {
         if (this.canvasEngine.selectedNode) {
           await this.canvasEngine.applyCoverToSelected(cover.imageUrl);
-          this.closeSheet();
         } else {
-          alert('Selecione primeiro um cilindro ou painel no cenário para vestir esta capa.');
+          alert('Toque primeiro em um cilindro ou painel no cenário para vestir esta capa.');
         }
       });
       grid.appendChild(card);
@@ -194,62 +167,48 @@ export class BottomDock {
     });
   }
 
-  // ABA 4: Ambientes Realistas 4:3 (Paredes e Pisos)
+  // ABA 4: Cenários Realistas COM ESCOLHA POR IMAGEM
   renderEnvironmentTab() {
-    this.sheetTitle.innerHTML = '🏠 Fundos & Pisos Realistas (4:3)';
+    this.sheetTitle.innerHTML = '🏠 Escolha do Cenário (Por Imagem)';
     this.categoriesBar.style.display = 'none';
 
-    const walls = [
-      { name: 'Boiserie Clássica', texture: TEXTURE_WALL_BOISERIE },
-      { name: 'Tijolinho Branco', texture: TEXTURE_WALL_BRICK },
-      { name: 'Cortina Luzinhas', texture: TEXTURE_WALL_FAIRY_LIGHTS },
-      { name: 'Painel Ripado', texture: TEXTURE_WALL_WOOD_SLATS },
-      { name: 'Cimento Queimado', texture: TEXTURE_WALL_CONCRETE },
-      { name: 'Estúdio Clean', texture: TEXTURE_WALL_CLEAN }
-    ];
-
-    const floors = [
-      { name: 'Madeira Carvalho', texture: TEXTURE_FLOOR_WOOD },
-      { name: 'Mármore Carrara', texture: TEXTURE_FLOOR_MARBLE },
-      { name: 'Grama / Jardim', texture: TEXTURE_FLOOR_GRASS },
-      { name: 'Cimento Polido', texture: TEXTURE_FLOOR_CONCRETE }
-    ];
-
     let html = `
-      <div style="display: flex; flex-direction: column; gap: 18px;">
-        <!-- Cenários Prontos -->
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <!-- 1. Cenários Prontos em Imagem 16:9 -->
         <div>
-          <div class="form-label" style="margin-bottom: 8px;">Cenários Completos Prontos</div>
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+          <div class="form-label" style="margin-bottom: 8px;">Cenários Completos (Toque na Imagem)</div>
+          <div class="scene-visual-grid">
             ${REALISTIC_ENVIRONMENTS.map(env => `
-              <button class="btn-secondary btn-preset-env" data-wall="${env.wallTexture}" data-floor="${env.floorTexture}" style="height: 48px; text-align: left; padding: 6px 10px; font-size: 0.76rem; border-left: 4px solid var(--primary); display: flex; flex-direction: column; justify-content: center;">
-                <span style="font-weight: 700; color: #fff;">${env.name}</span>
-                <span style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">${env.category}</span>
-              </button>
+              <div class="scene-visual-card btn-preset-env" data-wall="${env.wallTexture}" data-floor="${env.floorTexture}">
+                <img src="${env.previewThumb}" alt="${env.name}"/>
+                <div class="scene-visual-overlay">${env.name}</div>
+              </div>
             `).join('')}
           </div>
         </div>
 
-        <!-- Parede Individual -->
+        <!-- 2. Paredes Individuais em Imagem -->
         <div>
-          <div class="form-label" style="margin-bottom: 8px;">Trocar Parede de Fundo</div>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
-            ${walls.map(w => `
-              <button class="btn-secondary btn-custom-wall" data-wall="${w.texture}" style="height: 38px; font-size: 0.72rem; padding: 0 4px; text-align: center;">
-                ${w.name}
-              </button>
+          <div class="form-label" style="margin-bottom: 8px;">Trocar Parede de Fundo (Toque na Imagem)</div>
+          <div class="scene-visual-grid">
+            ${WALL_OPTIONS.map(w => `
+              <div class="scene-visual-card btn-custom-wall" data-wall="${w.texture}">
+                <img src="${w.texture}" alt="${w.name}"/>
+                <div class="scene-visual-overlay">${w.name}</div>
+              </div>
             `).join('')}
           </div>
         </div>
 
-        <!-- Piso Individual -->
+        <!-- 3. Pisos Individuais em Imagem -->
         <div>
-          <div class="form-label" style="margin-bottom: 8px;">Trocar Piso (Perspectiva 2.5D)</div>
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-            ${floors.map(f => `
-              <button class="btn-secondary btn-custom-floor" data-floor="${f.texture}" style="height: 38px; font-size: 0.74rem;">
-                ${f.name}
-              </button>
+          <div class="form-label" style="margin-bottom: 8px;">Trocar Piso (Toque na Imagem)</div>
+          <div class="scene-visual-grid">
+            ${FLOOR_OPTIONS.map(f => `
+              <div class="scene-visual-card btn-custom-floor" data-floor="${f.texture}">
+                <img src="${f.texture}" alt="${f.name}"/>
+                <div class="scene-visual-overlay">${f.name}</div>
+              </div>
             `).join('')}
           </div>
         </div>
@@ -258,22 +217,22 @@ export class BottomDock {
 
     this.sheetBody.innerHTML = html;
 
-    // Listeners
-    this.sheetBody.querySelectorAll('.btn-preset-env').forEach((b) => {
-      b.addEventListener('click', async () => {
-        await this.canvasEngine.setEnvironmentTextures(b.dataset.wall, b.dataset.floor);
+    // Listeners diretos ao tocar na foto
+    this.sheetBody.querySelectorAll('.btn-preset-env').forEach((card) => {
+      card.addEventListener('click', async () => {
+        await this.canvasEngine.setEnvironmentTextures(card.dataset.wall, card.dataset.floor);
       });
     });
 
-    this.sheetBody.querySelectorAll('.btn-custom-wall').forEach((b) => {
-      b.addEventListener('click', async () => {
-        await this.canvasEngine.setEnvironmentTextures(b.dataset.wall, null);
+    this.sheetBody.querySelectorAll('.btn-custom-wall').forEach((card) => {
+      card.addEventListener('click', async () => {
+        await this.canvasEngine.setEnvironmentTextures(card.dataset.wall, null);
       });
     });
 
-    this.sheetBody.querySelectorAll('.btn-custom-floor').forEach((b) => {
-      b.addEventListener('click', async () => {
-        await this.canvasEngine.setEnvironmentTextures(null, b.dataset.floor);
+    this.sheetBody.querySelectorAll('.btn-custom-floor').forEach((card) => {
+      card.addEventListener('click', async () => {
+        await this.canvasEngine.setEnvironmentTextures(null, card.dataset.floor);
       });
     });
   }
@@ -286,7 +245,7 @@ export class BottomDock {
       this.sheetBody.innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">🔍</div>
-          <div class="empty-state-text">Nenhum item encontrado nesta categoria.</div>
+          <div class="empty-state-text">Nenhum item nesta categoria.</div>
         </div>
       `;
       return;
@@ -307,12 +266,11 @@ export class BottomDock {
       </div>
       <div class="item-card-title">${item.name}</div>
       <div class="item-card-dimensions">${item.widthCm} x ${item.heightCm} cm</div>
-      ${isCustom ? `<div class="item-card-badge">Estoque: ${item.stockQuantity}</div>` : ''}
+      ${isCustom ? `<div class="item-card-badge">Qtd: ${item.stockQuantity}</div>` : ''}
     `;
 
     card.addEventListener('click', async () => {
       await this.canvasEngine.addItem(item);
-      this.closeSheet();
     });
 
     return card;

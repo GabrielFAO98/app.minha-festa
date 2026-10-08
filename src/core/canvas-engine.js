@@ -5,31 +5,27 @@ import { TEXTURE_WALL_BOISERIE, TEXTURE_FLOOR_WOOD } from './textures-data.js';
 export class CanvasEngine {
   constructor() {
     this.stage = null;
-    this.viewport = null; // Grupo raiz 4:3 com zoom e pan
-    this.bgLayer = null;
-    this.decorLayer = null;
-    this.uiLayer = null;
+    this.viewport = null;
+    this.bgGroup = null;
+    this.decorGroup = null;
+    this.uiGroup = null;
     this.transformer = null;
     this.selectedNode = null;
 
-    // Dimensões Fixas Virtuais 4:3 do Cenário
-    this.VIRTUAL_WIDTH = 1200;
+    // Resolução Virtual Widescreen 16:9 Nativa
+    this.VIRTUAL_WIDTH = 1600;
     this.VIRTUAL_HEIGHT = 900;
-    this.WALL_HEIGHT = 630;
-    this.FLOOR_HEIGHT = 270;
+    this.WALL_HEIGHT = 640;
+    this.FLOOR_HEIGHT = 260;
 
-    // Escala métrica: 1200px virtuais equivalem a 350cm físicos reais
-    this.pxPerCm = this.VIRTUAL_WIDTH / 350;
-
-    // Estado da Câmera (Pan & Zoom)
-    this.cameraScale = 1;
-    this.isPanMode = false;
+    // Escala métrica: 1600px virtuais equivalem a 400cm físicos reais (4 metros)
+    this.pxPerCm = this.VIRTUAL_WIDTH / 400;
 
     // Texturas Atuais do Ambiente
     this.wallTextureUrl = TEXTURE_WALL_BOISERIE;
     this.floorTextureUrl = TEXTURE_FLOOR_WOOD;
 
-    // Callback para UI
+    // Callbacks para UI
     this.onSelectionChange = null;
     this.onLayersChange = null;
   }
@@ -44,19 +40,17 @@ export class CanvasEngine {
       height: containerH
     });
 
-    // Camada principal com suporte a pan/zoom
     this.mainLayer = new Konva.Layer();
     this.stage.add(this.mainLayer);
 
-    // Viewport Group onde todo o cenário 4:3 existe
+    // Viewport Group 16:9
     this.viewport = new Konva.Group({
       width: this.VIRTUAL_WIDTH,
       height: this.VIRTUAL_HEIGHT,
-      name: 'viewport-root'
+      name: 'viewport-16-9'
     });
     this.mainLayer.add(this.viewport);
 
-    // Grupos internos do Viewport
     this.bgGroup = new Konva.Group({ name: 'bg-group' });
     this.decorGroup = new Konva.Group({ name: 'decor-group' });
     this.uiGroup = new Konva.Group({ name: 'ui-group' });
@@ -65,103 +59,45 @@ export class CanvasEngine {
     this.viewport.add(this.decorGroup);
     this.viewport.add(this.uiGroup);
 
-    // Setup do Transformer de Seleção
     this.setupTransformer();
-
-    // Renderizar Ambiente Inicial Realista
     this.renderEnvironment();
-
-    // Ajustar enquadramento 4:3 inicial proporcional à tela
     this.fitToView();
 
-    // Eventos de Seleção e Desseleção no Palco
+    // Toque no fundo desseleciona a peça
     this.stage.on('tap click', (e) => {
-      if (this.isPanMode) return;
       if (e.target === this.stage || e.target.hasName('bg-element') || e.target === this.viewport) {
         this.deselect();
       }
     });
 
-    // Suporte a Arrastar o Fundo (Pan da Câmera)
-    this.setupPanAndZoom(container);
-
-    // Resize responsivo da janela
     window.addEventListener('resize', () => {
       this.handleResize(container);
     });
   }
 
-  // Enquadra perfeitamente o cenário 4:3 na tela (Mobile e Desktop)
+  // Enquadra a proporção 16:9 na tela do mobile com aproveitamento total
   fitToView() {
     if (!this.stage || !this.viewport) return;
     const containerW = this.stage.width();
     const containerH = this.stage.height();
 
-    // Margem de respiro de 16px
-    const padding = 20;
-    const availW = Math.max(280, containerW - padding * 2);
-    const availH = Math.max(280, containerH - padding * 2);
+    // Escala para caber exatamente na largura disponível do celular
+    const scale = Math.min(containerW / this.VIRTUAL_WIDTH, containerH / this.VIRTUAL_HEIGHT);
 
-    const baseScale = Math.min(availW / this.VIRTUAL_WIDTH, availH / this.VIRTUAL_HEIGHT);
-    this.cameraScale = baseScale;
-
-    this.viewport.scale({ x: baseScale, y: baseScale });
+    this.viewport.scale({ x: scale, y: scale });
     this.viewport.position({
-      x: (containerW - this.VIRTUAL_WIDTH * baseScale) / 2,
-      y: (containerH - this.VIRTUAL_HEIGHT * baseScale) / 2
+      x: (containerW - this.VIRTUAL_WIDTH * scale) / 2,
+      y: (containerH - this.VIRTUAL_HEIGHT * scale) / 2
     });
 
     this.mainLayer.batchDraw();
   }
 
-  // Zoom in e Zoom out
-  setZoom(factor) {
-    const currentScale = this.viewport.scaleX();
-    const newScale = Math.max(0.2, Math.min(3.0, currentScale * factor));
-    this.viewport.scale({ x: newScale, y: newScale });
-    this.mainLayer.batchDraw();
-  }
-
-  // Ativa/Desativa modo de arrastar o fundo
-  togglePanMode(active) {
-    this.isPanMode = active !== undefined ? active : !this.isPanMode;
-    this.viewport.draggable(this.isPanMode);
-    this.stage.container().style.cursor = this.isPanMode ? 'grab' : 'default';
-  }
-
-  setupPanAndZoom(container) {
-    // Zoom via Scroll do Mouse no Desktop
-    this.stage.on('wheel', (e) => {
-      e.evt.preventDefault();
-      const oldScale = this.viewport.scaleX();
-      const pointer = this.stage.getPointerPosition();
-      if (!pointer) return;
-
-      const mousePointTo = {
-        x: (pointer.x - this.viewport.x()) / oldScale,
-        y: (pointer.y - this.viewport.y()) / oldScale
-      };
-
-      const direction = e.evt.deltaY > 0 ? -1 : 1;
-      const factor = 1.08;
-      const newScale = direction > 0 ? oldScale * factor : oldScale / factor;
-      if (newScale < 0.2 || newScale > 3.5) return;
-
-      this.viewport.scale({ x: newScale, y: newScale });
-      this.viewport.position({
-        x: pointer.x - mousePointTo.x * newScale,
-        y: pointer.y - mousePointTo.y * newScale
-      });
-
-      this.mainLayer.batchDraw();
-    });
-  }
-
-  // Renderiza a Parede e o Piso Realista em 4:3
+  // Renderiza a Parede e o Piso 16:9
   async renderEnvironment() {
     this.bgGroup.destroyChildren();
 
-    // 1. Parede Realista (1200 x 630)
+    // 1. Parede Realista (1600 x 640)
     const wallImg = await loadImageAsync(this.wallTextureUrl);
     const wallNode = new Konva.Image({
       name: 'bg-element',
@@ -172,7 +108,7 @@ export class CanvasEngine {
       image: wallImg
     });
 
-    // 2. Piso Realista em Perspectiva (1200 x 270)
+    // 2. Piso Realista (1600 x 260)
     const floorImg = await loadImageAsync(this.floorTextureUrl);
     const floorNode = new Konva.Image({
       name: 'bg-element',
@@ -183,21 +119,8 @@ export class CanvasEngine {
       image: floorImg
     });
 
-    // 3. Moldura de Borda Discreta 4:3
-    const frameBorder = new Konva.Rect({
-      name: 'bg-element',
-      x: 0,
-      y: 0,
-      width: this.VIRTUAL_WIDTH,
-      height: this.VIRTUAL_HEIGHT,
-      stroke: 'rgba(255, 255, 255, 0.1)',
-      strokeWidth: 2,
-      listening: false
-    });
-
     this.bgGroup.add(wallNode);
     this.bgGroup.add(floorNode);
-    this.bgGroup.add(frameBorder);
     this.mainLayer.batchDraw();
   }
 
@@ -209,13 +132,13 @@ export class CanvasEngine {
 
   setupTransformer() {
     this.transformer = new Konva.Transformer({
-      rotateAnchorOffset: 32,
+      rotateAnchorOffset: 28,
       enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
-      anchorSize: 18,
-      anchorCornerRadius: 9,
+      anchorSize: 22, // Âncoras maiores e fáceis para tocar no celular
+      anchorCornerRadius: 11,
       anchorStroke: '#ec4899',
       anchorFill: '#ffffff',
-      anchorStrokeWidth: 2.5,
+      anchorStrokeWidth: 3,
       borderStroke: '#ec4899',
       borderStrokeWidth: 2,
       borderDash: [6, 4],
@@ -224,14 +147,14 @@ export class CanvasEngine {
     this.uiGroup.add(this.transformer);
   }
 
-  // Adiciona item com limites de arrasto dentro do 1200x900
+  // Adiciona item limpo (SEM SOMBRA ARTIFICIAL)
   async addItem(itemData, position = null) {
-    const widthPx = Math.max(50, (itemData.widthCm || 60) * this.pxPerCm);
-    const heightPx = Math.max(50, (itemData.heightCm || 60) * this.pxPerCm);
+    const widthPx = Math.max(60, (itemData.widthCm || 60) * this.pxPerCm);
+    const heightPx = Math.max(60, (itemData.heightCm || 60) * this.pxPerCm);
 
-    // Posição padrão no piso
+    // Posição padrão centralizada no chão da cena 16:9
     const posX = position ? position.x : (this.VIRTUAL_WIDTH / 2 - widthPx / 2 + (Math.random() * 40 - 20));
-    const posY = position ? position.y : (this.WALL_HEIGHT + 60 - heightPx + (Math.random() * 30 - 15));
+    const posY = position ? position.y : (this.WALL_HEIGHT + 40 - heightPx + (Math.random() * 20 - 10));
 
     const group = new Konva.Group({
       x: posX,
@@ -240,7 +163,7 @@ export class CanvasEngine {
       height: heightPx,
       draggable: true,
       name: 'decor-item',
-      // Trava para NUNCA sair do frame visível 4:3
+      // Trava para manter dentro dos limites 16:9
       dragBoundFunc: (pos) => {
         const stageScale = this.viewport.scaleX();
         const stageX = this.viewport.x();
@@ -264,23 +187,7 @@ export class CanvasEngine {
       customCoverUrl: itemData.customCoverUrl || null
     });
 
-    // 1. Sombra de Contato Realista 3D na base
-    const shadow = new Konva.Ellipse({
-      name: 'contact-shadow',
-      x: widthPx / 2,
-      y: heightPx - 2,
-      radiusX: widthPx * 0.42,
-      radiusY: 10,
-      fillRadialGradientStartPoint: { x: 0, y: 0 },
-      fillRadialGradientEndPoint: { x: 0, y: 0 },
-      fillRadialGradientStartRadius: 0,
-      fillRadialGradientEndRadius: widthPx * 0.42,
-      fillRadialGradientColorStops: [0, 'rgba(0, 0, 0, 0.45)', 0.6, 'rgba(0, 0, 0, 0.25)', 1, 'rgba(0, 0, 0, 0)'],
-      listening: false
-    });
-    group.add(shadow);
-
-    // 2. Imagem Base da Peça
+    // Imagem base da peça (recorte puro sem sombra preta embaixo)
     const imgElement = await loadImageAsync(itemData.previewUrl);
     const baseImage = new Konva.Image({
       name: 'base-image',
@@ -290,12 +197,11 @@ export class CanvasEngine {
     });
     group.add(baseImage);
 
-    // 3. Se tiver capa personalizada
+    // Capa personalizada se houver
     if (itemData.customCoverUrl) {
       await this.attachCoverToNode(group, itemData.customCoverUrl);
     }
 
-    // Eventos de Seleção
     group.on('tap click', (e) => {
       e.cancelBubble = true;
       this.selectNode(group);
@@ -379,9 +285,7 @@ export class CanvasEngine {
     node.getLayer()?.batchDraw();
   }
 
-  // --- GERENCIAMENTO DE CAMADAS (ESTILO CANVA) ---
-
-  // Avançar 1 camada (para frente)
+  // --- CONTROLE DE CAMADAS DIRETO ---
   bringForward() {
     if (!this.selectedNode) return;
     this.selectedNode.moveUp();
@@ -389,7 +293,6 @@ export class CanvasEngine {
     this.notifyLayersChange();
   }
 
-  // Recuar 1 camada (para trás)
   sendBackward() {
     if (!this.selectedNode) return;
     this.selectedNode.moveDown();
@@ -397,7 +300,6 @@ export class CanvasEngine {
     this.notifyLayersChange();
   }
 
-  // Mover para o primeiro plano (topo absoluto)
   bringToFront() {
     if (!this.selectedNode) return;
     this.selectedNode.moveToTop();
@@ -405,37 +307,11 @@ export class CanvasEngine {
     this.notifyLayersChange();
   }
 
-  // Mover para o fundo absoluto (base da pilha)
   sendToBack() {
     if (!this.selectedNode) return;
     this.selectedNode.moveToBottom();
     this.mainLayer.batchDraw();
     this.notifyLayersChange();
-  }
-
-  // Travar ou destravar posição
-  toggleLockNode(node = null) {
-    const target = node || this.selectedNode;
-    if (!target) return false;
-
-    const isDraggable = target.draggable();
-    target.draggable(!isDraggable);
-
-    if (this.selectedNode === target) {
-      if (!isDraggable) {
-        // Agora está travado
-        this.transformer.enabledAnchors([]);
-        this.transformer.rotateEnabled(false);
-      } else {
-        // Agora está livre
-        this.transformer.enabledAnchors(['top-left', 'top-right', 'bottom-left', 'bottom-right']);
-        this.transformer.rotateEnabled(true);
-      }
-    }
-
-    this.mainLayer.batchDraw();
-    this.notifyLayersChange();
-    return isDraggable; // retorna true se agora está travado
   }
 
   flipHorizontal() {
@@ -455,12 +331,13 @@ export class CanvasEngine {
     if (!this.selectedNode) return;
     const meta = this.selectedNode.getAttr('itemMeta');
     const newPos = {
-      x: Math.min(this.VIRTUAL_WIDTH - 80, this.selectedNode.x() + 30),
-      y: Math.min(this.VIRTUAL_HEIGHT - 80, this.selectedNode.y() + 30)
+      x: Math.min(this.VIRTUAL_WIDTH - 100, this.selectedNode.x() + 40),
+      y: Math.min(this.VIRTUAL_HEIGHT - 100, this.selectedNode.y() + 40)
     };
     await this.addItem({ ...meta }, newPos);
   }
 
+  // Exclusão rápida e direta da peça selecionada
   deleteSelected() {
     if (!this.selectedNode) return;
     const node = this.selectedNode;
@@ -479,7 +356,6 @@ export class CanvasEngine {
 
   exportHDImage() {
     this.deselect();
-    // Exporta estritamente o enquadramento 4:3 perfeito (1200x900) em altíssima resolução
     return this.viewport.toDataURL({
       pixelRatio: 2.0,
       mimeType: 'image/png'

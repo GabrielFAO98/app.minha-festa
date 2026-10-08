@@ -2,17 +2,19 @@ import Konva from 'konva';
 import { createClipFunction, loadImageAsync } from './mask-renderer.js';
 import { TEXTURE_WALL_BOISERIE, TEXTURE_FLOOR_WOOD } from './textures-data.js';
 
+// OTIMIZAÇÃO CRÍTICA PARA MOBILE: Desativa detecção de colisão durante o arrasto
+Konva.hitOnDragEnabled = false;
+
 export class CanvasEngine {
   constructor() {
     this.stage = null;
-    this.viewport = null;
-    this.bgGroup = null;
-    this.decorGroup = null;
-    this.uiGroup = null;
+    this.bgLayer = null;    // Camada Estática de Fundo (Nunca repinta no drag)
+    this.decorLayer = null; // Camada Rápida dos Elementos de Decoração
+    this.uiLayer = null;    // Camada Leve do Transformer de Seleção
     this.transformer = null;
     this.selectedNode = null;
 
-    // Resolução Virtual VERTICAL 9:16 Nativa (1080 x 1920 - Formato Stories/Celular)
+    // Resolução Virtual VERTICAL 9:16 Nativa (1080 x 1920)
     this.VIRTUAL_WIDTH = 1080;
     this.VIRTUAL_HEIGHT = 1920;
     this.WALL_HEIGHT = 1380;
@@ -40,31 +42,25 @@ export class CanvasEngine {
       height: containerH
     });
 
-    this.mainLayer = new Konva.Layer();
-    this.stage.add(this.mainLayer);
+    // 1. CAMADA DE FUNDO ISOLADA (Renderiza uma única vez na GPU)
+    this.bgLayer = new Konva.Layer({ listening: false });
+    this.stage.add(this.bgLayer);
 
-    // Viewport Group Vertical 9:16
-    this.viewport = new Konva.Group({
-      width: this.VIRTUAL_WIDTH,
-      height: this.VIRTUAL_HEIGHT,
-      name: 'viewport-vertical-9-16'
-    });
-    this.mainLayer.add(this.viewport);
+    // 2. CAMADA DE DECORAÇÃO (Apenas itens móveis)
+    this.decorLayer = new Konva.Layer();
+    this.stage.add(this.decorLayer);
 
-    this.bgGroup = new Konva.Group({ name: 'bg-group' });
-    this.decorGroup = new Konva.Group({ name: 'decor-group' });
-    this.uiGroup = new Konva.Group({ name: 'ui-group' });
-
-    this.viewport.add(this.bgGroup);
-    this.viewport.add(this.decorGroup);
-    this.viewport.add(this.uiGroup);
+    // 3. CAMADA DE INTERFACE (Transformer de seleção)
+    this.uiLayer = new Konva.Layer();
+    this.stage.add(this.uiLayer);
 
     this.setupTransformer();
     this.renderEnvironment();
     this.fitToView();
 
+    // Desseleção rápida ao tocar no fundo vazio
     this.stage.on('tap click pointerdown', (e) => {
-      if (e.target === this.stage || e.target.hasName('bg-element') || e.target === this.viewport) {
+      if (e.target === this.stage || e.target.hasName('bg-element')) {
         this.deselect();
       }
     });
@@ -74,26 +70,29 @@ export class CanvasEngine {
     });
   }
 
-  // Enquadra a tela vertical 9:16 com aproveitamento total do celular
+  // Ajusta a escala e posição de enquadramento 9:16 diretamente no Stage (Aceleração por Hardware)
   fitToView() {
-    if (!this.stage || !this.viewport) return;
+    if (!this.stage) return;
     const containerW = this.stage.width();
     const containerH = this.stage.height();
 
     const scale = Math.min(containerW / this.VIRTUAL_WIDTH, containerH / this.VIRTUAL_HEIGHT);
+    const offsetX = (containerW - this.VIRTUAL_WIDTH * scale) / 2;
+    const offsetY = (containerH - this.VIRTUAL_HEIGHT * scale) / 2;
 
-    this.viewport.scale({ x: scale, y: scale });
-    this.viewport.position({
-      x: (containerW - this.VIRTUAL_WIDTH * scale) / 2,
-      y: (containerH - this.VIRTUAL_HEIGHT * scale) / 2
+    // Aplica o enquadramento 9:16 nas 3 camadas
+    [this.bgLayer, this.decorLayer, this.uiLayer].forEach((layer) => {
+      if (layer) {
+        layer.scale({ x: scale, y: scale });
+        layer.position({ x: offsetX, y: offsetY });
+        layer.batchDraw();
+      }
     });
-
-    this.mainLayer.batchDraw();
   }
 
-  // Renderiza Parede e Piso Verticais 9:16
+  // Renderiza Parede e Piso na camada bgLayer estática (Zero repintura no arrasto)
   async renderEnvironment() {
-    this.bgGroup.destroyChildren();
+    this.bgLayer.destroyChildren();
 
     // 1. Parede Realista (1080 x 1380)
     const wallImg = await loadImageAsync(this.wallTextureUrl);
@@ -103,7 +102,8 @@ export class CanvasEngine {
       y: 0,
       width: this.VIRTUAL_WIDTH,
       height: this.WALL_HEIGHT,
-      image: wallImg
+      image: wallImg,
+      listening: false
     });
 
     // 2. Piso Realista em Perspectiva (1080 x 540)
@@ -114,12 +114,13 @@ export class CanvasEngine {
       y: this.WALL_HEIGHT,
       width: this.VIRTUAL_WIDTH,
       height: this.FLOOR_HEIGHT,
-      image: floorImg
+      image: floorImg,
+      listening: false
     });
 
-    this.bgGroup.add(wallNode);
-    this.bgGroup.add(floorNode);
-    this.mainLayer.batchDraw();
+    this.bgLayer.add(wallNode);
+    this.bgLayer.add(floorNode);
+    this.bgLayer.batchDraw();
   }
 
   async setEnvironmentTextures(wallUrl, floorUrl) {
@@ -142,10 +143,10 @@ export class CanvasEngine {
       borderDash: [6, 4],
       keepRatio: true
     });
-    this.uiGroup.add(this.transformer);
+    this.uiLayer.add(this.transformer);
   }
 
-  // Adiciona item limpo sem sombras artificiais
+  // Adiciona item com arrasto super rápido e sem lag
   async addItem(itemData, position = null) {
     const widthPx = Math.max(70, (itemData.widthCm || 60) * this.pxPerCm);
     const heightPx = Math.max(70, (itemData.heightCm || 60) * this.pxPerCm);
@@ -160,15 +161,17 @@ export class CanvasEngine {
       height: heightPx,
       draggable: true,
       name: 'decor-item',
+      // Limites de arrasto ultra-rápidos dentro da resolução 1080 x 1920
       dragBoundFunc: (pos) => {
-        const stageScale = this.viewport.scaleX();
-        const stageX = this.viewport.x();
-        const stageY = this.viewport.y();
+        const layer = group.getLayer();
+        const scale = layer ? layer.scaleX() : 1;
+        const offsetX = layer ? layer.x() : 0;
+        const offsetY = layer ? layer.y() : 0;
 
-        const minX = stageX;
-        const maxX = stageX + (this.VIRTUAL_WIDTH - widthPx) * stageScale;
-        const minY = stageY;
-        const maxY = stageY + (this.VIRTUAL_HEIGHT - heightPx) * stageScale;
+        const minX = offsetX;
+        const maxX = offsetX + (this.VIRTUAL_WIDTH - widthPx) * scale;
+        const minY = offsetY;
+        const maxY = offsetY + (this.VIRTUAL_HEIGHT - heightPx) * scale;
 
         return {
           x: Math.max(minX, Math.min(maxX, pos.x)),
@@ -197,13 +200,23 @@ export class CanvasEngine {
     }
 
     // DISPARO IMEDIATO AO TOCAR NO ITEM
-    group.on('pointerdown tap click dragstart', (e) => {
+    group.on('pointerdown tap click', (e) => {
       e.cancelBubble = true;
       this.selectNode(group);
     });
 
-    this.decorGroup.add(group);
-    this.mainLayer.batchDraw();
+    // Durante o drag, atualiza apenas a posição do transformer de forma ultra leve
+    group.on('dragmove', () => {
+      this.uiLayer.batchDraw();
+    });
+
+    group.on('dragend', () => {
+      this.uiLayer.batchDraw();
+      this.notifyLayersChange();
+    });
+
+    this.decorLayer.add(group);
+    this.decorLayer.batchDraw();
 
     this.selectNode(group);
     this.notifyLayersChange();
@@ -214,7 +227,7 @@ export class CanvasEngine {
   selectNode(node) {
     this.selectedNode = node;
     this.transformer.nodes(node ? [node] : []);
-    this.mainLayer.batchDraw();
+    this.uiLayer.batchDraw();
 
     if (this.onSelectionChange) {
       const meta = node ? node.getAttr('itemMeta') : null;
@@ -225,7 +238,7 @@ export class CanvasEngine {
   deselect() {
     this.selectedNode = null;
     this.transformer.nodes([]);
-    this.mainLayer.batchDraw();
+    this.uiLayer.batchDraw();
 
     if (this.onSelectionChange) {
       this.onSelectionChange(null, null);
@@ -235,7 +248,7 @@ export class CanvasEngine {
   async applyCoverToSelected(coverImageUrl) {
     if (!this.selectedNode) return;
     await this.attachCoverToNode(this.selectedNode, coverImageUrl);
-    this.mainLayer.batchDraw();
+    this.decorLayer.batchDraw();
     this.notifyLayersChange();
   }
 
@@ -271,34 +284,34 @@ export class CanvasEngine {
 
     coverGroup.add(coverImageNode);
     node.add(coverGroup);
-    node.getLayer()?.batchDraw();
+    this.decorLayer.batchDraw();
   }
 
   bringForward() {
     if (!this.selectedNode) return;
     this.selectedNode.moveUp();
-    this.mainLayer.batchDraw();
+    this.decorLayer.batchDraw();
     this.notifyLayersChange();
   }
 
   sendBackward() {
     if (!this.selectedNode) return;
     this.selectedNode.moveDown();
-    this.mainLayer.batchDraw();
+    this.decorLayer.batchDraw();
     this.notifyLayersChange();
   }
 
   bringToFront() {
     if (!this.selectedNode) return;
     this.selectedNode.moveToTop();
-    this.mainLayer.batchDraw();
+    this.decorLayer.batchDraw();
     this.notifyLayersChange();
   }
 
   sendToBack() {
     if (!this.selectedNode) return;
     this.selectedNode.moveToBottom();
-    this.mainLayer.batchDraw();
+    this.decorLayer.batchDraw();
     this.notifyLayersChange();
   }
 
@@ -312,7 +325,7 @@ export class CanvasEngine {
     } else {
       this.selectedNode.offsetX(0);
     }
-    this.mainLayer.batchDraw();
+    this.decorLayer.batchDraw();
   }
 
   async duplicateSelected() {
@@ -330,20 +343,20 @@ export class CanvasEngine {
     const node = this.selectedNode;
     this.deselect();
     node.destroy();
-    this.mainLayer.batchDraw();
+    this.decorLayer.batchDraw();
     this.notifyLayersChange();
   }
 
   clearScene() {
     this.deselect();
     this.decorGroup.destroyChildren();
-    this.mainLayer.batchDraw();
+    this.decorLayer.batchDraw();
     this.notifyLayersChange();
   }
 
   exportHDImage() {
     this.deselect();
-    return this.viewport.toDataURL({
+    return this.stage.toDataURL({
       pixelRatio: 1.5,
       mimeType: 'image/png'
     });

@@ -99,3 +99,4 @@ export function downloadImage(dataUrl, filename = 'decoracao-minha-festa.png') {
   link.click();
   document.body.removeChild(link);
 }
+

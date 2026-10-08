@@ -113,3 +113,4 @@ export async function saveProject(projectData) {
 export async function deleteProject(id) {
   await db.projects.delete(id);
 }
+

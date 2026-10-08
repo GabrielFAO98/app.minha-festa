@@ -1,4 +1,17 @@
 import { getAllItems, getItemsByCategory, getAllCovers } from '../core/db.js';
+import {
+  REALISTIC_ENVIRONMENTS,
+  TEXTURE_WALL_BOISERIE,
+  TEXTURE_WALL_BRICK,
+  TEXTURE_WALL_FAIRY_LIGHTS,
+  TEXTURE_WALL_WOOD_SLATS,
+  TEXTURE_WALL_CONCRETE,
+  TEXTURE_WALL_CLEAN,
+  TEXTURE_FLOOR_WOOD,
+  TEXTURE_FLOOR_MARBLE,
+  TEXTURE_FLOOR_GRASS,
+  TEXTURE_FLOOR_CONCRETE
+} from '../core/textures-data.js';
 
 export class BottomDock {
   constructor(canvasEngine, onOpenInventoryModal, onOpenCoverModal) {
@@ -40,7 +53,6 @@ export class BottomDock {
   openTab(tabName) {
     this.activeTab = tabName;
 
-    // Atualiza botões ativos no dock
     document.querySelectorAll('.dock-tab-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.tab === tabName);
     });
@@ -120,7 +132,7 @@ export class BottomDock {
       html += `
         <div class="empty-state">
           <div class="empty-state-icon">📸</div>
-          <div class="empty-state-text">Você ainda não tem peças personalizadas cadastradas no seu acervo. Toque no botão acima para fotografar ou cadastrar suas peças reais!</div>
+          <div class="empty-state-text">Você ainda não tem peças cadastradas no seu acervo. Toque no botão acima para fotografar suas peças reais!</div>
         </div>
       `;
       this.sheetBody.innerHTML = html;
@@ -165,7 +177,6 @@ export class BottomDock {
         <div class="cover-card-label">${cover.name}</div>
       `;
       card.addEventListener('click', async () => {
-        // Se houver item selecionado, aplica direto
         if (this.canvasEngine.selectedNode) {
           await this.canvasEngine.applyCoverToSelected(cover.imageUrl);
           this.closeSheet();
@@ -183,46 +194,60 @@ export class BottomDock {
     });
   }
 
-  // ABA 4: Cenário (Parede e Piso)
+  // ABA 4: Ambientes Realistas 4:3 (Paredes e Pisos)
   renderEnvironmentTab() {
-    this.sheetTitle.innerHTML = '🏠 Ajustes do Cenário';
+    this.sheetTitle.innerHTML = '🏠 Fundos & Pisos Realistas (4:3)';
     this.categoriesBar.style.display = 'none';
 
-    const wallColors = [
-      { name: 'Cinza Estúdio', hex: '#1e293b' },
-      { name: 'Rosa Suave', hex: '#4c1d3d' },
-      { name: 'Azul Bebê Noite', hex: '#1e3a5f' },
-      { name: 'Bege Areia', hex: '#453229' },
-      { name: 'Verde Eucalipto', hex: '#14382c' },
-      { name: 'Branco Puro', hex: '#334155' }
+    const walls = [
+      { name: 'Boiserie Clássica', texture: TEXTURE_WALL_BOISERIE },
+      { name: 'Tijolinho Branco', texture: TEXTURE_WALL_BRICK },
+      { name: 'Cortina Luzinhas', texture: TEXTURE_WALL_FAIRY_LIGHTS },
+      { name: 'Painel Ripado', texture: TEXTURE_WALL_WOOD_SLATS },
+      { name: 'Cimento Queimado', texture: TEXTURE_WALL_CONCRETE },
+      { name: 'Estúdio Clean', texture: TEXTURE_WALL_CLEAN }
     ];
 
-    const floorColors = [
-      { name: 'Piso Escuro', hex: '#0f172a' },
-      { name: 'Madeira Pinus', hex: '#78350f' },
-      { name: 'Madeira Rústica', hex: '#451a03' },
-      { name: 'Grama / Jardim', hex: '#14532d' },
-      { name: 'Porcelanato Cinza', hex: '#1f2937' }
+    const floors = [
+      { name: 'Madeira Carvalho', texture: TEXTURE_FLOOR_WOOD },
+      { name: 'Mármore Carrara', texture: TEXTURE_FLOOR_MARBLE },
+      { name: 'Grama / Jardim', texture: TEXTURE_FLOOR_GRASS },
+      { name: 'Cimento Polido', texture: TEXTURE_FLOOR_CONCRETE }
     ];
 
     let html = `
-      <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <!-- Cenários Prontos -->
         <div>
-          <div class="form-label" style="margin-bottom: 8px;">Cor da Parede de Fundo</div>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
-            ${wallColors.map(c => `
-              <button class="btn-secondary btn-wall-color" data-color="${c.hex}" style="height: 38px; font-size: 0.75rem; border-left: 6px solid ${c.hex};">
-                ${c.name}
+          <div class="form-label" style="margin-bottom: 8px;">Cenários Completos Prontos</div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+            ${REALISTIC_ENVIRONMENTS.map(env => `
+              <button class="btn-secondary btn-preset-env" data-wall="${env.wallTexture}" data-floor="${env.floorTexture}" style="height: 48px; text-align: left; padding: 6px 10px; font-size: 0.76rem; border-left: 4px solid var(--primary); display: flex; flex-direction: column; justify-content: center;">
+                <span style="font-weight: 700; color: #fff;">${env.name}</span>
+                <span style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">${env.category}</span>
               </button>
             `).join('')}
           </div>
         </div>
 
+        <!-- Parede Individual -->
         <div>
-          <div class="form-label" style="margin-bottom: 8px;">Tipo / Cor do Piso</div>
+          <div class="form-label" style="margin-bottom: 8px;">Trocar Parede de Fundo</div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+            ${walls.map(w => `
+              <button class="btn-secondary btn-custom-wall" data-wall="${w.texture}" style="height: 38px; font-size: 0.72rem; padding: 0 4px; text-align: center;">
+                ${w.name}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Piso Individual -->
+        <div>
+          <div class="form-label" style="margin-bottom: 8px;">Trocar Piso (Perspectiva 2.5D)</div>
           <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-            ${floorColors.map(f => `
-              <button class="btn-secondary btn-floor-color" data-color="${f.hex}" style="height: 38px; font-size: 0.75rem; border-left: 6px solid ${f.hex};">
+            ${floors.map(f => `
+              <button class="btn-secondary btn-custom-floor" data-floor="${f.texture}" style="height: 38px; font-size: 0.74rem;">
                 ${f.name}
               </button>
             `).join('')}
@@ -233,16 +258,22 @@ export class BottomDock {
 
     this.sheetBody.innerHTML = html;
 
-    // Eventos de clique nas cores
-    this.sheetBody.querySelectorAll('.btn-wall-color').forEach((b) => {
-      b.addEventListener('click', () => {
-        this.canvasEngine.setEnvironment(b.dataset.color, this.canvasEngine.environment.floorColor);
+    // Listeners
+    this.sheetBody.querySelectorAll('.btn-preset-env').forEach((b) => {
+      b.addEventListener('click', async () => {
+        await this.canvasEngine.setEnvironmentTextures(b.dataset.wall, b.dataset.floor);
       });
     });
 
-    this.sheetBody.querySelectorAll('.btn-floor-color').forEach((b) => {
-      b.addEventListener('click', () => {
-        this.canvasEngine.setEnvironment(this.canvasEngine.environment.wallColor, b.dataset.color);
+    this.sheetBody.querySelectorAll('.btn-custom-wall').forEach((b) => {
+      b.addEventListener('click', async () => {
+        await this.canvasEngine.setEnvironmentTextures(b.dataset.wall, null);
+      });
+    });
+
+    this.sheetBody.querySelectorAll('.btn-custom-floor').forEach((b) => {
+      b.addEventListener('click', async () => {
+        await this.canvasEngine.setEnvironmentTextures(null, b.dataset.floor);
       });
     });
   }
@@ -280,7 +311,6 @@ export class BottomDock {
     `;
 
     card.addEventListener('click', async () => {
-      // Adiciona o item no palco do canvas
       await this.canvasEngine.addItem(item);
       this.closeSheet();
     });

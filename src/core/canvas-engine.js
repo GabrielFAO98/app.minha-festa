@@ -1,176 +1,237 @@
 import Konva from 'konva';
 import { createClipFunction, loadImageAsync } from './mask-renderer.js';
+import { TEXTURE_WALL_BOISERIE, TEXTURE_FLOOR_WOOD } from './textures-data.js';
 
 export class CanvasEngine {
   constructor() {
     this.stage = null;
+    this.viewport = null; // Grupo raiz 4:3 com zoom e pan
     this.bgLayer = null;
     this.decorLayer = null;
     this.uiLayer = null;
     this.transformer = null;
     this.selectedNode = null;
 
-    // Escala métrica: 300cm de largura visível padrão
-    this.sceneWidthCm = 320;
-    this.pxPerCm = 1;
+    // Dimensões Fixas Virtuais 4:3 do Cenário
+    this.VIRTUAL_WIDTH = 1200;
+    this.VIRTUAL_HEIGHT = 900;
+    this.WALL_HEIGHT = 630;
+    this.FLOOR_HEIGHT = 270;
 
-    // Configurações do Ambiente
-    this.environment = {
-      wallColor: '#1e293b',
-      floorColor: '#0f172a',
-      wallGradientEnd: '#0f172a'
-    };
+    // Escala métrica: 1200px virtuais equivalem a 350cm físicos reais
+    this.pxPerCm = this.VIRTUAL_WIDTH / 350;
+
+    // Estado da Câmera (Pan & Zoom)
+    this.cameraScale = 1;
+    this.isPanMode = false;
+
+    // Texturas Atuais do Ambiente
+    this.wallTextureUrl = TEXTURE_WALL_BOISERIE;
+    this.floorTextureUrl = TEXTURE_FLOOR_WOOD;
 
     // Callback para UI
     this.onSelectionChange = null;
+    this.onLayersChange = null;
   }
 
   init(container) {
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-
-    this.pxPerCm = width / this.sceneWidthCm;
+    const containerW = container.clientWidth;
+    const containerH = container.clientHeight;
 
     this.stage = new Konva.Stage({
       container: container,
-      width: width,
-      height: height
+      width: containerW,
+      height: containerH
     });
 
-    // Camadas
-    this.bgLayer = new Konva.Layer();
-    this.decorLayer = new Konva.Layer();
-    this.uiLayer = new Konva.Layer();
+    // Camada principal com suporte a pan/zoom
+    this.mainLayer = new Konva.Layer();
+    this.stage.add(this.mainLayer);
 
-    this.stage.add(this.bgLayer);
-    this.stage.add(this.decorLayer);
-    this.stage.add(this.uiLayer);
+    // Viewport Group onde todo o cenário 4:3 existe
+    this.viewport = new Konva.Group({
+      width: this.VIRTUAL_WIDTH,
+      height: this.VIRTUAL_HEIGHT,
+      name: 'viewport-root'
+    });
+    this.mainLayer.add(this.viewport);
 
-    // Inicializar Fundo de Parede e Piso
-    this.renderEnvironment();
+    // Grupos internos do Viewport
+    this.bgGroup = new Konva.Group({ name: 'bg-group' });
+    this.decorGroup = new Konva.Group({ name: 'decor-group' });
+    this.uiGroup = new Konva.Group({ name: 'ui-group' });
 
-    // Inicializar Transformer de Seleção
+    this.viewport.add(this.bgGroup);
+    this.viewport.add(this.decorGroup);
+    this.viewport.add(this.uiGroup);
+
+    // Setup do Transformer de Seleção
     this.setupTransformer();
 
-    // Eventos de Toque e Seleção no Palco
+    // Renderizar Ambiente Inicial Realista
+    this.renderEnvironment();
+
+    // Ajustar enquadramento 4:3 inicial proporcional à tela
+    this.fitToView();
+
+    // Eventos de Seleção e Desseleção no Palco
     this.stage.on('tap click', (e) => {
-      // Se clicou no fundo vazio, desseleciona
-      if (e.target === this.stage || e.target.hasName('bg-element')) {
+      if (this.isPanMode) return;
+      if (e.target === this.stage || e.target.hasName('bg-element') || e.target === this.viewport) {
         this.deselect();
       }
     });
 
-    // Resize responsivo
+    // Suporte a Arrastar o Fundo (Pan da Câmera)
+    this.setupPanAndZoom(container);
+
+    // Resize responsivo da janela
     window.addEventListener('resize', () => {
       this.handleResize(container);
     });
   }
 
-  renderEnvironment() {
-    this.bgLayer.destroyChildren();
+  // Enquadra perfeitamente o cenário 4:3 na tela (Mobile e Desktop)
+  fitToView() {
+    if (!this.stage || !this.viewport) return;
+    const containerW = this.stage.width();
+    const containerH = this.stage.height();
 
-    const w = this.stage.width();
-    const h = this.stage.height();
-    const floorHeight = h * 0.28;
-    const wallHeight = h - floorHeight;
+    // Margem de respiro de 16px
+    const padding = 20;
+    const availW = Math.max(280, containerW - padding * 2);
+    const availH = Math.max(280, containerH - padding * 2);
 
-    // Parede de Fundo (Wall)
-    const wall = new Konva.Rect({
+    const baseScale = Math.min(availW / this.VIRTUAL_WIDTH, availH / this.VIRTUAL_HEIGHT);
+    this.cameraScale = baseScale;
+
+    this.viewport.scale({ x: baseScale, y: baseScale });
+    this.viewport.position({
+      x: (containerW - this.VIRTUAL_WIDTH * baseScale) / 2,
+      y: (containerH - this.VIRTUAL_HEIGHT * baseScale) / 2
+    });
+
+    this.mainLayer.batchDraw();
+  }
+
+  // Zoom in e Zoom out
+  setZoom(factor) {
+    const currentScale = this.viewport.scaleX();
+    const newScale = Math.max(0.2, Math.min(3.0, currentScale * factor));
+    this.viewport.scale({ x: newScale, y: newScale });
+    this.mainLayer.batchDraw();
+  }
+
+  // Ativa/Desativa modo de arrastar o fundo
+  togglePanMode(active) {
+    this.isPanMode = active !== undefined ? active : !this.isPanMode;
+    this.viewport.draggable(this.isPanMode);
+    this.stage.container().style.cursor = this.isPanMode ? 'grab' : 'default';
+  }
+
+  setupPanAndZoom(container) {
+    // Zoom via Scroll do Mouse no Desktop
+    this.stage.on('wheel', (e) => {
+      e.evt.preventDefault();
+      const oldScale = this.viewport.scaleX();
+      const pointer = this.stage.getPointerPosition();
+      if (!pointer) return;
+
+      const mousePointTo = {
+        x: (pointer.x - this.viewport.x()) / oldScale,
+        y: (pointer.y - this.viewport.y()) / oldScale
+      };
+
+      const direction = e.evt.deltaY > 0 ? -1 : 1;
+      const factor = 1.08;
+      const newScale = direction > 0 ? oldScale * factor : oldScale / factor;
+      if (newScale < 0.2 || newScale > 3.5) return;
+
+      this.viewport.scale({ x: newScale, y: newScale });
+      this.viewport.position({
+        x: pointer.x - mousePointTo.x * newScale,
+        y: pointer.y - mousePointTo.y * newScale
+      });
+
+      this.mainLayer.batchDraw();
+    });
+  }
+
+  // Renderiza a Parede e o Piso Realista em 4:3
+  async renderEnvironment() {
+    this.bgGroup.destroyChildren();
+
+    // 1. Parede Realista (1200 x 630)
+    const wallImg = await loadImageAsync(this.wallTextureUrl);
+    const wallNode = new Konva.Image({
       name: 'bg-element',
       x: 0,
       y: 0,
-      width: w,
-      height: wallHeight,
-      fillLinearGradientStartPoint: { x: 0, y: 0 },
-      fillLinearGradientEndPoint: { x: 0, y: wallHeight },
-      fillLinearGradientColorStops: [0, this.environment.wallColor, 1, this.environment.wallGradientEnd]
+      width: this.VIRTUAL_WIDTH,
+      height: this.WALL_HEIGHT,
+      image: wallImg
     });
 
-    // Rodapé de Parede
-    const baseboard = new Konva.Rect({
+    // 2. Piso Realista em Perspectiva (1200 x 270)
+    const floorImg = await loadImageAsync(this.floorTextureUrl);
+    const floorNode = new Konva.Image({
       name: 'bg-element',
       x: 0,
-      y: wallHeight - 8,
-      width: w,
-      height: 8,
-      fill: 'rgba(255, 255, 255, 0.08)'
+      y: this.WALL_HEIGHT,
+      width: this.VIRTUAL_WIDTH,
+      height: this.FLOOR_HEIGHT,
+      image: floorImg
     });
 
-    // Chão / Piso (Floor) com perspectiva
-    const floor = new Konva.Rect({
+    // 3. Moldura de Borda Discreta 4:3
+    const frameBorder = new Konva.Rect({
       name: 'bg-element',
       x: 0,
-      y: wallHeight,
-      width: w,
-      height: floorHeight,
-      fillLinearGradientStartPoint: { x: 0, y: wallHeight },
-      fillLinearGradientEndPoint: { x: 0, y: h },
-      fillLinearGradientColorStops: [0, this.environment.floorColor, 1, '#050811']
+      y: 0,
+      width: this.VIRTUAL_WIDTH,
+      height: this.VIRTUAL_HEIGHT,
+      stroke: 'rgba(255, 255, 255, 0.1)',
+      strokeWidth: 2,
+      listening: false
     });
 
-    // Linhas sutis de tábuas de piso para noção de profundidade
-    const gridGroup = new Konva.Group({ name: 'bg-element' });
-    const lineCount = 7;
-    for (let i = 0; i <= lineCount; i++) {
-      const xStart = (w / lineCount) * i;
-      const xOffset = (i - lineCount / 2) * 45;
-      const floorLine = new Konva.Line({
-        name: 'bg-element',
-        points: [xStart, wallHeight, xStart + xOffset, h],
-        stroke: 'rgba(255, 255, 255, 0.03)',
-        strokeWidth: 1.5
-      });
-      gridGroup.add(floorLine);
-    }
-
-    this.bgLayer.add(wall);
-    this.bgLayer.add(baseboard);
-    this.bgLayer.add(floor);
-    this.bgLayer.add(gridGroup);
-    this.bgLayer.batchDraw();
+    this.bgGroup.add(wallNode);
+    this.bgGroup.add(floorNode);
+    this.bgGroup.add(frameBorder);
+    this.mainLayer.batchDraw();
   }
 
-  setEnvironment(wallColor, floorColor) {
-    this.environment.wallColor = wallColor;
-    this.environment.wallGradientEnd = this.darkenHex(wallColor, 20);
-    this.environment.floorColor = floorColor;
-    this.renderEnvironment();
-  }
-
-  darkenHex(hex, percent) {
-    const num = parseInt(hex.replace('#', ''), 16);
-    const amt = Math.round(2.55 * percent);
-    const R = Math.max(0, (num >> 16) - amt);
-    const G = Math.max(0, ((num >> 8) & 0x00FF) - amt);
-    const B = Math.max(0, (num & 0x0000FF) - amt);
-    return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+  async setEnvironmentTextures(wallUrl, floorUrl) {
+    if (wallUrl) this.wallTextureUrl = wallUrl;
+    if (floorUrl) this.floorTextureUrl = floorUrl;
+    await this.renderEnvironment();
   }
 
   setupTransformer() {
     this.transformer = new Konva.Transformer({
-      rotateAnchorOffset: 30,
+      rotateAnchorOffset: 32,
       enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
-      anchorSize: 16,
-      anchorCornerRadius: 8,
+      anchorSize: 18,
+      anchorCornerRadius: 9,
       anchorStroke: '#ec4899',
       anchorFill: '#ffffff',
-      anchorStrokeWidth: 2,
+      anchorStrokeWidth: 2.5,
       borderStroke: '#ec4899',
       borderStrokeWidth: 2,
-      borderDash: [5, 4],
+      borderDash: [6, 4],
       keepRatio: true
     });
-    this.uiLayer.add(this.transformer);
+    this.uiGroup.add(this.transformer);
   }
 
+  // Adiciona item com limites de arrasto dentro do 1200x900
   async addItem(itemData, position = null) {
-    // Dimensões em pixels calculadas pela proporção física
-    const widthPx = Math.max(40, (itemData.widthCm || 60) * this.pxPerCm);
-    const heightPx = Math.max(40, (itemData.heightCm || 60) * this.pxPerCm);
+    const widthPx = Math.max(50, (itemData.widthCm || 60) * this.pxPerCm);
+    const heightPx = Math.max(50, (itemData.heightCm || 60) * this.pxPerCm);
 
-    // Posição padrão centralizada no chão
-    const posX = position ? position.x : (this.stage.width() / 2 - widthPx / 2 + (Math.random() * 30 - 15));
-    const posY = position ? position.y : (this.stage.height() * 0.72 - heightPx + (Math.random() * 20 - 10));
+    // Posição padrão no piso
+    const posX = position ? position.x : (this.VIRTUAL_WIDTH / 2 - widthPx / 2 + (Math.random() * 40 - 20));
+    const posY = position ? position.y : (this.WALL_HEIGHT + 60 - heightPx + (Math.random() * 30 - 15));
 
     const group = new Konva.Group({
       x: posX,
@@ -178,19 +239,49 @@ export class CanvasEngine {
       width: widthPx,
       height: heightPx,
       draggable: true,
-      name: 'decor-item'
+      name: 'decor-item',
+      // Trava para NUNCA sair do frame visível 4:3
+      dragBoundFunc: (pos) => {
+        const stageScale = this.viewport.scaleX();
+        const stageX = this.viewport.x();
+        const stageY = this.viewport.y();
+
+        const minX = stageX;
+        const maxX = stageX + (this.VIRTUAL_WIDTH - widthPx) * stageScale;
+        const minY = stageY;
+        const maxY = stageY + (this.VIRTUAL_HEIGHT - heightPx) * stageScale;
+
+        return {
+          x: Math.max(minX, Math.min(maxX, pos.x)),
+          y: Math.max(minY, Math.min(maxY, pos.y))
+        };
+      }
     });
 
-    // Guardar metadados no nó
     group.setAttr('itemMeta', {
       ...itemData,
       instanceId: 'inst-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
       customCoverUrl: itemData.customCoverUrl || null
     });
 
-    // Carregar imagem base da peça
-    const imgElement = await loadImageAsync(itemData.previewUrl);
+    // 1. Sombra de Contato Realista 3D na base
+    const shadow = new Konva.Ellipse({
+      name: 'contact-shadow',
+      x: widthPx / 2,
+      y: heightPx - 2,
+      radiusX: widthPx * 0.42,
+      radiusY: 10,
+      fillRadialGradientStartPoint: { x: 0, y: 0 },
+      fillRadialGradientEndPoint: { x: 0, y: 0 },
+      fillRadialGradientStartRadius: 0,
+      fillRadialGradientEndRadius: widthPx * 0.42,
+      fillRadialGradientColorStops: [0, 'rgba(0, 0, 0, 0.45)', 0.6, 'rgba(0, 0, 0, 0.25)', 1, 'rgba(0, 0, 0, 0)'],
+      listening: false
+    });
+    group.add(shadow);
 
+    // 2. Imagem Base da Peça
+    const imgElement = await loadImageAsync(itemData.previewUrl);
     const baseImage = new Konva.Image({
       name: 'base-image',
       image: imgElement,
@@ -199,12 +290,12 @@ export class CanvasEngine {
     });
     group.add(baseImage);
 
-    // Se já tiver capa personalizada pré-atribuída
+    // 3. Se tiver capa personalizada
     if (itemData.customCoverUrl) {
       await this.attachCoverToNode(group, itemData.customCoverUrl);
     }
 
-    // Eventos de Seleção no Elemento
+    // Eventos de Seleção
     group.on('tap click', (e) => {
       e.cancelBubble = true;
       this.selectNode(group);
@@ -214,11 +305,11 @@ export class CanvasEngine {
       this.selectNode(group);
     });
 
-    this.decorLayer.add(group);
-    this.decorLayer.batchDraw();
+    this.decorGroup.add(group);
+    this.mainLayer.batchDraw();
 
-    // Seleciona o novo item automaticamente
     this.selectNode(group);
+    this.notifyLayersChange();
 
     return group;
   }
@@ -227,11 +318,11 @@ export class CanvasEngine {
     if (this.selectedNode === node) return;
 
     this.selectedNode = node;
-    this.transformer.nodes([node]);
-    this.uiLayer.batchDraw();
+    this.transformer.nodes(node ? [node] : []);
+    this.mainLayer.batchDraw();
 
     if (this.onSelectionChange) {
-      const meta = node.getAttr('itemMeta');
+      const meta = node ? node.getAttr('itemMeta') : null;
       this.onSelectionChange(meta, node);
     }
   }
@@ -239,7 +330,7 @@ export class CanvasEngine {
   deselect() {
     this.selectedNode = null;
     this.transformer.nodes([]);
-    this.uiLayer.batchDraw();
+    this.mainLayer.batchDraw();
 
     if (this.onSelectionChange) {
       this.onSelectionChange(null, null);
@@ -249,7 +340,8 @@ export class CanvasEngine {
   async applyCoverToSelected(coverImageUrl) {
     if (!this.selectedNode) return;
     await this.attachCoverToNode(this.selectedNode, coverImageUrl);
-    this.decorLayer.batchDraw();
+    this.mainLayer.batchDraw();
+    this.notifyLayersChange();
   }
 
   async attachCoverToNode(node, coverImageUrl) {
@@ -257,21 +349,16 @@ export class CanvasEngine {
     meta.customCoverUrl = coverImageUrl;
     node.setAttr('itemMeta', meta);
 
-    // Remover capa existente anterior se houver
     const existingCoverGroup = node.findOne('.cover-group');
     if (existingCoverGroup) {
       existingCoverGroup.destroy();
     }
 
-    if (!coverImageUrl) {
-      return;
-    }
+    if (!coverImageUrl) return;
 
     const w = node.width();
     const h = node.height();
     const coverImg = await loadImageAsync(coverImageUrl);
-
-    // Criar grupo com máscara adequada para o tipo da peça
     const clipFunc = createClipFunction(meta.type, w, h);
 
     const coverGroup = new Konva.Group({
@@ -279,7 +366,6 @@ export class CanvasEngine {
       clipFunc: clipFunc
     });
 
-    // Imagem da capa dentro da máscara
     const coverImageNode = new Konva.Image({
       image: coverImg,
       x: 0,
@@ -293,16 +379,63 @@ export class CanvasEngine {
     node.getLayer()?.batchDraw();
   }
 
+  // --- GERENCIAMENTO DE CAMADAS (ESTILO CANVA) ---
+
+  // Avançar 1 camada (para frente)
   bringForward() {
     if (!this.selectedNode) return;
     this.selectedNode.moveUp();
-    this.decorLayer.batchDraw();
+    this.mainLayer.batchDraw();
+    this.notifyLayersChange();
   }
 
+  // Recuar 1 camada (para trás)
   sendBackward() {
     if (!this.selectedNode) return;
     this.selectedNode.moveDown();
-    this.decorLayer.batchDraw();
+    this.mainLayer.batchDraw();
+    this.notifyLayersChange();
+  }
+
+  // Mover para o primeiro plano (topo absoluto)
+  bringToFront() {
+    if (!this.selectedNode) return;
+    this.selectedNode.moveToTop();
+    this.mainLayer.batchDraw();
+    this.notifyLayersChange();
+  }
+
+  // Mover para o fundo absoluto (base da pilha)
+  sendToBack() {
+    if (!this.selectedNode) return;
+    this.selectedNode.moveToBottom();
+    this.mainLayer.batchDraw();
+    this.notifyLayersChange();
+  }
+
+  // Travar ou destravar posição
+  toggleLockNode(node = null) {
+    const target = node || this.selectedNode;
+    if (!target) return false;
+
+    const isDraggable = target.draggable();
+    target.draggable(!isDraggable);
+
+    if (this.selectedNode === target) {
+      if (!isDraggable) {
+        // Agora está travado
+        this.transformer.enabledAnchors([]);
+        this.transformer.rotateEnabled(false);
+      } else {
+        // Agora está livre
+        this.transformer.enabledAnchors(['top-left', 'top-right', 'bottom-left', 'bottom-right']);
+        this.transformer.rotateEnabled(true);
+      }
+    }
+
+    this.mainLayer.batchDraw();
+    this.notifyLayersChange();
+    return isDraggable; // retorna true se agora está travado
   }
 
   flipHorizontal() {
@@ -310,21 +443,20 @@ export class CanvasEngine {
     const currentScale = this.selectedNode.scaleX();
     this.selectedNode.scaleX(-currentScale);
 
-    // Ajusta o offset para girar no próprio centro ao espelhar
     if (currentScale > 0) {
       this.selectedNode.offsetX(this.selectedNode.width());
     } else {
       this.selectedNode.offsetX(0);
     }
-    this.decorLayer.batchDraw();
+    this.mainLayer.batchDraw();
   }
 
   async duplicateSelected() {
     if (!this.selectedNode) return;
     const meta = this.selectedNode.getAttr('itemMeta');
     const newPos = {
-      x: this.selectedNode.x() + 25,
-      y: this.selectedNode.y() + 25
+      x: Math.min(this.VIRTUAL_WIDTH - 80, this.selectedNode.x() + 30),
+      y: Math.min(this.VIRTUAL_HEIGHT - 80, this.selectedNode.y() + 30)
     };
     await this.addItem({ ...meta }, newPos);
   }
@@ -334,26 +466,33 @@ export class CanvasEngine {
     const node = this.selectedNode;
     this.deselect();
     node.destroy();
-    this.decorLayer.batchDraw();
+    this.mainLayer.batchDraw();
+    this.notifyLayersChange();
   }
 
   clearScene() {
     this.deselect();
-    this.decorLayer.destroyChildren();
-    this.decorLayer.batchDraw();
+    this.decorGroup.destroyChildren();
+    this.mainLayer.batchDraw();
+    this.notifyLayersChange();
   }
 
   exportHDImage() {
     this.deselect();
-    return this.stage.toDataURL({
-      pixelRatio: 2.5,
+    // Exporta estritamente o enquadramento 4:3 perfeito (1200x900) em altíssima resolução
+    return this.viewport.toDataURL({
+      pixelRatio: 2.0,
       mimeType: 'image/png'
     });
   }
 
+  getSceneNodes() {
+    return this.decorGroup.getChildren();
+  }
+
   getSceneElements() {
     const items = [];
-    const children = this.decorLayer.getChildren();
+    const children = this.decorGroup.getChildren();
     children.forEach((child, index) => {
       const meta = child.getAttr('itemMeta');
       if (meta) {
@@ -392,15 +531,18 @@ export class CanvasEngine {
     this.deselect();
   }
 
+  notifyLayersChange() {
+    if (this.onLayersChange) {
+      this.onLayersChange();
+    }
+  }
+
   handleResize(container) {
     if (!this.stage) return;
     const width = container.clientWidth;
     const height = container.clientHeight;
     this.stage.width(width);
     this.stage.height(height);
-    this.pxPerCm = width / this.sceneWidthCm;
-    this.renderEnvironment();
-    this.decorLayer.batchDraw();
-    this.uiLayer.batchDraw();
+    this.fitToView();
   }
 }

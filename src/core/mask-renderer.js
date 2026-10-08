@@ -83,3 +83,4 @@ export function loadImageAsync(src) {
     img.src = src;
   });
 }
+

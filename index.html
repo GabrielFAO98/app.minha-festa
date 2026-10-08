@@ -24,6 +24,9 @@
         </div>
       </div>
       <div class="header-actions">
+        <button id="btn-header-layers" class="btn-header btn-header-ghost" title="Lista de Camadas">
+          📑 <span>Camadas</span>
+        </button>
         <button id="btn-header-projects" class="btn-header btn-header-ghost" title="Salvar / Abrir Projetos">
           📂 <span>Projetos</span>
         </button>
@@ -44,33 +47,66 @@
         <span id="selection-badge-name">Peça</span>
       </div>
 
+      <!-- Controles de Câmera e Navegação (Pan & Zoom) -->
+      <div class="camera-controls">
+        <button id="btn-cam-reset" class="camera-btn" title="Centralizar Cenário 4:3">🎯</button>
+        <button id="btn-cam-pan" class="camera-btn" title="Arrastar Fundo (Mão)">✋</button>
+        <button id="btn-cam-zoom-in" class="camera-btn" title="Aumentar Zoom">➕</button>
+        <button id="btn-cam-zoom-out" class="camera-btn" title="Diminuir Zoom">➖</button>
+      </div>
+
       <!-- Container do Konva -->
       <div id="konva-container"></div>
 
-      <!-- Barra Flutuante Contextual de Ação do Item -->
+      <!-- Barra Flutuante Contextual de Ação do Item (Estilo Canva) -->
       <div id="item-toolbar" class="item-floating-toolbar">
-        <button id="btn-action-cover" class="item-toolbar-btn btn-cover">
+        <button id="btn-action-cover" class="item-toolbar-btn btn-cover" title="Vestir Capa / Estampa">
           🎨 Capa
         </button>
         <div class="toolbar-divider"></div>
-        <button id="btn-action-forward" class="item-toolbar-btn" title="Trazer para Frente">
+        <button id="btn-action-front" class="item-toolbar-btn" title="Trazer para o Topo Absoluto">
+          🔝
+        </button>
+        <button id="btn-action-forward" class="item-toolbar-btn" title="Avançar 1 Camada">
           ⬆️
         </button>
-        <button id="btn-action-backward" class="item-toolbar-btn" title="Enviar para Trás">
+        <button id="btn-action-backward" class="item-toolbar-btn" title="Recuar 1 Camada">
           ⬇️
         </button>
-        <button id="btn-action-flip" class="item-toolbar-btn" title="Espelhar">
-          🔄
-        </button>
-        <button id="btn-action-duplicate" class="item-toolbar-btn" title="Duplicar">
-          📋
+        <button id="btn-action-back" class="item-toolbar-btn" title="Enviar para o Fundo Absoluto">
+          🔚
         </button>
         <div class="toolbar-divider"></div>
-        <button id="btn-action-delete" class="item-toolbar-btn btn-delete" title="Excluir">
+        <button id="btn-action-flip" class="item-toolbar-btn" title="Espelhar Horizontalmente">
+          🔄
+        </button>
+        <button id="btn-action-duplicate" class="item-toolbar-btn" title="Duplicar Peça">
+          📋
+        </button>
+        <button id="btn-action-lock" class="item-toolbar-btn" title="Bloquear / Destravar Posição">
+          🔓
+        </button>
+        <button id="btn-action-layers" class="item-toolbar-btn" title="Ver Lista de Camadas">
+          📑
+        </button>
+        <div class="toolbar-divider"></div>
+        <button id="btn-action-delete" class="item-toolbar-btn btn-delete" title="Excluir Peça">
           🗑️
         </button>
       </div>
     </main>
+
+    <!-- Gaveta Oculta de Camadas (Estilo Canva) -->
+    <aside id="layers-drawer" class="layers-drawer">
+      <div class="layers-header">
+        <div class="layers-title">
+          <span>📑 Camadas do Cenário</span>
+          <span id="layers-count-badge" class="layers-count-badge">0 itens</span>
+        </div>
+        <button id="btn-close-layers-drawer" class="sheet-close-btn">✕</button>
+      </div>
+      <div id="layers-list-items" class="layers-list"></div>
+    </aside>
 
     <!-- Gaveta Deslizante (Bottom Sheet) -->
     <section id="bottom-sheet" class="bottom-sheet">
@@ -104,6 +140,26 @@
         <span>Cenário</span>
       </button>
     </nav>
+  </div>
+
+  <!-- MODAL: Confirmação de Exclusão Segura -->
+  <div id="confirm-modal" class="modal-backdrop">
+    <div class="modal-container" style="max-width: 380px;">
+      <div class="modal-header">
+        <div class="modal-title" id="confirm-modal-title">Excluir Peça?</div>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-modal-message" style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.4;">
+          Deseja realmente remover esta peça?
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-confirm-cancel" class="btn-secondary">Cancelar</button>
+        <button id="btn-confirm-ok" class="btn-primary" style="background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);">
+          Sim, Excluir
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- MODAL: Aplicar / Trocar Capa -->
@@ -205,13 +261,12 @@
         <button id="btn-close-export-modal" class="modal-close-btn">✕</button>
       </div>
       <div class="modal-body">
-        <!-- Prévia do Cenário em Imagem HD -->
         <div style="width: 100%; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-subtle); background: #000; box-shadow: var(--shadow-sm);">
           <img id="export-preview-img" style="width: 100%; height: auto; display: block;" alt="Prévia da Decoração" />
         </div>
 
         <button id="btn-download-image" class="btn-secondary" style="width: 100%;">
-          📥 Baixar Foto da Decoração (PNG)
+          📥 Baixar Foto da Decoração (PNG 4:3)
         </button>
 
         <!-- Romaneio Automático -->

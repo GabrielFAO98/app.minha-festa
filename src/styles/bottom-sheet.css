@@ -1,10 +1,10 @@
-/* Gaveta e Área Inferior Mobile */
+/* Barra Inferior Fixa (Dock) */
 .bottom-dock {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 58px;
+  height: 54px;
   background-color: var(--bg-surface);
   border-top: 1px solid var(--border-subtle);
   display: flex;
@@ -29,7 +29,7 @@
 }
 
 .dock-tab-btn .tab-icon {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
 }
 
 .dock-tab-btn.active {
@@ -40,23 +40,53 @@
   transform: translateY(-2px) scale(1.1);
 }
 
-/* Área de Conteúdo Inferior Flexível (Entre o Palco e o Dock) */
-.bottom-content-area {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-  background-color: var(--bg-surface-elevated);
+/* Gaveta Deslizante (Bottom Sheet que não polui o cenário) */
+.bottom-sheet {
+  position: absolute;
+  bottom: 54px;
+  left: 0;
+  right: 0;
+  height: 58dvh;
+  max-height: 58dvh;
+  background-color: rgba(30, 41, 59, 0.98);
+  backdrop-filter: blur(20px);
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
   display: flex;
   flex-direction: column;
+  z-index: 34;
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.6);
+  transform: translateY(115%);
+  transition: transform var(--transition-smooth);
+}
+
+.bottom-sheet.open {
+  transform: translateY(0);
+}
+
+.sheet-handle-bar {
+  width: 100%;
+  padding: 8px 0 4px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.sheet-handle {
+  width: 38px;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background-color: var(--text-dim);
 }
 
 .sheet-header {
-  padding: 10px 14px;
+  padding: 6px 14px 10px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border-subtle);
-  background-color: var(--bg-surface);
 }
 
 .sheet-title {
@@ -66,6 +96,20 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.sheet-close-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-full);
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.sheet-close-btn:active {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
 }
 
 .category-pills {
@@ -105,11 +149,11 @@
 .sheet-body {
   flex: 1;
   overflow-y: auto;
-  padding: 10px 12px 65px 12px;
+  padding: 12px 14px 20px 14px;
   -webkit-overflow-scrolling: touch;
 }
 
-/* Grid de Itens em 2 Colunas no Mobile */
+/* Grid de Itens em 2 Colunas */
 .items-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -179,7 +223,7 @@
   color: var(--text-muted);
 }
 
-/* CARDS VISUAIS DE CENÁRIO (SELEÇÃO POR IMAGEM) */
+/* SELEÇÃO DE CENÁRIOS POR IMAGEM */
 .scene-visual-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

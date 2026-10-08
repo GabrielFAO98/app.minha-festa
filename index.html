@@ -12,7 +12,7 @@
 </head>
 <body>
   <div class="app-shell">
-    <!-- Header Superior Mobile -->
+    <!-- Header Superior Compacto -->
     <header class="app-header">
       <div class="header-left">
         <div class="app-brand">
@@ -36,8 +36,8 @@
       </div>
     </header>
 
-    <!-- Palco 16:9 Central -->
-    <section class="stage-section">
+    <!-- ÁREA PRINCIPAL DO CENÁRIO (MAIOR PARTE DA TELA) -->
+    <main class="stage-main-area">
       <div class="stage-viewport-box">
         <div id="selection-badge" class="selection-badge">
           <span>📍</span>
@@ -45,47 +45,46 @@
         </div>
         <div id="konva-container"></div>
       </div>
-    </section>
 
-    <!-- Barra de Ações da Peça Selecionada (Abaixo do Palco) -->
-    <div id="item-actions-bar" class="item-actions-panel">
-      <div id="item-actions-empty" class="item-actions-empty">
-        👆 Toque em uma peça para mover, vestir capa ou excluir
-      </div>
-      <div id="item-actions-row" style="display: none; align-items: center; gap: 6px; width: 100%;">
-        <button id="btn-action-delete" class="item-action-pill btn-delete-pill" title="Remover Peça">
+      <!-- Barra Flutuante de Ação da Peça (Sobreposta embaixo no Cenário) -->
+      <div id="item-toolbar" class="item-actions-floating">
+        <button id="btn-action-delete" class="item-action-btn btn-delete-direct" title="Excluir Peça">
           🗑️ Excluir
         </button>
-        <button id="btn-action-cover" class="item-action-pill btn-cover-pill" title="Trocar Capa / Foto">
-          🎨 Vestir Capa
+        <button id="btn-action-cover" class="item-action-btn btn-cover-direct" title="Vestir Capa / Estampa">
+          🎨 Capa
         </button>
-        <button id="btn-action-front" class="item-action-pill" title="Trazer para Frente">
+        <button id="btn-action-front" class="item-action-btn" title="Trazer para Frente">
           ⬆️ Frente
         </button>
-        <button id="btn-action-back" class="item-action-pill" title="Enviar para Trás">
+        <button id="btn-action-back" class="item-action-btn" title="Enviar para Trás">
           ⬇️ Trás
         </button>
-        <button id="btn-action-flip" class="item-action-pill" title="Espelhar Horizontalmente">
+        <button id="btn-action-flip" class="item-action-btn" title="Espelhar Horizontalmente">
           🔄 Espelhar
         </button>
-        <button id="btn-action-duplicate" class="item-action-pill" title="Duplicar">
+        <button id="btn-action-duplicate" class="item-action-btn" title="Duplicar">
           📋 Copiar
         </button>
       </div>
-    </div>
+    </main>
 
-    <!-- Área de Conteúdo Inferior Flexível -->
-    <main class="bottom-content-area">
+    <!-- Gaveta Deslizante Retrátil (Abre por cima sob demanda sem poluir a visão) -->
+    <section id="bottom-sheet" class="bottom-sheet">
+      <div id="sheet-handle-bar" class="sheet-handle-bar">
+        <div class="sheet-handle"></div>
+      </div>
       <div class="sheet-header">
         <div class="sheet-title" id="sheet-current-title">✨ Peças Base</div>
+        <button id="btn-close-sheet" class="sheet-close-btn">✕</button>
       </div>
       <div id="sheet-categories-bar" class="category-pills"></div>
       <div id="sheet-body-content" class="sheet-body"></div>
-    </main>
+    </section>
 
     <!-- Barra de Navegação Inferior Fixa (Dock) -->
     <nav class="bottom-dock">
-      <button class="dock-tab-btn active" data-tab="presets">
+      <button class="dock-tab-btn" data-tab="presets">
         <span class="tab-icon">✨</span>
         <span>Presets</span>
       </button>

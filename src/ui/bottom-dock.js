@@ -11,15 +11,17 @@ export class BottomDock {
     this.onOpenInventoryModal = onOpenInventoryModal;
     this.onOpenCoverModal = onOpenCoverModal;
 
-    this.activeTab = 'presets'; // Inicia aberto em Presets
+    this.activeTab = null;
     this.currentCategory = 'todos';
 
+    this.sheetEl = document.getElementById('bottom-sheet');
     this.sheetBody = document.getElementById('sheet-body-content');
     this.sheetTitle = document.getElementById('sheet-current-title');
     this.categoriesBar = document.getElementById('sheet-categories-bar');
+    this.btnClose = document.getElementById('btn-close-sheet');
+    this.handleBar = document.getElementById('sheet-handle-bar');
 
     this.setupEvents();
-    this.openTab('presets');
   }
 
   setupEvents() {
@@ -27,9 +29,16 @@ export class BottomDock {
     dockButtons.forEach((btn) => {
       btn.addEventListener('click', () => {
         const tab = btn.dataset.tab;
-        this.openTab(tab);
+        if (this.activeTab === tab && this.sheetEl?.classList.contains('open')) {
+          this.closeSheet();
+        } else {
+          this.openTab(tab);
+        }
       });
     });
+
+    this.btnClose?.addEventListener('click', () => this.closeSheet());
+    this.handleBar?.addEventListener('click', () => this.closeSheet());
   }
 
   openTab(tabName) {
@@ -38,6 +47,8 @@ export class BottomDock {
     document.querySelectorAll('.dock-tab-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.tab === tabName);
     });
+
+    this.sheetEl?.classList.add('open');
 
     if (tabName === 'presets') {
       this.renderPresetsTab();
@@ -48,6 +59,12 @@ export class BottomDock {
     } else if (tabName === 'environment') {
       this.renderEnvironmentTab();
     }
+  }
+
+  closeSheet() {
+    this.activeTab = null;
+    this.sheetEl?.classList.remove('open');
+    document.querySelectorAll('.dock-tab-btn').forEach((b) => b.classList.remove('active'));
   }
 
   // ABA 1: Presets Base de Fábrica
@@ -153,6 +170,7 @@ export class BottomDock {
       card.addEventListener('click', async () => {
         if (this.canvasEngine.selectedNode) {
           await this.canvasEngine.applyCoverToSelected(cover.imageUrl);
+          this.closeSheet();
         } else {
           alert('Toque primeiro em um cilindro ou painel no cenário para vestir esta capa.');
         }
@@ -174,7 +192,6 @@ export class BottomDock {
 
     let html = `
       <div style="display: flex; flex-direction: column; gap: 14px;">
-        <!-- 1. Cenários Prontos em Imagem 16:9 -->
         <div>
           <div class="form-label" style="margin-bottom: 8px;">Cenários Completos (Toque na Imagem)</div>
           <div class="scene-visual-grid">
@@ -187,7 +204,6 @@ export class BottomDock {
           </div>
         </div>
 
-        <!-- 2. Paredes Individuais em Imagem -->
         <div>
           <div class="form-label" style="margin-bottom: 8px;">Trocar Parede de Fundo (Toque na Imagem)</div>
           <div class="scene-visual-grid">
@@ -200,7 +216,6 @@ export class BottomDock {
           </div>
         </div>
 
-        <!-- 3. Pisos Individuais em Imagem -->
         <div>
           <div class="form-label" style="margin-bottom: 8px;">Trocar Piso (Toque na Imagem)</div>
           <div class="scene-visual-grid">
@@ -217,7 +232,6 @@ export class BottomDock {
 
     this.sheetBody.innerHTML = html;
 
-    // Listeners diretos ao tocar na foto
     this.sheetBody.querySelectorAll('.btn-preset-env').forEach((card) => {
       card.addEventListener('click', async () => {
         await this.canvasEngine.setEnvironmentTextures(card.dataset.wall, card.dataset.floor);

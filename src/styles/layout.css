@@ -115,7 +115,7 @@ body {
   transform: scale(0.96);
 }
 
-/* ÁREA PRINCIPAL DO CENÁRIO (OCUPA A MAIOR PARTE DA TELA) */
+/* ÁREA DO CENÁRIO VERTICAL 9:16 (OCUPA A ALTURA TOTAL DISPONÍVEL) */
 .stage-main-area {
   flex: 1;
   position: relative;
@@ -126,14 +126,15 @@ body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: 8px 10px;
+  padding: 4px;
 }
 
 .stage-viewport-box {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  max-width: 100%;
+  aspect-ratio: 9 / 16;
+  height: 100%;
   max-height: 100%;
+  width: auto;
+  max-width: 100%;
   position: relative;
   background-color: #000;
   border-radius: var(--radius-md);
@@ -172,10 +173,10 @@ body {
   display: inline-flex;
 }
 
-/* Barra Flutuante de Ações da Peça (Sobreposta na parte de baixo do cenário) */
+/* Barra Flutuante de Ações da Peça (Sobreposta na parte inferior do cenário vertical) */
 .item-actions-floating {
   position: absolute;
-  bottom: 12px;
+  bottom: 14px;
   left: 50%;
   transform: translateX(-50%) translateY(20px);
   z-index: 25;

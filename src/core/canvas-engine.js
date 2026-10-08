@@ -12,14 +12,14 @@ export class CanvasEngine {
     this.transformer = null;
     this.selectedNode = null;
 
-    // Resolução Virtual Widescreen 16:9 Nativa
-    this.VIRTUAL_WIDTH = 1600;
-    this.VIRTUAL_HEIGHT = 900;
-    this.WALL_HEIGHT = 640;
-    this.FLOOR_HEIGHT = 260;
+    // Resolução Virtual VERTICAL 9:16 Nativa (1080 x 1920 - Formato Stories/Celular)
+    this.VIRTUAL_WIDTH = 1080;
+    this.VIRTUAL_HEIGHT = 1920;
+    this.WALL_HEIGHT = 1380;
+    this.FLOOR_HEIGHT = 540;
 
-    // Escala métrica: 1600px virtuais equivalem a 400cm físicos reais (4 metros)
-    this.pxPerCm = this.VIRTUAL_WIDTH / 400;
+    // Escala métrica: 1080px virtuais equivalem a 280cm físicos na parede
+    this.pxPerCm = this.VIRTUAL_WIDTH / 280;
 
     // Texturas Atuais do Ambiente
     this.wallTextureUrl = TEXTURE_WALL_BOISERIE;
@@ -43,11 +43,11 @@ export class CanvasEngine {
     this.mainLayer = new Konva.Layer();
     this.stage.add(this.mainLayer);
 
-    // Viewport Group 16:9
+    // Viewport Group Vertical 9:16
     this.viewport = new Konva.Group({
       width: this.VIRTUAL_WIDTH,
       height: this.VIRTUAL_HEIGHT,
-      name: 'viewport-16-9'
+      name: 'viewport-vertical-9-16'
     });
     this.mainLayer.add(this.viewport);
 
@@ -63,7 +63,6 @@ export class CanvasEngine {
     this.renderEnvironment();
     this.fitToView();
 
-    // Toque no fundo desseleciona a peça
     this.stage.on('tap click', (e) => {
       if (e.target === this.stage || e.target.hasName('bg-element') || e.target === this.viewport) {
         this.deselect();
@@ -75,13 +74,13 @@ export class CanvasEngine {
     });
   }
 
-  // Enquadra a proporção 16:9 na tela do mobile com aproveitamento total
+  // Enquadra a tela vertical 9:16 com aproveitamento total do celular
   fitToView() {
     if (!this.stage || !this.viewport) return;
     const containerW = this.stage.width();
     const containerH = this.stage.height();
 
-    // Escala para caber exatamente na largura disponível do celular
+    // Escala proporcional exata para caber no container do celular
     const scale = Math.min(containerW / this.VIRTUAL_WIDTH, containerH / this.VIRTUAL_HEIGHT);
 
     this.viewport.scale({ x: scale, y: scale });
@@ -93,11 +92,11 @@ export class CanvasEngine {
     this.mainLayer.batchDraw();
   }
 
-  // Renderiza a Parede e o Piso 16:9
+  // Renderiza Parede e Piso Verticais 9:16
   async renderEnvironment() {
     this.bgGroup.destroyChildren();
 
-    // 1. Parede Realista (1600 x 640)
+    // 1. Parede Realista (1080 x 1380)
     const wallImg = await loadImageAsync(this.wallTextureUrl);
     const wallNode = new Konva.Image({
       name: 'bg-element',
@@ -108,7 +107,7 @@ export class CanvasEngine {
       image: wallImg
     });
 
-    // 2. Piso Realista (1600 x 260)
+    // 2. Piso Realista em Perspectiva (1080 x 540)
     const floorImg = await loadImageAsync(this.floorTextureUrl);
     const floorNode = new Konva.Image({
       name: 'bg-element',
@@ -132,29 +131,29 @@ export class CanvasEngine {
 
   setupTransformer() {
     this.transformer = new Konva.Transformer({
-      rotateAnchorOffset: 28,
+      rotateAnchorOffset: 30,
       enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
-      anchorSize: 22, // Âncoras maiores e fáceis para tocar no celular
-      anchorCornerRadius: 11,
+      anchorSize: 26, // Alças grandes e confortáveis para o polegar no celular
+      anchorCornerRadius: 13,
       anchorStroke: '#ec4899',
       anchorFill: '#ffffff',
       anchorStrokeWidth: 3,
       borderStroke: '#ec4899',
-      borderStrokeWidth: 2,
+      borderStrokeWidth: 2.5,
       borderDash: [6, 4],
       keepRatio: true
     });
     this.uiGroup.add(this.transformer);
   }
 
-  // Adiciona item limpo (SEM SOMBRA ARTIFICIAL)
+  // Adiciona item limpo sem sombras artificiais
   async addItem(itemData, position = null) {
-    const widthPx = Math.max(60, (itemData.widthCm || 60) * this.pxPerCm);
-    const heightPx = Math.max(60, (itemData.heightCm || 60) * this.pxPerCm);
+    const widthPx = Math.max(70, (itemData.widthCm || 60) * this.pxPerCm);
+    const heightPx = Math.max(70, (itemData.heightCm || 60) * this.pxPerCm);
 
-    // Posição padrão centralizada no chão da cena 16:9
+    // Posição no chão da cena vertical
     const posX = position ? position.x : (this.VIRTUAL_WIDTH / 2 - widthPx / 2 + (Math.random() * 40 - 20));
-    const posY = position ? position.y : (this.WALL_HEIGHT + 40 - heightPx + (Math.random() * 20 - 10));
+    const posY = position ? position.y : (this.WALL_HEIGHT + 80 - heightPx + (Math.random() * 30 - 15));
 
     const group = new Konva.Group({
       x: posX,
@@ -163,7 +162,7 @@ export class CanvasEngine {
       height: heightPx,
       draggable: true,
       name: 'decor-item',
-      // Trava para manter dentro dos limites 16:9
+      // Trava para manter dentro do cenário vertical 9:16
       dragBoundFunc: (pos) => {
         const stageScale = this.viewport.scaleX();
         const stageX = this.viewport.x();
@@ -187,7 +186,6 @@ export class CanvasEngine {
       customCoverUrl: itemData.customCoverUrl || null
     });
 
-    // Imagem base da peça (recorte puro sem sombra preta embaixo)
     const imgElement = await loadImageAsync(itemData.previewUrl);
     const baseImage = new Konva.Image({
       name: 'base-image',
@@ -197,7 +195,6 @@ export class CanvasEngine {
     });
     group.add(baseImage);
 
-    // Capa personalizada se houver
     if (itemData.customCoverUrl) {
       await this.attachCoverToNode(group, itemData.customCoverUrl);
     }
@@ -285,7 +282,6 @@ export class CanvasEngine {
     node.getLayer()?.batchDraw();
   }
 
-  // --- CONTROLE DE CAMADAS DIRETO ---
   bringForward() {
     if (!this.selectedNode) return;
     this.selectedNode.moveUp();
@@ -331,13 +327,12 @@ export class CanvasEngine {
     if (!this.selectedNode) return;
     const meta = this.selectedNode.getAttr('itemMeta');
     const newPos = {
-      x: Math.min(this.VIRTUAL_WIDTH - 100, this.selectedNode.x() + 40),
-      y: Math.min(this.VIRTUAL_HEIGHT - 100, this.selectedNode.y() + 40)
+      x: Math.min(this.VIRTUAL_WIDTH - 120, this.selectedNode.x() + 40),
+      y: Math.min(this.VIRTUAL_HEIGHT - 120, this.selectedNode.y() + 40)
     };
     await this.addItem({ ...meta }, newPos);
   }
 
-  // Exclusão rápida e direta da peça selecionada
   deleteSelected() {
     if (!this.selectedNode) return;
     const node = this.selectedNode;
@@ -357,7 +352,7 @@ export class CanvasEngine {
   exportHDImage() {
     this.deselect();
     return this.viewport.toDataURL({
-      pixelRatio: 2.0,
+      pixelRatio: 1.5,
       mimeType: 'image/png'
     });
   }

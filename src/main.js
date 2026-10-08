@@ -11,7 +11,7 @@ async function bootstrap() {
   // 1. Inicializar Banco Local IndexedDB (Dexie)
   await initDatabase();
 
-  // 2. Inicializar Motor Canvas Konva (Palco 16:9 Widescreen)
+  // 2. Inicializar Motor Canvas Konva (Palco VERTICAL 9:16)
   const container = document.getElementById('konva-container');
   const canvasEngine = new CanvasEngine();
   canvasEngine.init(container);
@@ -61,7 +61,7 @@ async function bootstrap() {
     exportModal.open();
   });
 
-  // 7. Cenário Inicial 16:9 Centralizado
+  // 7. Cenário Inicial Vertical 9:16 Centralizado
   await loadDefaultScene(canvasEngine);
 }
 
@@ -77,44 +77,44 @@ async function loadDefaultScene(canvasEngine) {
     const cylP = allCylinders.find(c => c.id === 'preset-cilindro-p');
     const balloons = allBalloons.find(b => b.id === 'preset-arco-baloes');
 
-    const centerX = 800; // Centro exato de 1600
-    const floorY = 640;  // Linha exata do chão em 16:9
+    const centerX = 540;  // Centro exato de 1080
+    const floorY = 1380;  // Linha exata do chão vertical 9:16
 
     // 1. Painel Redondo ao Centro
     if (panel) {
       await canvasEngine.addItem(panel, {
-        x: centerX - 250,
-        y: floorY - 480
+        x: centerX - 290,
+        y: floorY - 600
       });
     }
 
-    // 2. Arco de Balões no Canto Superior
+    // 2. Arco de Balões no Canto Superior Esquerdo
     if (balloons) {
       await canvasEngine.addItem(balloons, {
-        x: centerX - 420,
-        y: floorY - 570
+        x: centerX - 480,
+        y: floorY - 720
       });
     }
 
-    // 3. Trio de Cilindros P, M, G à frente
+    // 3. Trio de Cilindros P, M, G à frente no piso
     if (cylG) {
       await canvasEngine.addItem(cylG, {
         x: centerX + 50,
-        y: floorY - 240
+        y: floorY - 320
       });
     }
 
     if (cylM) {
       await canvasEngine.addItem(cylM, {
-        x: centerX - 110,
-        y: floorY - 180
+        x: centerX - 140,
+        y: floorY - 240
       });
     }
 
     if (cylP) {
       await canvasEngine.addItem(cylP, {
-        x: centerX - 250,
-        y: floorY - 140
+        x: centerX - 300,
+        y: floorY - 180
       });
     }
 

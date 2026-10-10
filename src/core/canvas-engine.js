@@ -406,6 +406,9 @@ export class CanvasEngine {
     group.add(baseImage);
 
     if (itemData.customCoverUrl) {
+      if (itemData.type === 'cylinder' || (itemData.type && itemData.type.startsWith('rug'))) {
+        baseImage.visible(false);
+      }
       await this.attachCoverToNode(group, itemData.customCoverUrl);
     }
 
@@ -488,7 +491,16 @@ export class CanvasEngine {
       existingCoverGroup.destroy();
     }
 
-    if (!coverImageUrl) return;
+    const baseImage = node.findOne('.base-image');
+
+    if (!coverImageUrl) {
+      if (baseImage) baseImage.visible(true);
+      return;
+    }
+
+    if (baseImage && (meta.type === 'cylinder' || (meta.type && meta.type.startsWith('rug')))) {
+      baseImage.visible(false);
+    }
 
     const w = node.width();
     const h = node.height();

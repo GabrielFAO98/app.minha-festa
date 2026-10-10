@@ -58,6 +58,8 @@ export class BottomDock {
       this.renderCoversTab();
     } else if (tabName === 'environment') {
       this.renderEnvironmentTab();
+    } else if (tabName === 'layers') {
+      this.renderLayersTab();
     }
   }
 
@@ -289,5 +291,100 @@ export class BottomDock {
     });
 
     return card;
+  }
+
+  // ABA 5: Camadas no Palco (Mobile)
+  renderLayersTab() {
+    this.sheetTitle.innerHTML = '📑 Camadas no Cenário';
+    this.categoriesBar.style.display = 'none';
+
+    const elements = this.canvasEngine.getSceneElements();
+    if (!elements || elements.length === 0) {
+      this.sheetBody.innerHTML = `
+        <div style="text-align: center; padding: 32px 16px; color: var(--text-muted); font-size: 0.82rem;">
+          <div style="font-size: 2rem; margin-bottom: 8px;">🎯</div>
+          <div>Nenhuma peça no cenário ainda.</div>
+          <div style="font-size: 0.72rem; margin-top: 4px;">Adicione peças da aba Presets ou Meu Acervo!</div>
+        </div>
+      `;
+      return;
+    }
+
+    const reversed = [...elements].reverse();
+    const container = document.createElement('div');
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '8px';
+
+    reversed.forEach((elem) => {
+      const row = document.createElement('div');
+      row.className = 'layer-row-item';
+      row.style.display = 'flex';
+      row.style.alignItems = 'center';
+      row.style.gap = '10px';
+      row.style.padding = '8px 12px';
+      row.style.background = 'rgba(255, 255, 255, 0.04)';
+      row.style.border = '1px solid var(--border-subtle)';
+      row.style.borderRadius = 'var(--radius-md)';
+      row.style.cursor = 'pointer';
+
+      const isSelected = this.canvasEngine.selectedNode?.getAttr('itemMeta')?.instanceId === elem.instanceId;
+      if (isSelected) {
+        row.style.borderColor = 'var(--primary)';
+        row.style.background = 'rgba(236, 72, 153, 0.15)';
+      }
+
+      row.innerHTML = `
+        <img src="${elem.previewUrl}" style="width: 38px; height: 38px; object-fit: contain; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 2px;" alt="" />
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${elem.name}</div>
+          <div style="font-size: 0.68rem; color: var(--text-muted);">${elem.widthCm}x${elem.heightCm}cm</div>
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <button class="layer-action-btn layer-btn-front" style="width: 34px; height: 34px; border-radius: 6px; background: rgba(255,255,255,0.08); font-size: 0.85rem;" title="Trazer para Frente">⬆️</button>
+          <button class="layer-action-btn layer-btn-back" style="width: 34px; height: 34px; border-radius: 6px; background: rgba(255,255,255,0.08); font-size: 0.85rem;" title="Enviar para Trás">⬇️</button>
+        </div>
+      `;
+
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('.layer-action-btn')) return;
+        const targetNode = this.canvasEngine.decorLayer.getChildren().find(
+          (c) => c.getAttr('itemMeta')?.instanceId === elem.instanceId
+        );
+        if (targetNode) {
+          this.canvasEngine.selectNode(targetNode);
+          this.closeSheet();
+        }
+      });
+
+      row.querySelector('.layer-btn-front')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetNode = this.canvasEngine.decorLayer.getChildren().find(
+          (c) => c.getAttr('itemMeta')?.instanceId === elem.instanceId
+        );
+        if (targetNode) {
+          this.canvasEngine.selectNode(targetNode);
+          this.canvasEngine.bringForward();
+          this.renderLayersTab();
+        }
+      });
+
+      row.querySelector('.layer-btn-back')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetNode = this.canvasEngine.decorLayer.getChildren().find(
+          (c) => c.getAttr('itemMeta')?.instanceId === elem.instanceId
+        );
+        if (targetNode) {
+          this.canvasEngine.selectNode(targetNode);
+          this.canvasEngine.sendBackward();
+          this.renderLayersTab();
+        }
+      });
+
+      container.appendChild(row);
+    });
+
+    this.sheetBody.innerHTML = '';
+    this.sheetBody.appendChild(container);
   }
 }

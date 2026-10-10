@@ -242,7 +242,8 @@ export class CanvasEngine {
     const meta = group.getAttr('itemMeta') || {};
 
     // Se é uma peça com silhueta geométrica definida, valida se o ponto está dentro da área útil
-    if (meta.type && ['panel_round', 'panel_arch', 'cylinder'].includes(meta.type)) {
+    const geometricTypes = ['panel_round', 'panel_arch', 'cylinder', 'rug_oval', 'rug_round', 'rug_rect_3d'];
+    if (meta.type && (geometricTypes.includes(meta.type) || meta.type.startsWith('rug'))) {
       if (!isPointInsideMask(meta.type, localPt.x, localPt.y, w, h)) {
         return false;
       }
@@ -346,8 +347,10 @@ export class CanvasEngine {
     const widthPx = Math.max(70, (itemData.widthCm || 60) * this.pxPerCm);
     const heightPx = Math.max(70, (itemData.heightCm || 60) * this.pxPerCm);
 
-    const posX = position ? position.x : (this.VIRTUAL_WIDTH / 2 - widthPx / 2 + (Math.random() * 40 - 20));
-    const posY = position ? position.y : (this.WALL_HEIGHT + 80 - heightPx + (Math.random() * 30 - 15));
+    const isRug = (itemData.category === 'tapetes' || (itemData.type && itemData.type.startsWith('rug')));
+    const defaultPosY = isRug ? (this.WALL_HEIGHT + 20) : (this.WALL_HEIGHT + 80 - heightPx + (Math.random() * 30 - 15));
+    const posX = position ? position.x : (this.VIRTUAL_WIDTH / 2 - widthPx / 2 + (isRug ? 0 : (Math.random() * 40 - 20)));
+    const posY = position ? position.y : defaultPosY;
 
     const group = new Konva.Group({
       x: posX,
@@ -411,6 +414,9 @@ export class CanvasEngine {
     });
 
     this.decorLayer.add(group);
+    if (isRug && !position) {
+      group.moveToBottom();
+    }
     this.decorLayer.batchDraw();
 
     this.selectNode(group);

@@ -90,7 +90,7 @@ export class ItemToolbar {
 
     if (btnCover) {
       const isBalloons = meta.category === 'baloes' || meta.type === 'balloon_arch';
-      const isCoverable = ['cylinder', 'panel_round', 'panel_arch'].includes(meta.type);
+      const isCoverable = ['cylinder', 'panel_round', 'panel_arch', 'rug_oval', 'rug_round', 'rug_rect_3d'].includes(meta.type) || (meta.type && meta.type.startsWith('rug'));
 
       if (isBalloons) {
         btnCover.innerHTML = '🎨 Cores';

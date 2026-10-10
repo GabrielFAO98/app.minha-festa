@@ -65,12 +65,13 @@ export class DesktopStudio {
 
     const categories = [
       { id: 'todos', label: 'Todos' },
-      { id: 'paineis', label: 'Painis' },
+      { id: 'paineis', label: 'Painéis' },
       { id: 'cilindros', label: 'Cilindros' },
       { id: 'mesas', label: 'Mesas' },
-      { id: 'baloes', label: 'Bales' },
+      { id: 'baloes', label: 'Balões' },
+      { id: 'tapetes', label: 'Tapetes' },
       { id: 'displays', label: 'Displays' },
-      { id: 'acessorios', label: 'Acessrios' }
+      { id: 'acessorios', label: 'Acessórios' }
     ];
 
     categories.forEach((cat) => {
@@ -183,7 +184,7 @@ export class DesktopStudio {
         if (this.canvasEngine.selectedNode) {
           await this.canvasEngine.applyCoverToSelected(cover.imageUrl);
         } else {
-          alert('Selecione primeiro um cilindro ou painel no centro para vestir a capa.');
+          alert('Selecione primeiro um painel, cilindro ou tapete no centro para vestir a capa.');
         }
       });
       grid.appendChild(card);

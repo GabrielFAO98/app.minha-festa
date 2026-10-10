@@ -86,6 +86,7 @@ export class BottomDock {
       { id: 'cilindros', label: 'Cilindros' },
       { id: 'mesas', label: 'Mesas' },
       { id: 'baloes', label: 'Balões' },
+      { id: 'tapetes', label: 'Tapetes' },
       { id: 'displays', label: 'Displays' },
       { id: 'acessorios', label: 'Acessórios' }
     ];

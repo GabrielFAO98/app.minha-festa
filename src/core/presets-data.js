@@ -229,21 +229,71 @@ export const SVG_CAKE_FAKE = `
 </svg>
 `;
 
-// 11. Tapete Redondo Juta / Boho em Perspectiva (NOVO)
-export const SVG_RUG_ROUND = `
+// 11. Tapete Oval Juta / Boho em Perspectiva de Chão (160x70cm)
+export const SVG_RUG_OVAL = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 120" width="280" height="120">
   <defs>
-    <radialGradient id="rugGrad" cx="50%" cy="50%" r="50%">
+    <radialGradient id="rugOvalGrad" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="#fef3c7"/>
       <stop offset="65%" stop-color="#fde68a"/>
       <stop offset="100%" stop-color="#d97706"/>
     </radialGradient>
+    <filter id="shadowRugOval" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.18"/>
+    </filter>
   </defs>
-  <ellipse cx="140" cy="60" rx="130" ry="50" fill="url(#rugGrad)" stroke="#b45309" stroke-width="2"/>
-  <ellipse cx="140" cy="60" rx="112" ry="42" fill="none" stroke="#d97706" stroke-width="1.5" stroke-dasharray="6,4"/>
-  <ellipse cx="140" cy="60" rx="88" ry="32" fill="none" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <ellipse cx="140" cy="60" rx="133" ry="53" fill="url(#rugOvalGrad)" stroke="#b45309" stroke-width="2" filter="url(#shadowRugOval)"/>
+  <ellipse cx="140" cy="60" rx="114" ry="44" fill="none" stroke="#d97706" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <ellipse cx="140" cy="60" rx="90" ry="34" fill="none" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4,3"/>
   <ellipse cx="140" cy="60" rx="60" ry="22" fill="none" stroke="#b45309" stroke-width="1"/>
-  <text x="140" y="64" font-family="sans-serif" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">TAPETE REDONDO 120cm</text>
+  <text x="140" y="64" font-family="sans-serif" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">TAPETE OVAL 160x70cm</text>
+</svg>
+`;
+export const SVG_RUG_ROUND = SVG_RUG_OVAL;
+
+// 11b. Tapete Completamente Redondo Sublimado 1:1 (150x150cm)
+export const SVG_RUG_ROUND_FLAT = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 260" width="260" height="260">
+  <defs>
+    <radialGradient id="rugRoundGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="60%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </radialGradient>
+    <filter id="shadowRugRound" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <circle cx="130" cy="130" r="126" fill="url(#rugRoundGrad)" stroke="#94a3b8" stroke-width="2" filter="url(#shadowRugRound)"/>
+  <circle cx="130" cy="130" r="120" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="6,4"/>
+  <circle cx="130" cy="130" r="95" fill="none" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="5,4"/>
+  <circle cx="130" cy="130" r="60" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="130" y="126" font-family="sans-serif" font-size="12" font-weight="bold" fill="#64748b" text-anchor="middle">TAPETE REDONDO</text>
+  <text x="130" y="142" font-family="sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">150x150cm</text>
+</svg>
+`;
+
+// 11c. Tapete Retangular em Perspectiva 3D de Piso (200x120cm)
+export const SVG_RUG_RECT_3D = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 140" width="280" height="140">
+  <defs>
+    <linearGradient id="rug3DGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e2e8f0"/>
+      <stop offset="40%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#f8fafc"/>
+    </linearGradient>
+    <filter id="shadowRug3D" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <!-- Base trapezoidal em perspectiva de chão -->
+  <path d="M 10 125 L 35 15 L 245 15 L 270 125 Z" fill="url(#rug3DGrad)" stroke="#94a3b8" stroke-width="2" filter="url(#shadowRug3D)"/>
+  <!-- Costura dupla em perspectiva -->
+  <path d="M 18 118 L 40 22 L 240 22 L 262 118 Z" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <!-- Linhas decorativas transversais em perspectiva -->
+  <line x1="28" y1="70" x2="252" y2="70" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,4"/>
+  <text x="140" y="66" font-family="sans-serif" font-size="11" font-weight="bold" fill="#64748b" text-anchor="middle">TAPETE RETANGULAR 3D</text>
+  <text x="140" y="82" font-family="sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">200x120cm</text>
 </svg>
 `;
 
@@ -471,16 +521,40 @@ export const DEFAULT_PRESET_ITEMS = [
     rentalPrice: 45
   },
   {
-    id: 'preset-tapete-redondo',
-    name: 'Tapete Redondo Juta Boho 120cm',
-    category: 'acessorios',
-    type: 'generic',
-    widthCm: 120,
-    heightCm: 55,
-    previewUrl: svgToDataUrl(SVG_RUG_ROUND),
+    id: 'preset-tapete-oval',
+    name: 'Tapete Oval em Perspectiva (160x70cm)',
+    category: 'tapetes',
+    type: 'rug_oval',
+    widthCm: 160,
+    heightCm: 70,
+    previewUrl: svgToDataUrl(SVG_RUG_OVAL),
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 35
+  },
+  {
+    id: 'preset-tapete-redondo',
+    name: 'Tapete Redondo Sublimado (150x150cm)',
+    category: 'tapetes',
+    type: 'rug_round',
+    widthCm: 150,
+    heightCm: 150,
+    previewUrl: svgToDataUrl(SVG_RUG_ROUND_FLAT),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 40
+  },
+  {
+    id: 'preset-tapete-retangular-3d',
+    name: 'Tapete Retangular 3D Passadeira (200x120cm)',
+    category: 'tapetes',
+    type: 'rug_rect_3d',
+    widthCm: 200,
+    heightCm: 120,
+    previewUrl: svgToDataUrl(SVG_RUG_RECT_3D),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 45
   },
   {
     id: 'preset-luminoso-led',

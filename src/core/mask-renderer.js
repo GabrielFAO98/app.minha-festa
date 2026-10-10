@@ -2,7 +2,7 @@
 
 /**
  * Cria a função de recorte (clipFunc) do Konva com encaixe milimétrico na geometria real do artefato
- * @param {string} type Tipo da peça: 'panel_round' | 'panel_arch' | 'cylinder' | 'generic'
+ * @param {string} type Tipo da peça: 'panel_round' | 'panel_arch' | 'cylinder' | 'rug_oval' | 'rug_round' | 'rug_rect_3d' | 'generic'
  * @param {number} width Largura do elemento no canvas
  * @param {number} height Altura do elemento no canvas
  * @returns {Function} Função de clip para Konva.Group
@@ -25,12 +25,6 @@ export function createClipFunction(type, width, height) {
   if (type === 'panel_arch') {
     // Arco Romano: Base SVG viewBox 200 x 380
     // Estrutura em arco elíptico perfeito no topo e laterais retas até a base dos pés
-    // No SVG original:
-    // Path: M 20 370 L 20 100 A 80 80 0 0 1 180 100 L 180 370 Z com stroke-width=3
-    // Centro do arco: (100, 100), raio do path = 80, raio externo com borda = 81.5 + tolerância 0.5px
-    // Topo externo: y = 18 (100 - 82)
-    // Laterais externas: x = 18 e x = 182
-    // Base de apoio: y = 371.5
     const scaleX = width / 200;
     const scaleY = height / 380;
     const cx = 100 * scaleX;
@@ -45,7 +39,6 @@ export function createClipFunction(type, width, height) {
       ctx.beginPath();
       ctx.moveTo(xLeft, yBottom);
       ctx.lineTo(xLeft, cy);
-      // Arco elíptico em conformidade matemática exata com a escala do SVG
       ctx.ellipse(cx, cy, rx, ry, 0, Math.PI, 0, false);
       ctx.lineTo(xRight, yBottom);
       ctx.closePath();
@@ -65,14 +58,58 @@ export function createClipFunction(type, width, height) {
 
     return function(ctx) {
       ctx.beginPath();
-      // Arco superior da elipse do topo (de xLeft a xRight)
       ctx.ellipse(cx, yTop, rx, ry, 0, Math.PI, 0, false);
-      // Lateral direita descendo
       ctx.lineTo(xRight, yBottom);
-      // Arco inferior da elipse da base (de xRight a xLeft)
       ctx.ellipse(cx, yBottom, rx, ry, 0, 0, Math.PI, false);
-      // Lateral esquerda subindo
       ctx.lineTo(xLeft, yTop);
+      ctx.closePath();
+    };
+  }
+
+  if (type === 'rug_oval') {
+    // Tapete Oval / Elíptico em Perspectiva de Chão (viewBox 280 x 120)
+    const cx = width * 0.5;
+    const cy = height * 0.5;
+    const rx = width * (133 / 280);
+    const ry = height * (53 / 120);
+
+    return function(ctx) {
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2, false);
+      ctx.closePath();
+    };
+  }
+
+  if (type === 'rug_round') {
+    // Tapete Completamente Redondo (viewBox 260 x 260, proporção 1:1)
+    const cx = width * 0.5;
+    const cy = height * 0.5;
+    const radius = Math.min(width, height) * (127 / 260);
+
+    return function(ctx) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2, false);
+      ctx.closePath();
+    };
+  }
+
+  if (type === 'rug_rect_3d') {
+    // Tapete Retangular em Perspectiva 3D de Piso (viewBox 280 x 140)
+    const scaleX = width / 280;
+    const scaleY = height / 140;
+    const xBottomLeft = 9 * scaleX;
+    const xTopLeft = 34 * scaleX;
+    const xTopRight = 246 * scaleX;
+    const xBottomRight = 271 * scaleX;
+    const yTop = 14 * scaleY;
+    const yBottom = 126 * scaleY;
+
+    return function(ctx) {
+      ctx.beginPath();
+      ctx.moveTo(xBottomLeft, yBottom);
+      ctx.lineTo(xTopLeft, yTop);
+      ctx.lineTo(xTopRight, yTop);
+      ctx.lineTo(xBottomRight, yBottom);
       ctx.closePath();
     };
   }
@@ -99,7 +136,6 @@ export function calculateCoverPlacement(type, width, height, imgW, imgH) {
   let targetBox = { x: 0, y: 0, w: width, h: height, cx: width / 2, cy: height / 2 };
 
   if (type === 'panel_round') {
-    // Caixa alvo: Exatamente o diâmetro circular do aro
     const cx = width * 0.5;
     const cy = height * (150 / 380);
     const r = width * (142 / 300);
@@ -112,7 +148,6 @@ export function calculateCoverPlacement(type, width, height, imgW, imgH) {
       cy: cy
     };
   } else if (type === 'panel_arch') {
-    // Caixa alvo: O retângulo exato que envolve o arco do topo até a base
     const scaleX = width / 200;
     const scaleY = height / 380;
     const cx = 100 * scaleX;
@@ -133,7 +168,6 @@ export function calculateCoverPlacement(type, width, height, imgW, imgH) {
       cy: yTop + archH / 2
     };
   } else if (type === 'cylinder') {
-    // Caixa alvo: O corpo completo do cilindro
     const xLeft = width * (15 / 160);
     const cylW = width * (130 / 160);
     const ry = height * (20.5 / 220);
@@ -147,6 +181,49 @@ export function calculateCoverPlacement(type, width, height, imgW, imgH) {
       h: cylH,
       cx: xLeft + cylW / 2,
       cy: yTop + cylH / 2
+    };
+  } else if (type === 'rug_oval') {
+    const cx = width * 0.5;
+    const cy = height * 0.5;
+    const rx = width * (133 / 280);
+    const ry = height * (53 / 120);
+    targetBox = {
+      x: cx - rx,
+      y: cy - ry,
+      w: rx * 2,
+      h: ry * 2,
+      cx: cx,
+      cy: cy
+    };
+  } else if (type === 'rug_round') {
+    const cx = width * 0.5;
+    const cy = height * 0.5;
+    const radius = Math.min(width, height) * (127 / 260);
+    targetBox = {
+      x: cx - radius,
+      y: cy - radius,
+      w: radius * 2,
+      h: radius * 2,
+      cx: cx,
+      cy: cy
+    };
+  } else if (type === 'rug_rect_3d') {
+    const scaleX = width / 280;
+    const scaleY = height / 140;
+    const xLeft = 9 * scaleX;
+    const xRight = 271 * scaleX;
+    const yTop = 14 * scaleY;
+    const yBottom = 126 * scaleY;
+    const rectW = xRight - xLeft;
+    const rectH = yBottom - yTop;
+
+    targetBox = {
+      x: xLeft,
+      y: yTop,
+      w: rectW,
+      h: rectH,
+      cx: xLeft + rectW / 2,
+      cy: yTop + rectH / 2
     };
   }
 
@@ -168,7 +245,7 @@ export function calculateCoverPlacement(type, width, height, imgW, imgH) {
 
 /**
  * Verifica se uma coordenada local (x, y) está dentro da área visível/opaca do artefato
- * @param {string} type Tipo da peça: 'panel_round' | 'panel_arch' | 'cylinder' | 'generic'
+ * @param {string} type Tipo da peça: 'panel_round' | 'panel_arch' | 'cylinder' | 'rug_oval' | 'rug_round' | 'rug_rect_3d' | 'generic'
  * @param {number} x Coordenada X local no grupo
  * @param {number} y Coordenada Y local no grupo
  * @param {number} width Largura do elemento no canvas
@@ -235,6 +312,39 @@ export function isPointInsideMask(type, x, y, width, height) {
       return (dx * dx + dy * dy) <= 1.0;
     }
     return false;
+  }
+
+  if (type === 'rug_oval') {
+    const cx = width * 0.5;
+    const cy = height * 0.5;
+    const rx = width * (133 / 280);
+    const ry = height * (53 / 120);
+    const dx = (x - cx) / rx;
+    const dy = (y - cy) / ry;
+    return (dx * dx + dy * dy) <= 1.0;
+  }
+
+  if (type === 'rug_round') {
+    const cx = width * 0.5;
+    const cy = height * 0.5;
+    const radius = Math.min(width, height) * (127 / 260);
+    const dx = x - cx;
+    const dy = y - cy;
+    return (dx * dx + dy * dy) <= (radius * radius);
+  }
+
+  if (type === 'rug_rect_3d') {
+    const scaleX = width / 280;
+    const scaleY = height / 140;
+    const yTop = 14 * scaleY;
+    const yBottom = 126 * scaleY;
+
+    if (y < yTop || y > yBottom) return false;
+
+    const t = (y - yTop) / (yBottom - yTop);
+    const curLeft = (34 + (9 - 34) * t) * scaleX;
+    const curRight = (246 + (271 - 246) * t) * scaleX;
+    return x >= curLeft && x <= curRight;
   }
 
   return x >= 0 && x <= width && y >= 0 && y <= height;

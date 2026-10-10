@@ -48,21 +48,26 @@ export function createClipFunction(type, width, height) {
   }
 
   if (type === 'cylinder') {
-    // Cilindro: Silhueta 2.5D com elipse superior, laterais retas e elipse inferior
-    // Base SVG: viewBox 160 x 220 -> x=15..145, cyTop=35, cyBottom=195, rx=65, ry=20
-    const xLeft = width * (15 / 160);
-    const xRight = width * (145 / 160);
+    // Cilindro: Silhueta 2.5D com elipse superior menos inclinada (ry reduzido para perspectiva frontal natural)
+    const scaleX = width / 160;
+    const scaleY = height / 220;
     const cx = width * 0.5;
-    const rx = width * (65.5 / 160);
-    const ry = height * (20.5 / 220);
-    const yTop = height * (35 / 220);
-    const yBottom = height * (195 / 220);
+    const rx = 65.5 * scaleX;
+    const ry = 12.5 * scaleY;
+    const xLeft = cx - rx;
+    const xRight = cx + rx;
+    const yTop = 35 * scaleY;
+    const yBottom = 195 * scaleY;
 
     return function(ctx) {
       ctx.beginPath();
+      // Arco superior da elipse do topo (de xLeft a xRight, passando pelo ápice yTop - ry)
       ctx.ellipse(cx, yTop, rx, ry, 0, Math.PI, 0, false);
+      // Lateral direita descendo verticalmente em perfeita tangência C1 (sem bicos ou vértices)
       ctx.lineTo(xRight, yBottom);
+      // Arco inferior da elipse da base (de xRight a xLeft, passando por yBottom + ry)
       ctx.ellipse(cx, yBottom, rx, ry, 0, 0, Math.PI, false);
+      // Lateral esquerda subindo verticalmente em perfeita tangência C1
       ctx.lineTo(xLeft, yTop);
       ctx.closePath();
     };
@@ -170,18 +175,22 @@ export function calculateCoverPlacement(type, width, height, imgW, imgH) {
       cy: yTop + archH / 2
     };
   } else if (type === 'cylinder') {
-    const xLeft = width * (15 / 160);
-    const cylW = width * (130 / 160);
-    const ry = height * (20.5 / 220);
-    const yTop = height * (35 / 220) - ry;
-    const yBottom = height * (195 / 220) + ry;
+    const scaleX = width / 160;
+    const scaleY = height / 220;
+    const cx = width * 0.5;
+    const rx = 65.5 * scaleX;
+    const ry = 12.5 * scaleY;
+    const xLeft = cx - rx;
+    const cylW = rx * 2;
+    const yTop = (35 * scaleY) - ry;
+    const yBottom = (195 * scaleY) + ry;
     const cylH = yBottom - yTop;
     targetBox = {
       x: xLeft,
       y: yTop,
       w: cylW,
       h: cylH,
-      cx: xLeft + cylW / 2,
+      cx: cx,
       cy: yTop + cylH / 2
     };
   } else if (type === 'rug_oval') {
@@ -258,10 +267,10 @@ export function createShadingOverlay(type, width, height) {
     const scaleX = width / 160;
     const scaleY = height / 220;
     const cx = width * 0.5;
-    const rx = width * (65.5 / 160);
-    const ry = height * (20.5 / 220);
-    const yTop = height * (35 / 220);
-    const yBottom = height * (195 / 220);
+    const rx = 65.5 * scaleX;
+    const ry = 12.5 * scaleY;
+    const yTop = 35 * scaleY;
+    const yBottom = 195 * scaleY;
 
     return new Konva.Shape({
       name: 'shading-overlay',
@@ -269,53 +278,39 @@ export function createShadingOverlay(type, width, height) {
       sceneFunc: (context) => {
         const ctx = context._context;
 
-        // 1. Curvatura e volume cilíndrico horizontal (luz e sombra realista)
+        // 1. Curvatura cilíndrica horizontal (luz e sombra suave contínua no corpo)
         const cylGrad = ctx.createLinearGradient(cx - rx, 0, cx + rx, 0);
-        cylGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.30)');       // Sombra na curvatura esquerda
-        cylGrad.addColorStop(0.12, 'rgba(0, 0, 0, 0.10)');      // Penumbra suave
-        cylGrad.addColorStop(0.28, 'rgba(255, 255, 255, 0.22)'); // Destaque de luz especular frontal
-        cylGrad.addColorStop(0.50, 'rgba(255, 255, 255, 0.04)'); // Luz difusa
-        cylGrad.addColorStop(0.72, 'rgba(0, 0, 0, 0.08)');      // Início da sombra direita
-        cylGrad.addColorStop(0.88, 'rgba(0, 0, 0, 0.24)');      // Sombra intermediária
-        cylGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.36)');       // Sombra profunda na curva direita
+        cylGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.26)');
+        cylGrad.addColorStop(0.14, 'rgba(0, 0, 0, 0.06)');
+        cylGrad.addColorStop(0.28, 'rgba(255, 255, 255, 0.20)');
+        cylGrad.addColorStop(0.50, 'rgba(255, 255, 255, 0.03)');
+        cylGrad.addColorStop(0.72, 'rgba(0, 0, 0, 0.06)');
+        cylGrad.addColorStop(0.88, 'rgba(0, 0, 0, 0.18)');
+        cylGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.32)');
 
         ctx.fillStyle = cylGrad;
-        ctx.fillRect(cx - rx - 2, 0, (rx * 2) + 4, height);
+        ctx.fillRect(cx - rx, yTop - ry, rx * 2, yBottom - yTop + (ry * 2));
 
-        // 2. Sombra de vinco e oclusão sob a tampa superior
-        ctx.beginPath();
-        ctx.ellipse(cx, yTop, rx, ry, 0, 0, Math.PI, false);
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.32)';
-        ctx.lineWidth = Math.max(1.5, 2.5 * scaleY);
-        ctx.stroke();
-
-        // 3. Degradê de sombra suave caindo abaixo da tampa
-        const dropLidGrad = ctx.createLinearGradient(0, yTop, 0, yTop + 24 * scaleY);
-        dropLidGrad.addColorStop(0, 'rgba(0, 0, 0, 0.24)');
-        dropLidGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = dropLidGrad;
-        ctx.beginPath();
-        ctx.ellipse(cx, yTop, rx, ry, 0, 0, Math.PI, false);
-        ctx.lineTo(cx + rx, yTop + 24 * scaleY);
-        ctx.lineTo(cx - rx, yTop + 24 * scaleY);
-        ctx.closePath();
-        ctx.fill();
-
-        // 4. Luz na face superior (tampa recebe luz ambiente de cima)
+        // 2. Face do tampo superior (elipse limpa e suave, sem vértices ou bicos)
         ctx.beginPath();
         ctx.ellipse(cx, yTop, rx, ry, 0, 0, Math.PI * 2, false);
         const topGrad = ctx.createLinearGradient(0, yTop - ry, 0, yTop + ry);
-        topGrad.addColorStop(0, 'rgba(255, 255, 255, 0.18)');
-        topGrad.addColorStop(1, 'rgba(0, 0, 0, 0.08)');
+        topGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.16)');
+        topGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.04)');
         ctx.fillStyle = topGrad;
         ctx.fill();
 
-        // 5. Sombra de contato com o chão na base inferior
-        const baseGrad = ctx.createLinearGradient(0, yBottom - 12 * scaleY, 0, yBottom + ry);
+        // Contorno sutil de costura/acabamento do tampo (1px suave em volta da elipse toda)
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.14)';
+        ctx.lineWidth = 1.0;
+        ctx.stroke();
+
+        // 3. Sombra suave de contato na base inferior interna
+        const baseGrad = ctx.createLinearGradient(0, yBottom - 6 * scaleY, 0, yBottom + ry);
         baseGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-        baseGrad.addColorStop(1, 'rgba(0, 0, 0, 0.28)');
+        baseGrad.addColorStop(1, 'rgba(0, 0, 0, 0.22)');
         ctx.fillStyle = baseGrad;
-        ctx.fillRect(cx - rx - 2, yBottom - 12 * scaleY, (rx * 2) + 4, ry + 20 * scaleY);
+        ctx.fillRect(cx - rx, yBottom - 6 * scaleY, rx * 2, ry + 8 * scaleY);
       }
     });
   }
@@ -565,6 +560,42 @@ export function createShadingOverlay(type, width, height) {
 }
 
 /**
+ * Cria a sombra projetada de chão/tapete para cilindros
+ * @param {number} width Largura do cilindro em pixels
+ * @param {number} height Altura do cilindro em pixels
+ * @returns {Konva.Shape}
+ */
+export function createCylinderFloorShadow(width, height) {
+  const scaleX = width / 160;
+  const scaleY = height / 220;
+  const cx = width * 0.5;
+  const rxShadow = (65.5 * scaleX) * 1.12;
+  const ryShadow = (12.5 * scaleY) * 1.45;
+  const cyShadow = (195 * scaleY) + (12.5 * scaleY * 0.35);
+
+  return new Konva.Shape({
+    name: 'cylinder-floor-shadow',
+    listening: false,
+    sceneFunc: (context) => {
+      const ctx = context._context;
+      ctx.save();
+      ctx.translate(cx, cyShadow);
+      ctx.scale(1.0, ryShadow / rxShadow);
+      const radGrad = ctx.createRadialGradient(0, 0, rxShadow * 0.2, 0, 0, rxShadow);
+      radGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.40)');
+      radGrad.addColorStop(0.40, 'rgba(0, 0, 0, 0.22)');
+      radGrad.addColorStop(0.75, 'rgba(0, 0, 0, 0.07)');
+      radGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = radGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, rxShadow, 0, Math.PI * 2, false);
+      ctx.fill();
+      ctx.restore();
+    }
+  });
+}
+
+/**
  * Verifica se uma coordenada local (x, y) está dentro da área visível/opaca do artefato
  * @param {string} type Tipo da peça: 'panel_round' | 'panel_arch' | 'cylinder' | 'rug_oval' | 'rug_round' | 'rug_rect_3d' | 'generic'
  * @param {number} x Coordenada X local no grupo
@@ -615,7 +646,7 @@ export function isPointInsideMask(type, x, y, width, height) {
     const scaleY = height / 220;
     const cx = 80 * scaleX;
     const rx = 65.5 * scaleX;
-    const ry = 20.5 * scaleY;
+    const ry = 12.5 * scaleY;
     const yTop = 35 * scaleY;
     const yBottom = 195 * scaleY;
 

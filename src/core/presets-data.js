@@ -73,7 +73,7 @@ export const SVG_PANEL_SLAT = `
 </svg>
 `;
 
-// 4. Cilindro G (Grande 50x80cm)
+// // 4. Cilindro G (Grande 50x80cm)
 export const SVG_CYLINDER_G = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 220" width="160" height="220">
   <defs>
@@ -83,15 +83,18 @@ export const SVG_CYLINDER_G = `
       <stop offset="80%" stop-color="#e2e8f0"/>
       <stop offset="100%" stop-color="#cbd5e1"/>
     </linearGradient>
+    <filter id="shadowCylG" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.16"/>
+    </filter>
   </defs>
-  <path d="M 15 35 L 15 195 A 65 20 0 0 0 145 195 L 145 35 Z" fill="url(#cylGGrad)" stroke="#94a3b8" stroke-width="2"/>
-  <ellipse cx="80" cy="35" rx="65" ry="20" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+  <path d="M 15 35 L 15 195 A 65 12 0 0 0 145 195 L 145 35 Z" fill="url(#cylGGrad)" stroke="#94a3b8" stroke-width="2" filter="url(#shadowCylG)"/>
+  <ellipse cx="80" cy="35" rx="65" ry="12" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
   <text x="80" y="115" font-family="sans-serif" font-size="13" font-weight="bold" fill="#64748b" text-anchor="middle">CILINDRO G</text>
   <text x="80" y="132" font-family="sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">50x80cm</text>
 </svg>
 `;
 
-// 5. Cilindro M (Mdio 44x58cm)
+// 5. Cilindro M (Médio 44x58cm)
 export const SVG_CYLINDER_M = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 190" width="150" height="190">
   <defs>
@@ -101,9 +104,12 @@ export const SVG_CYLINDER_M = `
       <stop offset="80%" stop-color="#e2e8f0"/>
       <stop offset="100%" stop-color="#cbd5e1"/>
     </linearGradient>
+    <filter id="shadowCylM" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.16"/>
+    </filter>
   </defs>
-  <path d="M 15 30 L 15 165 A 60 18 0 0 0 135 165 L 135 30 Z" fill="url(#cylMGrad)" stroke="#94a3b8" stroke-width="2"/>
-  <ellipse cx="75" cy="30" rx="60" ry="18" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+  <path d="M 15 30 L 15 165 A 60 11 0 0 0 135 165 L 135 30 Z" fill="url(#cylMGrad)" stroke="#94a3b8" stroke-width="2" filter="url(#shadowCylM)"/>
+  <ellipse cx="75" cy="30" rx="60" ry="11" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
   <text x="75" y="100" font-family="sans-serif" font-size="12" font-weight="bold" fill="#64748b" text-anchor="middle">CILINDRO M</text>
   <text x="75" y="116" font-family="sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">44x58cm</text>
 </svg>
@@ -119,9 +125,12 @@ export const SVG_CYLINDER_P = `
       <stop offset="80%" stop-color="#e2e8f0"/>
       <stop offset="100%" stop-color="#cbd5e1"/>
     </linearGradient>
+    <filter id="shadowCylP" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.16"/>
+    </filter>
   </defs>
-  <path d="M 15 25 L 15 140 A 55 16 0 0 0 125 140 L 125 25 Z" fill="url(#cylPGrad)" stroke="#94a3b8" stroke-width="2"/>
-  <ellipse cx="70" cy="25" rx="55" ry="16" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+  <path d="M 15 25 L 15 140 A 55 10 0 0 0 125 140 L 125 25 Z" fill="url(#cylPGrad)" stroke="#94a3b8" stroke-width="2" filter="url(#shadowCylP)"/>
+  <ellipse cx="70" cy="25" rx="55" ry="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
   <text x="70" y="85" font-family="sans-serif" font-size="11" font-weight="bold" fill="#64748b" text-anchor="middle">CILINDRO P</text>
   <text x="70" y="100" font-family="sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">38x45cm</text>
 </svg>
@@ -138,15 +147,18 @@ export const SVG_CYLINDER_FLUTED = `
       <stop offset="70%" stop-color="#a16207"/>
       <stop offset="100%" stop-color="#713f12"/>
     </linearGradient>
+    <filter id="shadowCylGold" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.2"/>
+    </filter>
   </defs>
-  <path d="M 15 35 L 15 195 A 65 20 0 0 0 145 195 L 145 35 Z" fill="url(#goldSlatGrad)" stroke="#854d0e" stroke-width="2"/>
-  <ellipse cx="80" cy="35" rx="65" ry="20" fill="#fef08a" stroke="#ca8a04" stroke-width="2"/>
+  <path d="M 15 35 L 15 195 A 65 12 0 0 0 145 195 L 145 35 Z" fill="url(#goldSlatGrad)" stroke="#854d0e" stroke-width="2" filter="url(#shadowCylGold)"/>
+  <ellipse cx="80" cy="35" rx="65" ry="12" fill="#fef08a" stroke="#ca8a04" stroke-width="2"/>
   <!-- Frisos canelados 3D -->
-  <line x1="35" y1="48" x2="35" y2="202" stroke="#713f12" stroke-width="2" opacity="0.6"/>
-  <line x1="55" y1="53" x2="55" y2="212" stroke="#713f12" stroke-width="2" opacity="0.6"/>
-  <line x1="80" y1="55" x2="80" y2="215" stroke="#713f12" stroke-width="2" opacity="0.6"/>
-  <line x1="105" y1="53" x2="105" y2="212" stroke="#713f12" stroke-width="2" opacity="0.6"/>
-  <line x1="125" y1="48" x2="125" y2="202" stroke="#713f12" stroke-width="2" opacity="0.6"/>
+  <line x1="35" y1="42" x2="35" y2="199" stroke="#713f12" stroke-width="2" opacity="0.6"/>
+  <line x1="55" y1="45" x2="55" y2="205" stroke="#713f12" stroke-width="2" opacity="0.6"/>
+  <line x1="80" y1="47" x2="80" y2="207" stroke="#713f12" stroke-width="2" opacity="0.6"/>
+  <line x1="105" y1="45" x2="105" y2="205" stroke="#713f12" stroke-width="2" opacity="0.6"/>
+  <line x1="125" y1="42" x2="125" y2="199" stroke="#713f12" stroke-width="2" opacity="0.6"/>
   <text x="80" y="125" font-family="sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);">CANELADO LUXO</text>
 </svg>
 `;

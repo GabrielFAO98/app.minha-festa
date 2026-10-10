@@ -1,5 +1,5 @@
 import Konva from 'konva';
-import { createClipFunction, calculateCoverPlacement, loadImageAsync, isPointInsideMask, createShadingOverlay } from './mask-renderer.js';
+import { createClipFunction, calculateCoverPlacement, loadImageAsync, isPointInsideMask, createShadingOverlay, createCylinderFloorShadow } from './mask-renderer.js';
 import { TEXTURE_WALL_BOISERIE, TEXTURE_FLOOR_WOOD } from './textures-data.js';
 import { generateBalloonArchDataUrl } from './balloon-generator.js';
 
@@ -388,6 +388,12 @@ export class CanvasEngine {
     let currentPreviewUrl = itemData.previewUrl;
     if (itemData.type === 'balloon_arch' && itemData.balloonColors) {
       currentPreviewUrl = generateBalloonArchDataUrl(itemData.balloonColors);
+    }
+
+    // Sombra de contato projetada no piso/tapete para cilindros
+    if (itemData.type === 'cylinder') {
+      const floorShadow = createCylinderFloorShadow(widthPx, heightPx);
+      group.add(floorShadow);
     }
 
     const imgElement = await loadImageAsync(currentPreviewUrl);

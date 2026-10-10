@@ -1,5 +1,5 @@
 import Konva from 'konva';
-import { createClipFunction, calculateCoverPlacement, loadImageAsync } from './mask-renderer.js';
+import { createClipFunction, calculateCoverPlacement, loadImageAsync, isPointInsideMask } from './mask-renderer.js';
 import { TEXTURE_WALL_BOISERIE, TEXTURE_FLOOR_WOOD } from './textures-data.js';
 import { generateBalloonArchDataUrl } from './balloon-generator.js';
 
@@ -234,9 +234,18 @@ export class CanvasEngine {
     const w = group.width();
     const h = group.height();
 
-    // Fora da bounding box = no acertou
+    // Fora da bounding box = não acertou
     if (localPt.x < 0 || localPt.x > w || localPt.y < 0 || localPt.y > h) {
       return false;
+    }
+
+    const meta = group.getAttr('itemMeta') || {};
+
+    // Se é uma peça com silhueta geométrica definida, valida se o ponto está dentro da área útil
+    if (meta.type && ['panel_round', 'panel_arch', 'cylinder'].includes(meta.type)) {
+      if (!isPointInsideMask(meta.type, localPt.x, localPt.y, w, h)) {
+        return false;
+      }
     }
 
     const coverGroup = group.findOne('.cover-group');

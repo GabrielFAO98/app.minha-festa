@@ -1,19 +1,19 @@
-// Renderizador de Mscaras Geomtricas de Alta Preciso e Ajuste Proporcional de Capas (Object-Fit: Cover)
+// Renderizador de Máscaras Geométricas de Alta Precisão e Ajuste Proporcional de Capas (Object-Fit: Cover)
 
 /**
- * Cria a funo de recorte (clipFunc) do Konva com encaixe milimtrico na geometria real do artefato
- * @param {string} type Tipo da pea: 'panel_round' | 'panel_arch' | 'cylinder' | 'generic'
+ * Cria a função de recorte (clipFunc) do Konva com encaixe milimétrico na geometria real do artefato
+ * @param {string} type Tipo da peça: 'panel_round' | 'panel_arch' | 'cylinder' | 'generic'
  * @param {number} width Largura do elemento no canvas
  * @param {number} height Altura do elemento no canvas
- * @returns {Function} Funo de clip para Konva.Group
+ * @returns {Function} Função de clip para Konva.Group
  */
 export function createClipFunction(type, width, height) {
   if (type === 'panel_round') {
-    // Painel Redondo: O aro circular fica centralizado no topo com os ps embaixo
-    // Base SVG: viewBox 300 x 380 -> Aro: cx=150 (50%), cy=150 (39.47%), r=140 (46.67% da largura)
+    // Painel Redondo: O aro circular fica centralizado no topo com os pés embaixo
+    // Base SVG: viewBox 300 x 380 -> Aro: cx=150 (50%), cy=150 (39.47%), r=140 + stroke 2 = 142
     const cx = width * 0.5;
     const cy = height * (150 / 380);
-    const radius = width * (140 / 300) + 0.5; // +0.5px para cobrir 100% da borda base sem sobras
+    const radius = width * (142 / 300);
 
     return function(ctx) {
       ctx.beginPath();
@@ -23,20 +23,30 @@ export function createClipFunction(type, width, height) {
   }
 
   if (type === 'panel_arch') {
-    // Arco Romano: Estrutura arqueada no topo e reta at a base dos ps
-    // Base SVG: viewBox 200 x 380 -> x=20..180 (80% da largura), topo em y=20 (5.26%), base em y=370 (97.37%)
-    const xLeft = width * (20 / 200);
-    const xRight = width * (180 / 200);
-    const cx = width * 0.5;
-    const cy = height * (100 / 380);
-    const r = width * (80 / 200) + 0.5;
-    const yBottom = height * (370 / 380);
+    // Arco Romano: Base SVG viewBox 200 x 380
+    // Estrutura em arco elíptico perfeito no topo e laterais retas até a base dos pés
+    // No SVG original:
+    // Path: M 20 370 L 20 100 A 80 80 0 0 1 180 100 L 180 370 Z com stroke-width=3
+    // Centro do arco: (100, 100), raio do path = 80, raio externo com borda = 81.5 + tolerância 0.5px
+    // Topo externo: y = 18 (100 - 82)
+    // Laterais externas: x = 18 e x = 182
+    // Base de apoio: y = 371.5
+    const scaleX = width / 200;
+    const scaleY = height / 380;
+    const cx = 100 * scaleX;
+    const cy = 100 * scaleY;
+    const rx = 82 * scaleX;
+    const ry = 82 * scaleY;
+    const xLeft = cx - rx;
+    const xRight = cx + rx;
+    const yBottom = 371.5 * scaleY;
 
     return function(ctx) {
       ctx.beginPath();
       ctx.moveTo(xLeft, yBottom);
       ctx.lineTo(xLeft, cy);
-      ctx.arc(cx, cy, r, Math.PI, 0, false);
+      // Arco elíptico em conformidade matemática exata com a escala do SVG
+      ctx.ellipse(cx, cy, rx, ry, 0, Math.PI, 0, false);
       ctx.lineTo(xRight, yBottom);
       ctx.closePath();
     };
@@ -48,8 +58,8 @@ export function createClipFunction(type, width, height) {
     const xLeft = width * (15 / 160);
     const xRight = width * (145 / 160);
     const cx = width * 0.5;
-    const rx = width * (65 / 160) + 0.5;
-    const ry = height * (20 / 220) + 0.5;
+    const rx = width * (65.5 / 160);
+    const ry = height * (20.5 / 220);
     const yTop = height * (35 / 220);
     const yBottom = height * (195 / 220);
 
@@ -67,7 +77,7 @@ export function createClipFunction(type, width, height) {
     };
   }
 
-  // Padro retangular
+  // Padrão retangular
   return function(ctx) {
     ctx.beginPath();
     ctx.rect(0, 0, width, height);
@@ -77,22 +87,22 @@ export function createClipFunction(type, width, height) {
 
 /**
  * Calcula o posicionamento e escala proporcional da estampa (Object-Fit: Cover)
- * garantindo que a imagem nunca seja deformada, achatada ou desalinhada do aro da pea.
- * @param {string} type Tipo da pea
- * @param {number} width Largura da pea no canvas
- * @param {number} height Altura da pea no canvas
- * @param {number} imgW Largura intrnseca da estampa
- * @param {number} imgH Altura intrnseca da estampa
+ * garantindo que a imagem nunca seja deformada, achatada ou desalinhada da face da peça.
+ * @param {string} type Tipo da peça
+ * @param {number} width Largura da peça no canvas
+ * @param {number} height Altura da peça no canvas
+ * @param {number} imgW Largura intrínseca da estampa
+ * @param {number} imgH Altura intrínseca da estampa
  * @returns {{ x: number, y: number, width: number, height: number }}
  */
 export function calculateCoverPlacement(type, width, height, imgW, imgH) {
   let targetBox = { x: 0, y: 0, w: width, h: height, cx: width / 2, cy: height / 2 };
 
   if (type === 'panel_round') {
-    // Caixa alvo: Exatamente o dimetro circular do aro
+    // Caixa alvo: Exatamente o diâmetro circular do aro
     const cx = width * 0.5;
     const cy = height * (150 / 380);
-    const r = width * (140 / 300);
+    const r = width * (142 / 300);
     targetBox = {
       x: cx - r,
       y: cy - r,
@@ -102,25 +112,31 @@ export function calculateCoverPlacement(type, width, height, imgW, imgH) {
       cy: cy
     };
   } else if (type === 'panel_arch') {
-    // Caixa alvo: O retngulo que envolve o arco do topo at a base
-    const xLeft = width * (20 / 200);
-    const archW = width * (160 / 200);
-    const yTop = height * (20 / 380);
-    const yBottom = height * (370 / 380);
+    // Caixa alvo: O retângulo exato que envolve o arco do topo até a base
+    const scaleX = width / 200;
+    const scaleY = height / 380;
+    const cx = 100 * scaleX;
+    const rx = 82 * scaleX;
+    const ry = 82 * scaleY;
+    const xLeft = cx - rx;
+    const archW = rx * 2;
+    const yTop = 100 * scaleY - ry;
+    const yBottom = 371.5 * scaleY;
     const archH = yBottom - yTop;
+
     targetBox = {
       x: xLeft,
       y: yTop,
       w: archW,
       h: archH,
-      cx: xLeft + archW / 2,
+      cx: cx,
       cy: yTop + archH / 2
     };
   } else if (type === 'cylinder') {
     // Caixa alvo: O corpo completo do cilindro
     const xLeft = width * (15 / 160);
     const cylW = width * (130 / 160);
-    const ry = height * (20 / 220);
+    const ry = height * (20.5 / 220);
     const yTop = height * (35 / 220) - ry;
     const yBottom = height * (195 / 220) + ry;
     const cylH = yBottom - yTop;
@@ -148,6 +164,80 @@ export function calculateCoverPlacement(type, width, height, imgW, imgH) {
     width: finalW,
     height: finalH
   };
+}
+
+/**
+ * Verifica se uma coordenada local (x, y) está dentro da área visível/opaca do artefato
+ * @param {string} type Tipo da peça: 'panel_round' | 'panel_arch' | 'cylinder' | 'generic'
+ * @param {number} x Coordenada X local no grupo
+ * @param {number} y Coordenada Y local no grupo
+ * @param {number} width Largura do elemento no canvas
+ * @param {number} height Altura do elemento no canvas
+ * @returns {boolean}
+ */
+export function isPointInsideMask(type, x, y, width, height) {
+  if (type === 'panel_round') {
+    const cx = width * 0.5;
+    const cy = height * (150 / 380);
+    const radius = width * (142 / 300);
+    const dx = x - cx;
+    const dy = y - cy;
+    if ((dx * dx + dy * dy) <= (radius * radius)) return true;
+
+    // Pernas do suporte de ferro do painel redondo (se clicado na base)
+    const legTop = cy + radius;
+    const legBottom = height * (370 / 380);
+    if (y >= legTop && y <= legBottom) {
+      const legLeft = width * (60 / 300);
+      const legRight = width * (240 / 300);
+      return x >= legLeft && x <= legRight;
+    }
+    return false;
+  }
+
+  if (type === 'panel_arch') {
+    const scaleX = width / 200;
+    const scaleY = height / 380;
+    const cx = 100 * scaleX;
+    const cy = 100 * scaleY;
+    const rx = 82 * scaleX;
+    const ry = 82 * scaleY;
+    const yBottom = 371.5 * scaleY;
+
+    if (y < (cy - ry) || y > yBottom) return false;
+    if (x < (cx - rx) || x > (cx + rx)) return false;
+    if (y >= cy) return true;
+    const dx = (x - cx) / rx;
+    const dy = (y - cy) / ry;
+    return (dx * dx + dy * dy) <= 1.0;
+  }
+
+  if (type === 'cylinder') {
+    const scaleX = width / 160;
+    const scaleY = height / 220;
+    const cx = 80 * scaleX;
+    const rx = 65.5 * scaleX;
+    const ry = 20.5 * scaleY;
+    const yTop = 35 * scaleY;
+    const yBottom = 195 * scaleY;
+
+    if (x < (cx - rx) || x > (cx + rx)) return false;
+    if (y < (yTop - ry) || y > (yBottom + ry)) return false;
+    if (y >= yTop && y <= yBottom) return true;
+    if (y < yTop) {
+      const dx = (x - cx) / rx;
+      const dy = (y - yTop) / ry;
+      return (dx * dx + dy * dy) <= 1.0;
+    }
+    if (y > yBottom) {
+      const dx = (x - cx) / rx;
+      const dy = (y - yBottom) / ry;
+      return (dx * dx + dy * dy) <= 1.0;
+    }
+    return false;
+  }
+
+  return x >= 0 && x <= width && y >= 0 && y <= height;
 }
 
 /**

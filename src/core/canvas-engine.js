@@ -1,5 +1,5 @@
 import Konva from 'konva';
-import { createClipFunction, loadImageAsync } from './mask-renderer.js';
+import { createClipFunction, calculateCoverPlacement, loadImageAsync } from './mask-renderer.js';
 import { TEXTURE_WALL_BOISERIE, TEXTURE_FLOOR_WOOD } from './textures-data.js';
 import { generateBalloonArchDataUrl } from './balloon-generator.js';
 
@@ -249,8 +249,30 @@ export class CanvasEngine {
     const imgEl = targetNode.image();
     if (!imgEl || !imgEl.complete || !imgEl.naturalWidth) return true;
 
-    const natX = Math.floor((localPt.x / w) * imgEl.naturalWidth);
-    const natY = Math.floor((localPt.y / h) * imgEl.naturalHeight);
+    const nodeX = targetNode.x();
+    const nodeY = targetNode.y();
+    const nodeW = targetNode.width();
+    const nodeH = targetNode.height();
+
+    const relX = localPt.x - nodeX;
+    const relY = localPt.y - nodeY;
+
+    if (relX < 0 || relX >= nodeW || relY < 0 || relY >= nodeH) {
+      if (coverImgNode && baseImgNode && baseImgNode.image()) {
+        const baseEl = baseImgNode.image();
+        const bX = Math.floor((localPt.x / w) * baseEl.naturalWidth);
+        const bY = Math.floor((localPt.y / h) * baseEl.naturalHeight);
+        try {
+          this.hitCtx.clearRect(0, 0, 1, 1);
+          this.hitCtx.drawImage(baseEl, bX, bY, 1, 1, 0, 0, 1, 1);
+          return this.hitCtx.getImageData(0, 0, 1, 1).data[3] > 25;
+        } catch { return true; }
+      }
+      return false;
+    }
+
+    const natX = Math.floor((relX / nodeW) * imgEl.naturalWidth);
+    const natY = Math.floor((relY / nodeH) * imgEl.naturalHeight);
 
     if (natX < 0 || natX >= imgEl.naturalWidth || natY < 0 || natY >= imgEl.naturalHeight) {
       return false;
@@ -260,10 +282,9 @@ export class CanvasEngine {
       this.hitCtx.clearRect(0, 0, 1, 1);
       this.hitCtx.drawImage(imgEl, natX, natY, 1, 1, 0, 0, 1, 1);
       const alpha = this.hitCtx.getImageData(0, 0, 1, 1).data[3];
-      // Pixel com mais de 25 de alfa (>10% de opacidade)  considerado opaco
       return alpha > 25;
     } catch {
-      return true; // Fallback caso ocorra restrio
+      return true;
     }
   }
 
@@ -453,6 +474,10 @@ export class CanvasEngine {
     const coverImg = await loadImageAsync(coverImageUrl);
     const clipFunc = createClipFunction(meta.type, w, h);
 
+    const imgNatW = coverImg.naturalWidth || coverImg.width;
+    const imgNatH = coverImg.naturalHeight || coverImg.height;
+    const placement = calculateCoverPlacement(meta.type, w, h, imgNatW, imgNatH);
+
     const coverGroup = new Konva.Group({
       name: 'cover-group',
       clipFunc: clipFunc
@@ -460,10 +485,10 @@ export class CanvasEngine {
 
     const coverImageNode = new Konva.Image({
       image: coverImg,
-      x: 0,
-      y: 0,
-      width: w,
-      height: h
+      x: placement.x,
+      y: placement.y,
+      width: placement.width,
+      height: placement.height
     });
 
     coverGroup.add(coverImageNode);

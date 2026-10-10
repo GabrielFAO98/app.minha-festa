@@ -4,19 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
-  <meta name="description" content="Minha Festa — Aplicativo mobile para montagem de decorações pegue-monte." />
-  <title>Minha Festa — Montagem Pegue-Monte</title>
+  <meta name="description" content="Minha Festa - Aplicativo para montagem de decorações pegue-monte." />
+  <title>Minha Festa - Montagem Pegue-Monte</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="stylesheet" href="/src/styles/main.css" />
 </head>
 <body>
   <div class="app-shell">
-    <!-- Header Superior Compacto -->
+    <!-- Header Superior -->
     <header class="app-header">
       <div class="header-left">
         <div class="app-brand">
-          <div class="brand-icon">🎈</div>
+          <div class="brand-icon">🎉</div>
           <div class="brand-title">
             <span>Minha Festa</span>
             <span class="brand-subtitle" id="project-title-display">Novo Cenário</span>
@@ -24,8 +24,15 @@
         </div>
       </div>
       <div class="header-actions">
+        <!-- Controles de Histórico: Desfazer / Refazer -->
+        <button id="btn-header-undo" class="btn-header btn-header-ghost" title="Desfazer (Ctrl+Z)" disabled>
+          ↩️
+        </button>
+        <button id="btn-header-redo" class="btn-header btn-header-ghost" title="Refazer (Ctrl+Y)" disabled>
+          ↪️
+        </button>
         <button id="btn-header-projects" class="btn-header btn-header-ghost" title="Salvar / Abrir">
-          📂 <span>Projetos</span>
+          📁 <span>Projetos</span>
         </button>
         <button id="btn-header-clear" class="btn-header btn-header-ghost" title="Limpar Tudo">
           🗑️
@@ -36,23 +43,93 @@
       </div>
     </header>
 
-    <!-- ÁREA PRINCIPAL DO CENÁRIO (MAIOR PARTE DA TELA) -->
-    <main class="stage-main-area">
-      <div class="stage-viewport-box">
-        <div id="selection-badge" class="selection-badge">
-          <span>📍</span>
-          <span id="selection-badge-name">Peça</span>
+    <!-- ÁREA DE TRABALHO (3 COLUNAS NO DESKTOP / PALCO ÚNICO NO MOBILE) -->
+    <div class="studio-workspace">
+      <!-- SIDEBAR ESQUERDA: CATÁLOGO FIXO DESKTOP -->
+      <aside class="desktop-sidebar desktop-sidebar-left" id="desktop-catalog-sidebar">
+        <div class="desktop-sidebar-header">
+          <div class="desktop-sidebar-title">Catálogo de Peças</div>
         </div>
-        <div id="konva-container"></div>
-      </div>
-    </main>
+        <div class="desktop-tabs-bar">
+          <button class="desktop-tab-btn active" data-tab="presets">Presets</button>
+          <button class="desktop-tab-btn" data-tab="my-items">Meu Acervo</button>
+          <button class="desktop-tab-btn" data-tab="covers">Capas</button>
+          <button class="desktop-tab-btn" data-tab="environment">Cenários</button>
+        </div>
+        <div id="desktop-catalog-content" class="desktop-catalog-scroll"></div>
+      </aside>
 
-    <!-- BARRA FLUTUANTE DE AÇÕES DA PEÇA (FILHO DIRETO - Z-INDEX 50) -->
+      <!-- ÁREA CENTRAL: PALCO VERTICAL 9:16 -->
+      <main class="stage-main-area">
+        <div class="stage-viewport-box">
+          <div id="selection-badge" class="selection-badge">
+            <span>✨</span>
+            <span id="selection-badge-name">Peça</span>
+          </div>
+          <div id="konva-container"></div>
+        </div>
+      </main>
+
+      <!-- SIDEBAR DIREITA: INSPETOR & CAMADAS DESKTOP -->
+      <aside class="desktop-sidebar desktop-sidebar-right" id="desktop-inspector-sidebar">
+        <!-- Painel de Propriedades da Peça Selecionada -->
+        <div class="desktop-inspector-section">
+          <div class="desktop-sidebar-title">Propriedades da Peça</div>
+
+          <div id="desktop-inspector-box" class="desktop-inspector-box" style="display: none;">
+            <div class="inspector-card-header">
+              <img id="desktop-inspector-thumb" class="inspector-thumb" src="" alt="" />
+              <div class="inspector-header-info">
+                <div id="desktop-inspector-title" class="inspector-item-title">Peça</div>
+                <div id="desktop-inspector-size" class="inspector-item-sub">Dimensões</div>
+              </div>
+            </div>
+
+            <div class="inspector-actions-grid">
+              <button id="btn-desktop-cover" class="btn-inspector-action btn-inspector-highlight">
+                🎨 Capa
+              </button>
+              <button id="btn-desktop-delete" class="btn-inspector-action btn-inspector-danger">
+                🗑️ Excluir
+              </button>
+              <button id="btn-desktop-duplicate" class="btn-inspector-action">
+                📋 Duplicar
+              </button>
+              <button id="btn-desktop-flip" class="btn-inspector-action">
+                🔄 Espelhar
+              </button>
+              <button id="btn-desktop-front" class="btn-inspector-action">
+                ⬆️ Frente
+              </button>
+              <button id="btn-desktop-back" class="btn-inspector-action">
+                ⬇️ Trás
+              </button>
+            </div>
+          </div>
+
+          <div id="desktop-inspector-empty" class="desktop-inspector-empty">
+            <div style="font-size: 1.5rem; opacity: 0.4;">👆</div>
+            <div>Toque ou clique em uma peça no palco para ajustar propriedades.</div>
+          </div>
+        </div>
+
+        <!-- Painel de Camadas da Montagem -->
+        <div class="desktop-inspector-section" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+          <div class="layers-header-row">
+            <div class="desktop-sidebar-title">Camadas no Palco</div>
+            <span id="desktop-layers-count" class="badge-layers-count">0</span>
+          </div>
+          <div id="desktop-layers-list" class="desktop-layers-list"></div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- BARRA FLUTUANTE DE AÇÕES DA PEÇA (FILHO DIRETO - MOBILE) -->
     <div id="item-toolbar" class="item-actions-floating">
       <button id="btn-action-delete" class="item-action-btn btn-delete-direct" title="Excluir Peça">
         🗑️ Excluir
       </button>
-      <button id="btn-action-cover" class="item-action-btn btn-cover-direct" title="Vestir Capa / Estampa">
+      <button id="btn-action-cover" class="item-action-btn btn-cover-direct" title="Vestir Capa / Cores">
         🎨 Capa
       </button>
       <button id="btn-action-front" class="item-action-btn" title="Trazer para Frente">
@@ -69,7 +146,7 @@
       </button>
     </div>
 
-    <!-- Gaveta Deslizante Retrátil (Oculta quando fechada) -->
+    <!-- Gaveta Deslizante Retrátil (MOBILE) -->
     <section id="bottom-sheet" class="bottom-sheet">
       <div id="sheet-handle-bar" class="sheet-handle-bar">
         <div class="sheet-handle"></div>
@@ -82,7 +159,7 @@
       <div id="sheet-body-content" class="sheet-body"></div>
     </section>
 
-    <!-- Barra de Navegação Inferior Fixa (Dock) -->
+    <!-- Barra de Navegação Inferior Fixa (MOBILE DOCK) -->
     <nav class="bottom-dock">
       <button class="dock-tab-btn" data-tab="presets">
         <span class="tab-icon">✨</span>
@@ -97,7 +174,7 @@
         <span>Capas</span>
       </button>
       <button class="dock-tab-btn" data-tab="environment">
-        <span class="tab-icon">🏠</span>
+        <span class="tab-icon">🖼️</span>
         <span>Cenário</span>
       </button>
     </nav>
@@ -116,7 +193,7 @@
       <div class="modal-body">
         <div style="display: flex; gap: 8px;">
           <button id="btn-upload-cover-trigger" class="btn-primary" style="flex: 1;">
-            📸 Subir da Galeria
+            📁 Subir da Galeria
           </button>
           <button id="btn-remove-cover" class="btn-secondary" style="flex: 1;">
             Restaurar Base
@@ -124,6 +201,34 @@
           <input type="file" id="cover-upload-input" accept="image/*" style="display: none;" />
         </div>
         <div class="covers-grid" id="covers-modal-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Personalizar Arco de Balões Paramétrico -->
+  <div id="balloon-modal" class="modal-backdrop">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">🎈 Personalizar Arco de Balões</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);">Escolha uma paleta de cores ou personalize cada tom</div>
+        </div>
+        <button id="btn-close-balloon-modal" class="modal-close-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="balloon-preview-wrapper">
+          <img id="balloon-preview-img" class="balloon-preview-img" alt="Prévia do Arco de Balões" />
+        </div>
+
+        <div class="modal-section-title">Paletas Populares de Festa:</div>
+        <div id="balloon-palettes-grid" class="balloon-palettes-grid"></div>
+
+        <div class="modal-section-title" style="margin-top: 14px;">Cores Individuais da Paleta:</div>
+        <div id="balloon-color-pickers" class="balloon-color-pickers-grid"></div>
+
+        <button id="btn-apply-balloon-colors" class="btn-primary" style="width: 100%; margin-top: 14px;">
+          ✓ Aplicar no Cenário
+        </button>
       </div>
     </div>
   </div>
@@ -202,7 +307,7 @@
         </div>
 
         <button id="btn-download-image" class="btn-secondary" style="width: 100%;">
-          📥 Baixar Foto da Decoração (PNG HD)
+          📸 Baixar Foto da Decoração (PNG HD)
         </button>
 
         <div class="checklist-card">
@@ -233,12 +338,12 @@
   <div id="projects-modal" class="modal-backdrop">
     <div class="modal-container">
       <div class="modal-header">
-        <div class="modal-title">📂 Meus Cenários Salvos</div>
+        <div class="modal-title">📁 Meus Cenários Salvos</div>
         <button id="btn-close-projects-modal" class="modal-close-btn">✕</button>
       </div>
       <div class="modal-body">
         <div style="display: flex; gap: 8px;">
-          <input type="text" id="project-save-title" class="form-input" placeholder="Nome (ex: Safári Pedro 1 Ano)" />
+          <input type="text" id="project-save-title" class="form-input" placeholder="Nome (ex: Safari Pedro 1 Ano)" />
           <button id="btn-save-project-action" class="btn-primary" style="white-space: nowrap;">
             💾 Salvar
           </button>

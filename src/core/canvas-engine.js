@@ -1,35 +1,49 @@
 import Konva from 'konva';
 import { createClipFunction, loadImageAsync } from './mask-renderer.js';
 import { TEXTURE_WALL_BOISERIE, TEXTURE_FLOOR_WOOD } from './textures-data.js';
+import { generateBalloonArchDataUrl } from './balloon-generator.js';
 
-// OTIMIZAÇÃO CRÍTICA PARA MOBILE: Desativa detecção de colisão durante o arrasto
+// OTIMIZAǟO CR?TICA PARA MOBILE: Desativa detecǜo de colisǜo durante o arrasto contnuo
 Konva.hitOnDragEnabled = false;
 
 export class CanvasEngine {
   constructor() {
     this.stage = null;
-    this.bgLayer = null;    // Camada Estática de Fundo (Nunca repinta no drag)
-    this.decorLayer = null; // Camada Rápida dos Elementos de Decoração
-    this.uiLayer = null;    // Camada Leve do Transformer de Seleção
+    this.bgLayer = null;    // Camada Estǭtica de Fundo (Zero repintura no drag)
+    this.decorLayer = null; // Camada Rǭpida dos Elementos de Decoraǜo
+    this.uiLayer = null;    // Camada Leve do Transformer de Seleǜo
     this.transformer = null;
     this.selectedNode = null;
 
-    // Resolução Virtual VERTICAL 9:16 Nativa (1080 x 1920)
+    // Resoluǜo Virtual VERTICAL 9:16 Nativa (1080 x 1920)
     this.VIRTUAL_WIDTH = 1080;
     this.VIRTUAL_HEIGHT = 1920;
     this.WALL_HEIGHT = 1380;
     this.FLOOR_HEIGHT = 540;
 
-    // Escala métrica: 1080px virtuais equivalem a 280cm físicos na parede
+    // Escala mǸtrica: 1080px virtuais equivalem a 280cm fsicos na parede
     this.pxPerCm = this.VIRTUAL_WIDTH / 280;
 
     // Texturas Atuais do Ambiente
     this.wallTextureUrl = TEXTURE_WALL_BOISERIE;
     this.floorTextureUrl = TEXTURE_FLOOR_WOOD;
 
+    // Pilhas de Histrico para Desfazer / Refazer (Undo/Redo)
+    this.undoStack = [];
+    this.redoStack = [];
+    this.maxHistory = 35;
+    this.isRestoringState = false;
+
+    // Canvas 1x1 em memria para teste instantneo de transparncia (0.01ms)
+    this.hitCanvas = document.createElement('canvas');
+    this.hitCanvas.width = 1;
+    this.hitCanvas.height = 1;
+    this.hitCtx = this.hitCanvas.getContext('2d', { willReadFrequently: true });
+
     // Callbacks para UI
     this.onSelectionChange = null;
     this.onLayersChange = null;
+    this.onHistoryChange = null;
   }
 
   init(container) {
@@ -42,35 +56,30 @@ export class CanvasEngine {
       height: containerH
     });
 
-    // 1. CAMADA DE FUNDO ISOLADA (Renderiza uma única vez na GPU)
+    // 1. CAMADA DE FUNDO ISOLADA (Renderiza uma nica vez na GPU)
     this.bgLayer = new Konva.Layer({ listening: false });
     this.stage.add(this.bgLayer);
 
-    // 2. CAMADA DE DECORAÇÃO (Apenas itens móveis)
+    // 2. CAMADA DE DECORAǟO (Apenas itens mveis)
     this.decorLayer = new Konva.Layer();
     this.stage.add(this.decorLayer);
 
-    // 3. CAMADA DE INTERFACE (Transformer de seleção)
+    // 3. CAMADA DE INTERFACE (Transformer de seleǜo)
     this.uiLayer = new Konva.Layer();
     this.stage.add(this.uiLayer);
 
     this.setupTransformer();
+    this.setupSmartSelection();
+    this.setupKeyboardShortcuts();
     this.renderEnvironment();
     this.fitToView();
-
-    // Desseleção rápida ao tocar no fundo vazio
-    this.stage.on('tap click pointerdown', (e) => {
-      if (e.target === this.stage || e.target.hasName('bg-element')) {
-        this.deselect();
-      }
-    });
 
     window.addEventListener('resize', () => {
       this.handleResize(container);
     });
   }
 
-  // Ajusta a escala e posição de enquadramento 9:16 diretamente no Stage (Aceleração por Hardware)
+  // Ajusta o palco 9:16 perfeitamente centralizado no container
   fitToView() {
     if (!this.stage) return;
     const containerW = this.stage.width();
@@ -80,7 +89,6 @@ export class CanvasEngine {
     const offsetX = (containerW - this.VIRTUAL_WIDTH * scale) / 2;
     const offsetY = (containerH - this.VIRTUAL_HEIGHT * scale) / 2;
 
-    // Aplica o enquadramento 9:16 nas 3 camadas
     [this.bgLayer, this.decorLayer, this.uiLayer].forEach((layer) => {
       if (layer) {
         layer.scale({ x: scale, y: scale });
@@ -90,7 +98,18 @@ export class CanvasEngine {
     });
   }
 
-  // Renderiza Parede e Piso na camada bgLayer estática (Zero repintura no arrasto)
+  handleResize(container) {
+    if (!this.stage || !container) return;
+    const newW = container.clientWidth;
+    const newH = container.clientHeight;
+    if (newW > 0 && newH > 0) {
+      this.stage.width(newW);
+      this.stage.height(newH);
+      this.fitToView();
+    }
+  }
+
+  // Renderiza Parede e Piso na camada bgLayer esttica
   async renderEnvironment() {
     this.bgLayer.destroyChildren();
 
@@ -127,6 +146,7 @@ export class CanvasEngine {
     if (wallUrl) this.wallTextureUrl = wallUrl;
     if (floorUrl) this.floorTextureUrl = floorUrl;
     await this.renderEnvironment();
+    this.saveSnapshot();
   }
 
   setupTransformer() {
@@ -143,11 +163,136 @@ export class CanvasEngine {
       borderDash: [6, 4],
       keepRatio: true
     });
+
+    this.transformer.on('transformend', () => {
+      this.saveSnapshot();
+      this.notifyLayersChange();
+    });
+
     this.uiLayer.add(this.transformer);
   }
 
-  // Adiciona item com arrasto super rápido e sem lag
-  async addItem(itemData, position = null) {
+  // ========================================================
+  // SELEǟO INTELIGENTE POR PIXEL / TRANSPAR?NCIA (HIT-TEST)
+  // ========================================================
+  setupSmartSelection() {
+    this.stage.on('pointerdown', (e) => {
+      // Se clicou em uma ala do transformer, permite resize/rotate normal
+      if (e.target && (e.target.getParent() === this.transformer || e.target === this.transformer)) {
+        return;
+      }
+
+      const pointerPos = this.stage.getPointerPosition();
+      if (!pointerPos) return;
+
+      const candidates = this.findOpaqueItemsAtPoint(pointerPos);
+
+      if (candidates.length === 0) {
+        // Clicou em ǭrea vazia ou 100% transparente: desseleciona
+        this.deselect();
+        return;
+      }
+
+      // Se houver mltiplos itens sobrepostos (ex: arco de bales sobre o painel),
+      // toques repetidos alternam entre as peas sobrepostas!
+      let targetNode = candidates[0];
+      if (this.selectedNode && candidates.includes(this.selectedNode) && candidates.length > 1) {
+        const currentIndex = candidates.indexOf(this.selectedNode);
+        const nextIndex = (currentIndex + 1) % candidates.length;
+        targetNode = candidates[nextIndex];
+      }
+
+      this.selectNode(targetNode);
+    });
+  }
+
+  // Verifica se o pixel na posiǜo do palco  visivelmente opaco no grupo
+  isPointOpaqueInGroup(group, stagePoint) {
+    const transform = group.getAbsoluteTransform().copy().invert();
+    const localPt = transform.point(stagePoint);
+
+    const w = group.width();
+    const h = group.height();
+
+    // Fora da bounding box = nǜo acertou
+    if (localPt.x < 0 || localPt.x > w || localPt.y < 0 || localPt.y > h) {
+      return false;
+    }
+
+    const coverGroup = group.findOne('.cover-group');
+    const coverImgNode = coverGroup ? coverGroup.findOne('Image') : null;
+    const baseImgNode = group.findOne('.base-image');
+    const targetNode = coverImgNode || baseImgNode;
+
+    if (!targetNode) return true;
+
+    const imgEl = targetNode.image();
+    if (!imgEl || !imgEl.complete || !imgEl.naturalWidth) return true;
+
+    const natX = Math.floor((localPt.x / w) * imgEl.naturalWidth);
+    const natY = Math.floor((localPt.y / h) * imgEl.naturalHeight);
+
+    if (natX < 0 || natX >= imgEl.naturalWidth || natY < 0 || natY >= imgEl.naturalHeight) {
+      return false;
+    }
+
+    try {
+      this.hitCtx.clearRect(0, 0, 1, 1);
+      this.hitCtx.drawImage(imgEl, natX, natY, 1, 1, 0, 0, 1, 1);
+      const alpha = this.hitCtx.getImageData(0, 0, 1, 1).data[3];
+      // Pixel com mais de 25 de alfa (>10% de opacidade)  considerado opaco
+      return alpha > 25;
+    } catch {
+      return true; // Fallback caso ocorra restriǜo
+    }
+  }
+
+  // Encontra todos os itens visveis sob a coordenada (do topo para o fundo)
+  findOpaqueItemsAtPoint(stagePoint) {
+    const children = this.decorLayer.getChildren();
+    const matches = [];
+
+    for (let i = children.length - 1; i >= 0; i--) {
+      const child = children[i];
+      if (child.name() === 'decor-item' && this.isPointOpaqueInGroup(child, stagePoint)) {
+        matches.push(child);
+      }
+    }
+
+    return matches;
+  }
+
+  // Atalhos de Teclado Globais (Ctrl+Z, Ctrl+Y, Delete, Esc)
+  setupKeyboardShortcuts() {
+    window.addEventListener('keydown', (e) => {
+      const tag = e.target.tagName.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          this.redo();
+        } else {
+          this.undo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        this.redo();
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (this.selectedNode) {
+          e.preventDefault();
+          this.deleteSelected();
+        }
+      } else if (e.key === 'Escape') {
+        this.deselect();
+      }
+    });
+  }
+
+  // ========================================================
+  // ADIǟO E MANIPULAǟO DE ITENS NO PALCO
+  // ========================================================
+  async addItem(itemData, position = null, saveHistory = true) {
     const widthPx = Math.max(70, (itemData.widthCm || 60) * this.pxPerCm);
     const heightPx = Math.max(70, (itemData.heightCm || 60) * this.pxPerCm);
 
@@ -161,17 +306,16 @@ export class CanvasEngine {
       height: heightPx,
       draggable: true,
       name: 'decor-item',
-      // Limites de arrasto ultra-rápidos dentro da resolução 1080 x 1920
       dragBoundFunc: (pos) => {
         const layer = group.getLayer();
         const scale = layer ? layer.scaleX() : 1;
         const offsetX = layer ? layer.x() : 0;
         const offsetY = layer ? layer.y() : 0;
 
-        const minX = offsetX;
-        const maxX = offsetX + (this.VIRTUAL_WIDTH - widthPx) * scale;
-        const minY = offsetY;
-        const maxY = offsetY + (this.VIRTUAL_HEIGHT - heightPx) * scale;
+        const minX = offsetX - 100 * scale;
+        const maxX = offsetX + (this.VIRTUAL_WIDTH - widthPx + 100) * scale;
+        const minY = offsetY - 100 * scale;
+        const maxY = offsetY + (this.VIRTUAL_HEIGHT - heightPx + 100) * scale;
 
         return {
           x: Math.max(minX, Math.min(maxX, pos.x)),
@@ -182,11 +326,17 @@ export class CanvasEngine {
 
     group.setAttr('itemMeta', {
       ...itemData,
-      instanceId: 'inst-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-      customCoverUrl: itemData.customCoverUrl || null
+      instanceId: itemData.instanceId || ('inst-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5)),
+      customCoverUrl: itemData.customCoverUrl || null,
+      balloonColors: itemData.balloonColors || null
     });
 
-    const imgElement = await loadImageAsync(itemData.previewUrl);
+    let currentPreviewUrl = itemData.previewUrl;
+    if (itemData.type === 'balloon_arch' && itemData.balloonColors) {
+      currentPreviewUrl = generateBalloonArchDataUrl(itemData.balloonColors);
+    }
+
+    const imgElement = await loadImageAsync(currentPreviewUrl);
     const baseImage = new Konva.Image({
       name: 'base-image',
       image: imgElement,
@@ -199,19 +349,24 @@ export class CanvasEngine {
       await this.attachCoverToNode(group, itemData.customCoverUrl);
     }
 
-    // DISPARO IMEDIATO AO TOCAR NO ITEM
-    group.on('pointerdown tap click', (e) => {
-      e.cancelBubble = true;
-      this.selectNode(group);
+    // Intercepta arrasto inteligente: se tocar em ǭrea transparente, cancela drag
+    group.on('pointerdown', (e) => {
+      const pointerPos = this.stage.getPointerPosition();
+      if (pointerPos && !this.isPointOpaqueInGroup(group, pointerPos)) {
+        group.stopDrag();
+      } else {
+        e.cancelBubble = true;
+        this.selectNode(group);
+      }
     });
 
-    // Durante o drag, atualiza apenas a posição do transformer de forma ultra leve
     group.on('dragmove', () => {
       this.uiLayer.batchDraw();
     });
 
     group.on('dragend', () => {
       this.uiLayer.batchDraw();
+      this.saveSnapshot();
       this.notifyLayersChange();
     });
 
@@ -220,6 +375,10 @@ export class CanvasEngine {
 
     this.selectNode(group);
     this.notifyLayersChange();
+
+    if (saveHistory) {
+      this.saveSnapshot();
+    }
 
     return group;
   }
@@ -249,6 +408,7 @@ export class CanvasEngine {
     if (!this.selectedNode) return;
     await this.attachCoverToNode(this.selectedNode, coverImageUrl);
     this.decorLayer.batchDraw();
+    this.saveSnapshot();
     this.notifyLayersChange();
   }
 
@@ -287,10 +447,39 @@ export class CanvasEngine {
     this.decorLayer.batchDraw();
   }
 
+  // Atualizao paramtrica das cores do arco de bales
+  async applyBalloonColorsToNode(group, colors, saveHistory = true) {
+    const meta = group.getAttr('itemMeta');
+    meta.balloonColors = colors;
+    meta.type = 'balloon_arch';
+    group.setAttr('itemMeta', meta);
+
+    const newUrl = generateBalloonArchDataUrl(colors);
+    meta.previewUrl = newUrl;
+
+    const baseImgNode = group.findOne('.base-image');
+    if (baseImgNode) {
+      const newImg = await loadImageAsync(newUrl);
+      baseImgNode.image(newImg);
+      this.decorLayer.batchDraw();
+    }
+
+    if (saveHistory) {
+      this.saveSnapshot();
+    }
+    this.notifyLayersChange();
+  }
+
+  async applyBalloonColorsToSelected(colors) {
+    if (!this.selectedNode) return;
+    await this.applyBalloonColorsToNode(this.selectedNode, colors, true);
+  }
+
   bringForward() {
     if (!this.selectedNode) return;
     this.selectedNode.moveUp();
     this.decorLayer.batchDraw();
+    this.saveSnapshot();
     this.notifyLayersChange();
   }
 
@@ -298,6 +487,7 @@ export class CanvasEngine {
     if (!this.selectedNode) return;
     this.selectedNode.moveDown();
     this.decorLayer.batchDraw();
+    this.saveSnapshot();
     this.notifyLayersChange();
   }
 
@@ -305,6 +495,7 @@ export class CanvasEngine {
     if (!this.selectedNode) return;
     this.selectedNode.moveToTop();
     this.decorLayer.batchDraw();
+    this.saveSnapshot();
     this.notifyLayersChange();
   }
 
@@ -312,6 +503,7 @@ export class CanvasEngine {
     if (!this.selectedNode) return;
     this.selectedNode.moveToBottom();
     this.decorLayer.batchDraw();
+    this.saveSnapshot();
     this.notifyLayersChange();
   }
 
@@ -326,6 +518,7 @@ export class CanvasEngine {
       this.selectedNode.offsetX(0);
     }
     this.decorLayer.batchDraw();
+    this.saveSnapshot();
   }
 
   async duplicateSelected() {
@@ -335,7 +528,7 @@ export class CanvasEngine {
       x: Math.min(this.VIRTUAL_WIDTH - 120, this.selectedNode.x() + 40),
       y: Math.min(this.VIRTUAL_HEIGHT - 120, this.selectedNode.y() + 40)
     };
-    await this.addItem({ ...meta }, newPos);
+    await this.addItem({ ...meta }, newPos, true);
   }
 
   deleteSelected() {
@@ -344,14 +537,16 @@ export class CanvasEngine {
     this.deselect();
     node.destroy();
     this.decorLayer.batchDraw();
+    this.saveSnapshot();
     this.notifyLayersChange();
   }
 
   clearScene() {
     this.deselect();
-    this.decorGroup.destroyChildren();
+    this.decorLayer.destroyChildren();
     this.decorLayer.batchDraw();
     this.notifyLayersChange();
+    this.saveSnapshot();
   }
 
   exportHDImage() {
@@ -363,12 +558,12 @@ export class CanvasEngine {
   }
 
   getSceneNodes() {
-    return this.decorGroup.getChildren();
+    return this.decorLayer.getChildren();
   }
 
   getSceneElements() {
     const items = [];
-    const children = this.decorGroup.getChildren();
+    const children = this.decorLayer.getChildren();
     children.forEach((child, index) => {
       const meta = child.getAttr('itemMeta');
       if (meta) {
@@ -382,6 +577,8 @@ export class CanvasEngine {
           heightCm: meta.heightCm,
           previewUrl: meta.previewUrl,
           customCoverUrl: meta.customCoverUrl,
+          balloonColors: meta.balloonColors,
+          rentalPrice: meta.rentalPrice,
           x: child.x(),
           y: child.y(),
           scaleX: child.scaleX(),
@@ -395,30 +592,101 @@ export class CanvasEngine {
   }
 
   async loadSceneElements(elements) {
-    this.clearScene();
+    this.deselect();
+    this.decorLayer.destroyChildren();
+
     for (const elem of elements) {
-      const node = await this.addItem(elem, { x: elem.x, y: elem.y });
+      const node = await this.addItem(elem, { x: elem.x, y: elem.y }, false);
       if (node) {
         node.scaleX(elem.scaleX || 1);
         node.scaleY(elem.scaleY || 1);
         node.rotation(elem.rotation || 0);
+        if (elem.balloonColors && elem.type === 'balloon_arch') {
+          await this.applyBalloonColorsToNode(node, elem.balloonColors, false);
+        }
       }
     }
-    this.deselect();
+
+    this.decorLayer.batchDraw();
+    this.notifyLayersChange();
+  }
+
+  // ========================================================
+  // HIST?RICO: DESFAZER / REFAZER (UNDO / REDO)
+  // ========================================================
+  saveSnapshot() {
+    if (this.isRestoringState) return;
+
+    const currentSnapshot = JSON.stringify({
+      elements: this.getSceneElements(),
+      wallTextureUrl: this.wallTextureUrl,
+      floorTextureUrl: this.floorTextureUrl
+    });
+
+    const lastSnapshot = this.undoStack[this.undoStack.length - 1];
+    if (lastSnapshot === currentSnapshot) return;
+
+    this.undoStack.push(currentSnapshot);
+    if (this.undoStack.length > this.maxHistory) {
+      this.undoStack.shift();
+    }
+
+    this.redoStack = [];
+    this.notifyHistoryChange();
+  }
+
+  async undo() {
+    if (!this.canUndo()) return;
+
+    const currentState = this.undoStack.pop();
+    this.redoStack.push(currentState);
+
+    const previousState = this.undoStack[this.undoStack.length - 1];
+    await this.restoreSnapshot(previousState);
+  }
+
+  async redo() {
+    if (!this.canRedo()) return;
+
+    const nextState = this.redoStack.pop();
+    this.undoStack.push(nextState);
+
+    await this.restoreSnapshot(nextState);
+  }
+
+  async restoreSnapshot(jsonString) {
+    this.isRestoringState = true;
+    try {
+      const data = JSON.parse(jsonString);
+      if (data.wallTextureUrl !== this.wallTextureUrl || data.floorTextureUrl !== this.floorTextureUrl) {
+        this.wallTextureUrl = data.wallTextureUrl;
+        this.floorTextureUrl = data.floorTextureUrl;
+        await this.renderEnvironment();
+      }
+      await this.loadSceneElements(data.elements || []);
+    } finally {
+      this.isRestoringState = false;
+      this.notifyHistoryChange();
+    }
+  }
+
+  canUndo() {
+    return this.undoStack.length > 1;
+  }
+
+  canRedo() {
+    return this.redoStack.length > 0;
+  }
+
+  notifyHistoryChange() {
+    if (this.onHistoryChange) {
+      this.onHistoryChange(this.canUndo(), this.canRedo());
+    }
   }
 
   notifyLayersChange() {
     if (this.onLayersChange) {
-      this.onLayersChange();
+      this.onLayersChange(this.getSceneElements());
     }
-  }
-
-  handleResize(container) {
-    if (!this.stage) return;
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-    this.stage.width(width);
-    this.stage.height(height);
-    this.fitToView();
   }
 }

@@ -1,11 +1,13 @@
-// Barra Flutuante de Ações da Peça no Cenário Mobile
+// Barra Flutuante de Aes da Pea no Cenrio Mobile
 
 export class ItemToolbar {
-  constructor(canvasEngine, onOpenCoverModal) {
+  constructor(canvasEngine, onOpenCoverModal, onOpenBalloonModal) {
     this.canvasEngine = canvasEngine;
     this.onOpenCoverModal = onOpenCoverModal;
+    this.onOpenBalloonModal = onOpenBalloonModal;
     this.toolbarEl = document.getElementById('item-toolbar');
     this.selectedMeta = null;
+    this.selectedNode = null;
 
     this.setupUI();
   }
@@ -20,17 +22,22 @@ export class ItemToolbar {
     const btnFlip = document.getElementById('btn-action-flip');
     const btnDuplicate = document.getElementById('btn-action-duplicate');
 
-    // EXCLUSÃO RÁPIDA E DIRETA
+    // EXCLUSO RPIDA E DIRETA
     btnDelete?.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (this.selectedMeta) {
+      if (this.selectedNode) {
         this.canvasEngine.deleteSelected();
       }
     });
 
     btnCover?.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (this.onOpenCoverModal && this.selectedMeta) {
+      if (!this.selectedNode || !this.selectedMeta) return;
+
+      const isBalloons = this.selectedMeta.category === 'baloes' || this.selectedMeta.type === 'balloon_arch';
+      if (isBalloons && this.onOpenBalloonModal) {
+        this.onOpenBalloonModal(this.selectedNode);
+      } else if (this.onOpenCoverModal) {
         this.onOpenCoverModal(this.selectedMeta);
       }
     });
@@ -62,6 +69,8 @@ export class ItemToolbar {
 
   updateSelection(meta, node) {
     this.selectedMeta = meta;
+    this.selectedNode = node;
+
     const badge = document.getElementById('selection-badge');
     const badgeName = document.getElementById('selection-badge-name');
     const btnCover = document.getElementById('btn-action-cover');
@@ -80,8 +89,19 @@ export class ItemToolbar {
     }
 
     if (btnCover) {
+      const isBalloons = meta.category === 'baloes' || meta.type === 'balloon_arch';
       const isCoverable = ['cylinder', 'panel_round', 'panel_arch'].includes(meta.type);
-      btnCover.innerHTML = isCoverable ? '🎨 Capa' : '🖼️ Imagem';
+
+      if (isBalloons) {
+        btnCover.innerHTML = '🎨 Cores';
+        btnCover.title = 'Trocar Paleta de Balões';
+      } else if (isCoverable) {
+        btnCover.innerHTML = '🎨 Capa';
+        btnCover.title = 'Vestir Capa / Estampa';
+      } else {
+        btnCover.innerHTML = '🖼️ Imagem';
+        btnCover.title = 'Alterar Imagem';
+      }
     }
   }
 }

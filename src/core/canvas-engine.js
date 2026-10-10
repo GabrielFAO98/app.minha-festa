@@ -1,5 +1,5 @@
 import Konva from 'konva';
-import { createClipFunction, calculateCoverPlacement, loadImageAsync, isPointInsideMask } from './mask-renderer.js';
+import { createClipFunction, calculateCoverPlacement, loadImageAsync, isPointInsideMask, createShadingOverlay } from './mask-renderer.js';
 import { TEXTURE_WALL_BOISERIE, TEXTURE_FLOOR_WOOD } from './textures-data.js';
 import { generateBalloonArchDataUrl } from './balloon-generator.js';
 
@@ -507,6 +507,13 @@ export class CanvasEngine {
     });
 
     coverGroup.add(coverImageNode);
+
+    // Aplica camada de sombreamento 3D realista sobre a capa
+    const shadingOverlay = createShadingOverlay(meta.type, w, h);
+    if (shadingOverlay) {
+      coverGroup.add(shadingOverlay);
+    }
+
     node.add(coverGroup);
     this.decorLayer.batchDraw();
   }

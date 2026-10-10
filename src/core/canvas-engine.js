@@ -3,25 +3,25 @@ import { createClipFunction, loadImageAsync } from './mask-renderer.js';
 import { TEXTURE_WALL_BOISERIE, TEXTURE_FLOOR_WOOD } from './textures-data.js';
 import { generateBalloonArchDataUrl } from './balloon-generator.js';
 
-// OTIMIZAǟO CR?TICA PARA MOBILE: Desativa detecǜo de colisǜo durante o arrasto contnuo
+// OTIMIZAO CRTICA PARA MOBILE: Desativa deteco de coliso durante o arrasto contnuo
 Konva.hitOnDragEnabled = false;
 
 export class CanvasEngine {
   constructor() {
     this.stage = null;
-    this.bgLayer = null;    // Camada Estǭtica de Fundo (Zero repintura no drag)
-    this.decorLayer = null; // Camada Rǭpida dos Elementos de Decoraǜo
-    this.uiLayer = null;    // Camada Leve do Transformer de Seleǜo
+    this.bgLayer = null;    // Camada Esttica de Fundo (Zero repintura no drag)
+    this.decorLayer = null; // Camada Rpida dos Elementos de Decorao
+    this.uiLayer = null;    // Camada Leve do Transformer de Seleo
     this.transformer = null;
     this.selectedNode = null;
 
-    // Resoluǜo Virtual VERTICAL 9:16 Nativa (1080 x 1920)
+    // Resoluo Virtual VERTICAL 9:16 Nativa (1080 x 1920)
     this.VIRTUAL_WIDTH = 1080;
     this.VIRTUAL_HEIGHT = 1920;
     this.WALL_HEIGHT = 1380;
     this.FLOOR_HEIGHT = 540;
 
-    // Escala mǸtrica: 1080px virtuais equivalem a 280cm fsicos na parede
+    // Escala mtrica: 1080px virtuais equivalem a 280cm fsicos na parede
     this.pxPerCm = this.VIRTUAL_WIDTH / 280;
 
     // Texturas Atuais do Ambiente
@@ -60,11 +60,11 @@ export class CanvasEngine {
     this.bgLayer = new Konva.Layer({ listening: false });
     this.stage.add(this.bgLayer);
 
-    // 2. CAMADA DE DECORAǟO (Apenas itens mveis)
+    // 2. CAMADA DE DECORAO (Apenas itens mveis)
     this.decorLayer = new Konva.Layer();
     this.stage.add(this.decorLayer);
 
-    // 3. CAMADA DE INTERFACE (Transformer de seleǜo)
+    // 3. CAMADA DE INTERFACE (Transformer de seleo)
     this.uiLayer = new Konva.Layer();
     this.stage.add(this.uiLayer);
 
@@ -173,11 +173,11 @@ export class CanvasEngine {
   }
 
   // ========================================================
-  // SELEǟO INTELIGENTE POR PIXEL / TRANSPAR?NCIA (HIT-TEST)
+  // SELEO E ARRASTO INTELIGENTE POR PIXEL / TRANSPARNCIA
   // ========================================================
   setupSmartSelection() {
     this.stage.on('pointerdown', (e) => {
-      // Se clicou em uma ala do transformer, permite resize/rotate normal
+      // Se clicou em uma ala do transformer (redimensionamento / rotao), permite interao do transformer
       if (e.target && (e.target.getParent() === this.transformer || e.target === this.transformer)) {
         return;
       }
@@ -188,25 +188,47 @@ export class CanvasEngine {
       const candidates = this.findOpaqueItemsAtPoint(pointerPos);
 
       if (candidates.length === 0) {
-        // Clicou em ǭrea vazia ou 100% transparente: desseleciona
+        // Clicou em rea vazia ou 100% transparente: desseleciona tudo
         this.deselect();
         return;
       }
 
-      // Se houver mltiplos itens sobrepostos (ex: arco de bales sobre o painel),
-      // toques repetidos alternam entre as peas sobrepostas!
-      let targetNode = candidates[0];
-      if (this.selectedNode && candidates.includes(this.selectedNode) && candidates.length > 1) {
-        const currentIndex = candidates.indexOf(this.selectedNode);
-        const nextIndex = (currentIndex + 1) % candidates.length;
-        targetNode = candidates[nextIndex];
+      // Se o item atualmente selecionado for um dos candidatos sob o ponto de toque,
+      // mantm ele selecionado para arrasto direto. Caso contrrio, seleciona o candidato visvel do topo.
+      let targetNode = null;
+      if (this.selectedNode && candidates.includes(this.selectedNode)) {
+        targetNode = this.selectedNode;
+      } else {
+        targetNode = candidates[0];
       }
 
       this.selectNode(targetNode);
+
+      // Dispara o arrasto imediatamente e exclusivamente no objeto selecionado
+      if (targetNode) {
+        targetNode.startDrag({ evt: e.evt });
+      }
+    });
+
+    // Alternncia cclica ao clicar rpido (sem arrastar) onde mltiplos itens opacos se sobrepem
+    this.stage.on('click tap', (e) => {
+      if (e.target && (e.target.getParent() === this.transformer || e.target === this.transformer)) {
+        return;
+      }
+
+      const pointerPos = this.stage.getPointerPosition();
+      if (!pointerPos) return;
+
+      const candidates = this.findOpaqueItemsAtPoint(pointerPos);
+      if (candidates.length > 1 && this.selectedNode && candidates.includes(this.selectedNode)) {
+        const currentIndex = candidates.indexOf(this.selectedNode);
+        const nextIndex = (currentIndex + 1) % candidates.length;
+        this.selectNode(candidates[nextIndex]);
+      }
     });
   }
 
-  // Verifica se o pixel na posiǜo do palco  visivelmente opaco no grupo
+  // Verifica se o pixel na posio do palco  visivelmente opaco no grupo
   isPointOpaqueInGroup(group, stagePoint) {
     const transform = group.getAbsoluteTransform().copy().invert();
     const localPt = transform.point(stagePoint);
@@ -214,7 +236,7 @@ export class CanvasEngine {
     const w = group.width();
     const h = group.height();
 
-    // Fora da bounding box = nǜo acertou
+    // Fora da bounding box = no acertou
     if (localPt.x < 0 || localPt.x > w || localPt.y < 0 || localPt.y > h) {
       return false;
     }
@@ -243,7 +265,7 @@ export class CanvasEngine {
       // Pixel com mais de 25 de alfa (>10% de opacidade)  considerado opaco
       return alpha > 25;
     } catch {
-      return true; // Fallback caso ocorra restriǜo
+      return true; // Fallback caso ocorra restrio
     }
   }
 
@@ -290,7 +312,7 @@ export class CanvasEngine {
   }
 
   // ========================================================
-  // ADIǟO E MANIPULAǟO DE ITENS NO PALCO
+  // ADIO E MANIPULAO DE ITENS NO PALCO
   // ========================================================
   async addItem(itemData, position = null, saveHistory = true) {
     const widthPx = Math.max(70, (itemData.widthCm || 60) * this.pxPerCm);
@@ -304,7 +326,7 @@ export class CanvasEngine {
       y: posY,
       width: widthPx,
       height: heightPx,
-      draggable: true,
+      draggable: false, // Inicia desativado: somente o item selecionado  draggable
       name: 'decor-item',
       dragBoundFunc: (pos) => {
         const layer = group.getLayer();
@@ -349,17 +371,6 @@ export class CanvasEngine {
       await this.attachCoverToNode(group, itemData.customCoverUrl);
     }
 
-    // Intercepta arrasto inteligente: se tocar em ǭrea transparente, cancela drag
-    group.on('pointerdown', (e) => {
-      const pointerPos = this.stage.getPointerPosition();
-      if (pointerPos && !this.isPointOpaqueInGroup(group, pointerPos)) {
-        group.stopDrag();
-      } else {
-        e.cancelBubble = true;
-        this.selectNode(group);
-      }
-    });
-
     group.on('dragmove', () => {
       this.uiLayer.batchDraw();
     });
@@ -384,7 +395,18 @@ export class CanvasEngine {
   }
 
   selectNode(node) {
+    // Desativa draggable do nó anterior para evitar arraste fantasma
+    if (this.selectedNode && this.selectedNode !== node) {
+      this.selectedNode.draggable(false);
+    }
+
     this.selectedNode = node;
+
+    // Ativa draggable exclusivamente no nó selecionado
+    if (node) {
+      node.draggable(true);
+    }
+
     this.transformer.nodes(node ? [node] : []);
     this.uiLayer.batchDraw();
 
@@ -395,6 +417,9 @@ export class CanvasEngine {
   }
 
   deselect() {
+    if (this.selectedNode) {
+      this.selectedNode.draggable(false);
+    }
     this.selectedNode = null;
     this.transformer.nodes([]);
     this.uiLayer.batchDraw();
@@ -612,7 +637,7 @@ export class CanvasEngine {
   }
 
   // ========================================================
-  // HIST?RICO: DESFAZER / REFAZER (UNDO / REDO)
+  // HISTRICO: DESFAZER / REFAZER (UNDO / REDO)
   // ========================================================
   saveSnapshot() {
     if (this.isRestoringState) return;

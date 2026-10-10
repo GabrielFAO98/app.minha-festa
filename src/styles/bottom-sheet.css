@@ -43,11 +43,11 @@
 /* Gaveta Deslizante (Totalmente oculta quando fechada) */
 .bottom-sheet {
   position: absolute;
-  bottom: 54px;
+  bottom: 56px;
   left: 0;
   right: 0;
-  height: 58dvh;
-  max-height: 58dvh;
+  height: 64dvh;
+  max-height: 72dvh;
   background-color: rgba(30, 41, 59, 0.98);
   backdrop-filter: blur(20px);
   border-top-left-radius: var(--radius-lg);
@@ -127,6 +127,7 @@
   white-space: nowrap;
   scrollbar-width: none;
   background-color: rgba(15, 23, 42, 0.4);
+  -webkit-overflow-scrolling: touch;
 }
 
 .category-pills::-webkit-scrollbar {
@@ -155,22 +156,24 @@
 .sheet-body {
   flex: 1;
   overflow-y: auto;
-  padding: 12px 14px 20px 14px;
+  overflow-x: hidden;
+  padding: 10px 10px 24px 10px;
   -webkit-overflow-scrolling: touch;
 }
 
-/* Grid de Itens em 2 Colunas */
+/* Grid de Itens em 2 Colunas no Mobile (minmax 0 garante que nunca estoure a tela) */
 .items-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
 }
 
 .item-card {
   background-color: rgba(15, 23, 42, 0.6);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 8px;
+  padding: 8px 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -178,43 +181,58 @@
   transition: all var(--transition-fast);
   cursor: pointer;
   position: relative;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .item-card:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
   border-color: var(--border-focus);
 }
 
 .item-card-preview {
   width: 100%;
-  height: 70px;
+  height: 64px;
+  max-height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  overflow: hidden;
 }
 
 .item-card-preview img,
 .item-card-preview svg {
-  max-height: 100%;
-  max-width: 100%;
+  max-height: 54px;
+  max-width: 85%;
   object-fit: contain;
 }
 
 .item-card-title {
-  font-size: 0.75rem;
+  font-size: 0.70rem;
   font-weight: 600;
   color: var(--text-main);
   width: 100%;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   margin-bottom: 2px;
+  line-height: 1.2;
 }
 
 .item-card-dimensions {
-  font-size: 0.65rem;
+  font-size: 0.60rem;
   color: var(--text-muted);
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .item-card-badge {
@@ -223,7 +241,7 @@
   left: 5px;
   padding: 2px 6px;
   border-radius: var(--radius-sm);
-  background-color: rgba(15, 23, 42, 0.8);
+  background-color: rgba(15, 23, 42, 0.85);
   font-size: 0.6rem;
   font-weight: 600;
   color: var(--text-muted);
@@ -232,12 +250,13 @@
 /* SELEÇÃO DE CENÁRIOS POR IMAGEM */
 .scene-visual-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
 }
 
 .scene-visual-card {
-  aspect-ratio: 9 / 16; /* Miniatura vertical proporcional */
+  aspect-ratio: 9 / 16;
   border-radius: var(--radius-md);
   border: 2px solid var(--border-subtle);
   overflow: hidden;
@@ -245,6 +264,8 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   background-color: #000;
+  width: 100%;
+  min-width: 0;
 }
 
 .scene-visual-card:active,

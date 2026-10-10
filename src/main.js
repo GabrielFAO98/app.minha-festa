@@ -69,11 +69,11 @@ async function bootstrap() {
     desktopStudio.renderLayersList(elements);
   };
 
-  // 7. Header Actions e Histrico (Desfazer / Refazer)
+  // 7. Header Actions, Salvar e Histórico (Desfazer / Refazer)
   const btnHeaderUndo = document.getElementById('btn-header-undo');
   const btnHeaderRedo = document.getElementById('btn-header-redo');
+  const btnHeaderSave = document.getElementById('btn-header-save');
   const btnHeaderProjects = document.getElementById('btn-header-projects');
-  const btnHeaderClear = document.getElementById('btn-header-clear');
   const btnHeaderExport = document.getElementById('btn-header-export');
 
   btnHeaderUndo?.addEventListener('click', () => {
@@ -89,14 +89,12 @@ async function bootstrap() {
     if (btnHeaderRedo) btnHeaderRedo.disabled = !canRedo;
   };
 
-  btnHeaderProjects?.addEventListener('click', () => {
-    projectsModal.open();
+  btnHeaderSave?.addEventListener('click', () => {
+    projectsModal.quickSave();
   });
 
-  btnHeaderClear?.addEventListener('click', () => {
-    if (confirm('Deseja limpar todos os itens do cenrio?')) {
-      canvasEngine.clearScene();
-    }
+  btnHeaderProjects?.addEventListener('click', () => {
+    projectsModal.open();
   });
 
   btnHeaderExport?.addEventListener('click', () => {

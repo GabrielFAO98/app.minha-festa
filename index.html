@@ -31,11 +31,11 @@
         <button id="btn-header-redo" class="btn-header btn-header-ghost" title="Refazer (Ctrl+Y)" disabled>
           ↪️
         </button>
-        <button id="btn-header-projects" class="btn-header btn-header-ghost" title="Salvar / Abrir">
-          📁 <span>Projetos</span>
+        <button id="btn-header-save" class="btn-header btn-header-ghost" title="Salvar Cenário (Ctrl+S)">
+          💾 <span>Salvar</span>
         </button>
-        <button id="btn-header-clear" class="btn-header btn-header-ghost" title="Limpar Tudo">
-          🗑️
+        <button id="btn-header-projects" class="btn-header btn-header-ghost" title="Meus Projetos">
+          📁 <span>Projetos</span>
         </button>
         <button id="btn-header-export" class="btn-header btn-header-primary" title="Exportar e WhatsApp">
           ✨ <span>Exportar</span>
@@ -342,14 +342,22 @@
         <button id="btn-close-projects-modal" class="modal-close-btn">✕</button>
       </div>
       <div class="modal-body">
+        <div style="margin-bottom: 10px;">
+          <button id="btn-new-project-action" class="btn-secondary" style="width: 100%; border: 1.5px dashed var(--primary); color: #fff; font-weight: 700; gap: 6px;">
+            ➕ Iniciar Novo Cenário do Zero
+          </button>
+        </div>
         <div style="display: flex; gap: 8px;">
-          <input type="text" id="project-save-title" class="form-input" placeholder="Nome (ex: Safari Pedro 1 Ano)" />
+          <input type="text" id="project-save-title" class="form-input" placeholder="Nome do Cenário (ex: Safari Pedro)" />
           <button id="btn-save-project-action" class="btn-primary" style="white-space: nowrap;">
             💾 Salvar
           </button>
         </div>
-        <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-top: 8px;">Cenários Salvos:</div>
-        <div id="saved-projects-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+        <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+          <span>Cenários Salvos no Dispositivo:</span>
+          <span id="projects-count-badge" class="badge-layers-count">0</span>
+        </div>
+        <div id="saved-projects-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto;"></div>
       </div>
     </div>
   </div>

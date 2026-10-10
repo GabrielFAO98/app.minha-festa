@@ -16,7 +16,21 @@ db.version(1).stores({
 export async function initDatabase() {
   const timestamp = Date.now();
 
-  // Insere/atualiza os presets de fbrica
+  // Remove presets de fábrica descontinuados para manter o acervo padrão sempre atualizado
+  try {
+    const currentPresetIds = new Set(DEFAULT_PRESET_ITEMS.map((item) => item.id));
+    const allStoredItems = await db.items.toArray();
+    const obsoleteIds = allStoredItems
+      .filter((item) => !item.isCustom && !currentPresetIds.has(item.id))
+      .map((item) => item.id);
+    if (obsoleteIds.length > 0) {
+      await db.items.bulkDelete(obsoleteIds);
+    }
+  } catch (err) {
+    console.warn('Erro ao sincronizar presets obsoletos:', err);
+  }
+
+  // Insere/atualiza os presets de fábrica
   const seededItems = DEFAULT_PRESET_ITEMS.map((item) => ({
     ...item,
     createdAt: item.createdAt || timestamp

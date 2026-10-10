@@ -193,20 +193,18 @@ export class CanvasEngine {
         return;
       }
 
-      // Se o item atualmente selecionado for um dos candidatos sob o ponto de toque,
-      // mantm ele selecionado para arrasto direto. Caso contrrio, seleciona o candidato visvel do topo.
-      let targetNode = null;
-      if (this.selectedNode && candidates.includes(this.selectedNode)) {
-        targetNode = this.selectedNode;
-      } else {
-        targetNode = candidates[0];
-      }
+      const isAlreadySelected = this.selectedNode && candidates.includes(this.selectedNode);
 
-      this.selectNode(targetNode);
-
-      // Dispara o arrasto imediatamente e exclusivamente no objeto selecionado
-      if (targetNode) {
+      if (isAlreadySelected) {
+        // O objeto já está selecionado: o usuário clicou nele para arrastar
+        const targetNode = this.selectedNode;
+        targetNode.draggable(true);
         targetNode.startDrag({ evt: e.evt });
+      } else {
+        // O objeto não estava selecionado: o primeiro clique apenas seleciona
+        // Não inicia arrasto para não mover acidentalmente ao clicar para inspecionar/selecionar
+        const targetNode = candidates[0];
+        this.selectNode(targetNode);
       }
     });
 
@@ -326,7 +324,8 @@ export class CanvasEngine {
       y: posY,
       width: widthPx,
       height: heightPx,
-      draggable: false, // Inicia desativado: somente o item selecionado  draggable
+      draggable: false, // Inicia desativado: somente o item selecionado é draggable
+      dragDistance: 6,  // Tolerância de 6px para evitar arraste em cliques estáticos
       name: 'decor-item',
       dragBoundFunc: (pos) => {
         const layer = group.getLayer();

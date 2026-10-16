@@ -90,7 +90,13 @@ export class ItemToolbar {
 
     if (btnCover) {
       const isBalloons = meta.category === 'baloes' || meta.type === 'balloon_arch';
-      const isCoverable = ['cylinder', 'panel_round', 'panel_arch', 'rug_oval', 'rug_round', 'rug_rect_3d'].includes(meta.type) || (meta.type && meta.type.startsWith('rug'));
+      const isCoverable = [
+        'cylinder', 'cube',
+        'panel_round', 'panel_arch', 'panel_rect', 'panel_half_moon', 'shimmer_wall',
+        'table', 'table_organic', 'table_drop', 'table_side',
+        'rug_oval', 'rug_round', 'rug_rect_3d',
+        'display'
+      ].includes(meta.type) || (meta.type && (meta.type.startsWith('panel') || meta.type.startsWith('rug') || meta.type.startsWith('table') || meta.type.startsWith('cube')));
 
       if (isBalloons) {
         btnCover.innerHTML = '🎨 Cores';

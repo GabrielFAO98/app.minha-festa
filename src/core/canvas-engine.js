@@ -498,7 +498,7 @@ export class CanvasEngine {
       return;
     }
 
-    if (baseImage && (meta.type === 'cylinder' || (meta.type && meta.type.startsWith('rug')))) {
+    if (baseImage && (meta.type === 'cylinder' || meta.type === 'cube' || (meta.type && meta.type.startsWith('rug')))) {
       baseImage.visible(false);
     }
 

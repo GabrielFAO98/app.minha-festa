@@ -37,15 +37,39 @@ export async function initDatabase() {
   }));
   await db.items.bulkPut(seededItems);
 
-  // Inicializa capas de exemplo se ainda no existirem
-  const coversCount = await db.covers.count();
-  if (coversCount === 0) {
-    const seededCovers = DEFAULT_THEME_COVERS.map((cover) => ({
-      ...cover,
-      createdAt: timestamp
-    }));
-    await db.covers.bulkPut(seededCovers);
+  // Sincroniza capas padrão de fábrica (remove obsoletas e insere as novas)
+  try {
+    const currentCoverIds = new Set(DEFAULT_THEME_COVERS.map((cover) => cover.id));
+    const allStoredCovers = await db.covers.toArray();
+    const oldFactoryCoverIds = [
+      'cover-safari-1', 'cover-astronauta-1', 'cover-boho-1', 'cover-candy-1', 'cover-dourado-1',
+      'cover-ripado-freijo', 'cover-marmore-gold', 'cover-floral-aquarela', 'cover-selva-safari', 'cover-azul-ouro-glamour'
+    ];
+    
+    const obsoleteCoverIds = allStoredCovers
+      .filter((cover) => {
+        // Exclui capas antigas de demonstração
+        if (oldFactoryCoverIds.includes(cover.id)) return true;
+        // Exclui capas de fábrica que não pertencem mais aos presets atuais (mantendo uploads do usuário)
+        if (!cover.isCustom && cover.themeName !== 'Minhas Estampas' && !currentCoverIds.has(cover.id)) return true;
+        return false;
+      })
+      .map((cover) => cover.id);
+
+    if (obsoleteCoverIds.length > 0) {
+      await db.covers.bulkDelete(obsoleteCoverIds);
+    }
+  } catch (err) {
+    console.warn('Erro ao sincronizar capas obsoletas:', err);
   }
+
+  // Insere/atualiza as novas capas padrão de fábrica
+  const seededCovers = DEFAULT_THEME_COVERS.map((cover) => ({
+    ...cover,
+    isCustom: false,
+    createdAt: timestamp
+  }));
+  await db.covers.bulkPut(seededCovers);
 }
 
 // Mtodos auxiliares para Acervo de Peas
@@ -101,6 +125,7 @@ export async function addCustomCover(coverData) {
     name: coverData.name || 'Nova Capa',
     targetType: coverData.targetType || 'all',
     imageUrl: coverData.imageUrl,
+    isCustom: true,
     createdAt: Date.now()
   };
   await db.covers.add(newCover);

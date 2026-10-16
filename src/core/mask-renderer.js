@@ -121,6 +121,78 @@ export function createClipFunction(type, width, height) {
     };
   }
 
+  if (type === 'panel_rect' || type === 'shimmer_wall') {
+    // Painel Retangular: área do tecido sublimado na estrutura (viewBox 300 x 260)
+    const scaleX = width / 300;
+    const scaleY = height / 260;
+    const x = 15 * scaleX;
+    const y = 15 * scaleY;
+    const w = 270 * scaleX;
+    const h = 200 * scaleY;
+
+    return function(ctx) {
+      ctx.beginPath();
+      ctx.rect(x, y, w, h);
+      ctx.closePath();
+    };
+  }
+
+  if (type === 'panel_half_moon') {
+    // Painel Meia-Lua / Assimétrico (viewBox 220 x 380)
+    const scaleX = width / 220;
+    const scaleY = height / 380;
+    const xLeft = 20 * scaleX;
+    const xRight = 200 * scaleX;
+    const yBottom = 345 * scaleY;
+
+    return function(ctx) {
+      ctx.beginPath();
+      ctx.moveTo(xLeft, yBottom);
+      ctx.lineTo(xLeft, 150 * scaleY);
+      ctx.bezierCurveTo(xLeft, 35 * scaleY, 110 * scaleX, 20 * scaleY, xRight, 25 * scaleY);
+      ctx.lineTo(xRight, yBottom);
+      ctx.closePath();
+    };
+  }
+
+  if (type === 'cube') {
+    // Cubo em Perspectiva 2.5D (viewBox 160 x 220)
+    const scaleX = width / 160;
+    const scaleY = height / 220;
+    return function(ctx) {
+      ctx.beginPath();
+      ctx.moveTo(80 * scaleX, 18 * scaleY);
+      ctx.lineTo(145 * scaleX, 38 * scaleY);
+      ctx.lineTo(145 * scaleX, 205 * scaleY);
+      ctx.lineTo(80 * scaleX, 225 * scaleY);
+      ctx.lineTo(15 * scaleX, 205 * scaleY);
+      ctx.lineTo(15 * scaleX, 38 * scaleY);
+      ctx.closePath();
+    };
+  }
+
+  if (type === 'table_organic' || type === 'table_drop') {
+    // Tampo Orgânico Curvo (viewBox 320 x 200)
+    const scaleX = width / 320;
+    const scaleY = height / 200;
+    return function(ctx) {
+      ctx.beginPath();
+      ctx.ellipse(160 * scaleX, 55 * scaleY, 135 * scaleX, 32 * scaleY, 0, 0, Math.PI * 2, false);
+      ctx.closePath();
+    };
+  }
+
+  if (type === 'display') {
+    // Display em MDF recortado (viewBox 140 x 180)
+    const scaleX = width / 140;
+    const scaleY = height / 180;
+    return function(ctx) {
+      ctx.beginPath();
+      ctx.rect(25 * scaleX, 15 * scaleY, 90 * scaleX, 148 * scaleY);
+      ctx.closePath();
+    };
+  }
+
   // Padrão retangular
   return function(ctx) {
     ctx.beginPath();
@@ -235,6 +307,61 @@ export function calculateCoverPlacement(type, width, height, imgW, imgH) {
       h: rectH,
       cx: xLeft + rectW / 2,
       cy: yTop + rectH / 2
+    };
+  } else if (type === 'panel_rect' || type === 'shimmer_wall') {
+    const scaleX = width / 300;
+    const scaleY = height / 260;
+    targetBox = {
+      x: 15 * scaleX,
+      y: 15 * scaleY,
+      w: 270 * scaleX,
+      h: 200 * scaleY,
+      cx: 150 * scaleX,
+      cy: 115 * scaleY
+    };
+  } else if (type === 'panel_half_moon') {
+    const scaleX = width / 220;
+    const scaleY = height / 380;
+    targetBox = {
+      x: 20 * scaleX,
+      y: 20 * scaleY,
+      w: 180 * scaleX,
+      h: 325 * scaleY,
+      cx: 110 * scaleX,
+      cy: 182.5 * scaleY
+    };
+  } else if (type === 'cube') {
+    const scaleX = width / 160;
+    const scaleY = height / 220;
+    targetBox = {
+      x: 15 * scaleX,
+      y: 18 * scaleY,
+      w: 130 * scaleX,
+      h: 207 * scaleY,
+      cx: 80 * scaleX,
+      cy: 121.5 * scaleY
+    };
+  } else if (type === 'table_organic' || type === 'table_drop') {
+    const scaleX = width / 320;
+    const scaleY = height / 200;
+    targetBox = {
+      x: 25 * scaleX,
+      y: 23 * scaleY,
+      w: 270 * scaleX,
+      h: 64 * scaleY,
+      cx: 160 * scaleX,
+      cy: 55 * scaleY
+    };
+  } else if (type === 'display') {
+    const scaleX = width / 140;
+    const scaleY = height / 180;
+    targetBox = {
+      x: 25 * scaleX,
+      y: 15 * scaleY,
+      w: 90 * scaleX,
+      h: 148 * scaleY,
+      cx: 70 * scaleX,
+      cy: 89 * scaleY
     };
   }
 
@@ -539,6 +666,86 @@ export function createShadingOverlay(type, width, height) {
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.20)';
         ctx.lineWidth = 1.5;
         ctx.stroke();
+      }
+    });
+  }
+
+  if (type === 'cube') {
+    const scaleX = width / 160;
+    const scaleY = height / 220;
+    return new Konva.Shape({
+      name: 'shading-overlay',
+      listening: false,
+      sceneFunc: (context) => {
+        const ctx = context._context;
+        // 1. Faceta do topo (iluminação superior)
+        ctx.beginPath();
+        ctx.moveTo(80 * scaleX, 18 * scaleY);
+        ctx.lineTo(145 * scaleX, 38 * scaleY);
+        ctx.lineTo(80 * scaleX, 58 * scaleY);
+        ctx.lineTo(15 * scaleX, 38 * scaleY);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.20)';
+        ctx.fill();
+
+        // 2. Face esquerda em sombra suave
+        ctx.beginPath();
+        ctx.moveTo(15 * scaleX, 38 * scaleY);
+        ctx.lineTo(80 * scaleX, 58 * scaleY);
+        ctx.lineTo(80 * scaleX, 225 * scaleY);
+        ctx.lineTo(15 * scaleX, 205 * scaleY);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
+        ctx.fill();
+
+        // 3. Face direita em luz direta
+        ctx.beginPath();
+        ctx.moveTo(80 * scaleX, 58 * scaleY);
+        ctx.lineTo(145 * scaleX, 38 * scaleY);
+        ctx.lineTo(145 * scaleX, 205 * scaleY);
+        ctx.lineTo(80 * scaleX, 225 * scaleY);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.fill();
+
+        // Contorno de arestas
+        ctx.beginPath();
+        ctx.moveTo(80 * scaleX, 18 * scaleY);
+        ctx.lineTo(145 * scaleX, 38 * scaleY);
+        ctx.lineTo(145 * scaleX, 205 * scaleY);
+        ctx.lineTo(80 * scaleX, 225 * scaleY);
+        ctx.lineTo(15 * scaleX, 205 * scaleY);
+        ctx.lineTo(15 * scaleX, 38 * scaleY);
+        ctx.closePath();
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.14)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    });
+  }
+
+  if (type === 'panel_rect' || type === 'shimmer_wall') {
+    const scaleX = width / 300;
+    const scaleY = height / 260;
+    const x = 15 * scaleX;
+    const y = 15 * scaleY;
+    const w = 270 * scaleX;
+    const h = 200 * scaleY;
+    return new Konva.Shape({
+      name: 'shading-overlay',
+      listening: false,
+      sceneFunc: (context) => {
+        const ctx = context._context;
+        const vertGrad = ctx.createLinearGradient(0, y, 0, y + h);
+        vertGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.12)');
+        vertGrad.addColorStop(0.4, 'rgba(255, 255, 255, 0.0)');
+        vertGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.14)');
+        ctx.fillStyle = vertGrad;
+        ctx.fillRect(x, y, w, h);
+
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(x, y, w, h);
       }
     });
   }

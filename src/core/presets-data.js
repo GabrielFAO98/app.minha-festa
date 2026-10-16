@@ -1039,11 +1039,498 @@ export const SVG_VASE_FLOWERS = `
 </svg>
 `;
 
-// Lista Principal de Presets de Fbrica
+// 17. Painel Retangular 2,00m x 1,50m
+export const SVG_PANEL_RECT = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 260" width="300" height="260">
+  <defs>
+    <linearGradient id="rectPanelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <filter id="shadowRectPanel" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+  <!-- Pés Metálicos Estruturais -->
+  <line x1="55" y1="200" x2="55" y2="252" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
+  <line x1="25" y1="252" x2="85" y2="252" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
+  <line x1="245" y1="200" x2="245" y2="252" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
+  <line x1="215" y1="252" x2="275" y2="252" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
+  <!-- Face do Painel com Capa / Lona Sublimada -->
+  <rect x="15" y="15" width="270" height="200" rx="4" fill="url(#rectPanelGrad)" stroke="#cbd5e1" stroke-width="3" filter="url(#shadowRectPanel)"/>
+  <rect x="20" y="20" width="260" height="190" rx="2" fill="none" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <text x="150" y="115" font-family="sans-serif" font-size="13" font-weight="bold" fill="#64748b" text-anchor="middle">PAINEL RETANGULAR</text>
+  <text x="150" y="132" font-family="sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">2,00m x 1,50m</text>
+</svg>
+`;
+
+// 18. Painel Ripado 1,00m x 2,20m
+export const SVG_PANEL_SLAT_100x220 = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 380" width="180" height="380">
+  <defs>
+    <linearGradient id="slatWoodGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#d97706"/>
+      <stop offset="50%" stop-color="#b45309"/>
+      <stop offset="100%" stop-color="#78350f"/>
+    </linearGradient>
+    <filter id="shadowSlat" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <!-- Pés Metálicos -->
+  <line x1="35" y1="340" x2="35" y2="372" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
+  <line x1="15" y1="372" x2="60" y2="372" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
+  <line x1="145" y1="340" x2="145" y2="372" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
+  <line x1="120" y1="372" x2="165" y2="372" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
+  <!-- Ripas Verticais de Madeira -->
+  <g fill="url(#slatWoodGrad)" stroke="#78350f" stroke-width="1.2" filter="url(#shadowSlat)">
+    <rect x="20" y="15" width="16" height="330" rx="2"/>
+    <rect x="40" y="15" width="16" height="330" rx="2"/>
+    <rect x="60" y="15" width="16" height="330" rx="2"/>
+    <rect x="80" y="15" width="16" height="330" rx="2"/>
+    <rect x="100" y="15" width="16" height="330" rx="2"/>
+    <rect x="120" y="15" width="16" height="330" rx="2"/>
+    <rect x="140" y="15" width="16" height="330" rx="2"/>
+  </g>
+  <!-- Travessas Traseiras -->
+  <rect x="15" y="80" width="146" height="12" fill="#451a03" opacity="0.85"/>
+  <rect x="15" y="270" width="146" height="12" fill="#451a03" opacity="0.85"/>
+  <text x="88" y="190" font-family="sans-serif" font-size="10" font-weight="bold" fill="#ffffff" text-anchor="middle" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);">PAINEL RIPADO 1,00x2,20m</text>
+</svg>
+`;
+
+// 19. Painel Meia-lua / Assimétrico 1,20m x 2,00m
+export const SVG_PANEL_HALF_MOON = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 380" width="220" height="380">
+  <defs>
+    <linearGradient id="halfMoonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fdf4ff"/>
+      <stop offset="60%" stop-color="#fae8ff"/>
+      <stop offset="100%" stop-color="#f5d0fe"/>
+    </linearGradient>
+    <filter id="shadowHalfMoon" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+  <!-- Pés Metálicos -->
+  <line x1="45" y1="340" x2="45" y2="372" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
+  <line x1="20" y1="372" x2="70" y2="372" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
+  <line x1="175" y1="340" x2="175" y2="372" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
+  <line x1="150" y1="372" x2="200" y2="372" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
+  <!-- Silhueta Assimétrica / Meia-Lua -->
+  <path d="M 20 345 L 20 150 C 20 35, 110 20, 200 25 L 200 345 Z" fill="url(#halfMoonGrad)" stroke="#c084fc" stroke-width="3" filter="url(#shadowHalfMoon)"/>
+  <path d="M 28 340 L 28 152 C 28 45, 110 30, 192 35 L 192 340" fill="none" stroke="#e879f9" stroke-width="1.5" stroke-dasharray="5,4"/>
+  <text x="110" y="195" font-family="sans-serif" font-size="11" font-weight="bold" fill="#9333ea" text-anchor="middle">PAINEL MEIA-LUA</text>
+  <text x="110" y="212" font-family="sans-serif" font-size="9" fill="#a855f7" text-anchor="middle">1,20m x 2,00m</text>
+</svg>
+`;
+
+// 20. Shimmer Wall (Paetê Dourado) 30x30cm (Placa Modular)
+export const SVG_SHIMMER_WALL = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+  <defs>
+    <linearGradient id="shimmerGold1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="40%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#a16207"/>
+    </linearGradient>
+    <linearGradient id="shimmerGold2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="30%" stop-color="#fde047"/>
+      <stop offset="100%" stop-color="#ca8a04"/>
+    </linearGradient>
+    <filter id="shimmerGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect x="5" y="5" width="150" height="150" rx="4" fill="#0f172a" stroke="#ca8a04" stroke-width="2" filter="url(#shimmerGlow)"/>
+  <rect x="12" y="12" width="30" height="30" rx="3" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="27" cy="15" r="1.5" fill="#475569"/>
+  <rect x="47" y="12" width="30" height="30" rx="3" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="62" cy="15" r="1.5" fill="#475569"/>
+  <rect x="82" y="12" width="30" height="30" rx="3" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="97" cy="15" r="1.5" fill="#475569"/>
+  <rect x="117" y="12" width="30" height="30" rx="3" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="132" cy="15" r="1.5" fill="#475569"/>
+  <rect x="12" y="47" width="30" height="30" rx="3" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="27" cy="50" r="1.5" fill="#475569"/>
+  <rect x="47" y="47" width="30" height="30" rx="3" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="62" cy="50" r="1.5" fill="#475569"/>
+  <rect x="82" y="47" width="30" height="30" rx="3" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="97" cy="50" r="1.5" fill="#475569"/>
+  <rect x="117" y="47" width="30" height="30" rx="3" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="132" cy="50" r="1.5" fill="#475569"/>
+  <rect x="12" y="82" width="30" height="30" rx="3" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="27" cy="85" r="1.5" fill="#475569"/>
+  <rect x="47" y="82" width="30" height="30" rx="3" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="62" cy="85" r="1.5" fill="#475569"/>
+  <rect x="82" y="82" width="30" height="30" rx="3" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="97" cy="85" r="1.5" fill="#475569"/>
+  <rect x="117" y="82" width="30" height="30" rx="3" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="132" cy="85" r="1.5" fill="#475569"/>
+  <rect x="12" y="117" width="30" height="30" rx="3" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="27" cy="120" r="1.5" fill="#475569"/>
+  <rect x="47" y="117" width="30" height="30" rx="3" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="62" cy="120" r="1.5" fill="#475569"/>
+  <rect x="82" y="117" width="30" height="30" rx="3" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="97" cy="120" r="1.5" fill="#475569"/>
+  <rect x="117" y="117" width="30" height="30" rx="3" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="132" cy="120" r="1.5" fill="#475569"/>
+</svg>
+`;
+
+// 21. Cubos P, M, G
+export const SVG_CUBE_P = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 210" width="160" height="210">
+  <defs>
+    <linearGradient id="cubeGradP" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="30%" stop-color="#ffffff"/>
+      <stop offset="85%" stop-color="#e2e8f0"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <filter id="shadowCubeP" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadowCubeP)">
+    <polygon points="80,18 145,38 80,58 15,38" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5"/>
+    <polygon points="15,38 80,58 80,195 15,175" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5"/>
+    <polygon points="80,58 145,38 145,175 80,195" fill="url(#cubeGradP)" stroke="#94a3b8" stroke-width="1.5"/>
+  </g>
+  <text x="80" y="125" font-family="sans-serif" font-size="11" font-weight="bold" fill="#64748b" text-anchor="middle">CUBO P</text>
+  <text x="80" y="140" font-family="sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">35x45cm</text>
+</svg>
+`;
+
+export const SVG_CUBE_M = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 240" width="160" height="240">
+  <defs>
+    <linearGradient id="cubeGradM" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="30%" stop-color="#ffffff"/>
+      <stop offset="85%" stop-color="#e2e8f0"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <filter id="shadowCubeM" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadowCubeM)">
+    <polygon points="80,18 145,38 80,58 15,38" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5"/>
+    <polygon points="15,38 80,58 80,225 15,205" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5"/>
+    <polygon points="80,58 145,38 145,205 80,225" fill="url(#cubeGradM)" stroke="#94a3b8" stroke-width="1.5"/>
+  </g>
+  <text x="80" y="135" font-family="sans-serif" font-size="12" font-weight="bold" fill="#64748b" text-anchor="middle">CUBO M</text>
+  <text x="80" y="152" font-family="sans-serif" font-size="9.5" fill="#94a3b8" text-anchor="middle">40x60cm</text>
+</svg>
+`;
+
+export const SVG_CUBE_G = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 280" width="160" height="280">
+  <defs>
+    <linearGradient id="cubeGradG" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="30%" stop-color="#ffffff"/>
+      <stop offset="85%" stop-color="#e2e8f0"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <filter id="shadowCubeG" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadowCubeG)">
+    <polygon points="80,18 145,38 80,58 15,38" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5"/>
+    <polygon points="15,38 80,58 80,265 15,245" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5"/>
+    <polygon points="80,58 145,38 145,245 80,265" fill="url(#cubeGradG)" stroke="#94a3b8" stroke-width="1.5"/>
+  </g>
+  <text x="80" y="155" font-family="sans-serif" font-size="13" font-weight="bold" fill="#64748b" text-anchor="middle">CUBO G</text>
+  <text x="80" y="172" font-family="sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">45x80cm</text>
+</svg>
+`;
+
+// 22. Mesa Orgânica Feijão / Rim (1,50m x 80cm)
+export const SVG_TABLE_ORGANIC = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200">
+  <defs>
+    <linearGradient id="organicTopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="legWood" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#b45309"/>
+      <stop offset="40%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#78350f"/>
+    </linearGradient>
+    <filter id="shadowOrganic" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <!-- Pés Cilíndricos em Madeira Nobre -->
+  <rect x="50" y="60" width="28" height="125" rx="14" fill="url(#legWood)" stroke="#78350f" stroke-width="1.5"/>
+  <rect x="146" y="65" width="28" height="120" rx="14" fill="url(#legWood)" stroke="#78350f" stroke-width="1.5"/>
+  <rect x="242" y="60" width="28" height="125" rx="14" fill="url(#legWood)" stroke="#78350f" stroke-width="1.5"/>
+  <!-- Tampo Orgânico Feijão / Rim -->
+  <path d="M 40 45 C 60 15, 200 15, 280 40 C 310 55, 305 90, 260 95 C 190 100, 160 75, 110 85 C 50 95, 20 70, 40 45 Z" fill="url(#organicTopGrad)" stroke="#cbd5e1" stroke-width="3" filter="url(#shadowOrganic)"/>
+  <path d="M 40 50 C 60 20, 200 20, 280 45 C 310 60, 305 95, 260 100 C 190 105, 160 80, 110 90 C 50 100, 20 75, 40 50 Z" fill="none" stroke="#94a3b8" stroke-width="2" opacity="0.6"/>
+  <text x="160" y="62" font-family="sans-serif" font-size="11" font-weight="bold" fill="#64748b" text-anchor="middle">MESA ORGÂNICA (FEIJÃO) 150cm</text>
+</svg>
+`;
+
+// 23. Mesa Orgânica Apoio Gota (80cm x 60cm)
+export const SVG_TABLE_ORGANIC_DROP = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" width="200" height="180">
+  <defs>
+    <linearGradient id="dropTopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="dropLeg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#b45309"/>
+      <stop offset="50%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#78350f"/>
+    </linearGradient>
+    <filter id="shadowDrop" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <rect x="45" y="55" width="22" height="110" rx="11" fill="url(#dropLeg)" stroke="#78350f" stroke-width="1.2"/>
+  <rect x="135" y="55" width="22" height="110" rx="11" fill="url(#dropLeg)" stroke="#78350f" stroke-width="1.2"/>
+  <path d="M 35 50 C 45 20, 150 15, 175 45 C 190 75, 130 95, 75 90 C 35 85, 20 65, 35 50 Z" fill="url(#dropTopGrad)" stroke="#cbd5e1" stroke-width="2.5" filter="url(#shadowDrop)"/>
+  <text x="100" y="60" font-family="sans-serif" font-size="10" font-weight="bold" fill="#64748b" text-anchor="middle">MESA GOTA 80cm</text>
+</svg>
+`;
+
+// 24. Mesa de Apoio Lateral (60cm x 60cm)
+export const SVG_TABLE_SIDE = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 180" width="160" height="180">
+  <defs>
+    <linearGradient id="sideTopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <filter id="shadowSide" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <line x1="80" y1="45" x2="35" y2="165" stroke="#ca8a04" stroke-width="4" stroke-linecap="round"/>
+  <line x1="80" y1="45" x2="125" y2="165" stroke="#ca8a04" stroke-width="4" stroke-linecap="round"/>
+  <line x1="80" y1="45" x2="80" y2="170" stroke="#a16207" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="80" cy="140" r="35" fill="none" stroke="#eab308" stroke-width="2" opacity="0.7"/>
+  <ellipse cx="80" cy="40" rx="65" ry="16" fill="url(#sideTopGrad)" stroke="#cbd5e1" stroke-width="2" filter="url(#shadowSide)"/>
+  <text x="80" y="44" font-family="sans-serif" font-size="9" font-weight="bold" fill="#64748b" text-anchor="middle">MESA LATERAL 60cm</text>
+</svg>
+`;
+
+// 25. Balões Unitários de Látex (5", 9", 11", 16")
+export const SVG_BALLOON_5INCH = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 130" width="100" height="130">
+  <defs>
+    <radialGradient id="bal5Grad" cx="35%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#f472b6"/>
+      <stop offset="85%" stop-color="#db2777"/>
+      <stop offset="100%" stop-color="#9d174d"/>
+    </radialGradient>
+  </defs>
+  <path d="M 50 15 C 75 15, 88 45, 75 80 C 65 100, 56 108, 50 110 C 44 108, 35 100, 25 80 C 12 45, 25 15, 50 15 Z" fill="url(#bal5Grad)"/>
+  <polygon points="45,110 55,110 52,116 48,116" fill="#be123c"/>
+  <path d="M 50 116 Q 46 122 52 128" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+  <ellipse cx="40" cy="35" rx="8" ry="16" transform="rotate(-30 40 35)" fill="#ffffff" opacity="0.6"/>
+  <text x="50" y="65" font-family="sans-serif" font-size="10" font-weight="bold" fill="#ffffff" text-anchor="middle">5"</text>
+</svg>
+`;
+
+export const SVG_BALLOON_9INCH = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 150" width="120" height="150">
+  <defs>
+    <radialGradient id="bal9Grad" cx="35%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#60a5fa"/>
+      <stop offset="85%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1e40af"/>
+    </radialGradient>
+  </defs>
+  <path d="M 60 15 C 90 15, 105 50, 90 90 C 80 115, 68 124, 60 126 C 52 124, 40 115, 30 90 C 15 50, 30 15, 60 15 Z" fill="url(#bal9Grad)"/>
+  <polygon points="55,126 65,126 62,133 58,133" fill="#1d4ed8"/>
+  <path d="M 60 133 Q 56 140 64 148" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+  <ellipse cx="48" cy="40" rx="10" ry="20" transform="rotate(-30 48 40)" fill="#ffffff" opacity="0.6"/>
+  <text x="60" y="75" font-family="sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">9"</text>
+</svg>
+`;
+
+export const SVG_BALLOON_11INCH = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 170" width="140" height="170">
+  <defs>
+    <radialGradient id="bal11Grad" cx="35%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#a78bfa"/>
+      <stop offset="85%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#5b21b6"/>
+    </radialGradient>
+  </defs>
+  <path d="M 70 15 C 105 15, 125 55, 105 105 C 95 130, 80 142, 70 145 C 60 142, 45 130, 35 105 C 15 55, 35 15, 70 15 Z" fill="url(#bal11Grad)"/>
+  <polygon points="65,145 75,145 72,153 68,153" fill="#6d28d9"/>
+  <path d="M 70 153 Q 66 160 74 168" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+  <ellipse cx="55" cy="45" rx="12" ry="24" transform="rotate(-30 55 45)" fill="#ffffff" opacity="0.65"/>
+  <text x="70" y="85" font-family="sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">11"</text>
+</svg>
+`;
+
+export const SVG_BALLOON_16INCH = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 200" width="160" height="200">
+  <defs>
+    <radialGradient id="bal16Grad" cx="35%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#34d399"/>
+      <stop offset="85%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#064e3b"/>
+    </radialGradient>
+  </defs>
+  <path d="M 80 15 C 125 15, 145 65, 125 125 C 110 155, 92 170, 80 174 C 68 170, 50 155, 35 125 C 15 65, 35 15, 80 15 Z" fill="url(#bal16Grad)"/>
+  <polygon points="74,174 86,174 83,184 77,184" fill="#047857"/>
+  <path d="M 80 184 Q 74 192 84 200" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+  <ellipse cx="62" cy="50" rx="15" ry="30" transform="rotate(-30 62 50)" fill="#ffffff" opacity="0.65"/>
+  <text x="80" y="100" font-family="sans-serif" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">16"</text>
+</svg>
+`;
+
+// 26. Balão Bubble (Silicone Transparente) 45cm / 18"
+export const SVG_BALLOON_BUBBLE = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 200" width="160" height="200">
+  <defs>
+    <radialGradient id="bubbleGrad" cx="35%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="30%" stop-color="#e0f2fe" stop-opacity="0.4"/>
+      <stop offset="70%" stop-color="#38bdf8" stop-opacity="0.15"/>
+      <stop offset="95%" stop-color="#0284c7" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.8"/>
+    </radialGradient>
+  </defs>
+  <circle cx="68" cy="95" r="16" fill="#f472b6" opacity="0.85"/>
+  <circle cx="95" cy="88" r="18" fill="#fbbf24" opacity="0.85"/>
+  <circle cx="78" cy="115" r="15" fill="#34d399" opacity="0.85"/>
+  <circle cx="80" cy="85" r="68" fill="url(#bubbleGrad)" stroke="#38bdf8" stroke-width="1.5"/>
+  <ellipse cx="60" cy="50" rx="22" ry="10" transform="rotate(-35 60 50)" fill="#ffffff" opacity="0.75"/>
+  <polygon points="76,153 84,153 82,160 78,160" fill="#0284c7"/>
+  <path d="M 80 160 Q 75 175 85 190" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="80" y="45" font-family="sans-serif" font-size="10" font-weight="bold" fill="#0284c7" text-anchor="middle">BUBBLE 18"</text>
+</svg>
+`;
+
+// 27. Balão Metalizado Número 75cm / 32"
+export const SVG_BALLOON_NUMBER = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 240" width="160" height="240">
+  <defs>
+    <linearGradient id="goldFoil" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="25%" stop-color="#eab308"/>
+      <stop offset="50%" stop-color="#ffffff"/>
+      <stop offset="75%" stop-color="#ca8a04"/>
+      <stop offset="100%" stop-color="#854d0e"/>
+    </linearGradient>
+    <filter id="foilGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <g filter="url(#foilGlow)">
+    <path d="M 50 65 L 75 40 L 98 40 L 98 190 L 120 190 L 120 215 L 40 215 L 40 190 L 68 190 L 68 85 L 45 95 Z" fill="url(#goldFoil)" stroke="#78350f" stroke-width="2.5" stroke-linejoin="round"/>
+    <line x1="75" y1="40" x2="68" y2="85" stroke="#fef08a" stroke-width="1.5" opacity="0.8"/>
+    <line x1="98" y1="40" x2="98" y2="190" stroke="#fef08a" stroke-width="2" opacity="0.8"/>
+  </g>
+  <circle cx="80" cy="225" r="3" fill="#ca8a04"/>
+  <text x="80" y="145" font-family="sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);">32" (75cm)</text>
+</svg>
+`;
+
+// 28. Tapete Redondo 2,00m
+export const SVG_RUG_ROUND_200 = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 280" width="280" height="280">
+  <defs>
+    <radialGradient id="rug200Grad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#f8fafc"/>
+      <stop offset="90%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </radialGradient>
+    <filter id="shadowRug200" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+  <circle cx="140" cy="140" r="130" fill="url(#rug200Grad)" stroke="#94a3b8" stroke-width="2.5" filter="url(#shadowRug200)"/>
+  <circle cx="140" cy="140" r="124" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <text x="140" y="145" font-family="sans-serif" font-size="13" font-weight="bold" fill="#64748b" text-anchor="middle">TAPETE REDONDO 2,00m</text>
+</svg>
+`;
+
+// 29. Tapete Retangular / Lona 2,50m x 2,00m
+export const SVG_RUG_RECT_250x200 = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200" width="300" height="200">
+  <defs>
+    <linearGradient id="rugRect250Grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="50%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <filter id="shadowRugRect250" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <polygon points="35,20 265,20 290,180 10,180" fill="url(#rugRect250Grad)" stroke="#94a3b8" stroke-width="2" filter="url(#shadowRugRect250)"/>
+  <polygon points="42,28 258,28 280,172 20,172" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="7,5"/>
+  <text x="150" y="105" font-family="sans-serif" font-size="12" font-weight="bold" fill="#64748b" text-anchor="middle">LONA / TAPETE RETANGULAR</text>
+  <text x="150" y="122" font-family="sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">2,50m x 2,00m</text>
+</svg>
+`;
+
+// 30. Bandeja de Doces Baixa 20x5cm
+export const SVG_TRAY_LOW = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" width="160" height="80">
+  <defs>
+    <linearGradient id="trayLowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#fdf4ff"/>
+      <stop offset="100%" stop-color="#fae8ff"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="80" cy="55" rx="70" ry="15" fill="#e2e8f0"/>
+  <path d="M 12 40 L 12 50 A 68 15 0 0 0 148 50 L 148 40 Z" fill="url(#trayLowGrad)" stroke="#d946ef" stroke-width="1.5"/>
+  <ellipse cx="80" cy="40" rx="68" ry="15" fill="#ffffff" stroke="#d946ef" stroke-width="1.5"/>
+  <text x="80" y="44" font-family="sans-serif" font-size="8" font-weight="bold" fill="#a21caf" text-anchor="middle">BANDEJA BAIXA 20x5cm</text>
+</svg>
+`;
+
+// 31. Display de Mesa MDF 25cm
+export const SVG_DISPLAY_TABLE = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 180" width="140" height="180">
+  <defs>
+    <linearGradient id="displayTableGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <filter id="shadowDispTable" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <ellipse cx="70" cy="170" rx="45" ry="7" fill="#78350f" opacity="0.3"/>
+  <rect x="52" y="162" width="36" height="8" rx="2" fill="#b45309" stroke="#78350f" stroke-width="1"/>
+  <rect x="25" y="15" width="90" height="148" rx="6" fill="url(#displayTableGrad)" stroke="#cbd5e1" stroke-width="2" filter="url(#shadowDispTable)"/>
+  <rect x="30" y="20" width="80" height="138" rx="4" fill="none" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="70" y="85" font-family="sans-serif" font-size="9" font-weight="bold" fill="#64748b" text-anchor="middle">DISPLAY DE MESA</text>
+  <text x="70" y="100" font-family="sans-serif" font-size="8" fill="#94a3b8" text-anchor="middle">25cm</text>
+</svg>
+`;
+
+// Lista Principal de Presets de Fábrica
 export const DEFAULT_PRESET_ITEMS = [
+  // 1. PAINÉIS
   {
     id: 'preset-painel-redondo',
-    name: 'Painel Redondo 150cm',
+    name: 'Painel Redondo 1,50m',
     category: 'paineis',
     type: 'panel_round',
     widthCm: 150,
@@ -1055,7 +1542,7 @@ export const DEFAULT_PRESET_ITEMS = [
   },
   {
     id: 'preset-arco-romano',
-    name: 'Painel Arco Romano 100x200cm',
+    name: 'Painel Arco Romano 1,00x2,00m',
     category: 'paineis',
     type: 'panel_arch',
     widthCm: 100,
@@ -1066,17 +1553,55 @@ export const DEFAULT_PRESET_ITEMS = [
     rentalPrice: 55
   },
   {
-    id: 'preset-painel-ripado',
-    name: 'Painel Ripado Pinus 180x200cm',
+    id: 'preset-painel-retangular',
+    name: 'Painel Retangular 2,00x1,50m',
     category: 'paineis',
-    type: 'generic',
-    widthCm: 180,
-    heightCm: 200,
-    previewUrl: svgToDataUrl(SVG_PANEL_SLAT),
+    type: 'panel_rect',
+    widthCm: 200,
+    heightCm: 150,
+    previewUrl: svgToDataUrl(SVG_PANEL_RECT),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 65
+  },
+  {
+    id: 'preset-painel-ripado',
+    name: 'Painel Ripado 1,00x2,20m',
+    category: 'paineis',
+    type: 'panel_rect',
+    widthCm: 100,
+    heightCm: 220,
+    previewUrl: svgToDataUrl(SVG_PANEL_SLAT_100x220),
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 70
   },
+  {
+    id: 'preset-painel-meia-lua',
+    name: 'Painel Meia-lua / Assimétrico 1,20x2,00m',
+    category: 'paineis',
+    type: 'panel_half_moon',
+    widthCm: 120,
+    heightCm: 200,
+    previewUrl: svgToDataUrl(SVG_PANEL_HALF_MOON),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 60
+  },
+  {
+    id: 'preset-shimmer-wall',
+    name: 'Shimmer Wall (Paetê Dourado) 30x30cm',
+    category: 'paineis',
+    type: 'shimmer_wall',
+    widthCm: 30,
+    heightCm: 30,
+    previewUrl: svgToDataUrl(SVG_SHIMMER_WALL),
+    isCustom: false,
+    stockQuantity: 12,
+    rentalPrice: 15
+  },
+
+  // 2. CILINDROS, CUBOS E MESAS
   {
     id: 'preset-cilindro-g',
     name: 'Cilindro G (50x80cm)',
@@ -1091,11 +1616,11 @@ export const DEFAULT_PRESET_ITEMS = [
   },
   {
     id: 'preset-cilindro-m',
-    name: 'Cilindro M (44x58cm)',
+    name: 'Cilindro M (44x60cm)',
     category: 'cilindros',
     type: 'cylinder',
     widthCm: 44,
-    heightCm: 58,
+    heightCm: 60,
     previewUrl: svgToDataUrl(SVG_CYLINDER_M),
     isCustom: false,
     stockQuantity: 1,
@@ -1126,11 +1651,71 @@ export const DEFAULT_PRESET_ITEMS = [
     rentalPrice: 40
   },
   {
+    id: 'preset-cubo-p',
+    name: 'Cubo P (35x45cm)',
+    category: 'cilindros',
+    type: 'cube',
+    widthCm: 35,
+    heightCm: 45,
+    previewUrl: svgToDataUrl(SVG_CUBE_P),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 22
+  },
+  {
+    id: 'preset-cubo-m',
+    name: 'Cubo M (40x60cm)',
+    category: 'cilindros',
+    type: 'cube',
+    widthCm: 40,
+    heightCm: 60,
+    previewUrl: svgToDataUrl(SVG_CUBE_M),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 28
+  },
+  {
+    id: 'preset-cubo-g',
+    name: 'Cubo G (45x80cm)',
+    category: 'cilindros',
+    type: 'cube',
+    widthCm: 45,
+    heightCm: 80,
+    previewUrl: svgToDataUrl(SVG_CUBE_G),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 35
+  },
+  {
+    id: 'preset-mesa-organica-feijao',
+    name: 'Mesa Orgânica (Feijão / Rim) 1,50m',
+    category: 'mesas',
+    type: 'table_organic',
+    widthCm: 150,
+    heightCm: 80,
+    previewUrl: svgToDataUrl(SVG_TABLE_ORGANIC),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 55
+  },
+  {
+    id: 'preset-mesa-organica-gota',
+    name: 'Mesa Orgânica de Apoio (Gota) 80cm',
+    category: 'mesas',
+    type: 'table_drop',
+    widthCm: 80,
+    heightCm: 60,
+    previewUrl: svgToDataUrl(SVG_TABLE_ORGANIC_DROP),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 35
+  },
+  {
     id: 'preset-mesa-cavalete',
-    name: 'Mesa Cavalete Pinus 120x80cm',
+    name: 'Mesa Tradicional / Cavalete 1,50m',
     category: 'mesas',
     type: 'table',
-    widthCm: 120,
+    widthCm: 150,
     heightCm: 80,
     previewUrl: svgToDataUrl(SVG_TABLE_EASEL),
     isCustom: false,
@@ -1138,8 +1723,20 @@ export const DEFAULT_PRESET_ITEMS = [
     rentalPrice: 45
   },
   {
+    id: 'preset-mesa-apoio-lateral',
+    name: 'Mesa de Apoio Lateral 60x60cm',
+    category: 'mesas',
+    type: 'table_side',
+    widthCm: 60,
+    heightCm: 60,
+    previewUrl: svgToDataUrl(SVG_TABLE_SIDE),
+    isCustom: false,
+    stockQuantity: 2,
+    rentalPrice: 25
+  },
+  {
     id: 'preset-comoda-bombe',
-    name: 'Cmoda Bomb Branca',
+    name: 'Cômoda Bombê Branca',
     category: 'mesas',
     type: 'table',
     widthCm: 90,
@@ -1149,30 +1746,118 @@ export const DEFAULT_PRESET_ITEMS = [
     stockQuantity: 1,
     rentalPrice: 50
   },
+
+  // 3. BALÕES
   {
     id: 'preset-arco-baloes',
-    name: 'Arco de Bales Desconstrudo',
+    name: 'Arco Desconstruído / Guirlanda 3,00m',
     category: 'baloes',
     type: 'balloon_arch',
     balloonColors: ['#db2777', '#fbcfe8', '#eab308', '#ffffff'],
-    widthCm: 180,
-    heightCm: 190,
+    widthCm: 300,
+    heightCm: 220,
     previewUrl: generateBalloonArchDataUrl(['#db2777', '#fbcfe8', '#eab308', '#ffffff']),
     isCustom: false,
     stockQuantity: 1,
-    rentalPrice: 80
+    rentalPrice: 120
   },
   {
-    id: 'preset-bolo-fake',
-    name: 'Bolo Fake Cenogrfico 3 Andares',
-    category: 'acessorios',
-    type: 'generic',
+    id: 'preset-balao-latex-5',
+    name: 'Balão de Látex 5" (13cm)',
+    category: 'baloes',
+    type: 'balloon_single',
+    widthCm: 13,
+    heightCm: 17,
+    previewUrl: svgToDataUrl(SVG_BALLOON_5INCH),
+    isCustom: false,
+    stockQuantity: 50,
+    rentalPrice: 2
+  },
+  {
+    id: 'preset-balao-latex-9',
+    name: 'Balão de Látex 9" (23cm)',
+    category: 'baloes',
+    type: 'balloon_single',
+    widthCm: 23,
+    heightCm: 29,
+    previewUrl: svgToDataUrl(SVG_BALLOON_9INCH),
+    isCustom: false,
+    stockQuantity: 50,
+    rentalPrice: 3
+  },
+  {
+    id: 'preset-balao-latex-11',
+    name: 'Balão de Látex 11" (28cm)',
+    category: 'baloes',
+    type: 'balloon_single',
+    widthCm: 28,
+    heightCm: 35,
+    previewUrl: svgToDataUrl(SVG_BALLOON_11INCH),
+    isCustom: false,
+    stockQuantity: 50,
+    rentalPrice: 4
+  },
+  {
+    id: 'preset-balao-latex-16',
+    name: 'Balão de Látex 16" (40cm)',
+    category: 'baloes',
+    type: 'balloon_single',
     widthCm: 40,
+    heightCm: 48,
+    previewUrl: svgToDataUrl(SVG_BALLOON_16INCH),
+    isCustom: false,
+    stockQuantity: 20,
+    rentalPrice: 8
+  },
+  {
+    id: 'preset-balao-bubble-18',
+    name: 'Balão Bubble (Silicone) 45cm / 18"',
+    category: 'baloes',
+    type: 'balloon_bubble',
+    widthCm: 45,
     heightCm: 50,
-    previewUrl: svgToDataUrl(SVG_CAKE_FAKE),
+    previewUrl: svgToDataUrl(SVG_BALLOON_BUBBLE),
+    isCustom: false,
+    stockQuantity: 10,
+    rentalPrice: 25
+  },
+  {
+    id: 'preset-balao-metalizado-numero',
+    name: 'Balão Metalizado Número 75cm / 32"',
+    category: 'baloes',
+    type: 'balloon_number',
+    widthCm: 50,
+    heightCm: 75,
+    previewUrl: svgToDataUrl(SVG_BALLOON_NUMBER),
+    isCustom: false,
+    stockQuantity: 5,
+    rentalPrice: 30
+  },
+
+  // 4. PISO (TAPETES)
+  {
+    id: 'preset-tapete-redondo',
+    name: 'Tapete Redondo Sublimado 2,00m',
+    category: 'tapetes',
+    type: 'rug_round',
+    widthCm: 200,
+    heightCm: 200,
+    previewUrl: svgToDataUrl(SVG_RUG_ROUND_200),
     isCustom: false,
     stockQuantity: 1,
-    rentalPrice: 45
+    rentalPrice: 50
+  },
+  {
+    id: 'preset-tapete-retangular-3d',
+    name: 'Tapete Retangular / Lona 2,50x2,00m',
+    category: 'tapetes',
+    type: 'rug_rect_3d',
+    widthCm: 250,
+    heightCm: 200,
+    previewUrl: svgToDataUrl(SVG_RUG_RECT_250x200),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 60
   },
   {
     id: 'preset-tapete-oval',
@@ -1186,26 +1871,76 @@ export const DEFAULT_PRESET_ITEMS = [
     stockQuantity: 1,
     rentalPrice: 35
   },
+
+  // 5. BANCADA E DISPLAYS
   {
-    id: 'preset-tapete-redondo',
-    name: 'Tapete Redondo Sublimado (150x150cm)',
-    category: 'tapetes',
-    type: 'rug_round',
-    widthCm: 150,
-    heightCm: 150,
-    previewUrl: svgToDataUrl(SVG_RUG_ROUND_FLAT),
+    id: 'preset-boleira',
+    name: 'Boleira Cerâmica 30x20cm',
+    category: 'acessorios',
+    type: 'generic',
+    widthCm: 30,
+    heightCm: 20,
+    previewUrl: svgToDataUrl(SVG_CAKE_STAND),
     isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 40
+    stockQuantity: 2,
+    rentalPrice: 15
   },
   {
-    id: 'preset-tapete-retangular-3d',
-    name: 'Tapete Retangular 3D Passadeira (200x120cm)',
-    category: 'tapetes',
-    type: 'rug_rect_3d',
-    widthCm: 200,
-    heightCm: 120,
-    previewUrl: svgToDataUrl(SVG_RUG_RECT_3D),
+    id: 'preset-bandeja-baixa',
+    name: 'Bandeja de Doces Baixa 20x5cm',
+    category: 'acessorios',
+    type: 'generic',
+    widthCm: 20,
+    heightCm: 5,
+    previewUrl: svgToDataUrl(SVG_TRAY_LOW),
+    isCustom: false,
+    stockQuantity: 4,
+    rentalPrice: 10
+  },
+  {
+    id: 'preset-bandeja',
+    name: 'Bandeja de Doces Alta 25x15cm',
+    category: 'acessorios',
+    type: 'generic',
+    widthCm: 25,
+    heightCm: 15,
+    previewUrl: svgToDataUrl(SVG_TRAY_RECT),
+    isCustom: false,
+    stockQuantity: 4,
+    rentalPrice: 12
+  },
+  {
+    id: 'preset-vaso-flores',
+    name: 'Vaso de Mesa com Arranjo Floral 15x35cm',
+    category: 'acessorios',
+    type: 'generic',
+    widthCm: 15,
+    heightCm: 35,
+    previewUrl: svgToDataUrl(SVG_VASE_FLOWERS),
+    isCustom: false,
+    stockQuantity: 2,
+    rentalPrice: 18
+  },
+  {
+    id: 'preset-display-mesa',
+    name: 'Display de Mesa MDF 25cm',
+    category: 'displays',
+    type: 'display',
+    widthCm: 20,
+    heightCm: 25,
+    previewUrl: svgToDataUrl(SVG_DISPLAY_TABLE),
+    isCustom: false,
+    stockQuantity: 4,
+    rentalPrice: 15
+  },
+  {
+    id: 'preset-bolo-fake',
+    name: 'Bolo Fake Cenográfico 3 Andares',
+    category: 'acessorios',
+    type: 'generic',
+    widthCm: 40,
+    heightCm: 50,
+    previewUrl: svgToDataUrl(SVG_CAKE_FAKE),
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 45
@@ -1293,129 +2028,79 @@ export const DEFAULT_PRESET_ITEMS = [
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 25
-  },
-  {
-    id: 'preset-boleira',
-    name: 'Boleira Alta Cerâmica 30cm',
-    category: 'acessorios',
-    type: 'generic',
-    widthCm: 30,
-    heightCm: 20,
-    previewUrl: svgToDataUrl(SVG_CAKE_STAND),
-    isCustom: false,
-    stockQuantity: 2,
-    rentalPrice: 15
-  },
-  {
-    id: 'preset-bandeja',
-    name: 'Bandeja Provençal 25cm',
-    category: 'acessorios',
-    type: 'generic',
-    widthCm: 25,
-    heightCm: 15,
-    previewUrl: svgToDataUrl(SVG_TRAY_RECT),
-    isCustom: false,
-    stockQuantity: 4,
-    rentalPrice: 10
-  },
-    
-  {
-    id: 'preset-vaso-flores',
-    name: 'Vaso com Arranjo Floral',
-    category: 'acessorios',
-    type: 'generic',
-    widthCm: 25,
-    heightCm: 40,
-    previewUrl: svgToDataUrl(SVG_VASE_FLOWERS),
-    isCustom: false,
-    stockQuantity: 2,
-    rentalPrice: 18
   }
 ];
 
-// Presets de Capas e Estampas de Demonstrao
+// Presets de Capas e Estampas de Demonstração (Imagens Realistas de Festas Reais)
 export const DEFAULT_THEME_COVERS = [
   {
-    id: 'cover-safari-1',
-    themeName: 'Safri Baby',
-    name: 'Folhagens & Selva',
+    id: 'cover-fazendinha',
+    themeName: 'Fazendinha',
+    name: 'Fazendinha Rústica dos Bichinhos',
     targetType: 'all',
-    imageUrl: svgToDataUrl(`
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
-        <rect width="400" height="400" fill="#ecfdf5"/>
-        <circle cx="200" cy="200" r="160" fill="#d1fae5"/>
-        <path d="M 80 320 Q 140 220 200 320 Q 260 220 320 320 Z" fill="#059669" opacity="0.8"/>
-        <path d="M 120 350 Q 200 240 280 350 Z" fill="#10b981"/>
-        <circle cx="200" cy="160" r="50" fill="#f59e0b"/>
-        <text x="200" y="270" font-family="sans-serif" font-size="24" font-weight="bold" fill="#065f46" text-anchor="middle">SAFRI BABY</text>
-      </svg>
-    `)
+    imageUrl: '/covers/fazendinha.jpg'
   },
   {
-    id: 'cover-astronauta-1',
-    themeName: 'Astronauta & Espao',
-    name: 'Galxia Estrelada',
+    id: 'cover-dinossauros',
+    themeName: 'Dinossauros',
+    name: 'Dinossauros & Floresta Jurássica',
     targetType: 'all',
-    imageUrl: svgToDataUrl(`
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
-        <rect width="400" height="400" fill="#0f172a"/>
-        <circle cx="120" cy="140" r="45" fill="#38bdf8" opacity="0.9"/>
-        <circle cx="310" cy="260" r="28" fill="#f43f5e" opacity="0.8"/>
-        <circle cx="80" cy="80" r="3" fill="#ffffff"/>
-        <circle cx="300" cy="90" r="4" fill="#ffffff"/>
-        <circle cx="200" cy="320" r="3" fill="#ffffff"/>
-        <circle cx="340" cy="180" r="2" fill="#ffffff"/>
-        <text x="200" y="220" font-family="sans-serif" font-size="24" font-weight="bold" fill="#e0f2fe" text-anchor="middle">GALAXY PARTY</text>
-      </svg>
-    `)
+    imageUrl: '/covers/dinossauros.jpg'
   },
   {
-    id: 'cover-boho-1',
-    themeName: 'Flores Boho',
-    name: 'Aquarela Romntica',
+    id: 'cover-safari',
+    themeName: 'Animais & Safári',
+    name: 'Safári Baby & Animais da Savana',
     targetType: 'all',
-    imageUrl: svgToDataUrl(`
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
-        <rect width="400" height="400" fill="#fff7ed"/>
-        <circle cx="200" cy="200" r="160" fill="#ffedd5"/>
-        <circle cx="150" cy="170" r="35" fill="#fb7185" opacity="0.7"/>
-        <circle cx="250" cy="170" r="40" fill="#f43f5e" opacity="0.6"/>
-        <circle cx="200" cy="220" r="45" fill="#fda4af" opacity="0.7"/>
-        <text x="200" y="290" font-family="sans-serif" font-size="22" font-weight="bold" fill="#9f1239" text-anchor="middle">JARDIM ENCANTADO</text>
-      </svg>
-    `)
+    imageUrl: '/covers/safari.jpg'
   },
   {
-    id: 'cover-candy-1',
-    themeName: 'Candy Colors',
-    name: 'Arco-ris Pastel',
+    id: 'cover-fundo-do-mar',
+    themeName: 'Fundo do Mar',
+    name: 'Fundo do Mar & Oceano Encantado',
     targetType: 'all',
-    imageUrl: svgToDataUrl(`
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
-        <rect width="400" height="400" fill="#f0fdf4"/>
-        <circle cx="200" cy="200" r="160" fill="#fef9c3"/>
-        <path d="M 80 260 A 120 120 0 0 1 320 260" fill="none" stroke="#f472b6" stroke-width="16"/>
-        <path d="M 100 260 A 100 100 0 0 1 300 260" fill="none" stroke="#c084fc" stroke-width="16"/>
-        <path d="M 120 260 A 80 80 0 0 1 280 260" fill="none" stroke="#38bdf8" stroke-width="16"/>
-        <text x="200" y="295" font-family="sans-serif" font-size="22" font-weight="bold" fill="#7c3aed" text-anchor="middle">CANDY PARTY</text>
-      </svg>
-    `)
+    imageUrl: '/covers/fundo-do-mar.jpg'
   },
   {
-    id: 'cover-dourado-1',
-    themeName: 'Luxo Glamour',
-    name: 'Glitter Dourado & Branco',
+    id: 'cover-circo',
+    themeName: 'Circo',
+    name: 'Circo Mágico Tradicional',
     targetType: 'all',
-    imageUrl: svgToDataUrl(`
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
-        <rect width="400" height="400" fill="#0f172a"/>
-        <circle cx="200" cy="200" r="160" fill="#1e293b"/>
-        <circle cx="200" cy="200" r="150" fill="none" stroke="#eab308" stroke-width="3" stroke-dasharray="8,6"/>
-        <circle cx="160" cy="140" r="6" fill="#fef08a"/>
-        <circle cx="240" cy="150" r="8" fill="#fef08a"/>
-        <circle cx="180" cy="250" r="7" fill="#fef08a"/>
-        <text x="200" y="210" font-family="sans-serif" font-size="24" font-weight="bold" fill="#fef08a" text-anchor="middle">LUXO & OURO</text>
-      </svg>
-    `)
+    imageUrl: '/covers/circo.jpg'
+  },
+  {
+    id: 'cover-princesas',
+    themeName: 'Princesas',
+    name: 'Castelo Encantado das Princesas',
+    targetType: 'all',
+    imageUrl: '/covers/princesas.jpg'
+  },
+  {
+    id: 'cover-herois',
+    themeName: 'Heróis',
+    name: 'Metrópole dos Super-Heróis',
+    targetType: 'all',
+    imageUrl: '/covers/herois.jpg'
+  },
+  {
+    id: 'cover-espaco',
+    themeName: 'Espaço',
+    name: 'Galáxia & Espaço Cósmico',
+    targetType: 'all',
+    imageUrl: '/covers/espaco.jpg'
+  },
+  {
+    id: 'cover-batizado',
+    themeName: 'Batizado',
+    name: 'Batizado Celestial & Paz',
+    targetType: 'all',
+    imageUrl: '/covers/batizado.jpg'
+  },
+  {
+    id: 'cover-aniversario',
+    themeName: 'Aniversário',
+    name: 'Aniversário Balões 3D & Confetes',
+    targetType: 'all',
+    imageUrl: '/covers/aniversario.jpg'
   }
 ];

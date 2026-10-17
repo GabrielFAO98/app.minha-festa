@@ -1,12 +1,32 @@
-import { getAllItems, getItemsByCategory, getAllCovers } from '../core/db.js';
+import { getAllItems, getItemsByCategory, getAllCovers } from '../core/db';
 import {
   REALISTIC_ENVIRONMENTS,
   WALL_OPTIONS,
   FLOOR_OPTIONS
-} from '../core/textures-data.js';
+} from '../core/textures-data';
+import type { CanvasEngine } from '../core/canvas-engine';
+import type { PresetItem, ItemCategory } from '../types';
 
 export class BottomDock {
-  constructor(canvasEngine, onOpenInventoryModal, onOpenCoverModal) {
+  canvasEngine: CanvasEngine;
+  onOpenInventoryModal?: (() => void) | null;
+  onOpenCoverModal?: ((meta: PresetItem | null) => void) | null;
+
+  activeTab: string | null;
+  currentCategory: ItemCategory | string;
+
+  sheetEl: HTMLElement | null;
+  sheetBody: HTMLElement | null;
+  sheetTitle: HTMLElement | null;
+  categoriesBar: HTMLElement | null;
+  btnClose: HTMLElement | null;
+  handleBar: HTMLElement | null;
+
+  constructor(
+    canvasEngine: CanvasEngine,
+    onOpenInventoryModal?: (() => void) | null,
+    onOpenCoverModal?: ((meta: PresetItem | null) => void) | null
+  ) {
     this.canvasEngine = canvasEngine;
     this.onOpenInventoryModal = onOpenInventoryModal;
     this.onOpenCoverModal = onOpenCoverModal;
@@ -24,11 +44,12 @@ export class BottomDock {
     this.setupEvents();
   }
 
-  setupEvents() {
+  setupEvents(): void {
     const dockButtons = document.querySelectorAll('.dock-tab-btn');
-    dockButtons.forEach((btn) => {
+    dockButtons.forEach((btnNode) => {
+      const btn = btnNode as HTMLElement;
       btn.addEventListener('click', () => {
-        const tab = btn.dataset.tab;
+        const tab = btn.dataset.tab || '';
         if (this.activeTab === tab && this.sheetEl?.classList.contains('open')) {
           this.closeSheet();
         } else {
@@ -41,10 +62,11 @@ export class BottomDock {
     this.handleBar?.addEventListener('click', () => this.closeSheet());
   }
 
-  openTab(tabName) {
+  openTab(tabName: string): void {
     this.activeTab = tabName;
 
-    document.querySelectorAll('.dock-tab-btn').forEach((b) => {
+    document.querySelectorAll('.dock-tab-btn').forEach((bNode) => {
+      const b = bNode as HTMLElement;
       b.classList.toggle('active', b.dataset.tab === tabName);
     });
 
@@ -63,17 +85,19 @@ export class BottomDock {
     }
   }
 
-  closeSheet() {
+  closeSheet(): void {
     this.activeTab = null;
     this.sheetEl?.classList.remove('open');
     document.querySelectorAll('.dock-tab-btn').forEach((b) => b.classList.remove('active'));
   }
 
   // ABA 1: Presets Base de Fábrica
-  async renderPresetsTab() {
-    this.sheetTitle.innerHTML = '✨ Peças Base para Adicionar';
-    this.categoriesBar.style.display = 'flex';
-    this.renderCategoryPills();
+  async renderPresetsTab(): Promise<void> {
+    if (this.sheetTitle) this.sheetTitle.innerHTML = '✨ Peças Base para Adicionar';
+    if (this.categoriesBar) {
+      this.categoriesBar.style.display = 'flex';
+      this.renderCategoryPills();
+    }
 
     const items = await getItemsByCategory(this.currentCategory);
     const presetItems = items.filter((i) => !i.isCustom);
@@ -81,8 +105,9 @@ export class BottomDock {
     this.renderItemsGrid(presetItems, false);
   }
 
-  renderCategoryPills() {
-    const categories = [
+  renderCategoryPills(): void {
+    if (!this.categoriesBar) return;
+    const categories: { id: ItemCategory | string; label: string }[] = [
       { id: 'todos', label: 'Todos' },
       { id: 'paineis', label: 'Painéis' },
       { id: 'cilindros', label: 'Cilindros' },
@@ -102,14 +127,14 @@ export class BottomDock {
         this.currentCategory = cat.id;
         this.renderPresetsTab();
       });
-      this.categoriesBar.appendChild(btn);
+      this.categoriesBar?.appendChild(btn);
     });
   }
 
   // ABA 2: Meu Acervo Pessoal
-  async renderMyItemsTab() {
-    this.sheetTitle.innerHTML = '📦 Meu Acervo Próprio';
-    this.categoriesBar.style.display = 'none';
+  async renderMyItemsTab(): Promise<void> {
+    if (this.sheetTitle) this.sheetTitle.innerHTML = '📦 Meu Acervo Próprio';
+    if (this.categoriesBar) this.categoriesBar.style.display = 'none';
 
     const all = await getAllItems();
     const customItems = all.filter((i) => i.isCustom);
@@ -122,6 +147,8 @@ export class BottomDock {
       </div>
     `;
 
+    if (!this.sheetBody) return;
+
     if (customItems.length === 0) {
       html += `
         <div class="empty-state">
@@ -133,10 +160,12 @@ export class BottomDock {
     } else {
       this.sheetBody.innerHTML = html + '<div class="items-grid" id="custom-items-grid"></div>';
       const grid = document.getElementById('custom-items-grid');
-      customItems.forEach((item) => {
-        const card = this.createItemCard(item, true);
-        grid.appendChild(card);
-      });
+      if (grid) {
+        customItems.forEach((item) => {
+          const card = this.createItemCard(item, true);
+          grid.appendChild(card);
+        });
+      }
     }
 
     document.getElementById('btn-add-inventory-item')?.addEventListener('click', () => {
@@ -147,11 +176,13 @@ export class BottomDock {
   }
 
   // ABA 3: Catálogo de Capas & Estampas
-  async renderCoversTab() {
-    this.sheetTitle.innerHTML = '🎨 Temas & Capas Disponíveis';
-    this.categoriesBar.style.display = 'none';
+  async renderCoversTab(): Promise<void> {
+    if (this.sheetTitle) this.sheetTitle.innerHTML = '🎨 Temas & Capas Disponíveis';
+    if (this.categoriesBar) this.categoriesBar.style.display = 'none';
 
     const covers = await getAllCovers();
+
+    if (!this.sheetBody) return;
 
     this.sheetBody.innerHTML = `
       <div style="margin-bottom: 12px;">
@@ -178,7 +209,7 @@ export class BottomDock {
           alert('Toque primeiro em um cilindro ou painel no cenário para vestir esta capa.');
         }
       });
-      grid.appendChild(card);
+      grid?.appendChild(card);
     });
 
     document.getElementById('btn-add-new-cover')?.addEventListener('click', () => {
@@ -189,9 +220,10 @@ export class BottomDock {
   }
 
   // ABA 4: Cenários Realistas COM ESCOLHA POR IMAGEM
-  renderEnvironmentTab() {
-    this.sheetTitle.innerHTML = '🏠 Escolha do Cenário (Por Imagem)';
-    this.categoriesBar.style.display = 'none';
+  renderEnvironmentTab(): void {
+    if (this.sheetTitle) this.sheetTitle.innerHTML = '🏠 Escolha do Cenário (Por Imagem)';
+    if (this.categoriesBar) this.categoriesBar.style.display = 'none';
+    if (!this.sheetBody) return;
 
     let html = `
       <div style="display: flex; flex-direction: column; gap: 14px;">
@@ -237,24 +269,29 @@ export class BottomDock {
 
     this.sheetBody.querySelectorAll('.btn-preset-env').forEach((card) => {
       card.addEventListener('click', async () => {
-        await this.canvasEngine.setEnvironmentTextures(card.dataset.wall, card.dataset.floor);
+        const wall = (card as HTMLElement).dataset.wall || null;
+        const floor = (card as HTMLElement).dataset.floor || null;
+        await this.canvasEngine.setEnvironmentTextures(wall, floor);
       });
     });
 
     this.sheetBody.querySelectorAll('.btn-custom-wall').forEach((card) => {
       card.addEventListener('click', async () => {
-        await this.canvasEngine.setEnvironmentTextures(card.dataset.wall, null);
+        const wall = (card as HTMLElement).dataset.wall || null;
+        await this.canvasEngine.setEnvironmentTextures(wall, null);
       });
     });
 
     this.sheetBody.querySelectorAll('.btn-custom-floor').forEach((card) => {
       card.addEventListener('click', async () => {
-        await this.canvasEngine.setEnvironmentTextures(null, card.dataset.floor);
+        const floor = (card as HTMLElement).dataset.floor || null;
+        await this.canvasEngine.setEnvironmentTextures(null, floor);
       });
     });
   }
 
-  renderItemsGrid(items, isCustom) {
+  renderItemsGrid(items: PresetItem[], isCustom: boolean): void {
+    if (!this.sheetBody) return;
     this.sheetBody.innerHTML = '<div class="items-grid" id="sheet-items-grid"></div>';
     const grid = document.getElementById('sheet-items-grid');
 
@@ -270,11 +307,11 @@ export class BottomDock {
 
     items.forEach((item) => {
       const card = this.createItemCard(item, isCustom);
-      grid.appendChild(card);
+      grid?.appendChild(card);
     });
   }
 
-  createItemCard(item, isCustom) {
+  createItemCard(item: PresetItem, isCustom: boolean): HTMLElement {
     const card = document.createElement('div');
     card.className = 'item-card';
     card.innerHTML = `
@@ -294,9 +331,10 @@ export class BottomDock {
   }
 
   // ABA 5: Camadas no Palco (Mobile)
-  renderLayersTab() {
-    this.sheetTitle.innerHTML = '📑 Camadas no Cenário';
-    this.categoriesBar.style.display = 'none';
+  renderLayersTab(): void {
+    if (this.sheetTitle) this.sheetTitle.innerHTML = '📑 Camadas no Cenário';
+    if (this.categoriesBar) this.categoriesBar.style.display = 'none';
+    if (!this.sheetBody) return;
 
     const elements = this.canvasEngine.getSceneElements();
     if (!elements || elements.length === 0) {
@@ -328,7 +366,7 @@ export class BottomDock {
       row.style.borderRadius = 'var(--radius-md)';
       row.style.cursor = 'pointer';
 
-      const isSelected = this.canvasEngine.selectedNode?.getAttr('itemMeta')?.instanceId === elem.instanceId;
+      const isSelected = (this.canvasEngine.selectedNode as any)?.getAttr('itemMeta')?.instanceId === elem.instanceId;
       if (isSelected) {
         row.style.borderColor = 'var(--primary)';
         row.style.background = 'rgba(236, 72, 153, 0.15)';
@@ -347,7 +385,7 @@ export class BottomDock {
       `;
 
       row.addEventListener('click', (e) => {
-        if (e.target.closest('.layer-action-btn')) return;
+        if ((e.target as HTMLElement).closest('.layer-action-btn')) return;
         const targetNode = this.canvasEngine.decorLayer.getChildren().find(
           (c) => c.getAttr('itemMeta')?.instanceId === elem.instanceId
         );

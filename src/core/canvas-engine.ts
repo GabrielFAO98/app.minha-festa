@@ -1,40 +1,70 @@
 import Konva from 'konva';
-import { createClipFunction, calculateCoverPlacement, loadImageAsync, isPointInsideMask, createShadingOverlay, createCylinderFloorShadow } from './mask-renderer.js';
-import { TEXTURE_WALL_BOISERIE, TEXTURE_FLOOR_WOOD } from './textures-data.js';
-import { generateBalloonArchDataUrl } from './balloon-generator.js';
+import { createClipFunction, calculateCoverPlacement, loadImageAsync, isPointInsideMask, createShadingOverlay, createCylinderFloorShadow } from './mask-renderer';
+import { TEXTURE_WALL_BOISERIE, TEXTURE_FLOOR_WOOD } from './textures-data';
+import { generateBalloonArchDataUrl } from './balloon-generator';
 
-// OTIMIZAO CRTICA PARA MOBILE: Desativa deteco de coliso durante o arrasto contnuo
+import type { PresetItem, SceneElement } from '../types';
+
+// OTIMIZAÇÃO CRÍTICA PARA MOBILE: Desativa detecção de colisão durante o arrasto contínuo
 Konva.hitOnDragEnabled = false;
 
 export class CanvasEngine {
+  stage: Konva.Stage | null;
+  bgLayer: Konva.Layer | null;
+  decorLayer: Konva.Layer;
+  uiLayer: Konva.Layer | null;
+  transformer: Konva.Transformer | null;
+  selectedNode: Konva.Group | null;
+
+  VIRTUAL_WIDTH: number;
+  VIRTUAL_HEIGHT: number;
+  WALL_HEIGHT: number;
+  FLOOR_HEIGHT: number;
+  pxPerCm: number;
+
+  wallTextureUrl: string;
+  floorTextureUrl: string;
+
+  undoStack: string[];
+  redoStack: string[];
+  maxHistory: number;
+  isRestoringState: boolean;
+
+  hitCanvas: HTMLCanvasElement;
+  hitCtx: CanvasRenderingContext2D | null;
+
+  onSelectionChange: ((meta: PresetItem | null, node: Konva.Group | null) => void) | null;
+  onLayersChange: ((elements: SceneElement[]) => void) | null;
+  onHistoryChange: ((canUndo: boolean, canRedo: boolean) => void) | null;
+
   constructor() {
     this.stage = null;
-    this.bgLayer = null;    // Camada Esttica de Fundo (Zero repintura no drag)
-    this.decorLayer = null; // Camada Rpida dos Elementos de Decorao
-    this.uiLayer = null;    // Camada Leve do Transformer de Seleo
+    this.bgLayer = null;    // Camada Estática de Fundo (Zero repintura no drag)
+    this.decorLayer = null as unknown as Konva.Layer; // Camada Rápida dos Elementos de Decoração
+    this.uiLayer = null;    // Camada Leve do Transformer de Seleção
     this.transformer = null;
     this.selectedNode = null;
 
-    // Resoluo Virtual VERTICAL 9:16 Nativa (1080 x 1920)
+    // Resolução Virtual VERTICAL 9:16 Nativa (1080 x 1920)
     this.VIRTUAL_WIDTH = 1080;
     this.VIRTUAL_HEIGHT = 1920;
     this.WALL_HEIGHT = 1380;
     this.FLOOR_HEIGHT = 540;
 
-    // Escala mtrica: 1080px virtuais equivalem a 280cm fsicos na parede
+    // Escala métrica: 1080px virtuais equivalem a 280cm físicos na parede
     this.pxPerCm = this.VIRTUAL_WIDTH / 280;
 
     // Texturas Atuais do Ambiente
     this.wallTextureUrl = TEXTURE_WALL_BOISERIE;
     this.floorTextureUrl = TEXTURE_FLOOR_WOOD;
 
-    // Pilhas de Histrico para Desfazer / Refazer (Undo/Redo)
+    // Pilhas de Histórico para Desfazer / Refazer (Undo/Redo)
     this.undoStack = [];
     this.redoStack = [];
     this.maxHistory = 35;
     this.isRestoringState = false;
 
-    // Canvas 1x1 em memria para teste instantneo de transparncia (0.01ms)
+    // Canvas 1x1 em memória para teste instantâneo de transparência (0.01ms)
     this.hitCanvas = document.createElement('canvas');
     this.hitCanvas.width = 1;
     this.hitCanvas.height = 1;
@@ -177,8 +207,8 @@ export class CanvasEngine {
   // ========================================================
   setupSmartSelection() {
     this.stage.on('pointerdown', (e) => {
-      // Se clicou em uma ala do transformer (redimensionamento / rotao), permite interao do transformer
-      if (e.target && (e.target.getParent() === this.transformer || e.target === this.transformer)) {
+      // Se clicou em uma alça do transformer (redimensionamento / rotação), permite interação do transformer
+      if (e.target && (e.target.getParent() === (this.transformer as any) || (e.target as any) === this.transformer)) {
         return;
       }
 
@@ -210,7 +240,7 @@ export class CanvasEngine {
 
     // Alternncia cclica ao clicar rpido (sem arrastar) onde mltiplos itens opacos se sobrepem
     this.stage.on('click tap', (e) => {
-      if (e.target && (e.target.getParent() === this.transformer || e.target === this.transformer)) {
+      if (e.target && (e.target.getParent() === (this.transformer as any) || (e.target as any) === this.transformer)) {
         return;
       }
 
@@ -316,7 +346,8 @@ export class CanvasEngine {
   // Atalhos de Teclado Globais (Ctrl+Z, Ctrl+Y, Delete, Esc)
   setupKeyboardShortcuts() {
     window.addEventListener('keydown', (e) => {
-      const tag = e.target.tagName.toLowerCase();
+      const targetEl = e.target as HTMLElement | null;
+      const tag = targetEl?.tagName ? targetEl.tagName.toLowerCase() : '';
       if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
@@ -608,6 +639,18 @@ export class CanvasEngine {
     }
     this.decorLayer.batchDraw();
     this.saveSnapshot();
+  }
+
+  toggleLockNode(node: Konva.Node | Konva.Group): boolean {
+    const isDraggable = node.draggable();
+    node.draggable(!isDraggable);
+    if (!isDraggable) {
+      if (this.selectedNode === node) {
+        this.transformer?.nodes([]);
+      }
+    }
+    this.decorLayer.batchDraw();
+    return !isDraggable;
   }
 
   async duplicateSelected() {

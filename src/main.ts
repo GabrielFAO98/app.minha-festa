@@ -1,13 +1,13 @@
-import { initDatabase, getItemsByCategory } from './core/db.js';
-import { CanvasEngine } from './core/canvas-engine.js';
-import { ItemToolbar } from './ui/item-toolbar.js';
-import { BottomDock } from './ui/bottom-dock.js';
-import { CoverModal } from './ui/cover-modal.js';
-import { BalloonModal } from './ui/balloon-modal.js';
-import { InventoryModal } from './ui/inventory-modal.js';
-import { ExportModal } from './ui/export-modal.js';
-import { ProjectsModal } from './ui/projects-modal.js';
-import { DesktopStudio } from './ui/desktop-studio.js';
+import { initDatabase, getItemsByCategory } from './core/db';
+import { CanvasEngine } from './core/canvas-engine';
+import { ItemToolbar } from './ui/item-toolbar';
+import { BottomDock } from './ui/bottom-dock';
+import { CoverModal } from './ui/cover-modal';
+import { BalloonModal } from './ui/balloon-modal';
+import { InventoryModal } from './ui/inventory-modal';
+import { ExportModal } from './ui/export-modal';
+import { ProjectsModal } from './ui/projects-modal';
+import { DesktopStudio } from './ui/desktop-studio';
 
 async function bootstrap() {
   // 1. Inicializar Banco Local IndexedDB (Dexie)
@@ -70,8 +70,8 @@ async function bootstrap() {
   };
 
   // 7. Header Actions, Salvar e Histórico (Desfazer / Refazer)
-  const btnHeaderUndo = document.getElementById('btn-header-undo');
-  const btnHeaderRedo = document.getElementById('btn-header-redo');
+  const btnHeaderUndo = document.getElementById('btn-header-undo') as HTMLButtonElement | null;
+  const btnHeaderRedo = document.getElementById('btn-header-redo') as HTMLButtonElement | null;
   const btnHeaderSave = document.getElementById('btn-header-save');
   const btnHeaderProjects = document.getElementById('btn-header-projects');
   const btnHeaderExport = document.getElementById('btn-header-export');

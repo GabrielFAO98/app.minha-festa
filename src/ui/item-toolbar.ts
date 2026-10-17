@@ -1,7 +1,21 @@
-// Barra Flutuante de Aes da Pea no Cenrio Mobile
+// Barra Flutuante de Ações da Peça no Cenário Mobile
+import type { CanvasEngine } from '../core/canvas-engine';
+import type { PresetItem } from '../types';
+import type Konva from 'konva';
 
 export class ItemToolbar {
-  constructor(canvasEngine, onOpenCoverModal, onOpenBalloonModal) {
+  canvasEngine: CanvasEngine;
+  onOpenCoverModal?: ((meta: PresetItem) => void) | null;
+  onOpenBalloonModal?: ((node: Konva.Group | Konva.Node) => void) | null;
+  toolbarEl: HTMLElement | null;
+  selectedMeta: PresetItem | null;
+  selectedNode: Konva.Group | Konva.Node | null;
+
+  constructor(
+    canvasEngine: CanvasEngine,
+    onOpenCoverModal?: ((meta: PresetItem) => void) | null,
+    onOpenBalloonModal?: ((node: Konva.Group | Konva.Node) => void) | null
+  ) {
     this.canvasEngine = canvasEngine;
     this.onOpenCoverModal = onOpenCoverModal;
     this.onOpenBalloonModal = onOpenBalloonModal;
@@ -12,7 +26,7 @@ export class ItemToolbar {
     this.setupUI();
   }
 
-  setupUI() {
+  setupUI(): void {
     if (!this.toolbarEl) return;
 
     const btnDelete = document.getElementById('btn-action-delete');
@@ -22,7 +36,7 @@ export class ItemToolbar {
     const btnFlip = document.getElementById('btn-action-flip');
     const btnDuplicate = document.getElementById('btn-action-duplicate');
 
-    // EXCLUSO RPIDA E DIRETA
+    // EXCLUSÃO RÁPIDA E DIRETA
     btnDelete?.addEventListener('click', (e) => {
       e.stopPropagation();
       if (this.selectedNode) {
@@ -67,7 +81,7 @@ export class ItemToolbar {
     };
   }
 
-  updateSelection(meta, node) {
+  updateSelection(meta: PresetItem | null, node: Konva.Group | Konva.Node | null): void {
     this.selectedMeta = meta;
     this.selectedNode = node;
 

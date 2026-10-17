@@ -1,5 +1,5 @@
 // Texturas Realistas para Cenrio VERTICAL (Proporo 9:16  1080 x 1920)
-import { svgToDataUrl } from './presets-data.js';
+import { svgToDataUrl } from './presets-data';
 
 // 1. Parede Boiserie Clssica Branca Vertical (1080 x 1380)
 export const TEXTURE_WALL_BOISERIE = svgToDataUrl(`

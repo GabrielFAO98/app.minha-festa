@@ -1,19 +1,33 @@
-import Dexie from 'dexie';
-import { DEFAULT_PRESET_ITEMS, DEFAULT_THEME_COVERS } from './presets-data.js';
+import Dexie, { type Table } from 'dexie';
+import { DEFAULT_PRESET_ITEMS, DEFAULT_THEME_COVERS } from './presets-data';
+import type { PresetItem, ThemeCover, ProjectData } from '../types';
 
-// Inicializao do Banco IndexedDB com Dexie
-export const db = new Dexie('MinhaFestaDB');
+export interface CoverItemRecord extends ThemeCover {
+  isCustom?: boolean;
+}
 
-// Definio das tabelas e ndices
-db.version(1).stores({
-  items: 'id, name, category, type, isCustom, createdAt',
-  covers: 'id, themeName, targetType, createdAt',
-  projects: 'id, title, clientName, updatedAt',
-  settings: 'key'
-});
+// Inicialização tipada do Banco IndexedDB com Dexie
+export class MinhaFestaDatabase extends Dexie {
+  items!: Table<PresetItem, string>;
+  covers!: Table<CoverItemRecord, string>;
+  projects!: Table<ProjectData, string>;
+  settings!: Table<{ key: string; value: any }, string>;
 
-// Inicializao e sincronizao dos presets de fbrica (sem sobrescrever acervo do usurio)
-export async function initDatabase() {
+  constructor() {
+    super('MinhaFestaDB');
+    this.version(1).stores({
+      items: 'id, name, category, type, isCustom, createdAt',
+      covers: 'id, themeName, targetType, createdAt',
+      projects: 'id, title, clientName, updatedAt',
+      settings: 'key'
+    });
+  }
+}
+
+export const db = new MinhaFestaDatabase();
+
+// Inicialização e sincronização dos presets de fábrica
+export async function initDatabase(): Promise<void> {
   const timestamp = Date.now();
 
   // Remove presets de fábrica descontinuados para manter o acervo padrão sempre atualizado
@@ -64,7 +78,7 @@ export async function initDatabase() {
   }
 
   // Insere/atualiza as novas capas padrão de fábrica
-  const seededCovers = DEFAULT_THEME_COVERS.map((cover) => ({
+  const seededCovers: CoverItemRecord[] = DEFAULT_THEME_COVERS.map((cover) => ({
     ...cover,
     isCustom: false,
     createdAt: timestamp
@@ -72,27 +86,27 @@ export async function initDatabase() {
   await db.covers.bulkPut(seededCovers);
 }
 
-// Mtodos auxiliares para Acervo de Peas
-export async function getAllItems() {
+// Métodos auxiliares para Acervo de Peças
+export async function getAllItems(): Promise<PresetItem[]> {
   return await db.items.toArray();
 }
 
-export async function getItemsByCategory(category) {
+export async function getItemsByCategory(category?: string): Promise<PresetItem[]> {
   if (!category || category === 'todos') {
     return await db.items.toArray();
   }
   return await db.items.where('category').equals(category).toArray();
 }
 
-export async function addCustomItem(itemData) {
-  const newItem = {
+export async function addCustomItem(itemData: Partial<PresetItem>): Promise<PresetItem> {
+  const newItem: PresetItem = {
     id: 'custom-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
-    name: itemData.name || 'Nova Pea do Acervo',
+    name: itemData.name || 'Nova Peça do Acervo',
     category: itemData.category || 'mesas',
     type: itemData.type || 'generic',
     widthCm: Number(itemData.widthCm) || 50,
     heightCm: Number(itemData.heightCm) || 50,
-    previewUrl: itemData.previewUrl,
+    previewUrl: itemData.previewUrl || '',
     isCustom: true,
     stockQuantity: Number(itemData.stockQuantity) || 1,
     rentalPrice: Number(itemData.rentalPrice) || 0,
@@ -104,7 +118,7 @@ export async function addCustomItem(itemData) {
   return newItem;
 }
 
-export async function deleteCustomItem(id) {
+export async function deleteCustomItem(id: string): Promise<boolean> {
   const item = await db.items.get(id);
   if (item && item.isCustom) {
     await db.items.delete(id);
@@ -113,18 +127,18 @@ export async function deleteCustomItem(id) {
   return false;
 }
 
-// Mtodos para Capas e Estampas
-export async function getAllCovers() {
+// Métodos para Capas e Estampas
+export async function getAllCovers(): Promise<CoverItemRecord[]> {
   return await db.covers.toArray();
 }
 
-export async function addCustomCover(coverData) {
-  const newCover = {
+export async function addCustomCover(coverData: Partial<CoverItemRecord>): Promise<CoverItemRecord> {
+  const newCover: CoverItemRecord = {
     id: 'cover-' + Date.now(),
     themeName: coverData.themeName || 'Personalizado',
     name: coverData.name || 'Nova Capa',
     targetType: coverData.targetType || 'all',
-    imageUrl: coverData.imageUrl,
+    imageUrl: coverData.imageUrl || '',
     isCustom: true,
     createdAt: Date.now()
   };
@@ -132,22 +146,29 @@ export async function addCustomCover(coverData) {
   return newCover;
 }
 
-// Mtodos para Projetos / Cenrios
-export async function getAllProjects() {
+// Métodos para Projetos / Cenários
+export async function getAllProjects(): Promise<ProjectData[]> {
   return await db.projects.reverse().sortBy('updatedAt');
 }
 
-export async function saveProject(projectData) {
+export async function saveProject(projectData: Partial<ProjectData>): Promise<ProjectData> {
   const projectId = projectData.id || ('proj-' + Date.now());
-  const project = {
-    ...projectData,
+  const project: ProjectData = {
     id: projectId,
-    updatedAt: Date.now()
+    title: projectData.title || 'Novo Cenário',
+    clientName: projectData.clientName || '',
+    notes: projectData.notes || '',
+    elements: projectData.elements || [],
+    wallTextureUrl: projectData.wallTextureUrl,
+    floorTextureUrl: projectData.floorTextureUrl,
+    thumbnailUrl: projectData.thumbnailUrl,
+    updatedAt: Date.now(),
+    createdAt: projectData.createdAt || Date.now()
   };
   await db.projects.put(project);
   return project;
 }
 
-export async function deleteProject(id) {
+export async function deleteProject(id: string): Promise<void> {
   await db.projects.delete(id);
 }

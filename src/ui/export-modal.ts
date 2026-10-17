@@ -1,17 +1,31 @@
-import { generateRomaneio, formatWhatsAppMessage, shareViaWhatsApp, downloadImage } from '../core/export-service.js';
+import { generateRomaneio, formatWhatsAppMessage, shareViaWhatsApp, downloadImage } from '../core/export-service';
+import type { CanvasEngine } from '../core/canvas-engine';
 
 export class ExportModal {
-  constructor(canvasEngine) {
+  canvasEngine: CanvasEngine;
+  modalEl: HTMLElement | null;
+  previewImgEl: HTMLImageElement | null;
+  checklistContainer: HTMLElement | null;
+  totalItemsBadge: HTMLElement | null;
+  btnDownload: HTMLElement | null;
+  btnWhatsApp: HTMLElement | null;
+  btnClose: HTMLElement | null;
+  clientNameInput: HTMLInputElement | null;
+  clientPhoneInput: HTMLInputElement | null;
+  currentDataUrl: string | null;
+  currentRomaneio: ReturnType<typeof generateRomaneio> | null;
+
+  constructor(canvasEngine: CanvasEngine) {
     this.canvasEngine = canvasEngine;
     this.modalEl = document.getElementById('export-modal');
-    this.previewImgEl = document.getElementById('export-preview-img');
+    this.previewImgEl = document.getElementById('export-preview-img') as HTMLImageElement | null;
     this.checklistContainer = document.getElementById('export-checklist-items');
     this.totalItemsBadge = document.getElementById('export-total-badge');
     this.btnDownload = document.getElementById('btn-download-image');
     this.btnWhatsApp = document.getElementById('btn-share-whatsapp');
     this.btnClose = document.getElementById('btn-close-export-modal');
-    this.clientNameInput = document.getElementById('export-client-name');
-    this.clientPhoneInput = document.getElementById('export-client-phone');
+    this.clientNameInput = document.getElementById('export-client-name') as HTMLInputElement | null;
+    this.clientPhoneInput = document.getElementById('export-client-phone') as HTMLInputElement | null;
 
     this.currentDataUrl = null;
     this.currentRomaneio = null;
@@ -19,7 +33,7 @@ export class ExportModal {
     this.setupEvents();
   }
 
-  setupEvents() {
+  setupEvents(): void {
     this.btnClose?.addEventListener('click', () => this.close());
     this.modalEl?.addEventListener('click', (e) => {
       if (e.target === this.modalEl) this.close();
@@ -43,7 +57,7 @@ export class ExportModal {
     });
   }
 
-  open() {
+  open(): void {
     const elements = this.canvasEngine.getSceneElements();
     if (elements.length === 0) {
       alert('Seu cenário está vazio! Adicione peças antes de exportar.');
@@ -52,7 +66,7 @@ export class ExportModal {
 
     // 1. Gera imagem em alta resolução
     this.currentDataUrl = this.canvasEngine.exportHDImage();
-    if (this.previewImgEl) {
+    if (this.previewImgEl && this.currentDataUrl) {
       this.previewImgEl.src = this.currentDataUrl;
     }
 
@@ -72,14 +86,14 @@ export class ExportModal {
           <span>${item.name} (${item.widthCm}x${item.heightCm}cm)</span>
           <span class="checklist-item-qty">${item.quantity}x</span>
         `;
-        this.checklistContainer.appendChild(li);
+        this.checklistContainer?.appendChild(li);
       });
     }
 
     this.modalEl?.classList.add('open');
   }
 
-  close() {
+  close(): void {
     this.modalEl?.classList.remove('open');
   }
 }

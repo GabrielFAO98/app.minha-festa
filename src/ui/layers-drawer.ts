@@ -1,7 +1,17 @@
 // Controle da Gaveta Oculta de Camadas (Estilo Canva)
+import type { CanvasEngine } from '../core/canvas-engine';
+import type { ConfirmModal } from './confirm-modal';
+import type Konva from 'konva';
 
 export class LayersDrawer {
-  constructor(canvasEngine, confirmModal) {
+  canvasEngine: CanvasEngine;
+  confirmModal: ConfirmModal;
+  drawerEl: HTMLElement | null;
+  listEl: HTMLElement | null;
+  countBadge: HTMLElement | null;
+  btnClose: HTMLElement | null;
+
+  constructor(canvasEngine: CanvasEngine, confirmModal: ConfirmModal) {
     this.canvasEngine = canvasEngine;
     this.confirmModal = confirmModal;
     this.drawerEl = document.getElementById('layers-drawer');
@@ -12,7 +22,7 @@ export class LayersDrawer {
     this.setupEvents();
   }
 
-  setupEvents() {
+  setupEvents(): void {
     this.btnClose?.addEventListener('click', () => {
       this.close();
     });
@@ -29,7 +39,7 @@ export class LayersDrawer {
     });
   }
 
-  toggle() {
+  toggle(): void {
     if (this.drawerEl?.classList.contains('open')) {
       this.close();
     } else {
@@ -37,16 +47,16 @@ export class LayersDrawer {
     }
   }
 
-  open() {
+  open(): void {
     this.renderLayers();
     this.drawerEl?.classList.add('open');
   }
 
-  close() {
+  close(): void {
     this.drawerEl?.classList.remove('open');
   }
 
-  renderLayers() {
+  renderLayers(): void {
     if (!this.listEl) return;
     const elements = this.canvasEngine.getSceneNodes().slice().reverse(); // Exibe os mais altos primeiro
 
@@ -97,7 +107,7 @@ export class LayersDrawer {
 
       // Selecionar ao clicar na linha
       row.addEventListener('click', (e) => {
-        if (e.target.closest('.layer-btn')) return;
+        if ((e.target as HTMLElement).closest('.layer-btn')) return;
         this.canvasEngine.selectNode(node);
         this.highlightSelected(node);
       });
@@ -119,7 +129,7 @@ export class LayersDrawer {
 
       row.querySelector('.btn-lock')?.addEventListener('click', (e) => {
         e.stopPropagation();
-        const nowLocked = this.canvasEngine.toggleLockNode(node);
+        this.canvasEngine.toggleLockNode(node);
         this.renderLayers();
       });
 
@@ -136,15 +146,16 @@ export class LayersDrawer {
         }
       });
 
-      this.listEl.appendChild(row);
+      this.listEl?.appendChild(row);
     });
   }
 
-  highlightSelected(node) {
+  highlightSelected(node: Konva.Group | Konva.Node | null): void {
     if (!this.listEl) return;
     const meta = node ? node.getAttr('itemMeta') : null;
     this.listEl.querySelectorAll('.layer-item-row').forEach((row) => {
-      row.classList.toggle('active', meta && row.dataset.instanceId === meta.instanceId);
+      const htmlRow = row as HTMLElement;
+      htmlRow.classList.toggle('active', !!(meta && htmlRow.dataset.instanceId === meta.instanceId));
     });
   }
 }

@@ -1,3 +1,4 @@
+import type { PresetItem, ThemeCover } from '../types';
 export const SVG_RUG_BOHO_SISAL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 260" width="260" height="260">
   <defs>
     <radialGradient id="sisalFiberGrad" cx="50%" cy="50%" r="50%">
@@ -195,7 +196,7 @@ export const SVG_DISPLAY_NEON_OH_BABY = `<svg xmlns="http://www.w3.org/2000/svg"
 </svg>`;
 
 // Ilustraes SVG e dados tcnicos dos Presets de Fbrica do Pegue-Monte
-import { generateBalloonArchDataUrl } from './balloon-generator.js';
+import { generateBalloonArchDataUrl } from './balloon-generator';
 
 // Funo auxiliar para gerar Data URI de SVG
 export function svgToDataUrl(svgString) {
@@ -2167,7 +2168,7 @@ export const SVG_DISPLAY_TABLE = `<svg xmlns="http://www.w3.org/2000/svg" viewBo
 </svg>`;
 
 // Lista Principal de Presets de Fábrica
-export const DEFAULT_PRESET_ITEMS = [
+export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   // 1. PAINÉIS
   {
     id: 'preset-painel-redondo',
@@ -2722,7 +2723,7 @@ export const DEFAULT_PRESET_ITEMS = [
   ];
 
 // Presets de Capas e Estampas de Demonstração (Imagens Realistas de Festas Reais)
-export const DEFAULT_THEME_COVERS = [
+export const DEFAULT_THEME_COVERS: ThemeCover[] = [
   {
     id: 'cover-fazendinha',
     themeName: 'Fazendinha',

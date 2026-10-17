@@ -1,12 +1,23 @@
-import { getAllCovers, addCustomCover } from '../core/db.js';
+import { getAllCovers, addCustomCover } from '../core/db';
+import type { CanvasEngine } from '../core/canvas-engine';
+import type { PresetItem } from '../types';
 
 export class CoverModal {
-  constructor(canvasEngine) {
+  canvasEngine: CanvasEngine;
+  targetMeta: PresetItem | null;
+  modalEl: HTMLElement | null;
+  gridEl: HTMLElement | null;
+  fileInputEl: HTMLInputElement | null;
+  btnUploadTrigger: HTMLElement | null;
+  btnRemoveCover: HTMLElement | null;
+  btnClose: HTMLElement | null;
+
+  constructor(canvasEngine: CanvasEngine) {
     this.canvasEngine = canvasEngine;
     this.targetMeta = null;
     this.modalEl = document.getElementById('cover-modal');
     this.gridEl = document.getElementById('covers-modal-grid');
-    this.fileInputEl = document.getElementById('cover-upload-input');
+    this.fileInputEl = document.getElementById('cover-upload-input') as HTMLInputElement | null;
     this.btnUploadTrigger = document.getElementById('btn-upload-cover-trigger');
     this.btnRemoveCover = document.getElementById('btn-remove-cover');
     this.btnClose = document.getElementById('btn-close-cover-modal');
@@ -14,7 +25,7 @@ export class CoverModal {
     this.setupEvents();
   }
 
-  setupEvents() {
+  setupEvents(): void {
     this.btnClose?.addEventListener('click', () => this.close());
     this.modalEl?.addEventListener('click', (e) => {
       if (e.target === this.modalEl) this.close();
@@ -25,14 +36,16 @@ export class CoverModal {
     });
 
     this.fileInputEl?.addEventListener('change', async (e) => {
-      const file = e.target.files?.[0];
+      const target = e.target as HTMLInputElement | null;
+      const file = target?.files?.[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = async (event) => {
-        const imageUrl = event.target.result;
+        const imageUrl = event.target?.result as string;
+        if (!imageUrl) return;
         // Salva nova capa no banco de dados local
-        const newCover = await addCustomCover({
+        await addCustomCover({
           themeName: 'Minhas Estampas',
           name: file.name.replace(/\.[^/.]+$/, ''),
           imageUrl: imageUrl,
@@ -45,7 +58,7 @@ export class CoverModal {
         this.loadCovers();
       };
       reader.readAsDataURL(file);
-      this.fileInputEl.value = '';
+      if (this.fileInputEl) this.fileInputEl.value = '';
     });
 
     this.btnRemoveCover?.addEventListener('click', async () => {
@@ -54,7 +67,7 @@ export class CoverModal {
     });
   }
 
-  async open(meta) {
+  async open(meta: PresetItem | null): Promise<void> {
     this.targetMeta = meta;
     const titleEl = document.getElementById('cover-modal-subtitle');
     if (titleEl && meta) {
@@ -65,11 +78,11 @@ export class CoverModal {
     this.modalEl?.classList.add('open');
   }
 
-  close() {
+  close(): void {
     this.modalEl?.classList.remove('open');
   }
 
-  async loadCovers() {
+  async loadCovers(): Promise<void> {
     if (!this.gridEl) return;
     const covers = await getAllCovers();
     this.gridEl.innerHTML = '';
@@ -87,7 +100,7 @@ export class CoverModal {
         this.close();
       });
 
-      this.gridEl.appendChild(card);
+      this.gridEl?.appendChild(card);
     });
   }
 }

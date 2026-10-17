@@ -1,6 +1,12 @@
 // Modal Elegante de Confirmação para Ações Críticas (Exclusão Segura)
 
 export class ConfirmModal {
+  modalEl: HTMLElement | null;
+  messageEl: HTMLElement | null;
+  btnCancel: HTMLElement | null;
+  btnConfirm: HTMLElement | null;
+  resolvePromise: ((value: boolean) => void) | null;
+
   constructor() {
     this.modalEl = document.getElementById('confirm-modal');
     this.messageEl = document.getElementById('confirm-modal-message');
@@ -11,7 +17,7 @@ export class ConfirmModal {
     this.setupEvents();
   }
 
-  setupEvents() {
+  setupEvents(): void {
     this.btnCancel?.addEventListener('click', () => {
       this.close(false);
     });
@@ -27,7 +33,7 @@ export class ConfirmModal {
     });
   }
 
-  ask(title, message) {
+  ask(title?: string, message?: string): Promise<boolean> {
     return new Promise((resolve) => {
       this.resolvePromise = resolve;
 
@@ -39,7 +45,7 @@ export class ConfirmModal {
     });
   }
 
-  close(result) {
+  close(result: boolean): void {
     this.modalEl?.classList.remove('open');
     if (this.resolvePromise) {
       this.resolvePromise(result);

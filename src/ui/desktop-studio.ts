@@ -1,9 +1,25 @@
-// Modo Desktop Studio  Painis Laterais de Catlogo, Inspetor e Camadas
-import { getItemsByCategory, getAllItems, getAllCovers } from '../core/db.js';
-import { REALISTIC_ENVIRONMENTS } from '../core/textures-data.js';
+// Modo Desktop Studio - Painéis Laterais de Catálogo, Inspetor e Camadas
+import { getItemsByCategory, getAllItems, getAllCovers } from '../core/db';
+import { REALISTIC_ENVIRONMENTS } from '../core/textures-data';
+import type { CanvasEngine } from '../core/canvas-engine';
+import type { PresetItem, SceneElement } from '../types';
+import type Konva from 'konva';
 
 export class DesktopStudio {
-  constructor(canvasEngine, onOpenInventoryModal, onOpenCoverModal, onOpenBalloonModal) {
+  canvasEngine: CanvasEngine;
+  onOpenInventoryModal: () => void;
+  onOpenCoverModal: (meta: PresetItem) => void;
+  onOpenBalloonModal: (node: Konva.Group | Konva.Node) => void;
+
+  activeCatalogTab: string;
+  currentPresetCategory: string;
+
+  constructor(
+    canvasEngine: CanvasEngine,
+    onOpenInventoryModal: () => void,
+    onOpenCoverModal: (meta: PresetItem) => void,
+    onOpenBalloonModal: (node: Konva.Group | Konva.Node) => void
+  ) {
     this.canvasEngine = canvasEngine;
     this.onOpenInventoryModal = onOpenInventoryModal;
     this.onOpenCoverModal = onOpenCoverModal;
@@ -15,32 +31,33 @@ export class DesktopStudio {
     this.setupUI();
   }
 
-  setupUI() {
+  setupUI(): void {
     this.initCatalogTabs();
     this.renderCatalogContent();
     this.initInspectorListeners();
     this.updateInspector(null, null);
     this.renderLayersList([]);
 
-    // Sincroniza seleo e camadas no painel desktop
+    // Sincroniza seleção e camadas no painel desktop
     this.canvasEngine.onLayersChange = (elements) => {
       this.renderLayersList(elements);
     };
   }
 
-  initCatalogTabs() {
+  initCatalogTabs(): void {
     const tabButtons = document.querySelectorAll('.desktop-tab-btn');
-    tabButtons.forEach((btn) => {
+    tabButtons.forEach((btnNode) => {
+      const btn = btnNode as HTMLElement;
       btn.addEventListener('click', () => {
-        const tab = btn.dataset.tab;
+        const tab = btn.dataset.tab || 'presets';
         this.activeCatalogTab = tab;
-        tabButtons.forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+        tabButtons.forEach((b) => (b as HTMLElement).classList.toggle('active', (b as HTMLElement).dataset.tab === tab));
         this.renderCatalogContent();
       });
     });
   }
 
-  async renderCatalogContent() {
+  async renderCatalogContent(): Promise<void> {
     const container = document.getElementById('desktop-catalog-content');
     if (!container) return;
 
@@ -58,7 +75,7 @@ export class DesktopStudio {
   }
 
   // ABA 1: Presets Base
-  async renderPresets(container) {
+  async renderPresets(container: HTMLElement): Promise<void> {
     // Categorias de Presets
     const catBar = document.createElement('div');
     catBar.className = 'desktop-category-pills';
@@ -113,12 +130,12 @@ export class DesktopStudio {
   }
 
   // ABA 2: Meu Acervo
-  async renderMyItems(container) {
+  async renderMyItems(container: HTMLElement): Promise<void> {
     const addHeader = document.createElement('div');
     addHeader.style.padding = '8px 12px';
     addHeader.innerHTML = `
       <button class="btn-primary" style="width: 100%; font-size: 0.82rem;" id="btn-desktop-add-inventory">
-        ➕ Cadastrar Nova Pea no Acervo
+        ➕ Cadastrar Nova Peça no Acervo
       </button>
     `;
     container.appendChild(addHeader);
@@ -135,8 +152,8 @@ export class DesktopStudio {
       empty.className = 'empty-catalog-box';
       empty.innerHTML = `
         <div style="font-size: 1.8rem; margin-bottom: 6px;">📦</div>
-        <div>Nenhuma pea cadastrada ainda.</div>
-        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Tire fotos das suas mesas e painis prprios!</div>
+        <div>Nenhuma peça cadastrada ainda.</div>
+        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Tire fotos das suas mesas e painéis próprios!</div>
       `;
       container.appendChild(empty);
       return;
@@ -165,7 +182,7 @@ export class DesktopStudio {
   }
 
   // ABA 3: Capas e Estampas
-  async renderCovers(container) {
+  async renderCovers(container: HTMLElement): Promise<void> {
     const covers = await getAllCovers();
     const grid = document.createElement('div');
     grid.className = 'desktop-catalog-grid';
@@ -193,8 +210,8 @@ export class DesktopStudio {
     container.appendChild(grid);
   }
 
-  // ABA 4: Cenrios
-  async renderEnvironments(container) {
+  // ABA 4: Cenários
+  async renderEnvironments(container: HTMLElement): Promise<void> {
     const grid = document.createElement('div');
     grid.className = 'desktop-catalog-grid';
 
@@ -217,8 +234,8 @@ export class DesktopStudio {
     container.appendChild(grid);
   }
 
-  // INSPETOR DA PEA SELECIONADA
-  initInspectorListeners() {
+  // INSPETOR DA PEÇA SELECIONADA
+  initInspectorListeners(): void {
     const btnDel = document.getElementById('btn-desktop-delete');
     const btnCover = document.getElementById('btn-desktop-cover');
     const btnDup = document.getElementById('btn-desktop-duplicate');
@@ -235,7 +252,7 @@ export class DesktopStudio {
     btnCover?.addEventListener('click', () => {
       const node = this.canvasEngine.selectedNode;
       if (!node) return;
-      const meta = node.getAttr('itemMeta') || {};
+      const meta = (node.getAttr('itemMeta') || {}) as PresetItem;
 
       if (meta.category === 'baloes' || meta.type === 'balloon_arch') {
         this.onOpenBalloonModal(node);
@@ -245,12 +262,12 @@ export class DesktopStudio {
     });
   }
 
-  updateInspector(meta, node) {
+  updateInspector(meta: PresetItem | null, node: Konva.Group | Konva.Node | null): void {
     const box = document.getElementById('desktop-inspector-box');
     const emptyBox = document.getElementById('desktop-inspector-empty');
     const titleEl = document.getElementById('desktop-inspector-title');
     const sizeEl = document.getElementById('desktop-inspector-size');
-    const thumbEl = document.getElementById('desktop-inspector-thumb');
+    const thumbEl = document.getElementById('desktop-inspector-thumb') as HTMLImageElement | null;
     const btnCover = document.getElementById('btn-desktop-cover');
 
     if (!node || !meta) {
@@ -263,26 +280,26 @@ export class DesktopStudio {
     if (emptyBox) emptyBox.style.display = 'none';
 
     if (titleEl) titleEl.textContent = meta.name;
-    if (sizeEl) sizeEl.textContent = `${meta.widthCm}cm de largura  ${meta.heightCm}cm de altura`;
+    if (sizeEl) sizeEl.textContent = `${meta.widthCm}cm de largura • ${meta.heightCm}cm de altura`;
     if (thumbEl) thumbEl.src = meta.previewUrl;
 
     if (btnCover) {
       const isBalloons = meta.category === 'baloes' || meta.type === 'balloon_arch';
-      btnCover.textContent = isBalloons ? ' Cores dos Bales' : ' Vestir Capa';
+      btnCover.textContent = isBalloons ? '🎨 Cores dos Balões' : '🎨 Vestir Capa';
     }
   }
 
   // LISTA DE CAMADAS (LAYERS)
-  renderLayersList(elements) {
+  renderLayersList(elements: (SceneElement | PresetItem)[]): void {
     const listEl = document.getElementById('desktop-layers-list');
     const badgeEl = document.getElementById('desktop-layers-count');
     if (!listEl) return;
 
     listEl.innerHTML = '';
-    if (badgeEl) badgeEl.textContent = `${elements.length} peas`;
+    if (badgeEl) badgeEl.textContent = `${elements.length} peças`;
 
     if (elements.length === 0) {
-      listEl.innerHTML = '<div style="font-size: 0.72rem; color: var(--text-muted); padding: 8px;">Nenhuma pea na decorao ainda.</div>';
+      listEl.innerHTML = '<div style="font-size: 0.72rem; color: var(--text-muted); padding: 8px;">Nenhuma peça na decoração ainda.</div>';
       return;
     }
 
@@ -293,7 +310,7 @@ export class DesktopStudio {
       const row = document.createElement('div');
       row.className = 'layer-row-item';
 
-      const isSelected = this.canvasEngine.selectedNode?.getAttr('itemMeta')?.instanceId === elem.instanceId;
+      const isSelected = (this.canvasEngine.selectedNode as any)?.getAttr('itemMeta')?.instanceId === elem.instanceId;
       if (isSelected) row.classList.add('selected');
 
       row.innerHTML = `
@@ -306,7 +323,7 @@ export class DesktopStudio {
 
       row.addEventListener('click', () => {
         const nodes = this.canvasEngine.getSceneNodes();
-        const targetNode = nodes.find((n) => n.getAttr('itemMeta')?.instanceId === elem.instanceId);
+        const targetNode = nodes.find((n) => (n as any).getAttr('itemMeta')?.instanceId === elem.instanceId);
         if (targetNode) {
           this.canvasEngine.selectNode(targetNode);
         }
@@ -316,4 +333,3 @@ export class DesktopStudio {
     });
   }
 }
-

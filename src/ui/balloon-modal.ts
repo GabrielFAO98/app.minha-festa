@@ -1,11 +1,23 @@
-// Modal de Customizaǜo ParamǸtrica de Cores do Arco de Bales
-import { BALLOON_PALETTES, generateBalloonArchDataUrl } from '../core/balloon-generator.js';
+// Modal de Customização Paramétrica de Cores do Arco de Balões
+import { BALLOON_PALETTES, generateBalloonArchDataUrl } from '../core/balloon-generator';
+import type { CanvasEngine } from '../core/canvas-engine';
+import type Konva from 'konva';
 
 export class BalloonModal {
-  constructor(canvasEngine) {
+  canvasEngine: CanvasEngine;
+  modalEl: HTMLElement | null;
+  previewImg: HTMLImageElement | null;
+  palettesContainer: HTMLElement | null;
+  colorPickersContainer: HTMLElement | null;
+  btnClose: HTMLElement | null;
+  btnApply: HTMLElement | null;
+  currentNode: Konva.Group | Konva.Node | null;
+  currentColors: string[];
+
+  constructor(canvasEngine: CanvasEngine) {
     this.canvasEngine = canvasEngine;
     this.modalEl = document.getElementById('balloon-modal');
-    this.previewImg = document.getElementById('balloon-preview-img');
+    this.previewImg = document.getElementById('balloon-preview-img') as HTMLImageElement | null;
     this.palettesContainer = document.getElementById('balloon-palettes-grid');
     this.colorPickersContainer = document.getElementById('balloon-color-pickers');
     this.btnClose = document.getElementById('btn-close-balloon-modal');
@@ -17,7 +29,7 @@ export class BalloonModal {
     this.setupEvents();
   }
 
-  setupEvents() {
+  setupEvents(): void {
     this.btnClose?.addEventListener('click', () => this.close());
     this.modalEl?.addEventListener('click', (e) => {
       if (e.target === this.modalEl) this.close();
@@ -29,9 +41,9 @@ export class BalloonModal {
     });
   }
 
-  open(node) {
+  open(node: Konva.Group | Konva.Node): void {
     this.currentNode = node;
-    const meta = node.getAttr('itemMeta') || {};
+    const meta = (node.getAttr('itemMeta') || {}) as any;
 
     if (meta.balloonColors && Array.isArray(meta.balloonColors) && meta.balloonColors.length > 0) {
       this.currentColors = [...meta.balloonColors];
@@ -46,19 +58,19 @@ export class BalloonModal {
     this.modalEl?.classList.add('open');
   }
 
-  close() {
+  close(): void {
     this.modalEl?.classList.remove('open');
     this.currentNode = null;
   }
 
-  updatePreview() {
+  updatePreview(): void {
     const dataUrl = generateBalloonArchDataUrl(this.currentColors);
     if (this.previewImg) {
       this.previewImg.src = dataUrl;
     }
   }
 
-  renderPalettesList() {
+  renderPalettesList(): void {
     if (!this.palettesContainer) return;
     this.palettesContainer.innerHTML = '';
 
@@ -83,11 +95,11 @@ export class BalloonModal {
         this.applyColors(false); // Live preview no canvas
       });
 
-      this.palettesContainer.appendChild(card);
+      this.palettesContainer?.appendChild(card);
     });
   }
 
-  renderColorPickers() {
+  renderColorPickers(): void {
     if (!this.colorPickersContainer) return;
     this.colorPickersContainer.innerHTML = '';
 
@@ -103,22 +115,22 @@ export class BalloonModal {
         </div>
       `;
 
-      const input = row.querySelector('.color-picker-native');
+      const input = row.querySelector('.color-picker-native') as HTMLInputElement | null;
       const hexTag = row.querySelector('.color-hex-tag');
 
-      input.addEventListener('input', (e) => {
-        const val = e.target.value;
+      input?.addEventListener('input', (e) => {
+        const val = (e.target as HTMLInputElement).value;
         this.currentColors[idx] = val;
-        hexTag.textContent = val.toUpperCase();
+        if (hexTag) hexTag.textContent = val.toUpperCase();
         this.updatePreview();
         this.applyColors(false);
       });
 
-      this.colorPickersContainer.appendChild(row);
+      this.colorPickersContainer?.appendChild(row);
     });
   }
 
-  applyColors(saveHistory = true) {
+  applyColors(saveHistory: boolean = true): void {
     if (!this.currentNode) return;
     this.canvasEngine.applyBalloonColorsToNode(this.currentNode, this.currentColors, saveHistory);
   }

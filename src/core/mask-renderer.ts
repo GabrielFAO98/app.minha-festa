@@ -914,8 +914,8 @@ export function isPointInsideMask(type, x, y, width, height) {
  * @param {string} src URL da imagem
  * @returns {Promise<HTMLImageElement>}
  */
-export function loadImageAsync(src) {
-  return new Promise((resolve, reject) => {
+export function loadImageAsync(src: string): Promise<HTMLImageElement> {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'Anonymous';
     img.onload = () => resolve(img);

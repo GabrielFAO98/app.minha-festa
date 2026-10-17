@@ -1,5 +1,5 @@
 // Gerador ParamǸtrico de Arco de Bales Desconstrudo com Sombreamento 3D Realista
-import { svgToDataUrl } from './presets-data.js';
+import { svgToDataUrl } from './presets-data';
 
 // Paletas Prontas Populares para Festas Brasileiras
 export const BALLOON_PALETTES = [

@@ -1,13 +1,24 @@
-import { addCustomItem } from '../core/db.js';
+import { addCustomItem } from '../core/db';
+import type { PresetItem } from '../types';
 
 export class InventoryModal {
-  constructor(onItemCreated) {
+  onItemCreated?: ((item: PresetItem) => void) | null;
+  modalEl: HTMLElement | null;
+  formEl: HTMLFormElement | null;
+  fileInputEl: HTMLInputElement | null;
+  uploadBoxEl: HTMLElement | null;
+  previewImgEl: HTMLImageElement | null;
+  uploadPlaceholder: HTMLElement | null;
+  btnClose: HTMLElement | null;
+  currentImageData: string | null;
+
+  constructor(onItemCreated?: ((item: PresetItem) => void) | null) {
     this.onItemCreated = onItemCreated;
     this.modalEl = document.getElementById('inventory-modal');
-    this.formEl = document.getElementById('inventory-form');
-    this.fileInputEl = document.getElementById('item-image-input');
+    this.formEl = document.getElementById('inventory-form') as HTMLFormElement | null;
+    this.fileInputEl = document.getElementById('item-image-input') as HTMLInputElement | null;
     this.uploadBoxEl = document.getElementById('image-upload-box');
-    this.previewImgEl = document.getElementById('upload-preview-img');
+    this.previewImgEl = document.getElementById('upload-preview-img') as HTMLImageElement | null;
     this.uploadPlaceholder = document.getElementById('upload-placeholder');
     this.btnClose = document.getElementById('btn-close-inventory-modal');
 
@@ -15,7 +26,7 @@ export class InventoryModal {
     this.setupEvents();
   }
 
-  setupEvents() {
+  setupEvents(): void {
     this.btnClose?.addEventListener('click', () => this.close());
     this.modalEl?.addEventListener('click', (e) => {
       if (e.target === this.modalEl) this.close();
@@ -26,13 +37,14 @@ export class InventoryModal {
     });
 
     this.fileInputEl?.addEventListener('change', (e) => {
-      const file = e.target.files?.[0];
+      const target = e.target as HTMLInputElement | null;
+      const file = target?.files?.[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = (event) => {
-        this.currentImageData = event.target.result;
-        if (this.previewImgEl) {
+        this.currentImageData = (event.target?.result as string) || null;
+        if (this.previewImgEl && this.currentImageData) {
           this.previewImgEl.src = this.currentImageData;
           this.previewImgEl.style.display = 'block';
         }
@@ -51,12 +63,19 @@ export class InventoryModal {
         return;
       }
 
-      const name = document.getElementById('item-name-input').value.trim();
-      const category = document.getElementById('item-category-input').value;
-      const widthCm = Number(document.getElementById('item-width-input').value) || 50;
-      const heightCm = Number(document.getElementById('item-height-input').value) || 50;
-      const stockQuantity = Number(document.getElementById('item-stock-input').value) || 1;
-      const rentalPrice = Number(document.getElementById('item-price-input').value) || 0;
+      const nameInput = document.getElementById('item-name-input') as HTMLInputElement | null;
+      const categoryInput = document.getElementById('item-category-input') as HTMLSelectElement | null;
+      const widthInput = document.getElementById('item-width-input') as HTMLInputElement | null;
+      const heightInput = document.getElementById('item-height-input') as HTMLInputElement | null;
+      const stockInput = document.getElementById('item-stock-input') as HTMLInputElement | null;
+      const priceInput = document.getElementById('item-price-input') as HTMLInputElement | null;
+
+      const name = nameInput?.value.trim() || 'Nova Peça';
+      const category = categoryInput?.value || 'paineis';
+      const widthCm = Number(widthInput?.value) || 50;
+      const heightCm = Number(heightInput?.value) || 50;
+      const stockQuantity = Number(stockInput?.value) || 1;
+      const rentalPrice = Number(priceInput?.value) || 0;
 
       // Determinar o tipo da peça
       let type = 'generic';
@@ -83,16 +102,16 @@ export class InventoryModal {
     });
   }
 
-  open() {
+  open(): void {
     this.resetForm();
     this.modalEl?.classList.add('open');
   }
 
-  close() {
+  close(): void {
     this.modalEl?.classList.remove('open');
   }
 
-  resetForm() {
+  resetForm(): void {
     this.formEl?.reset();
     this.currentImageData = null;
     if (this.previewImgEl) {

@@ -260,8 +260,7 @@ export class DesktopStudio {
         const current = meta.currentColor || 'marrom';
         const nextIdx = (order.indexOf(current) + 1) % order.length;
         const nextColor = order[nextIdx];
-        const newSvg = generateMoinhoSVG(nextColor as any);
-        const newUrl = svgToDataUrl(newSvg);
+        const newUrl = generateMoinhoSVG(nextColor as any);
         await this.canvasEngine.changeItemImage(node as Konva.Group, newUrl, nextColor);
         const updatedMeta = node.getAttr('itemMeta');
         this.updateInspector(updatedMeta, node);

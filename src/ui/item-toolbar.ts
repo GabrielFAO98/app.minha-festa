@@ -54,8 +54,7 @@ export class ItemToolbar {
         const current = this.selectedMeta.currentColor || 'marrom';
         const nextIdx = (order.indexOf(current) + 1) % order.length;
         const nextColor = order[nextIdx];
-        const newSvg = generateMoinhoSVG(nextColor as any);
-        const newUrl = svgToDataUrl(newSvg);
+        const newUrl = generateMoinhoSVG(nextColor as any);
         await this.canvasEngine.changeItemImage(this.selectedNode as Konva.Group, newUrl, nextColor);
         const updatedMeta = this.selectedNode.getAttr('itemMeta');
         this.updateSelection(updatedMeta, this.selectedNode);

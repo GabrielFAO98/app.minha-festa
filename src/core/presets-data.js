@@ -1,3 +1,199 @@
+export const SVG_RUG_BOHO_SISAL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 260" width="260" height="260">
+  <defs>
+    <radialGradient id="sisalFiberGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fef3c7"/>
+      <stop offset="40%" stop-color="#fde68a"/>
+      <stop offset="75%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#92400e"/>
+    </radialGradient>
+    <filter id="shadowSisal" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#451a03" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <!-- Base Circular Trançada -->
+  <circle cx="130" cy="130" r="120" fill="url(#sisalFiberGrad)" stroke="#b45309" stroke-width="2" filter="url(#shadowSisal)"/>
+
+  <!-- Tramas Circulares Concêntricas de Palha / Corda de Sisal -->
+  <circle cx="130" cy="130" r="112" fill="none" stroke="#92400e" stroke-width="2" stroke-dasharray="5,3"/>
+  <circle cx="130" cy="130" r="102" fill="none" stroke="#b45309" stroke-width="2.5" stroke-dasharray="6,4"/>
+  <circle cx="130" cy="130" r="90" fill="none" stroke="#78350f" stroke-width="2" stroke-dasharray="5,3"/>
+  <circle cx="130" cy="130" r="78" fill="none" stroke="#92400e" stroke-width="2.5" stroke-dasharray="6,4"/>
+  <circle cx="130" cy="130" r="64" fill="none" stroke="#b45309" stroke-width="2" stroke-dasharray="5,3"/>
+  <circle cx="130" cy="130" r="48" fill="none" stroke="#78350f" stroke-width="2.5" stroke-dasharray="5,4"/>
+  <circle cx="130" cy="130" r="32" fill="none" stroke="#92400e" stroke-width="2" stroke-dasharray="4,3"/>
+  <circle cx="130" cy="130" r="16" fill="none" stroke="#b45309" stroke-width="2.5"/>
+  <circle cx="130" cy="130" r="6" fill="#78350f"/>
+
+  <!-- Franjas Boho Externas Delicadas -->
+  <circle cx="130" cy="130" r="122" fill="none" stroke="#ca8a04" stroke-width="2" stroke-dasharray="2,3"/>
+</svg>`;
+
+export const SVG_SWEET_TOWER_3TIER = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 200" width="160" height="200">
+  <defs>
+    <radialGradient id="platePorcelainGrad" cx="45%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </radialGradient>
+    <linearGradient id="goldRodGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ca8a04"/>
+      <stop offset="45%" stop-color="#fef08a"/>
+      <stop offset="80%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#854d0e"/>
+    </linearGradient>
+    <filter id="shadowTower" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4.5" stdDeviation="4.5" flood-color="#0f172a" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <!-- Haste Central Dourada com Alça de Coração/Argola no Topo -->
+  <circle cx="80" cy="24" r="8" fill="none" stroke="url(#goldRodGrad)" stroke-width="2.5"/>
+  <rect x="77.5" y="32" width="5" height="152" rx="2" fill="url(#goldRodGrad)" stroke="#854d0e" stroke-width="0.8"/>
+
+  <!-- Prato 3 (Topo - Menor) -->
+  <ellipse cx="80" cy="62" rx="36" ry="10" fill="url(#platePorcelainGrad)" stroke="#cbd5e1" stroke-width="1.5" filter="url(#shadowTower)"/>
+  <ellipse cx="80" cy="62" rx="34" ry="8.5" fill="none" stroke="#eab308" stroke-width="0.8"/>
+
+  <!-- Prato 2 (Meio - Médio) -->
+  <ellipse cx="80" cy="115" rx="52" ry="13" fill="url(#platePorcelainGrad)" stroke="#cbd5e1" stroke-width="1.5" filter="url(#shadowTower)"/>
+  <ellipse cx="80" cy="115" rx="49.5" ry="11" fill="none" stroke="#eab308" stroke-width="0.8"/>
+
+  <!-- Prato 1 (Base - Grande) -->
+  <ellipse cx="80" cy="172" rx="68" ry="16" fill="url(#platePorcelainGrad)" stroke="#cbd5e1" stroke-width="1.8" filter="url(#shadowTower)"/>
+  <ellipse cx="80" cy="172" rx="65" ry="13.5" fill="none" stroke="#eab308" stroke-width="1"/>
+</svg>`;
+
+export const SVG_GIFT_BOX_LUXURY = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 180" width="160" height="180">
+  <defs>
+    <linearGradient id="boxFrontGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fff1f2"/>
+      <stop offset="45%" stop-color="#fbcfe8"/>
+      <stop offset="100%" stop-color="#f472b6"/>
+    </linearGradient>
+    <linearGradient id="boxSideGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f472b6"/>
+      <stop offset="100%" stop-color="#db2777"/>
+    </linearGradient>
+    <linearGradient id="ribbonGoldBox" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#fef08a"/>
+      <stop offset="75%" stop-color="#ca8a04"/>
+      <stop offset="100%" stop-color="#854d0e"/>
+    </linearGradient>
+    <filter id="shadowGiftBox" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- Sombra no Piso -->
+  <ellipse cx="80" cy="172" rx="55" ry="7" fill="#0f172a" opacity="0.25"/>
+
+  <!-- Caixa em Perspectiva Isométrica -->
+  <g filter="url(#shadowGiftBox)">
+    <!-- Face Esquerda -->
+    <polygon points="20,65 80,85 80,165 20,145" fill="url(#boxFrontGrad)" stroke="#db2777" stroke-width="1"/>
+    <!-- Fita Dourada Face Esquerda -->
+    <polygon points="46,74 54,77 54,157 46,154" fill="url(#ribbonGoldBox)"/>
+
+    <!-- Face Direita -->
+    <polygon points="80,85 140,65 140,145 80,165" fill="url(#boxSideGrad)" stroke="#be185d" stroke-width="1"/>
+    <!-- Fita Dourada Face Direita -->
+    <polygon points="106,77 114,74 114,154 106,157" fill="url(#ribbonGoldBox)"/>
+
+    <!-- Face Superior (Tampa) -->
+    <polygon points="80,45 140,65 80,85 20,65" fill="#fff1f2" stroke="#db2777" stroke-width="1.2"/>
+    <!-- Fitas Cruzadas no Topo -->
+    <polygon points="46,74 54,77 114,57 106,54" fill="url(#ribbonGoldBox)"/>
+    <polygon points="76,46 84,44 84,84 76,86" fill="url(#ribbonGoldBox)"/>
+
+    <!-- Laço Gigante de Cetim no Topo -->
+    <g transform="translate(80, 48)">
+      <path d="M 0 0 C -22 -18 -32 5 -4 2 Z" fill="url(#ribbonGoldBox)" stroke="#854d0e" stroke-width="0.8"/>
+      <path d="M 0 0 C 22 -18 32 5 4 2 Z" fill="url(#ribbonGoldBox)" stroke="#854d0e" stroke-width="0.8"/>
+      <path d="M 0 0 C -16 -28 0 -24 0 -2 Z" fill="url(#ribbonGoldBox)"/>
+      <path d="M 0 0 C 16 -28 0 -24 0 -2 Z" fill="url(#ribbonGoldBox)"/>
+      <!-- Nó Central do Laço -->
+      <circle cx="0" cy="1" r="5" fill="#fef08a" stroke="#ca8a04" stroke-width="1"/>
+      <!-- Pontas Fluidas da Fita Caindo -->
+      <path d="M -2 3 Q -15 20 -8 32 L -3 30 Q -10 18 2 5 Z" fill="url(#ribbonGoldBox)"/>
+      <path d="M 2 3 Q 15 20 8 32 L 3 30 Q 10 18 -2 5 Z" fill="url(#ribbonGoldBox)"/>
+    </g>
+  </g>
+</svg>`;
+
+export const SVG_DISPLAY_NEON_OH_BABY = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 130" width="240" height="130">
+  <defs>
+    <filter id="neonOhBabyGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="7" result="wideBlur"/>
+      <feMerge>
+        <feMergeNode in="wideBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="neonOhBabyCore" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.5" result="coreBlur"/>
+      <feMerge>
+        <feMergeNode in="coreBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <radialGradient id="chromeScrewOhBaby" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </radialGradient>
+    <linearGradient id="acrylicReflectionOhBaby" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="40%" stop-color="#ffffff" stop-opacity="0.05"/>
+      <stop offset="70%" stop-color="#ffffff" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.02"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Placa de Acrílico Cristal Chanfrada -->
+  <rect x="12" y="12" width="216" height="106" rx="16" fill="url(#acrylicReflectionOhBaby)" stroke="rgba(255, 255, 255, 0.45)" stroke-width="1.8"/>
+  <rect x="15" y="15" width="210" height="100" rx="13" fill="none" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1"/>
+
+  <!-- 4 Parafusos Espaçadores Cromados -->
+  <circle cx="26" cy="26" r="5" fill="url(#chromeScrewOhBaby)" stroke="#475569" stroke-width="0.8"/>
+  <circle cx="214" cy="26" r="5" fill="url(#chromeScrewOhBaby)" stroke="#475569" stroke-width="0.8"/>
+  <circle cx="26" cy="104" r="5" fill="url(#chromeScrewOhBaby)" stroke="#475569" stroke-width="0.8"/>
+  <circle cx="214" cy="104" r="5" fill="url(#chromeScrewOhBaby)" stroke="#475569" stroke-width="0.8"/>
+
+  <!-- Lettering Neon 'Oh Baby' Cursivo Fluido -->
+  <!-- 1. Glow Difuso Quente -->
+  <g filter="url(#neonOhBabyGlow)" opacity="0.9">
+    <path d="M 50 68 C 42 68, 38 52, 50 42 C 62 32, 70 52, 60 68 C 54 74, 46 72, 50 68 Z
+             M 76 34 L 76 74 M 76 56 C 82 48, 94 48, 94 62 L 94 74
+             M 118 74 C 114 62, 114 42, 122 36 C 128 32, 134 38, 134 50 C 134 68, 116 74, 138 74
+             M 152 74 C 146 74, 142 66, 148 56 C 154 48, 164 50, 164 64 L 164 74
+             M 176 74 L 176 34 M 176 56 C 182 48, 194 48, 194 62 C 194 74, 180 74, 176 74
+             M 204 54 L 204 74 C 204 84, 196 92, 186 92"
+          fill="none" stroke="#f59e0b" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- 2. Tubo de Silicone Flex Dourado -->
+  <g filter="url(#neonOhBabyCore)">
+    <path d="M 50 68 C 42 68, 38 52, 50 42 C 62 32, 70 52, 60 68 C 54 74, 46 72, 50 68 Z
+             M 76 34 L 76 74 M 76 56 C 82 48, 94 48, 94 62 L 94 74
+             M 118 74 C 114 62, 114 42, 122 36 C 128 32, 134 38, 134 50 C 134 68, 116 74, 138 74
+             M 152 74 C 146 74, 142 66, 148 56 C 154 48, 164 50, 164 64 L 164 74
+             M 176 74 L 176 34 M 176 56 C 182 48, 194 48, 194 62 C 194 74, 180 74, 176 74
+             M 204 54 L 204 74 C 204 84, 196 92, 186 92"
+          fill="none" stroke="#fde047" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- 3. Filamento Central Emissivo Branco Quente -->
+  <path d="M 50 68 C 42 68, 38 52, 50 42 C 62 32, 70 52, 60 68 C 54 74, 46 72, 50 68 Z
+           M 76 34 L 76 74 M 76 56 C 82 48, 94 48, 94 62 L 94 74
+           M 118 74 C 114 62, 114 42, 122 36 C 128 32, 134 38, 134 50 C 134 68, 116 74, 138 74
+           M 152 74 C 146 74, 142 66, 148 56 C 154 48, 164 50, 164 64 L 164 74
+           M 176 74 L 176 34 M 176 56 C 182 48, 194 48, 194 62 C 194 74, 180 74, 176 74
+           M 204 54 L 204 74 C 204 84, 196 92, 186 92"
+        fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+
 // Ilustraes SVG e dados tcnicos dos Presets de Fbrica do Pegue-Monte
 import { generateBalloonArchDataUrl } from './balloon-generator.js';
 
@@ -7,307 +203,507 @@ export function svgToDataUrl(svgString) {
 }
 
 // 1. Painel Redondo (150cm)
-export const SVG_PANEL_ROUND = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 380" width="300" height="380">
+export const SVG_PANEL_ROUND = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 380" width="300" height="380">
   <defs>
-    <radialGradient id="roundBaseGrad" cx="40%" cy="40%" r="60%">
-      <stop offset="0%" stop-color="#fdf4ff"/>
-      <stop offset="70%" stop-color="#fae8ff"/>
-      <stop offset="100%" stop-color="#f0abfc"/>
+    <radialGradient id="roundStudioGrad" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="55%" stop-color="#f8fafc"/>
+      <stop offset="85%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
     </radialGradient>
-    <filter id="shadowCircle" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-opacity="0.15"/>
+    <linearGradient id="metalLegGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="35%" stop-color="#334155"/>
+      <stop offset="70%" stop-color="#475569"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <filter id="shadowCircleRealistic" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="7" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
+    <filter id="footShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.25 0"/>
     </filter>
   </defs>
-  <line x1="150" y1="280" x2="150" y2="370" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
-  <line x1="80" y1="370" x2="220" y2="370" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
-  <line x1="100" y1="370" x2="150" y2="330" stroke="#475569" stroke-width="4"/>
-  <line x1="200" y1="370" x2="150" y2="330" stroke="#475569" stroke-width="4"/>
-  <circle cx="150" cy="150" r="140" fill="url(#roundBaseGrad)" stroke="#cbd5e1" stroke-width="4" filter="url(#shadowCircle)"/>
-  <circle cx="150" cy="150" r="136" fill="none" stroke="#e2e8f0" stroke-width="2" stroke-dasharray="6,4"/>
-  <text x="150" y="155" font-family="sans-serif" font-size="14" font-weight="bold" fill="#a855f7" text-anchor="middle" opacity="0.6">PAINEL REDONDO 150cm</text>
-</svg>
-`;
+
+  <!-- Sombra dos Pés no Piso -->
+  <ellipse cx="80" cy="374" rx="28" ry="4.5" fill="#0f172a" opacity="0.25" filter="url(#footShadow)"/>
+  <ellipse cx="220" cy="374" rx="28" ry="4.5" fill="#0f172a" opacity="0.25" filter="url(#footShadow)"/>
+
+  <!-- Estrutura Tubular de Suporte em Ferro Grafite Fosco -->
+  <!-- Coluna Central -->
+  <rect x="146" y="275" width="8" height="95" rx="3" fill="url(#metalLegGrad)" stroke="#0f172a" stroke-width="0.8"/>
+  <!-- Manípulo de Ajuste de Altura em Latão -->
+  <rect x="142" y="322" width="16" height="6" rx="2" fill="#ca8a04" stroke="#854d0e" stroke-width="0.6"/>
+  <circle cx="150" cy="325" r="2" fill="#fef08a"/>
+
+  <!-- Braços Diagonais de Contraventamento -->
+  <line x1="100" y1="370" x2="150" y2="330" stroke="url(#metalLegGrad)" stroke-width="4.5" stroke-linecap="round"/>
+  <line x1="200" y1="370" x2="150" y2="330" stroke="url(#metalLegGrad)" stroke-width="4.5" stroke-linecap="round"/>
+
+  <!-- Pés de Chão em T Invertido com Sapatas Emborrachadas -->
+  <line x1="60" y1="370" x2="240" y2="370" stroke="url(#metalLegGrad)" stroke-width="6" stroke-linecap="round"/>
+  <rect x="56" y="367" width="10" height="6" rx="2" fill="#020617"/>
+  <rect x="234" y="367" width="10" height="6" rx="2" fill="#020617"/>
+
+  <!-- Aro Circular com Tecido Tensionado e Luz de Estúdio Suave -->
+  <circle cx="150" cy="150" r="140" fill="url(#roundStudioGrad)" stroke="#cbd5e1" stroke-width="3" filter="url(#shadowCircleRealistic)"/>
+  <!-- Borda Perimetral com Efeito 3D de Elástico Tensionado -->
+  <circle cx="150" cy="150" r="138" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.8"/>
+  <circle cx="150" cy="150" r="136" fill="none" stroke="rgba(203,213,225,0.4)" stroke-width="1"/>
+</svg>`;
 
 // 2. Painel Arco Romano (100x200cm)
-export const SVG_PANEL_ARCH = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 380" width="200" height="380">
+export const SVG_PANEL_ARCH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 380" width="200" height="380">
   <defs>
-    <linearGradient id="archGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fef3c7"/>
-      <stop offset="100%" stop-color="#fde68a"/>
+    <linearGradient id="archStudioGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#f8fafc"/>
+      <stop offset="80%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
     </linearGradient>
-    <filter id="shadowArch" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-opacity="0.15"/>
+    <linearGradient id="metalLegArch" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="40%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <filter id="shadowArchRealistic" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
+    <filter id="footShadowArch" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.25 0"/>
     </filter>
   </defs>
-  <line x1="30" y1="370" x2="170" y2="370" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
-  <path d="M 20 370 L 20 100 A 80 80 0 0 1 180 100 L 180 370 Z" fill="url(#archGrad)" stroke="#f59e0b" stroke-width="3" filter="url(#shadowArch)"/>
-  <path d="M 30 365 L 30 105 A 70 70 0 0 1 170 105 L 170 365" fill="none" stroke="#fcd34d" stroke-width="2" stroke-dasharray="5,4"/>
-  <text x="100" y="180" font-family="sans-serif" font-size="12" font-weight="bold" fill="#b45309" text-anchor="middle" opacity="0.6">ARCO ROMANO</text>
-</svg>
-`;
+
+  <!-- Sombra no Piso -->
+  <ellipse cx="40" cy="374" rx="25" ry="4" fill="#0f172a" opacity="0.25" filter="url(#footShadowArch)"/>
+  <ellipse cx="160" cy="374" rx="25" ry="4" fill="#0f172a" opacity="0.25" filter="url(#footShadowArch)"/>
+
+  <!-- Pés Metálicos Estruturais -->
+  <line x1="25" y1="370" x2="75" y2="370" stroke="url(#metalLegArch)" stroke-width="6" stroke-linecap="round"/>
+  <line x1="125" y1="370" x2="175" y2="370" stroke="url(#metalLegArch)" stroke-width="6" stroke-linecap="round"/>
+  <rect x="22" y="367" width="8" height="6" rx="2" fill="#020617"/>
+  <rect x="70" y="367" width="8" height="6" rx="2" fill="#020617"/>
+  <rect x="122" y="367" width="8" height="6" rx="2" fill="#020617"/>
+  <rect x="170" y="367" width="8" height="6" rx="2" fill="#020617"/>
+
+  <!-- Face do Arco Romano em Tecido Tensionado e Luz de Estúdio -->
+  <path d="M 20 370 L 20 100 A 80 80 0 0 1 180 100 L 180 370 Z" fill="url(#archStudioGrad)" stroke="#cbd5e1" stroke-width="2.5" filter="url(#shadowArchRealistic)"/>
+  <!-- Friso de Borda Acetinado e Bisotê -->
+  <path d="M 22 368 L 22 101 A 78 78 0 0 1 178 101 L 178 368" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.8"/>
+  <path d="M 24 366 L 24 102 A 76 76 0 0 1 176 102 L 176 366" fill="none" stroke="rgba(203,213,225,0.4)" stroke-width="1"/>
+</svg>`;
 
 // 3. Painel Ripado Pinus (180x200cm)
-export const SVG_PANEL_SLAT = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 360" width="260" height="360">
+export const SVG_PANEL_SLAT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 380" width="180" height="380">
   <defs>
-    <linearGradient id="woodGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#d97706"/>
+    <!-- Gradiente de Madeira Freijó / Carvalho Realista -->
+    <linearGradient id="slatWoodRealistic" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#b45309"/>
+      <stop offset="25%" stop-color="#d97706"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="75%" stop-color="#d97706"/>
       <stop offset="100%" stop-color="#92400e"/>
     </linearGradient>
+    <linearGradient id="slatDarkEdge" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#451a03"/>
+      <stop offset="100%" stop-color="#78350f"/>
+    </linearGradient>
+    <filter id="slatDepthShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="1.5" dy="5" stdDeviation="5" flood-color="#1c0b02" flood-opacity="0.3"/>
+    </filter>
   </defs>
-  <g fill="url(#woodGrad)" stroke="#78350f" stroke-width="1.5">
-    <rect x="20" y="20" width="20" height="320" rx="3"/>
-    <rect x="44" y="20" width="20" height="320" rx="3"/>
-    <rect x="68" y="20" width="20" height="320" rx="3"/>
-    <rect x="92" y="20" width="20" height="320" rx="3"/>
-    <rect x="116" y="20" width="20" height="320" rx="3"/>
-    <rect x="140" y="20" width="20" height="320" rx="3"/>
-    <rect x="164" y="20" width="20" height="320" rx="3"/>
-    <rect x="188" y="20" width="20" height="320" rx="3"/>
-    <rect x="212" y="20" width="20" height="320" rx="3"/>
+
+  <!-- Pés Metálicos Grafite -->
+  <line x1="35" y1="340" x2="35" y2="372" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+  <line x1="15" y1="372" x2="60" y2="372" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+  <line x1="145" y1="340" x2="145" y2="372" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+  <line x1="120" y1="372" x2="165" y2="372" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Fundo de Estrutura Traseira em Madeira Escura -->
+  <rect x="15" y="15" width="150" height="330" rx="3" fill="#3b1904"/>
+  <rect x="18" y="70" width="144" height="14" fill="#291102"/>
+  <rect x="18" y="180" width="144" height="14" fill="#291102"/>
+  <rect x="18" y="290" width="144" height="14" fill="#291102"/>
+
+  <!-- Ripas de Madeira Verticais Volumétricas com Chanfro de Quina -->
+  <g filter="url(#slatDepthShadow)">
+    <!-- Ripa 1 -->
+    <rect x="18" y="15" width="16" height="330" rx="2" fill="url(#slatWoodRealistic)" stroke="#78350f" stroke-width="0.8"/>
+    <line x1="19.5" y1="16" x2="19.5" y2="343" stroke="rgba(254,243,199,0.6)" stroke-width="1"/>
+    <!-- Ripa 2 -->
+    <rect x="39" y="15" width="16" height="330" rx="2" fill="url(#slatWoodRealistic)" stroke="#78350f" stroke-width="0.8"/>
+    <line x1="40.5" y1="16" x2="40.5" y2="343" stroke="rgba(254,243,199,0.6)" stroke-width="1"/>
+    <!-- Ripa 3 -->
+    <rect x="60" y="15" width="16" height="330" rx="2" fill="url(#slatWoodRealistic)" stroke="#78350f" stroke-width="0.8"/>
+    <line x1="61.5" y1="16" x2="61.5" y2="343" stroke="rgba(254,243,199,0.6)" stroke-width="1"/>
+    <!-- Ripa 4 -->
+    <rect x="81" y="15" width="16" height="330" rx="2" fill="url(#slatWoodRealistic)" stroke="#78350f" stroke-width="0.8"/>
+    <line x1="82.5" y1="16" x2="82.5" y2="343" stroke="rgba(254,243,199,0.6)" stroke-width="1"/>
+    <!-- Ripa 5 -->
+    <rect x="102" y="15" width="16" height="330" rx="2" fill="url(#slatWoodRealistic)" stroke="#78350f" stroke-width="0.8"/>
+    <line x1="103.5" y1="16" x2="103.5" y2="343" stroke="rgba(254,243,199,0.6)" stroke-width="1"/>
+    <!-- Ripa 6 -->
+    <rect x="123" y="15" width="16" height="330" rx="2" fill="url(#slatWoodRealistic)" stroke="#78350f" stroke-width="0.8"/>
+    <line x1="124.5" y1="16" x2="124.5" y2="343" stroke="rgba(254,243,199,0.6)" stroke-width="1"/>
+    <!-- Ripa 7 -->
+    <rect x="144" y="15" width="16" height="330" rx="2" fill="url(#slatWoodRealistic)" stroke="#78350f" stroke-width="0.8"/>
+    <line x1="145.5" y1="16" x2="145.5" y2="343" stroke="rgba(254,243,199,0.6)" stroke-width="1"/>
   </g>
-  <rect x="15" y="80" width="222" height="14" fill="#78350f" opacity="0.8"/>
-  <rect x="15" y="260" width="222" height="14" fill="#78350f" opacity="0.8"/>
-</svg>
-`;
+</svg>`;
 
 // // 4. Cilindro G (Grande 50x80cm)
-export const SVG_CYLINDER_G = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 220" width="160" height="220">
+export const SVG_CYLINDER_G = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 250" width="160" height="250">
   <defs>
-    <linearGradient id="cylGGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+    <linearGradient id="cylBodyGradG" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#f8fafc"/>
-      <stop offset="25%" stop-color="#ffffff"/>
-      <stop offset="80%" stop-color="#e2e8f0"/>
+      <stop offset="30%" stop-color="#ffffff"/>
+      <stop offset="75%" stop-color="#f1f5f9"/>
       <stop offset="100%" stop-color="#cbd5e1"/>
     </linearGradient>
+    <radialGradient id="cylTopGradG" cx="45%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </radialGradient>
     <filter id="shadowCylG" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.16"/>
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.16"/>
     </filter>
   </defs>
-  <path d="M 15 35 L 15 195 A 65 12 0 0 0 145 195 L 145 35 Z" fill="url(#cylGGrad)" stroke="#94a3b8" stroke-width="2" filter="url(#shadowCylG)"/>
-  <ellipse cx="80" cy="35" rx="65" ry="12" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
-  <text x="80" y="115" font-family="sans-serif" font-size="13" font-weight="bold" fill="#64748b" text-anchor="middle">CILINDRO G</text>
-  <text x="80" y="132" font-family="sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">50x80cm</text>
-</svg>
-`;
+  <!-- Corpo Cilíndrico 3D -->
+  <path d="M 10 32 L 10 220 A 70 18 0 0 0 150 220 L 150 32 Z" fill="url(#cylBodyGradG)" stroke="#94a3b8" stroke-width="1.8" filter="url(#shadowCylG)"/>
+  <!-- Tampo Superior Suave com Bisotê -->
+  <ellipse cx="80" cy="32" rx="70" ry="18" fill="url(#cylTopGradG)" stroke="#94a3b8" stroke-width="1.8"/>
+  <ellipse cx="80" cy="32" rx="68" ry="16.5" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.2"/>
+</svg>`;
 
 // 5. Cilindro M (Médio 44x58cm)
-export const SVG_CYLINDER_M = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 190" width="150" height="190">
+export const SVG_CYLINDER_M = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 220" width="140" height="220">
   <defs>
-    <linearGradient id="cylMGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+    <linearGradient id="cylBodyGradM" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#f8fafc"/>
-      <stop offset="25%" stop-color="#ffffff"/>
-      <stop offset="80%" stop-color="#e2e8f0"/>
+      <stop offset="30%" stop-color="#ffffff"/>
+      <stop offset="75%" stop-color="#f1f5f9"/>
       <stop offset="100%" stop-color="#cbd5e1"/>
     </linearGradient>
+    <radialGradient id="cylTopGradM" cx="45%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </radialGradient>
     <filter id="shadowCylM" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.16"/>
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.16"/>
     </filter>
   </defs>
-  <path d="M 15 30 L 15 165 A 60 11 0 0 0 135 165 L 135 30 Z" fill="url(#cylMGrad)" stroke="#94a3b8" stroke-width="2" filter="url(#shadowCylM)"/>
-  <ellipse cx="75" cy="30" rx="60" ry="11" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
-  <text x="75" y="100" font-family="sans-serif" font-size="12" font-weight="bold" fill="#64748b" text-anchor="middle">CILINDRO M</text>
-  <text x="75" y="116" font-family="sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">44x58cm</text>
-</svg>
-`;
+  <path d="M 10 28 L 10 195 A 60 16 0 0 0 130 195 L 130 28 Z" fill="url(#cylBodyGradM)" stroke="#94a3b8" stroke-width="1.8" filter="url(#shadowCylM)"/>
+  <ellipse cx="70" cy="28" rx="60" ry="16" fill="url(#cylTopGradM)" stroke="#94a3b8" stroke-width="1.8"/>
+  <ellipse cx="70" cy="28" rx="58" ry="14.5" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.2"/>
+</svg>`;
 
 // 6. Cilindro P (Pequeno 38x45cm)
-export const SVG_CYLINDER_P = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 160" width="140" height="160">
+export const SVG_CYLINDER_P = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 190" width="120" height="190">
   <defs>
-    <linearGradient id="cylPGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+    <linearGradient id="cylBodyGradP" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#f8fafc"/>
-      <stop offset="25%" stop-color="#ffffff"/>
-      <stop offset="80%" stop-color="#e2e8f0"/>
+      <stop offset="30%" stop-color="#ffffff"/>
+      <stop offset="75%" stop-color="#f1f5f9"/>
       <stop offset="100%" stop-color="#cbd5e1"/>
     </linearGradient>
+    <radialGradient id="cylTopGradP" cx="45%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </radialGradient>
     <filter id="shadowCylP" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.16"/>
+      <feDropShadow dx="0" dy="4.5" stdDeviation="4.5" flood-color="#0f172a" flood-opacity="0.16"/>
     </filter>
   </defs>
-  <path d="M 15 25 L 15 140 A 55 10 0 0 0 125 140 L 125 25 Z" fill="url(#cylPGrad)" stroke="#94a3b8" stroke-width="2" filter="url(#shadowCylP)"/>
-  <ellipse cx="70" cy="25" rx="55" ry="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
-  <text x="70" y="85" font-family="sans-serif" font-size="11" font-weight="bold" fill="#64748b" text-anchor="middle">CILINDRO P</text>
-  <text x="70" y="100" font-family="sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">38x45cm</text>
-</svg>
-`;
+  <path d="M 10 24 L 10 168 A 50 14 0 0 0 110 168 L 110 24 Z" fill="url(#cylBodyGradP)" stroke="#94a3b8" stroke-width="1.8" filter="url(#shadowCylP)"/>
+  <ellipse cx="60" cy="24" rx="50" ry="14" fill="url(#cylTopGradP)" stroke="#94a3b8" stroke-width="1.8"/>
+  <ellipse cx="60" cy="24" rx="48" ry="12.5" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.2"/>
+</svg>`;
 
 // 7. Cilindro Canelado / Ripado Dourado Luxo (NOVO)
-export const SVG_CYLINDER_FLUTED = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 220" width="160" height="220">
+export const SVG_CYLINDER_FLUTED = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 250" width="160" height="250">
   <defs>
-    <linearGradient id="goldSlatGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#ca8a04"/>
-      <stop offset="20%" stop-color="#fef08a"/>
-      <stop offset="45%" stop-color="#eab308"/>
-      <stop offset="70%" stop-color="#a16207"/>
+    <linearGradient id="flutedGoldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#854d0e"/>
+      <stop offset="15%" stop-color="#ca8a04"/>
+      <stop offset="35%" stop-color="#fde047"/>
+      <stop offset="60%" stop-color="#eab308"/>
+      <stop offset="85%" stop-color="#ca8a04"/>
       <stop offset="100%" stop-color="#713f12"/>
     </linearGradient>
-    <filter id="shadowCylGold" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.2"/>
+    <radialGradient id="flutedMirrorTop" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#fef08a"/>
+      <stop offset="80%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#a16207"/>
+    </radialGradient>
+    <filter id="shadowFluted" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#020617" flood-opacity="0.22"/>
     </filter>
   </defs>
-  <path d="M 15 35 L 15 195 A 65 12 0 0 0 145 195 L 145 35 Z" fill="url(#goldSlatGrad)" stroke="#854d0e" stroke-width="2" filter="url(#shadowCylGold)"/>
-  <ellipse cx="80" cy="35" rx="65" ry="12" fill="#fef08a" stroke="#ca8a04" stroke-width="2"/>
-  <!-- Frisos canelados 3D -->
-  <line x1="35" y1="42" x2="35" y2="199" stroke="#713f12" stroke-width="2" opacity="0.6"/>
-  <line x1="55" y1="45" x2="55" y2="205" stroke="#713f12" stroke-width="2" opacity="0.6"/>
-  <line x1="80" y1="47" x2="80" y2="207" stroke="#713f12" stroke-width="2" opacity="0.6"/>
-  <line x1="105" y1="45" x2="105" y2="205" stroke="#713f12" stroke-width="2" opacity="0.6"/>
-  <line x1="125" y1="42" x2="125" y2="199" stroke="#713f12" stroke-width="2" opacity="0.6"/>
-  <text x="80" y="125" font-family="sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);">CANELADO LUXO</text>
-</svg>
-`;
+
+  <!-- Corpo com Relevo Canelado 3D -->
+  <path d="M 10 32 L 10 220 A 70 18 0 0 0 150 220 L 150 32 Z" fill="url(#flutedGoldGrad)" stroke="#854d0e" stroke-width="1.8" filter="url(#shadowFluted)"/>
+  <!-- Linhas Verticais de Relevo Canelado Iluminadas -->
+  <g stroke="rgba(254, 240, 138, 0.45)" stroke-width="1.8">
+    <line x1="22" y1="36" x2="22" y2="225"/>
+    <line x1="34" y1="40" x2="34" y2="230"/>
+    <line x1="46" y1="44" x2="46" y2="234"/>
+    <line x1="58" y1="47" x2="58" y2="236"/>
+    <line x1="70" y1="49" x2="70" y2="238"/>
+    <line x1="82" y1="50" x2="82" y2="238"/>
+    <line x1="94" y1="49" x2="94" y2="238"/>
+    <line x1="106" y1="47" x2="106" y2="236"/>
+    <line x1="118" y1="44" x2="118" y2="234"/>
+    <line x1="130" y1="40" x2="130" y2="230"/>
+    <line x1="142" y1="36" x2="142" y2="225"/>
+  </g>
+  <!-- Tampo Espelhado Dourado -->
+  <ellipse cx="80" cy="32" rx="70" ry="18" fill="url(#flutedMirrorTop)" stroke="#a16207" stroke-width="1.8"/>
+  <ellipse cx="80" cy="32" rx="66" ry="15.5" fill="none" stroke="#ffffff" stroke-width="1.2" opacity="0.75"/>
+</svg>`;
 
 // 8. Mesa Cavalete Madeira Pinus (120x80cm)
-export const SVG_TABLE_EASEL = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 180" width="280" height="180">
+export const SVG_TABLE_EASEL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 180" width="280" height="180">
   <defs>
-    <linearGradient id="easelWood" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#d97706"/>
-      <stop offset="100%" stop-color="#b45309"/>
+    <linearGradient id="easelWoodRealistic" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="35%" stop-color="#d97706"/>
+      <stop offset="70%" stop-color="#b45309"/>
+      <stop offset="100%" stop-color="#78350f"/>
     </linearGradient>
+    <linearGradient id="topPlankWood" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#b45309"/>
+      <stop offset="30%" stop-color="#d97706"/>
+      <stop offset="70%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#92400e"/>
+    </linearGradient>
+    <filter id="shadowEaselTable" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5.5" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
   </defs>
-  <rect x="20" y="30" width="240" height="16" rx="3" fill="url(#easelWood)" stroke="#78350f" stroke-width="2"/>
-  <line x1="45" y1="46" x2="25" y2="165" stroke="#92400e" stroke-width="7" stroke-linecap="round"/>
-  <line x1="45" y1="46" x2="65" y2="165" stroke="#92400e" stroke-width="7" stroke-linecap="round"/>
-  <line x1="28" y1="120" x2="62" y2="120" stroke="#78350f" stroke-width="4"/>
-  <line x1="235" y1="46" x2="215" y2="165" stroke="#92400e" stroke-width="7" stroke-linecap="round"/>
-  <line x1="235" y1="46" x2="255" y2="165" stroke="#92400e" stroke-width="7" stroke-linecap="round"/>
-  <line x1="218" y1="120" x2="252" y2="120" stroke="#78350f" stroke-width="4"/>
-  <text x="140" y="42" font-family="sans-serif" font-size="10" font-weight="bold" fill="#ffffff" text-anchor="middle">MESA CAVALETE 120cm</text>
-</svg>
-`;
+
+  <!-- Pés Cavalete em Madeira Maciça em V Invertido com Travessas -->
+  <!-- Cavalete Esquerdo -->
+  <line x1="45" y1="46" x2="25" y2="165" stroke="url(#easelWoodRealistic)" stroke-width="8" stroke-linecap="round"/>
+  <line x1="45" y1="46" x2="65" y2="165" stroke="url(#easelWoodRealistic)" stroke-width="8" stroke-linecap="round"/>
+  <rect x="26" y="116" width="38" height="9" rx="2" fill="url(#easelWoodRealistic)" stroke="#78350f" stroke-width="1"/>
+  <circle cx="32" cy="120.5" r="2" fill="#451a03"/>
+  <circle cx="58" cy="120.5" r="2" fill="#451a03"/>
+
+  <!-- Cavalete Direito -->
+  <line x1="235" y1="46" x2="215" y2="165" stroke="url(#easelWoodRealistic)" stroke-width="8" stroke-linecap="round"/>
+  <line x1="235" y1="46" x2="255" y2="165" stroke="url(#easelWoodRealistic)" stroke-width="8" stroke-linecap="round"/>
+  <rect x="216" y="116" width="38" height="9" rx="2" fill="url(#easelWoodRealistic)" stroke="#78350f" stroke-width="1"/>
+  <circle cx="222" cy="120.5" r="2" fill="#451a03"/>
+  <circle cx="248" cy="120.5" r="2" fill="#451a03"/>
+
+  <!-- Pranchão de Tampo de Madeira com Espessura 3D -->
+  <rect x="18" y="38" width="244" height="10" rx="2" fill="#5c2406"/>
+  <rect x="18" y="28" width="244" height="14" rx="3" fill="url(#topPlankWood)" stroke="#78350f" stroke-width="1.5" filter="url(#shadowEaselTable)"/>
+  <line x1="20" y1="30" x2="260" y2="30" stroke="rgba(254,243,199,0.7)" stroke-width="1"/>
+</svg>`;
 
 // 9. Cmoda Bomb Branca (90x80cm)
-export const SVG_DRESSER_BOMBE = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" width="200" height="180">
+export const SVG_DRESSER_BOMBE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" width="200" height="180">
   <defs>
-    <linearGradient id="bombeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#f8fafc"/>
-      <stop offset="50%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#e2e8f0"/>
+    <linearGradient id="bombeLacquered" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f1f5f9"/>
+      <stop offset="35%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
     </linearGradient>
+    <radialGradient id="antiqueBrass" cx="40%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="45%" stop-color="#ca8a04"/>
+      <stop offset="85%" stop-color="#854d0e"/>
+      <stop offset="100%" stop-color="#451a03"/>
+    </radialGradient>
+    <filter id="shadowBombe" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5.5" stdDeviation="5.5" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
   </defs>
-  <rect x="25" y="30" width="150" height="12" rx="3" fill="#cbd5e1" stroke="#94a3b8" stroke-width="1.5"/>
-  <path d="M 30 42 Q 15 85 25 135 L 175 135 Q 185 85 170 42 Z" fill="url(#bombeGrad)" stroke="#94a3b8" stroke-width="2"/>
-  <path d="M 35 135 Q 30 165 20 170" fill="none" stroke="#94a3b8" stroke-width="5" stroke-linecap="round"/>
-  <path d="M 165 135 Q 170 165 180 170" fill="none" stroke="#94a3b8" stroke-width="5" stroke-linecap="round"/>
-  <line x1="30" y1="72" x2="170" y2="72" stroke="#cbd5e1" stroke-width="1.5"/>
-  <line x1="28" y1="104" x2="172" y2="104" stroke="#cbd5e1" stroke-width="1.5"/>
-  <circle cx="100" cy="57" r="4" fill="#f59e0b"/>
-  <circle cx="100" cy="88" r="4" fill="#f59e0b"/>
-  <circle cx="100" cy="119" r="4" fill="#f59e0b"/>
-  <text x="100" y="24" font-family="sans-serif" font-size="9" font-weight="bold" fill="#64748b" text-anchor="middle">CMODA BOMB</text>
-</svg>
-`;
+
+  <!-- Pés Cabriolé Esculpidos Clássicos -->
+  <path d="M 32 135 C 24 148, 18 160, 24 168 C 28 172, 34 168, 38 155 L 42 135 Z" fill="#cbd5e1" stroke="#94a3b8" stroke-width="1.2"/>
+  <path d="M 168 135 C 176 148, 182 160, 176 168 C 172 172, 166 168, 162 155 L 158 135 Z" fill="#94a3b8" stroke="#64748b" stroke-width="1.2"/>
+
+  <!-- Corpo Curvilíneo Bombê com Volume 3D -->
+  <path d="M 28 40 Q 12 85 24 135 L 176 135 Q 188 85 172 40 Z" fill="url(#bombeLacquered)" stroke="#94a3b8" stroke-width="1.8" filter="url(#shadowBombe)"/>
+
+  <!-- Tampo Superior Moldurado em Madeira Laqueada com Borda Usinada -->
+  <path d="M 22 28 L 178 28 C 182 28, 184 32, 182 36 L 176 42 L 24 42 L 18 36 C 16 32, 18 28, 22 28 Z" fill="#ffffff" stroke="#94a3b8" stroke-width="1.8"/>
+  <line x1="20" y1="31" x2="180" y2="31" stroke="rgba(255,255,255,0.9)" stroke-width="1.5"/>
+
+  <!-- Linhas Divisórias das 3 Gavetas Rebaixadas -->
+  <!-- Gaveta 1 -->
+  <rect x="32" y="46" width="136" height="26" rx="3" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+  <!-- Puxadores Concha Clássicos Gaveta 1 -->
+  <g transform="translate(70, 59)">
+    <path d="M -8 0 Q 0 -5 8 0 Q 0 6 -8 0 Z" fill="url(#antiqueBrass)" stroke="#78350f" stroke-width="0.8"/>
+    <circle cx="0" cy="0" r="1.5" fill="#fef08a"/>
+  </g>
+  <g transform="translate(130, 59)">
+    <path d="M -8 0 Q 0 -5 8 0 Q 0 6 -8 0 Z" fill="url(#antiqueBrass)" stroke="#78350f" stroke-width="0.8"/>
+    <circle cx="0" cy="0" r="1.5" fill="#fef08a"/>
+  </g>
+
+  <!-- Gaveta 2 -->
+  <rect x="30" y="76" width="140" height="26" rx="3" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+  <!-- Puxadores Concha Clássicos Gaveta 2 -->
+  <g transform="translate(68, 89)">
+    <path d="M -8 0 Q 0 -5 8 0 Q 0 6 -8 0 Z" fill="url(#antiqueBrass)" stroke="#78350f" stroke-width="0.8"/>
+    <circle cx="0" cy="0" r="1.5" fill="#fef08a"/>
+  </g>
+  <g transform="translate(132, 89)">
+    <path d="M -8 0 Q 0 -5 8 0 Q 0 6 -8 0 Z" fill="url(#antiqueBrass)" stroke="#78350f" stroke-width="0.8"/>
+    <circle cx="0" cy="0" r="1.5" fill="#fef08a"/>
+  </g>
+
+  <!-- Gaveta 3 -->
+  <rect x="28" y="106" width="144" height="25" rx="3" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
+  <!-- Puxadores Concha Clássicos Gaveta 3 -->
+  <g transform="translate(66, 118)">
+    <path d="M -8 0 Q 0 -5 8 0 Q 0 6 -8 0 Z" fill="url(#antiqueBrass)" stroke="#78350f" stroke-width="0.8"/>
+    <circle cx="0" cy="0" r="1.5" fill="#fef08a"/>
+  </g>
+  <g transform="translate(134, 118)">
+    <path d="M -8 0 Q 0 -5 8 0 Q 0 6 -8 0 Z" fill="url(#antiqueBrass)" stroke="#78350f" stroke-width="0.8"/>
+    <circle cx="0" cy="0" r="1.5" fill="#fef08a"/>
+  </g>
+</svg>`;
 
 // 10. Bolo Fake Cenogrfico 3 Andares (NOVO)
-export const SVG_CAKE_FAKE = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 220" width="180" height="220">
+export const SVG_CAKE_FAKE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 220" width="180" height="220">
   <defs>
-    <linearGradient id="cakeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="40%" stop-color="#fdf4ff"/>
-      <stop offset="100%" stop-color="#f5d0fe"/>
+    <linearGradient id="cakeFondantGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="30%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
     </linearGradient>
-    <linearGradient id="goldRibbon" x1="0%" y1="0%" x2="100%" y2="0%">
+    <linearGradient id="goldCakeRibbon" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#ca8a04"/>
-      <stop offset="50%" stop-color="#fef08a"/>
-      <stop offset="100%" stop-color="#a16207"/>
+      <stop offset="35%" stop-color="#fef08a"/>
+      <stop offset="70%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#854d0e"/>
     </linearGradient>
+    <radialGradient id="cakePlateGrad" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="75%" stop-color="#e2e8f0"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </radialGradient>
+    <filter id="cakeDropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4.5" flood-color="#0f172a" flood-opacity="0.16"/>
+    </filter>
   </defs>
-  <!-- Prato da base -->
-  <ellipse cx="90" cy="205" rx="80" ry="12" fill="#cbd5e1"/>
+
+  <!-- Prato de Bolo Espelhado / Vidro Lapidado -->
+  <ellipse cx="90" cy="205" rx="80" ry="12" fill="url(#cakePlateGrad)" stroke="#cbd5e1" stroke-width="1.5"/>
+  <ellipse cx="90" cy="203" rx="76" ry="10.5" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.8"/>
+
   <!-- Andar 1 (Inferior) -->
-  <path d="M 30 150 L 30 195 A 60 14 0 0 0 150 195 L 150 150 Z" fill="url(#cakeGrad)" stroke="#f0abfc" stroke-width="1.5"/>
-  <ellipse cx="90" cy="150" rx="60" ry="14" fill="#ffffff" stroke="#f0abfc" stroke-width="1.5"/>
-  <rect x="30" y="185" width="120" height="8" rx="2" fill="url(#goldRibbon)"/>
+  <path d="M 30 150 L 30 195 A 60 14 0 0 0 150 195 L 150 150 Z" fill="url(#cakeFondantGrad)" stroke="#cbd5e1" stroke-width="1.2" filter="url(#cakeDropShadow)"/>
+  <ellipse cx="90" cy="150" rx="60" ry="14" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+  <ellipse cx="90" cy="150" rx="58" ry="12.5" fill="none" stroke="#f1f5f9" stroke-width="1"/>
+  <!-- Fita Dourada de Acabamento na Base -->
+  <path d="M 30 188 L 30 195 A 60 14 0 0 0 150 195 L 150 188 A 60 14 0 0 1 30 188 Z" fill="url(#goldCakeRibbon)"/>
+
   <!-- Andar 2 (Meio) -->
-  <path d="M 45 105 L 45 145 A 45 11 0 0 0 135 145 L 135 105 Z" fill="url(#cakeGrad)" stroke="#f0abfc" stroke-width="1.5"/>
-  <ellipse cx="90" cy="105" rx="45" ry="11" fill="#ffffff" stroke="#f0abfc" stroke-width="1.5"/>
-  <rect x="45" y="137" width="90" height="7" rx="2" fill="url(#goldRibbon)"/>
+  <path d="M 45 105 L 45 145 A 45 11 0 0 0 135 145 L 135 105 Z" fill="url(#cakeFondantGrad)" stroke="#cbd5e1" stroke-width="1.2" filter="url(#cakeDropShadow)"/>
+  <ellipse cx="90" cy="105" rx="45" ry="11" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+  <!-- Fita Dourada de Acabamento na Base -->
+  <path d="M 45 139 L 45 145 A 45 11 0 0 0 135 145 L 135 139 A 45 11 0 0 1 45 139 Z" fill="url(#goldCakeRibbon)"/>
+
   <!-- Andar 3 (Topo) -->
-  <path d="M 60 65 L 60 100 A 30 8 0 0 0 120 100 L 120 65 Z" fill="url(#cakeGrad)" stroke="#f0abfc" stroke-width="1.5"/>
-  <ellipse cx="90" cy="65" rx="30" ry="8" fill="#ffffff" stroke="#f0abfc" stroke-width="1.5"/>
-  <rect x="60" y="94" width="60" height="6" rx="2" fill="url(#goldRibbon)"/>
-  <!-- Enfeite de Topo (Flor / Esfera Dourada) -->
-  <circle cx="90" cy="50" r="10" fill="url(#goldRibbon)"/>
-  <text x="90" y="175" font-family="sans-serif" font-size="9" font-weight="bold" fill="#c084fc" text-anchor="middle">BOLO FAKE</text>
-</svg>
-`;
+  <path d="M 60 65 L 60 100 A 30 8 0 0 0 120 100 L 120 65 Z" fill="url(#cakeFondantGrad)" stroke="#cbd5e1" stroke-width="1.2" filter="url(#cakeDropShadow)"/>
+  <ellipse cx="90" cy="65" rx="30" ry="8" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+  <!-- Fita Dourada de Acabamento na Base -->
+  <path d="M 60 95 L 60 100 A 30 8 0 0 0 120 100 L 120 95 A 30 8 0 0 1 60 95 Z" fill="url(#goldCakeRibbon)"/>
+
+  <!-- Topo do Bolo: Rosa Nobre Dourada com Pérolas -->
+  <g transform="translate(90, 52)">
+    <circle cx="0" cy="0" r="10" fill="url(#goldCakeRibbon)" stroke="#854d0e" stroke-width="0.8"/>
+    <circle cx="-1" cy="-1" r="5" fill="#fef08a"/>
+    <circle cx="-1.5" cy="-1.5" r="2" fill="#ffffff"/>
+  </g>
+</svg>`;
 
 // 11. Tapete Oval Juta / Boho em Perspectiva de Chão (160x70cm)
-export const SVG_RUG_OVAL = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 120" width="280" height="120">
+export const SVG_RUG_OVAL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 120" width="280" height="120">
   <defs>
-    <radialGradient id="rugOvalGrad" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#fef3c7"/>
-      <stop offset="65%" stop-color="#fde68a"/>
-      <stop offset="100%" stop-color="#d97706"/>
+    <radialGradient id="rugOvalStudio" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#fef3c7"/>
+      <stop offset="100%" stop-color="#fde68a"/>
     </radialGradient>
-    <filter id="shadowRugOval" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.18"/>
+    <filter id="shadowRugOvalRealistic" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#78350f" flood-opacity="0.18"/>
     </filter>
   </defs>
-  <ellipse cx="140" cy="60" rx="133" ry="53" fill="url(#rugOvalGrad)" stroke="#b45309" stroke-width="2" filter="url(#shadowRugOval)"/>
-  <ellipse cx="140" cy="60" rx="114" ry="44" fill="none" stroke="#d97706" stroke-width="1.5" stroke-dasharray="6,4"/>
-  <ellipse cx="140" cy="60" rx="90" ry="34" fill="none" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4,3"/>
-  <ellipse cx="140" cy="60" rx="60" ry="22" fill="none" stroke="#b45309" stroke-width="1"/>
-  <text x="140" y="64" font-family="sans-serif" font-size="10" font-weight="bold" fill="#92400e" text-anchor="middle">TAPETE OVAL 160x70cm</text>
-</svg>
-`;
-export const SVG_RUG_ROUND = SVG_RUG_OVAL;
+  <ellipse cx="140" cy="60" rx="133" ry="53" fill="url(#rugOvalStudio)" stroke="#d97706" stroke-width="1.8" filter="url(#shadowRugOvalRealistic)"/>
+  <ellipse cx="140" cy="60" rx="127" ry="47" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.5"/>
+  <ellipse cx="140" cy="60" rx="121" ry="41" fill="none" stroke="rgba(217,119,6,0.4)" stroke-width="1"/>
+</svg>`;
+export const SVG_RUG_ROUND = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 280" width="280" height="280">
+  <defs>
+    <radialGradient id="rug200Studio" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="55%" stop-color="#f8fafc"/>
+      <stop offset="85%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </radialGradient>
+    <filter id="shadowRug200Realistic" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <circle cx="140" cy="140" r="130" fill="url(#rug200Studio)" stroke="#94a3b8" stroke-width="2" filter="url(#shadowRug200Realistic)"/>
+  <!-- Borda Pespontada de Alfaiataria sem Texto -->
+  <circle cx="140" cy="140" r="126" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8"/>
+  <circle cx="140" cy="140" r="122" fill="none" stroke="rgba(203,213,225,0.6)" stroke-width="1"/>
+</svg>`;
 
 // 11b. Tapete Completamente Redondo Sublimado 1:1 (150x150cm)
-export const SVG_RUG_ROUND_FLAT = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 260" width="260" height="260">
+export const SVG_RUG_ROUND_FLAT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 280" width="280" height="280">
   <defs>
-    <radialGradient id="rugRoundGrad" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#f8fafc"/>
-      <stop offset="60%" stop-color="#f1f5f9"/>
-      <stop offset="100%" stop-color="#e2e8f0"/>
+    <radialGradient id="rug200Studio" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="55%" stop-color="#f8fafc"/>
+      <stop offset="85%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
     </radialGradient>
-    <filter id="shadowRugRound" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-opacity="0.16"/>
+    <filter id="shadowRug200Realistic" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.16"/>
     </filter>
   </defs>
-  <circle cx="130" cy="130" r="126" fill="url(#rugRoundGrad)" stroke="#94a3b8" stroke-width="2" filter="url(#shadowRugRound)"/>
-  <circle cx="130" cy="130" r="120" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="6,4"/>
-  <circle cx="130" cy="130" r="95" fill="none" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="5,4"/>
-  <circle cx="130" cy="130" r="60" fill="none" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="130" y="126" font-family="sans-serif" font-size="12" font-weight="bold" fill="#64748b" text-anchor="middle">TAPETE REDONDO</text>
-  <text x="130" y="142" font-family="sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">150x150cm</text>
-</svg>
-`;
+  <circle cx="140" cy="140" r="130" fill="url(#rug200Studio)" stroke="#94a3b8" stroke-width="2" filter="url(#shadowRug200Realistic)"/>
+  <!-- Borda Pespontada de Alfaiataria sem Texto -->
+  <circle cx="140" cy="140" r="126" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8"/>
+  <circle cx="140" cy="140" r="122" fill="none" stroke="rgba(203,213,225,0.6)" stroke-width="1"/>
+</svg>`;
 
 // 11c. Tapete Retangular em Perspectiva 3D de Piso (200x120cm)
-export const SVG_RUG_RECT_3D = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 140" width="280" height="140">
+export const SVG_RUG_RECT_3D = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200" width="300" height="200">
   <defs>
-    <linearGradient id="rug3DGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#e2e8f0"/>
-      <stop offset="40%" stop-color="#f1f5f9"/>
-      <stop offset="100%" stop-color="#f8fafc"/>
+    <linearGradient id="rugRectStudio" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="45%" stop-color="#ffffff"/>
+      <stop offset="85%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
     </linearGradient>
-    <filter id="shadowRug3D" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-opacity="0.2"/>
+    <filter id="shadowRugRectRealistic" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5.5" flood-color="#0f172a" flood-opacity="0.16"/>
     </filter>
   </defs>
-  <!-- Base trapezoidal em perspectiva de chão -->
-  <path d="M 10 125 L 35 15 L 245 15 L 270 125 Z" fill="url(#rug3DGrad)" stroke="#94a3b8" stroke-width="2" filter="url(#shadowRug3D)"/>
-  <!-- Costura dupla em perspectiva -->
-  <path d="M 18 118 L 40 22 L 240 22 L 262 118 Z" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6,4"/>
-  <!-- Linhas decorativas transversais em perspectiva -->
-  <line x1="28" y1="70" x2="252" y2="70" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="4,4"/>
-  <text x="140" y="66" font-family="sans-serif" font-size="11" font-weight="bold" fill="#64748b" text-anchor="middle">TAPETE RETANGULAR 3D</text>
-  <text x="140" y="82" font-family="sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">200x120cm</text>
-</svg>
-`;
+  <polygon points="35,20 265,20 290,180 10,180" fill="url(#rugRectStudio)" stroke="#94a3b8" stroke-width="1.8" filter="url(#shadowRugRectRealistic)"/>
+  <!-- Acabamento Perimetral sem Linhas Pontilhadas Tosca -->
+  <polygon points="38,24 262,24 285,176 15,176" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.5"/>
+  <polygon points="41,28 259,28 280,172 20,172" fill="none" stroke="rgba(203,213,225,0.5)" stroke-width="1"/>
+</svg>`;
 
 // 12. Luminoso LED Neon Número 1 Dourado Ultra-Realista (35x60cm)
 export const SVG_LED_NEON_1 = `
@@ -374,26 +770,61 @@ export const SVG_LED_NEON_1 = `
 `;
 
 // 13. Boleira Alta de Cermica (30cm)
-export const SVG_CAKE_STAND = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 140" width="160" height="140">
-  <ellipse cx="80" cy="35" rx="65" ry="16" fill="#fdf4ff" stroke="#f0abfc" stroke-width="2"/>
-  <ellipse cx="80" cy="32" rx="63" ry="14" fill="#ffffff"/>
-  <path d="M 72 45 L 68 115 L 92 115 L 88 45 Z" fill="#f5d0fe" stroke="#e879f9" stroke-width="1.5"/>
-  <ellipse cx="80" cy="118" rx="35" ry="10" fill="#fdf4ff" stroke="#f0abfc" stroke-width="2"/>
-  <text x="80" y="37" font-family="sans-serif" font-size="8" font-weight="bold" fill="#c084fc" text-anchor="middle">BOLEIRA 30cm</text>
-</svg>
-`;
+export const SVG_CAKE_STAND = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 140" width="160" height="140">
+  <defs>
+    <radialGradient id="porcelainTop" cx="45%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </radialGradient>
+    <linearGradient id="porcelainFoot" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#e2e8f0"/>
+      <stop offset="40%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <filter id="shadowCakeStand" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4.5" flood-color="#0f172a" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <!-- Base / Pé Canelado no Prato -->
+  <ellipse cx="80" cy="118" rx="35" ry="10" fill="url(#porcelainTop)" stroke="#cbd5e1" stroke-width="1.5" filter="url(#shadowCakeStand)"/>
+  <!-- Haste Torneada Central -->
+  <path d="M 72 45 L 68 115 L 92 115 L 88 45 Z" fill="url(#porcelainFoot)" stroke="#cbd5e1" stroke-width="1.2"/>
+  <!-- Anel Decorativo na Haste -->
+  <ellipse cx="80" cy="78" rx="14" ry="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
+
+  <!-- Prato Superior da Boleira com Borda em Relevo e Bisotê Vitrificado -->
+  <ellipse cx="80" cy="36" rx="65" ry="16" fill="#cbd5e1"/>
+  <ellipse cx="80" cy="32" rx="65" ry="16" fill="url(#porcelainTop)" stroke="#cbd5e1" stroke-width="1.8" filter="url(#shadowCakeStand)"/>
+  <ellipse cx="80" cy="32" rx="63" ry="14.5" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+  <ellipse cx="80" cy="32" rx="58" ry="12.5" fill="none" stroke="#f1f5f9" stroke-width="1"/>
+</svg>`;
 
 // 14. Bandeja Provenal Retangular (25cm)
-export const SVG_TRAY_RECT = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90" width="160" height="90">
-  <rect x="20" y="25" width="120" height="50" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="2"/>
-  <rect x="26" y="31" width="108" height="38" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1"/>
-  <rect x="10" y="42" width="10" height="16" rx="3" fill="#cbd5e1"/>
-  <rect x="140" y="42" width="10" height="16" rx="3" fill="#cbd5e1"/>
-  <text x="80" y="54" font-family="sans-serif" font-size="8" font-weight="bold" fill="#64748b" text-anchor="middle">BANDEJA 25cm</text>
-</svg>
-`;
+export const SVG_TRAY_RECT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90" width="160" height="90">
+  <defs>
+    <linearGradient id="provencalLacquered" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <filter id="shadowTrayRect" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <!-- Borda Externa da Bandeja com Cantos Arredondados -->
+  <rect x="20" y="25" width="120" height="50" rx="8" fill="url(#provencalLacquered)" stroke="#cbd5e1" stroke-width="1.8" filter="url(#shadowTrayRect)"/>
+  <!-- Fundo Rebaixado da Bandeja com Espelho / Laca Branca -->
+  <rect x="26" y="31" width="108" height="38" rx="4" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="28" y="33" width="104" height="34" rx="3" fill="none" stroke="#f1f5f9" stroke-width="1"/>
+
+  <!-- Alças Laterais Vazadas Ergonômicas -->
+  <rect x="10" y="42" width="10" height="16" rx="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.2"/>
+  <rect x="140" y="42" width="10" height="16" rx="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.2"/>
+</svg>`;
 
 // 15. Display MDF Ursinho Teddy com Balão Metalizado (50x85cm)
 export const SVG_DISPLAY_TEDDY_BALLOON = `
@@ -1018,512 +1449,722 @@ export const SVG_DISPLAY_ASTRONAUT_BABY = `
 `;
 
 // 16. Vaso com Arranjo Floral Alto (25x40cm)
-export const SVG_VASE_FLOWERS = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180" width="120" height="180">
+export const SVG_VASE_FLOWERS = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180" width="120" height="180">
   <defs>
-    <linearGradient id="vaseGold" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#ca8a04"/>
-      <stop offset="50%" stop-color="#fef08a"/>
+    <linearGradient id="vaseChampagne" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#854d0e"/>
+      <stop offset="30%" stop-color="#ca8a04"/>
+      <stop offset="65%" stop-color="#fef08a"/>
       <stop offset="100%" stop-color="#a16207"/>
     </linearGradient>
+    <linearGradient id="rosePetalGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff1f2"/>
+      <stop offset="45%" stop-color="#fbcfe8"/>
+      <stop offset="85%" stop-color="#f43f5e"/>
+      <stop offset="100%" stop-color="#be123c"/>
+    </linearGradient>
+    <linearGradient id="rosePetalGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffbeb"/>
+      <stop offset="50%" stop-color="#fde68a"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <filter id="shadowFloral" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#020617" flood-opacity="0.2"/>
+    </filter>
   </defs>
-  <path d="M 45 95 L 40 165 A 20 6 0 0 0 80 165 L 75 95 Z" fill="url(#vaseGold)" stroke="#854d0e" stroke-width="1.5"/>
-  <ellipse cx="60" cy="95" rx="16" ry="6" fill="#fef08a"/>
-  <!-- Folhagens e Flores no Topo -->
-  <circle cx="60" cy="60" r="22" fill="#f43f5e" opacity="0.9"/>
-  <circle cx="42" cy="72" r="18" fill="#fb7185" opacity="0.9"/>
-  <circle cx="78" cy="72" r="18" fill="#fda4af" opacity="0.9"/>
-  <circle cx="60" cy="42" r="16" fill="#fbcfe8"/>
-  <circle cx="60" cy="58" r="7" fill="#fbbf24"/>
-  <text x="60" y="145" font-family="sans-serif" font-size="7" font-weight="bold" fill="#ffffff" text-anchor="middle">FLORAL</text>
-</svg>
-`;
+
+  <!-- Folhagens de Eucalipto Acinzentadas e Ramos Traseiros -->
+  <g opacity="0.85">
+    <ellipse cx="38" cy="48" rx="14" ry="7" transform="rotate(-40 38 48)" fill="#64748b"/>
+    <ellipse cx="82" cy="48" rx="14" ry="7" transform="rotate(40 82 48)" fill="#64748b"/>
+    <ellipse cx="60" cy="28" rx="12" ry="6" fill="#475569"/>
+    <ellipse cx="30" cy="70" rx="12" ry="6" transform="rotate(-20 30 70)" fill="#65a30d"/>
+    <ellipse cx="90" cy="70" rx="12" ry="6" transform="rotate(20 90 70)" fill="#65a30d"/>
+  </g>
+
+  <!-- Rosas Nobres em Camadas Volumétricas -->
+  <!-- Rosa Central Champagne/Blush -->
+  <circle cx="60" cy="55" r="20" fill="url(#rosePetalGrad1)" filter="url(#shadowFloral)"/>
+  <circle cx="59" cy="54" r="13" fill="#fff1f2"/>
+  <circle cx="59" cy="53" r="7" fill="#f43f5e"/>
+  <circle cx="58.5" cy="52.5" r="3" fill="#ffffff"/>
+
+  <!-- Rosa Esquerda Blush -->
+  <circle cx="40" cy="72" r="16" fill="url(#rosePetalGrad1)"/>
+  <circle cx="39" cy="71" r="10" fill="#fbcfe8"/>
+  <circle cx="39" cy="70.5" r="4" fill="#be123c"/>
+
+  <!-- Rosa Direita Champagne -->
+  <circle cx="80" cy="72" r="16" fill="url(#rosePetalGrad2)"/>
+  <circle cx="81" cy="71" r="10" fill="#fffbeb"/>
+  <circle cx="81" cy="70.5" r="4" fill="#d97706"/>
+
+  <!-- Vaso de Cerâmica Esmaltada Champagne Lapidado -->
+  <path d="M 45 92 L 38 165 A 22 7 0 0 0 82 165 L 75 92 Z" fill="url(#vaseChampagne)" stroke="#854d0e" stroke-width="1.2" filter="url(#shadowFloral)"/>
+  <ellipse cx="60" cy="92" rx="15" ry="5.5" fill="#fef08a" stroke="#ca8a04" stroke-width="1"/>
+  <!-- Friso Lapidado do Vaso -->
+  <ellipse cx="60" cy="125" rx="19" ry="4" fill="none" stroke="#fef08a" stroke-width="0.8" opacity="0.8"/>
+</svg>`;
 
 // 17. Painel Retangular 2,00m x 1,50m
-export const SVG_PANEL_RECT = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 260" width="300" height="260">
+export const SVG_PANEL_RECT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 260" width="300" height="260">
   <defs>
-    <linearGradient id="rectPanelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="rectStudioGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="50%" stop-color="#f8fafc"/>
+      <stop offset="45%" stop-color="#f8fafc"/>
+      <stop offset="85%" stop-color="#f1f5f9"/>
       <stop offset="100%" stop-color="#e2e8f0"/>
     </linearGradient>
-    <filter id="shadowRectPanel" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.15"/>
+    <linearGradient id="trussLeg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="40%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <filter id="shadowRectRealistic" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
+    <filter id="footShadowRect" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.5" result="blur"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.25 0"/>
     </filter>
   </defs>
+
+  <!-- Sombras no Piso -->
+  <ellipse cx="55" cy="254" rx="34" ry="4.5" fill="#0f172a" opacity="0.25" filter="url(#footShadowRect)"/>
+  <ellipse cx="245" cy="254" rx="34" ry="4.5" fill="#0f172a" opacity="0.25" filter="url(#footShadowRect)"/>
+
   <!-- Pés Metálicos Estruturais -->
-  <line x1="55" y1="200" x2="55" y2="252" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
-  <line x1="25" y1="252" x2="85" y2="252" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
-  <line x1="245" y1="200" x2="245" y2="252" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
-  <line x1="215" y1="252" x2="275" y2="252" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
-  <!-- Face do Painel com Capa / Lona Sublimada -->
-  <rect x="15" y="15" width="270" height="200" rx="4" fill="url(#rectPanelGrad)" stroke="#cbd5e1" stroke-width="3" filter="url(#shadowRectPanel)"/>
-  <rect x="20" y="20" width="260" height="190" rx="2" fill="none" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="6,4"/>
-  <text x="150" y="115" font-family="sans-serif" font-size="13" font-weight="bold" fill="#64748b" text-anchor="middle">PAINEL RETANGULAR</text>
-  <text x="150" y="132" font-family="sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">2,00m x 1,50m</text>
-</svg>
-`;
+  <rect x="51" y="200" width="8" height="52" rx="3" fill="url(#trussLeg)"/>
+  <line x1="22" y1="252" x2="88" y2="252" stroke="url(#trussLeg)" stroke-width="6.5" stroke-linecap="round"/>
+  <rect x="241" y="200" width="8" height="52" rx="3" fill="url(#trussLeg)"/>
+  <line x1="212" y1="252" x2="278" y2="252" stroke="url(#trussLeg)" stroke-width="6.5" stroke-linecap="round"/>
+
+  <!-- Face do Painel com Tecido / Lona Tensionada Neutra -->
+  <rect x="15" y="15" width="270" height="200" rx="4" fill="url(#rectStudioGrad)" stroke="#cbd5e1" stroke-width="2.5" filter="url(#shadowRectRealistic)"/>
+  <!-- Friso de Borda e Costura Fina -->
+  <rect x="18" y="18" width="264" height="194" rx="2.5" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.8"/>
+  <rect x="20" y="20" width="260" height="190" rx="2" fill="none" stroke="rgba(203,213,225,0.4)" stroke-width="1"/>
+</svg>`;
 
 // 18. Painel Ripado 1,00m x 2,20m
-export const SVG_PANEL_SLAT_100x220 = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 380" width="180" height="380">
+export const SVG_PANEL_SLAT_100x220 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 380" width="180" height="380">
   <defs>
-    <linearGradient id="slatWoodGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#d97706"/>
-      <stop offset="50%" stop-color="#b45309"/>
+    <!-- Gradiente de Madeira Freijó / Carvalho Realista -->
+    <linearGradient id="slatWoodRealistic" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#b45309"/>
+      <stop offset="25%" stop-color="#d97706"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="75%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#92400e"/>
+    </linearGradient>
+    <linearGradient id="slatDarkEdge" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#451a03"/>
       <stop offset="100%" stop-color="#78350f"/>
     </linearGradient>
-    <filter id="shadowSlat" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.16"/>
+    <filter id="slatDepthShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="1.5" dy="5" stdDeviation="5" flood-color="#1c0b02" flood-opacity="0.3"/>
     </filter>
   </defs>
-  <!-- Pés Metálicos -->
-  <line x1="35" y1="340" x2="35" y2="372" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
-  <line x1="15" y1="372" x2="60" y2="372" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
-  <line x1="145" y1="340" x2="145" y2="372" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
-  <line x1="120" y1="372" x2="165" y2="372" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
-  <!-- Ripas Verticais de Madeira -->
-  <g fill="url(#slatWoodGrad)" stroke="#78350f" stroke-width="1.2" filter="url(#shadowSlat)">
-    <rect x="20" y="15" width="16" height="330" rx="2"/>
-    <rect x="40" y="15" width="16" height="330" rx="2"/>
-    <rect x="60" y="15" width="16" height="330" rx="2"/>
-    <rect x="80" y="15" width="16" height="330" rx="2"/>
-    <rect x="100" y="15" width="16" height="330" rx="2"/>
-    <rect x="120" y="15" width="16" height="330" rx="2"/>
-    <rect x="140" y="15" width="16" height="330" rx="2"/>
+
+  <!-- Pés Metálicos Grafite -->
+  <line x1="35" y1="340" x2="35" y2="372" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+  <line x1="15" y1="372" x2="60" y2="372" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+  <line x1="145" y1="340" x2="145" y2="372" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+  <line x1="120" y1="372" x2="165" y2="372" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Fundo de Estrutura Traseira em Madeira Escura -->
+  <rect x="15" y="15" width="150" height="330" rx="3" fill="#3b1904"/>
+  <rect x="18" y="70" width="144" height="14" fill="#291102"/>
+  <rect x="18" y="180" width="144" height="14" fill="#291102"/>
+  <rect x="18" y="290" width="144" height="14" fill="#291102"/>
+
+  <!-- Ripas de Madeira Verticais Volumétricas com Chanfro de Quina -->
+  <g filter="url(#slatDepthShadow)">
+    <!-- Ripa 1 -->
+    <rect x="18" y="15" width="16" height="330" rx="2" fill="url(#slatWoodRealistic)" stroke="#78350f" stroke-width="0.8"/>
+    <line x1="19.5" y1="16" x2="19.5" y2="343" stroke="rgba(254,243,199,0.6)" stroke-width="1"/>
+    <!-- Ripa 2 -->
+    <rect x="39" y="15" width="16" height="330" rx="2" fill="url(#slatWoodRealistic)" stroke="#78350f" stroke-width="0.8"/>
+    <line x1="40.5" y1="16" x2="40.5" y2="343" stroke="rgba(254,243,199,0.6)" stroke-width="1"/>
+    <!-- Ripa 3 -->
+    <rect x="60" y="15" width="16" height="330" rx="2" fill="url(#slatWoodRealistic)" stroke="#78350f" stroke-width="0.8"/>
+    <line x1="61.5" y1="16" x2="61.5" y2="343" stroke="rgba(254,243,199,0.6)" stroke-width="1"/>
+    <!-- Ripa 4 -->
+    <rect x="81" y="15" width="16" height="330" rx="2" fill="url(#slatWoodRealistic)" stroke="#78350f" stroke-width="0.8"/>
+    <line x1="82.5" y1="16" x2="82.5" y2="343" stroke="rgba(254,243,199,0.6)" stroke-width="1"/>
+    <!-- Ripa 5 -->
+    <rect x="102" y="15" width="16" height="330" rx="2" fill="url(#slatWoodRealistic)" stroke="#78350f" stroke-width="0.8"/>
+    <line x1="103.5" y1="16" x2="103.5" y2="343" stroke="rgba(254,243,199,0.6)" stroke-width="1"/>
+    <!-- Ripa 6 -->
+    <rect x="123" y="15" width="16" height="330" rx="2" fill="url(#slatWoodRealistic)" stroke="#78350f" stroke-width="0.8"/>
+    <line x1="124.5" y1="16" x2="124.5" y2="343" stroke="rgba(254,243,199,0.6)" stroke-width="1"/>
+    <!-- Ripa 7 -->
+    <rect x="144" y="15" width="16" height="330" rx="2" fill="url(#slatWoodRealistic)" stroke="#78350f" stroke-width="0.8"/>
+    <line x1="145.5" y1="16" x2="145.5" y2="343" stroke="rgba(254,243,199,0.6)" stroke-width="1"/>
   </g>
-  <!-- Travessas Traseiras -->
-  <rect x="15" y="80" width="146" height="12" fill="#451a03" opacity="0.85"/>
-  <rect x="15" y="270" width="146" height="12" fill="#451a03" opacity="0.85"/>
-  <text x="88" y="190" font-family="sans-serif" font-size="10" font-weight="bold" fill="#ffffff" text-anchor="middle" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);">PAINEL RIPADO 1,00x2,20m</text>
-</svg>
-`;
+</svg>`;
 
 // 19. Painel Meia-lua / Assimétrico 1,20m x 2,00m
-export const SVG_PANEL_HALF_MOON = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 380" width="220" height="380">
+export const SVG_PANEL_HALF_MOON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 380" width="220" height="380">
   <defs>
-    <linearGradient id="halfMoonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fdf4ff"/>
-      <stop offset="60%" stop-color="#fae8ff"/>
+    <linearGradient id="halfMoonStudioGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#fdf4ff"/>
+      <stop offset="75%" stop-color="#fae8ff"/>
       <stop offset="100%" stop-color="#f5d0fe"/>
     </linearGradient>
-    <filter id="shadowHalfMoon" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.15"/>
+    <linearGradient id="metalLegHalfMoon" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="40%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <filter id="shadowHalfMoonRealistic" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.16"/>
     </filter>
   </defs>
+
   <!-- Pés Metálicos -->
-  <line x1="45" y1="340" x2="45" y2="372" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
-  <line x1="20" y1="372" x2="70" y2="372" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
-  <line x1="175" y1="340" x2="175" y2="372" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
-  <line x1="150" y1="372" x2="200" y2="372" stroke="#475569" stroke-width="6" stroke-linecap="round"/>
-  <!-- Silhueta Assimétrica / Meia-Lua -->
-  <path d="M 20 345 L 20 150 C 20 35, 110 20, 200 25 L 200 345 Z" fill="url(#halfMoonGrad)" stroke="#c084fc" stroke-width="3" filter="url(#shadowHalfMoon)"/>
-  <path d="M 28 340 L 28 152 C 28 45, 110 30, 192 35 L 192 340" fill="none" stroke="#e879f9" stroke-width="1.5" stroke-dasharray="5,4"/>
-  <text x="110" y="195" font-family="sans-serif" font-size="11" font-weight="bold" fill="#9333ea" text-anchor="middle">PAINEL MEIA-LUA</text>
-  <text x="110" y="212" font-family="sans-serif" font-size="9" fill="#a855f7" text-anchor="middle">1,20m x 2,00m</text>
-</svg>
-`;
+  <line x1="45" y1="340" x2="45" y2="372" stroke="url(#metalLegHalfMoon)" stroke-width="6" stroke-linecap="round"/>
+  <line x1="20" y1="372" x2="70" y2="372" stroke="url(#metalLegHalfMoon)" stroke-width="6" stroke-linecap="round"/>
+  <line x1="175" y1="340" x2="175" y2="372" stroke="url(#metalLegHalfMoon)" stroke-width="6" stroke-linecap="round"/>
+  <line x1="150" y1="372" x2="200" y2="372" stroke="url(#metalLegHalfMoon)" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Silhueta Assimétrica / Meia-Lua Esculpida com Luz de Estúdio -->
+  <path d="M 20 345 L 20 150 C 20 35, 110 20, 200 25 L 200 345 Z" fill="url(#halfMoonStudioGrad)" stroke="#cbd5e1" stroke-width="2.5" filter="url(#shadowHalfMoonRealistic)"/>
+  <!-- Friso de Borda Acetinado -->
+  <path d="M 22 343 L 22 151 C 22 38, 109 23, 198 28 L 198 343" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.8"/>
+  <path d="M 24 341 L 24 152 C 24 42, 108 26, 196 31 L 196 341" fill="none" stroke="rgba(216,180,254,0.4)" stroke-width="1"/>
+</svg>`;
 
 // 20. Shimmer Wall (Paetê Dourado) 30x30cm (Placa Modular)
-export const SVG_SHIMMER_WALL = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+export const SVG_SHIMMER_WALL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
   <defs>
     <linearGradient id="shimmerGold1" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fef08a"/>
-      <stop offset="40%" stop-color="#eab308"/>
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="25%" stop-color="#fef08a"/>
+      <stop offset="60%" stop-color="#eab308"/>
       <stop offset="100%" stop-color="#a16207"/>
     </linearGradient>
     <linearGradient id="shimmerGold2" x1="100%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="30%" stop-color="#fde047"/>
-      <stop offset="100%" stop-color="#ca8a04"/>
+      <stop offset="35%" stop-color="#fde047"/>
+      <stop offset="75%" stop-color="#ca8a04"/>
+      <stop offset="100%" stop-color="#78350f"/>
     </linearGradient>
     <filter id="shimmerGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.25"/>
+      <feDropShadow dx="0" dy="3" stdDeviation="3.5" flood-color="#020617" flood-opacity="0.25"/>
     </filter>
   </defs>
-  <rect x="5" y="5" width="150" height="150" rx="4" fill="#0f172a" stroke="#ca8a04" stroke-width="2" filter="url(#shimmerGlow)"/>
-  <rect x="12" y="12" width="30" height="30" rx="3" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
-  <circle cx="27" cy="15" r="1.5" fill="#475569"/>
-  <rect x="47" y="12" width="30" height="30" rx="3" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
-  <circle cx="62" cy="15" r="1.5" fill="#475569"/>
-  <rect x="82" y="12" width="30" height="30" rx="3" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
-  <circle cx="97" cy="15" r="1.5" fill="#475569"/>
-  <rect x="117" y="12" width="30" height="30" rx="3" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
-  <circle cx="132" cy="15" r="1.5" fill="#475569"/>
-  <rect x="12" y="47" width="30" height="30" rx="3" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
-  <circle cx="27" cy="50" r="1.5" fill="#475569"/>
-  <rect x="47" y="47" width="30" height="30" rx="3" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
-  <circle cx="62" cy="50" r="1.5" fill="#475569"/>
-  <rect x="82" y="47" width="30" height="30" rx="3" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
-  <circle cx="97" cy="50" r="1.5" fill="#475569"/>
-  <rect x="117" y="47" width="30" height="30" rx="3" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
-  <circle cx="132" cy="50" r="1.5" fill="#475569"/>
-  <rect x="12" y="82" width="30" height="30" rx="3" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
-  <circle cx="27" cy="85" r="1.5" fill="#475569"/>
-  <rect x="47" y="82" width="30" height="30" rx="3" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
-  <circle cx="62" cy="85" r="1.5" fill="#475569"/>
-  <rect x="82" y="82" width="30" height="30" rx="3" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
-  <circle cx="97" cy="85" r="1.5" fill="#475569"/>
-  <rect x="117" y="82" width="30" height="30" rx="3" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
-  <circle cx="132" cy="85" r="1.5" fill="#475569"/>
-  <rect x="12" y="117" width="30" height="30" rx="3" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
-  <circle cx="27" cy="120" r="1.5" fill="#475569"/>
-  <rect x="47" y="117" width="30" height="30" rx="3" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
-  <circle cx="62" cy="120" r="1.5" fill="#475569"/>
-  <rect x="82" y="117" width="30" height="30" rx="3" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
-  <circle cx="97" cy="120" r="1.5" fill="#475569"/>
-  <rect x="117" y="117" width="30" height="30" rx="3" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
-  <circle cx="132" cy="120" r="1.5" fill="#475569"/>
-</svg>
-`;
+  <rect x="5" y="5" width="150" height="150" rx="4" fill="#0f172a" stroke="#ca8a04" stroke-width="1.8" filter="url(#shimmerGlow)"/>
+
+  <!-- Matriz de Placas Articuladas 4x4 com Reflexos de Luz Variados -->
+  <!-- Linha 1 -->
+  <rect x="12" y="12" width="30" height="30" rx="3.5" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="27" cy="15" r="1.5" fill="#334155"/>
+  <rect x="47" y="12" width="30" height="30" rx="3.5" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="62" cy="15" r="1.5" fill="#334155"/>
+  <rect x="82" y="12" width="30" height="30" rx="3.5" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="97" cy="15" r="1.5" fill="#334155"/>
+  <rect x="117" y="12" width="30" height="30" rx="3.5" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="132" cy="15" r="1.5" fill="#334155"/>
+
+  <!-- Linha 2 -->
+  <rect x="12" y="47" width="30" height="30" rx="3.5" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="27" cy="50" r="1.5" fill="#334155"/>
+  <rect x="47" y="47" width="30" height="30" rx="3.5" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="62" cy="50" r="1.5" fill="#334155"/>
+  <rect x="82" y="47" width="30" height="30" rx="3.5" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="97" cy="50" r="1.5" fill="#334155"/>
+  <rect x="117" y="47" width="30" height="30" rx="3.5" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="132" cy="50" r="1.5" fill="#334155"/>
+
+  <!-- Linha 3 -->
+  <rect x="12" y="82" width="30" height="30" rx="3.5" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="27" cy="85" r="1.5" fill="#334155"/>
+  <rect x="47" y="82" width="30" height="30" rx="3.5" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="62" cy="85" r="1.5" fill="#334155"/>
+  <rect x="82" y="82" width="30" height="30" rx="3.5" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="97" cy="85" r="1.5" fill="#334155"/>
+  <rect x="117" y="82" width="30" height="30" rx="3.5" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="132" cy="85" r="1.5" fill="#334155"/>
+
+  <!-- Linha 4 -->
+  <rect x="12" y="117" width="30" height="30" rx="3.5" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="27" cy="120" r="1.5" fill="#334155"/>
+  <rect x="47" y="117" width="30" height="30" rx="3.5" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="62" cy="120" r="1.5" fill="#334155"/>
+  <rect x="82" y="117" width="30" height="30" rx="3.5" fill="url(#shimmerGold2)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="97" cy="120" r="1.5" fill="#334155"/>
+  <rect x="117" y="117" width="30" height="30" rx="3.5" fill="url(#shimmerGold1)" stroke="#854d0e" stroke-width="0.8"/>
+  <circle cx="132" cy="120" r="1.5" fill="#334155"/>
+</svg>`;
 
 // 21. Cubos P, M, G
-export const SVG_CUBE_P = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 210" width="160" height="210">
+export const SVG_CUBE_P = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 210" width="160" height="210">
   <defs>
-    <linearGradient id="cubeGradP" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#f8fafc"/>
-      <stop offset="30%" stop-color="#ffffff"/>
-      <stop offset="85%" stop-color="#e2e8f0"/>
-      <stop offset="100%" stop-color="#cbd5e1"/>
+    <linearGradient id="cubeTopGradP" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
     </linearGradient>
-    <filter id="shadowCubeP" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.16"/>
+    <linearGradient id="cubeLeftGradP" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="60%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="cubeRightGradP" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#e2e8f0"/>
+      <stop offset="60%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+    <filter id="shadowCubeRealisticP" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.16"/>
     </filter>
   </defs>
-  <g filter="url(#shadowCubeP)">
-    <polygon points="80,18 145,38 80,58 15,38" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5"/>
-    <polygon points="15,38 80,58 80,195 15,175" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5"/>
-    <polygon points="80,58 145,38 145,175 80,195" fill="url(#cubeGradP)" stroke="#94a3b8" stroke-width="1.5"/>
-  </g>
-  <text x="80" y="125" font-family="sans-serif" font-size="11" font-weight="bold" fill="#64748b" text-anchor="middle">CUBO P</text>
-  <text x="80" y="140" font-family="sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">35x45cm</text>
-</svg>
-`;
 
-export const SVG_CUBE_M = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 240" width="160" height="240">
-  <defs>
-    <linearGradient id="cubeGradM" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#f8fafc"/>
-      <stop offset="30%" stop-color="#ffffff"/>
-      <stop offset="85%" stop-color="#e2e8f0"/>
-      <stop offset="100%" stop-color="#cbd5e1"/>
-    </linearGradient>
-    <filter id="shadowCubeM" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.16"/>
-    </filter>
-  </defs>
-  <g filter="url(#shadowCubeM)">
-    <polygon points="80,18 145,38 80,58 15,38" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5"/>
-    <polygon points="15,38 80,58 80,225 15,205" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5"/>
-    <polygon points="80,58 145,38 145,205 80,225" fill="url(#cubeGradM)" stroke="#94a3b8" stroke-width="1.5"/>
+  <g filter="url(#shadowCubeRealisticP)">
+    <!-- Face Esquerda (Iluminação Média) -->
+    <polygon points="15,38 80,58 80,195 15,175" fill="url(#cubeLeftGradP)" stroke="#94a3b8" stroke-width="1.2"/>
+    <!-- Face Direita (Oclusão / Sombra Própria) -->
+    <polygon points="80,58 145,38 145,175 80,195" fill="url(#cubeRightGradP)" stroke="#94a3b8" stroke-width="1.2"/>
+    <!-- Face Superior (Tampo Mais Iluminado) -->
+    <polygon points="80,18 145,38 80,58 15,38" fill="url(#cubeTopGradP)" stroke="#cbd5e1" stroke-width="1.5"/>
+    <polygon points="80,21 141,39 80,55 19,39" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1"/>
   </g>
-  <text x="80" y="135" font-family="sans-serif" font-size="12" font-weight="bold" fill="#64748b" text-anchor="middle">CUBO M</text>
-  <text x="80" y="152" font-family="sans-serif" font-size="9.5" fill="#94a3b8" text-anchor="middle">40x60cm</text>
-</svg>
-`;
+</svg>`;
 
-export const SVG_CUBE_G = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 280" width="160" height="280">
+export const SVG_CUBE_M = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 170 230" width="170" height="230">
   <defs>
-    <linearGradient id="cubeGradG" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#f8fafc"/>
-      <stop offset="30%" stop-color="#ffffff"/>
-      <stop offset="85%" stop-color="#e2e8f0"/>
-      <stop offset="100%" stop-color="#cbd5e1"/>
+    <linearGradient id="cubeTopGradM" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
     </linearGradient>
-    <filter id="shadowCubeG" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.16"/>
+    <linearGradient id="cubeLeftGradM" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="60%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="cubeRightGradM" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#e2e8f0"/>
+      <stop offset="60%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+    <filter id="shadowCubeRealisticM" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5.5" stdDeviation="5.5" flood-color="#0f172a" flood-opacity="0.16"/>
     </filter>
   </defs>
-  <g filter="url(#shadowCubeG)">
-    <polygon points="80,18 145,38 80,58 15,38" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5"/>
-    <polygon points="15,38 80,58 80,265 15,245" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5"/>
-    <polygon points="80,58 145,38 145,245 80,265" fill="url(#cubeGradG)" stroke="#94a3b8" stroke-width="1.5"/>
+
+  <g filter="url(#shadowCubeRealisticM)">
+    <polygon points="15,40 85,62 85,212 15,190" fill="url(#cubeLeftGradM)" stroke="#94a3b8" stroke-width="1.2"/>
+    <polygon points="85,62 155,40 155,190 85,212" fill="url(#cubeRightGradM)" stroke="#94a3b8" stroke-width="1.2"/>
+    <polygon points="85,18 155,40 85,62 15,40" fill="url(#cubeTopGradM)" stroke="#cbd5e1" stroke-width="1.5"/>
+    <polygon points="85,21 151,41 85,59 19,41" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1"/>
   </g>
-  <text x="80" y="155" font-family="sans-serif" font-size="13" font-weight="bold" fill="#64748b" text-anchor="middle">CUBO G</text>
-  <text x="80" y="172" font-family="sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">45x80cm</text>
-</svg>
-`;
+</svg>`;
+
+export const SVG_CUBE_G = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 250" width="180" height="250">
+  <defs>
+    <linearGradient id="cubeTopGradG" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+    <linearGradient id="cubeLeftGradG" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="60%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="cubeRightGradG" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#e2e8f0"/>
+      <stop offset="60%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+    <filter id="shadowCubeRealisticG" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadowCubeRealisticG)">
+    <polygon points="15,42 90,66 90,230 15,206" fill="url(#cubeLeftGradG)" stroke="#94a3b8" stroke-width="1.2"/>
+    <polygon points="90,66 165,42 165,206 90,230" fill="url(#cubeRightGradG)" stroke="#94a3b8" stroke-width="1.2"/>
+    <polygon points="90,18 165,42 90,66 15,42" fill="url(#cubeTopGradG)" stroke="#cbd5e1" stroke-width="1.5"/>
+    <polygon points="90,21 161,43 90,63 19,43" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1"/>
+  </g>
+</svg>`;
 
 // 22. Mesa Orgânica Feijão / Rim (1,50m x 80cm)
-export const SVG_TABLE_ORGANIC = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200">
+export const SVG_TABLE_ORGANIC = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200">
   <defs>
-    <linearGradient id="organicTopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="organicTopRealistic" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="60%" stop-color="#f8fafc"/>
+      <stop offset="45%" stop-color="#f8fafc"/>
+      <stop offset="85%" stop-color="#f1f5f9"/>
       <stop offset="100%" stop-color="#e2e8f0"/>
     </linearGradient>
-    <linearGradient id="legWood" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#b45309"/>
-      <stop offset="40%" stop-color="#d97706"/>
+    <linearGradient id="woodLegTurned" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#78350f"/>
+      <stop offset="35%" stop-color="#b45309"/>
+      <stop offset="70%" stop-color="#d97706"/>
       <stop offset="100%" stop-color="#78350f"/>
     </linearGradient>
-    <filter id="shadowOrganic" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-opacity="0.16"/>
-    </filter>
-  </defs>
-  <!-- Pés Cilíndricos em Madeira Nobre -->
-  <rect x="50" y="60" width="28" height="125" rx="14" fill="url(#legWood)" stroke="#78350f" stroke-width="1.5"/>
-  <rect x="146" y="65" width="28" height="120" rx="14" fill="url(#legWood)" stroke="#78350f" stroke-width="1.5"/>
-  <rect x="242" y="60" width="28" height="125" rx="14" fill="url(#legWood)" stroke="#78350f" stroke-width="1.5"/>
-  <!-- Tampo Orgânico Feijão / Rim -->
-  <path d="M 40 45 C 60 15, 200 15, 280 40 C 310 55, 305 90, 260 95 C 190 100, 160 75, 110 85 C 50 95, 20 70, 40 45 Z" fill="url(#organicTopGrad)" stroke="#cbd5e1" stroke-width="3" filter="url(#shadowOrganic)"/>
-  <path d="M 40 50 C 60 20, 200 20, 280 45 C 310 60, 305 95, 260 100 C 190 105, 160 80, 110 90 C 50 100, 20 75, 40 50 Z" fill="none" stroke="#94a3b8" stroke-width="2" opacity="0.6"/>
-  <text x="160" y="62" font-family="sans-serif" font-size="11" font-weight="bold" fill="#64748b" text-anchor="middle">MESA ORGÂNICA (FEIJÃO) 150cm</text>
-</svg>
-`;
-
-// 23. Mesa Orgânica Apoio Gota (80cm x 60cm)
-export const SVG_TABLE_ORGANIC_DROP = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" width="200" height="180">
-  <defs>
-    <linearGradient id="dropTopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="60%" stop-color="#f8fafc"/>
-      <stop offset="100%" stop-color="#e2e8f0"/>
-    </linearGradient>
-    <linearGradient id="dropLeg" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#b45309"/>
-      <stop offset="50%" stop-color="#d97706"/>
-      <stop offset="100%" stop-color="#78350f"/>
-    </linearGradient>
-    <filter id="shadowDrop" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.16"/>
-    </filter>
-  </defs>
-  <rect x="45" y="55" width="22" height="110" rx="11" fill="url(#dropLeg)" stroke="#78350f" stroke-width="1.2"/>
-  <rect x="135" y="55" width="22" height="110" rx="11" fill="url(#dropLeg)" stroke="#78350f" stroke-width="1.2"/>
-  <path d="M 35 50 C 45 20, 150 15, 175 45 C 190 75, 130 95, 75 90 C 35 85, 20 65, 35 50 Z" fill="url(#dropTopGrad)" stroke="#cbd5e1" stroke-width="2.5" filter="url(#shadowDrop)"/>
-  <text x="100" y="60" font-family="sans-serif" font-size="10" font-weight="bold" fill="#64748b" text-anchor="middle">MESA GOTA 80cm</text>
-</svg>
-`;
-
-// 24. Mesa de Apoio Lateral (60cm x 60cm)
-export const SVG_TABLE_SIDE = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 180" width="160" height="180">
-  <defs>
-    <linearGradient id="sideTopGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#e2e8f0"/>
-    </linearGradient>
-    <filter id="shadowSide" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.16"/>
-    </filter>
-  </defs>
-  <line x1="80" y1="45" x2="35" y2="165" stroke="#ca8a04" stroke-width="4" stroke-linecap="round"/>
-  <line x1="80" y1="45" x2="125" y2="165" stroke="#ca8a04" stroke-width="4" stroke-linecap="round"/>
-  <line x1="80" y1="45" x2="80" y2="170" stroke="#a16207" stroke-width="4" stroke-linecap="round"/>
-  <circle cx="80" cy="140" r="35" fill="none" stroke="#eab308" stroke-width="2" opacity="0.7"/>
-  <ellipse cx="80" cy="40" rx="65" ry="16" fill="url(#sideTopGrad)" stroke="#cbd5e1" stroke-width="2" filter="url(#shadowSide)"/>
-  <text x="80" y="44" font-family="sans-serif" font-size="9" font-weight="bold" fill="#64748b" text-anchor="middle">MESA LATERAL 60cm</text>
-</svg>
-`;
-
-// 25. Balões Unitários de Látex (5", 9", 11", 16")
-export const SVG_BALLOON_5INCH = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 130" width="100" height="130">
-  <defs>
-    <radialGradient id="bal5Grad" cx="35%" cy="30%" r="65%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="35%" stop-color="#f472b6"/>
-      <stop offset="85%" stop-color="#db2777"/>
-      <stop offset="100%" stop-color="#9d174d"/>
-    </radialGradient>
-  </defs>
-  <path d="M 50 15 C 75 15, 88 45, 75 80 C 65 100, 56 108, 50 110 C 44 108, 35 100, 25 80 C 12 45, 25 15, 50 15 Z" fill="url(#bal5Grad)"/>
-  <polygon points="45,110 55,110 52,116 48,116" fill="#be123c"/>
-  <path d="M 50 116 Q 46 122 52 128" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
-  <ellipse cx="40" cy="35" rx="8" ry="16" transform="rotate(-30 40 35)" fill="#ffffff" opacity="0.6"/>
-  <text x="50" y="65" font-family="sans-serif" font-size="10" font-weight="bold" fill="#ffffff" text-anchor="middle">5"</text>
-</svg>
-`;
-
-export const SVG_BALLOON_9INCH = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 150" width="120" height="150">
-  <defs>
-    <radialGradient id="bal9Grad" cx="35%" cy="30%" r="65%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="35%" stop-color="#60a5fa"/>
-      <stop offset="85%" stop-color="#2563eb"/>
-      <stop offset="100%" stop-color="#1e40af"/>
-    </radialGradient>
-  </defs>
-  <path d="M 60 15 C 90 15, 105 50, 90 90 C 80 115, 68 124, 60 126 C 52 124, 40 115, 30 90 C 15 50, 30 15, 60 15 Z" fill="url(#bal9Grad)"/>
-  <polygon points="55,126 65,126 62,133 58,133" fill="#1d4ed8"/>
-  <path d="M 60 133 Q 56 140 64 148" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
-  <ellipse cx="48" cy="40" rx="10" ry="20" transform="rotate(-30 48 40)" fill="#ffffff" opacity="0.6"/>
-  <text x="60" y="75" font-family="sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">9"</text>
-</svg>
-`;
-
-export const SVG_BALLOON_11INCH = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 170" width="140" height="170">
-  <defs>
-    <radialGradient id="bal11Grad" cx="35%" cy="30%" r="65%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="35%" stop-color="#a78bfa"/>
-      <stop offset="85%" stop-color="#7c3aed"/>
-      <stop offset="100%" stop-color="#5b21b6"/>
-    </radialGradient>
-  </defs>
-  <path d="M 70 15 C 105 15, 125 55, 105 105 C 95 130, 80 142, 70 145 C 60 142, 45 130, 35 105 C 15 55, 35 15, 70 15 Z" fill="url(#bal11Grad)"/>
-  <polygon points="65,145 75,145 72,153 68,153" fill="#6d28d9"/>
-  <path d="M 70 153 Q 66 160 74 168" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>
-  <ellipse cx="55" cy="45" rx="12" ry="24" transform="rotate(-30 55 45)" fill="#ffffff" opacity="0.65"/>
-  <text x="70" y="85" font-family="sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">11"</text>
-</svg>
-`;
-
-export const SVG_BALLOON_16INCH = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 200" width="160" height="200">
-  <defs>
-    <radialGradient id="bal16Grad" cx="35%" cy="30%" r="65%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="35%" stop-color="#34d399"/>
-      <stop offset="85%" stop-color="#059669"/>
-      <stop offset="100%" stop-color="#064e3b"/>
-    </radialGradient>
-  </defs>
-  <path d="M 80 15 C 125 15, 145 65, 125 125 C 110 155, 92 170, 80 174 C 68 170, 50 155, 35 125 C 15 65, 35 15, 80 15 Z" fill="url(#bal16Grad)"/>
-  <polygon points="74,174 86,174 83,184 77,184" fill="#047857"/>
-  <path d="M 80 184 Q 74 192 84 200" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
-  <ellipse cx="62" cy="50" rx="15" ry="30" transform="rotate(-30 62 50)" fill="#ffffff" opacity="0.65"/>
-  <text x="80" y="100" font-family="sans-serif" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">16"</text>
-</svg>
-`;
-
-// 26. Balão Bubble (Silicone Transparente) 45cm / 18"
-export const SVG_BALLOON_BUBBLE = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 200" width="160" height="200">
-  <defs>
-    <radialGradient id="bubbleGrad" cx="35%" cy="30%" r="65%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
-      <stop offset="30%" stop-color="#e0f2fe" stop-opacity="0.4"/>
-      <stop offset="70%" stop-color="#38bdf8" stop-opacity="0.15"/>
-      <stop offset="95%" stop-color="#0284c7" stop-opacity="0.45"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.8"/>
-    </radialGradient>
-  </defs>
-  <circle cx="68" cy="95" r="16" fill="#f472b6" opacity="0.85"/>
-  <circle cx="95" cy="88" r="18" fill="#fbbf24" opacity="0.85"/>
-  <circle cx="78" cy="115" r="15" fill="#34d399" opacity="0.85"/>
-  <circle cx="80" cy="85" r="68" fill="url(#bubbleGrad)" stroke="#38bdf8" stroke-width="1.5"/>
-  <ellipse cx="60" cy="50" rx="22" ry="10" transform="rotate(-35 60 50)" fill="#ffffff" opacity="0.75"/>
-  <polygon points="76,153 84,153 82,160 78,160" fill="#0284c7"/>
-  <path d="M 80 160 Q 75 175 85 190" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
-  <text x="80" y="45" font-family="sans-serif" font-size="10" font-weight="bold" fill="#0284c7" text-anchor="middle">BUBBLE 18"</text>
-</svg>
-`;
-
-// 27. Balão Metalizado Número 75cm / 32"
-export const SVG_BALLOON_NUMBER = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 240" width="160" height="240">
-  <defs>
-    <linearGradient id="goldFoil" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fef08a"/>
-      <stop offset="25%" stop-color="#eab308"/>
-      <stop offset="50%" stop-color="#ffffff"/>
-      <stop offset="75%" stop-color="#ca8a04"/>
+    <linearGradient id="brassTip" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ca8a04"/>
+      <stop offset="50%" stop-color="#fef08a"/>
       <stop offset="100%" stop-color="#854d0e"/>
     </linearGradient>
-    <filter id="foilGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.25"/>
+    <filter id="shadowOrganicRealistic" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6.5" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
+    <filter id="legShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.25 0"/>
     </filter>
   </defs>
-  <g filter="url(#foilGlow)">
-    <path d="M 50 65 L 75 40 L 98 40 L 98 190 L 120 190 L 120 215 L 40 215 L 40 190 L 68 190 L 68 85 L 45 95 Z" fill="url(#goldFoil)" stroke="#78350f" stroke-width="2.5" stroke-linejoin="round"/>
-    <line x1="75" y1="40" x2="68" y2="85" stroke="#fef08a" stroke-width="1.5" opacity="0.8"/>
-    <line x1="98" y1="40" x2="98" y2="190" stroke="#fef08a" stroke-width="2" opacity="0.8"/>
+
+  <!-- Sombras de Contato dos Pés no Piso -->
+  <ellipse cx="64" cy="188" rx="14" ry="4" fill="#0f172a" opacity="0.25" filter="url(#legShadow)"/>
+  <ellipse cx="160" cy="186" rx="14" ry="4" fill="#0f172a" opacity="0.25" filter="url(#legShadow)"/>
+  <ellipse cx="256" cy="188" rx="14" ry="4" fill="#0f172a" opacity="0.25" filter="url(#legShadow)"/>
+
+  <!-- Pés Cilíndricos em Madeira Maciça Torneada com Ponteira em Latão Dourado -->
+  <!-- Pé 1 (Esquerdo) -->
+  <rect x="52" y="65" width="24" height="120" rx="12" fill="url(#woodLegTurned)" stroke="#78350f" stroke-width="1"/>
+  <rect x="52" y="165" width="24" height="20" rx="4" fill="url(#brassTip)" stroke="#854d0e" stroke-width="0.8"/>
+  <line x1="56" y1="165" x2="72" y2="165" stroke="#fef08a" stroke-width="0.8"/>
+
+  <!-- Pé 2 (Centro Traseiro) -->
+  <rect x="148" y="68" width="24" height="116" rx="12" fill="url(#woodLegTurned)" stroke="#78350f" stroke-width="1"/>
+  <rect x="148" y="164" width="24" height="20" rx="4" fill="url(#brassTip)" stroke="#854d0e" stroke-width="0.8"/>
+  <line x1="152" y1="164" x2="168" y2="164" stroke="#fef08a" stroke-width="0.8"/>
+
+  <!-- Pé 3 (Direito) -->
+  <rect x="244" y="65" width="24" height="120" rx="12" fill="url(#woodLegTurned)" stroke="#78350f" stroke-width="1"/>
+  <rect x="244" y="165" width="24" height="20" rx="4" fill="url(#brassTip)" stroke="#854d0e" stroke-width="0.8"/>
+  <line x1="248" y1="165" x2="264" y2="165" stroke="#fef08a" stroke-width="0.8"/>
+
+  <!-- Tampo Orgânico Curvilíneo Feijão com Bisotê e Luz Suave -->
+  <!-- Espessura / Borda da Madeira 2.5D -->
+  <path d="M 40 50 C 60 20, 200 20, 280 45 C 310 60, 305 95, 260 100 C 190 105, 160 80, 110 90 C 50 100, 20 75, 40 50 Z" fill="#cbd5e1"/>
+  <!-- Tampo Superior Laqueado -->
+  <path d="M 40 45 C 60 15, 200 15, 280 40 C 310 55, 305 90, 260 95 C 190 100, 160 75, 110 85 C 50 95, 20 70, 40 45 Z" fill="url(#organicTopRealistic)" stroke="#cbd5e1" stroke-width="2" filter="url(#shadowOrganicRealistic)"/>
+  <path d="M 44 46 C 63 18, 198 18, 276 42 C 304 56, 300 88, 258 93 C 189 98, 160 74, 111 83 C 53 93, 25 69, 44 46 Z" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.5"/>
+</svg>`;
+
+// 23. Mesa Orgânica Apoio Gota (80cm x 60cm)
+export const SVG_TABLE_ORGANIC_DROP = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" width="200" height="180">
+  <defs>
+    <linearGradient id="dropTopRealistic" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="dropLegTurned" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#78350f"/>
+      <stop offset="35%" stop-color="#b45309"/>
+      <stop offset="70%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#78350f"/>
+    </linearGradient>
+    <linearGradient id="brassTipDrop" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ca8a04"/>
+      <stop offset="50%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#854d0e"/>
+    </linearGradient>
+    <filter id="shadowDropRealistic" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5.5" flood-color="#0f172a" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <!-- Pés Palito com Ponteiras Douradas -->
+  <rect x="46" y="58" width="20" height="106" rx="10" fill="url(#dropLegTurned)" stroke="#78350f" stroke-width="1"/>
+  <rect x="46" y="146" width="20" height="18" rx="3.5" fill="url(#brassTipDrop)" stroke="#854d0e" stroke-width="0.8"/>
+
+  <rect x="134" y="58" width="20" height="106" rx="10" fill="url(#dropLegTurned)" stroke="#78350f" stroke-width="1"/>
+  <rect x="134" y="146" width="20" height="18" rx="3.5" fill="url(#brassTipDrop)" stroke="#854d0e" stroke-width="0.8"/>
+
+  <!-- Tampo Orgânico em Gota com Borda Usinada -->
+  <path d="M 35 54 C 45 24, 150 19, 175 49 C 190 79, 130 99, 75 94 C 35 89, 20 69, 35 54 Z" fill="#cbd5e1"/>
+  <path d="M 35 50 C 45 20, 150 15, 175 45 C 190 75, 130 95, 75 90 C 35 85, 20 65, 35 50 Z" fill="url(#dropTopRealistic)" stroke="#cbd5e1" stroke-width="2" filter="url(#shadowDropRealistic)"/>
+  <path d="M 38 51 C 47 23, 148 18, 172 46 C 186 74, 128 92, 76 87 C 38 83, 24 65, 38 51 Z" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.5"/>
+</svg>`;
+
+// 24. Mesa de Apoio Lateral (60cm x 60cm)
+export const SVG_TABLE_SIDE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 180" width="160" height="180">
+  <defs>
+    <radialGradient id="marbleTopGrad" cx="45%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="65%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </radialGradient>
+    <linearGradient id="goldTulip" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#a16207"/>
+      <stop offset="35%" stop-color="#eab308"/>
+      <stop offset="60%" stop-color="#fef08a"/>
+      <stop offset="85%" stop-color="#ca8a04"/>
+      <stop offset="100%" stop-color="#713f12"/>
+    </linearGradient>
+    <filter id="shadowSideTable" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <!-- Base Circular Pesada no Piso -->
+  <ellipse cx="80" cy="168" rx="42" ry="9" fill="url(#goldTulip)" stroke="#854d0e" stroke-width="1.2"/>
+  <ellipse cx="80" cy="166" rx="39" ry="7.5" fill="none" stroke="#fef08a" stroke-width="1" opacity="0.8"/>
+
+  <!-- Coluna Central Metálica Tulipa com Transição Curva -->
+  <path d="M 75 48 L 76 145 C 76 155, 62 162, 50 166 L 110 166 C 98 162, 84 155, 84 145 L 85 48 Z" fill="url(#goldTulip)" stroke="#854d0e" stroke-width="1"/>
+
+  <!-- Tampo Redondo 2.5D em Mármore Carrara / Laca Branca -->
+  <ellipse cx="80" cy="42" rx="65" ry="16" fill="#cbd5e1"/>
+  <ellipse cx="80" cy="38" rx="65" ry="16" fill="url(#marbleTopGrad)" stroke="#cbd5e1" stroke-width="2" filter="url(#shadowSideTable)"/>
+  <ellipse cx="80" cy="38" rx="63" ry="14.5" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.2"/>
+  <!-- Friso Dourado na Borda -->
+  <ellipse cx="80" cy="40" rx="64.5" ry="15.5" fill="none" stroke="#eab308" stroke-width="0.8" opacity="0.85"/>
+</svg>`;
+
+// 25. Balões Unitários de Látex (5", 9", 11", 16")
+export const SVG_BALLOON_5INCH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 130" width="100" height="130">
+  <defs>
+    <radialGradient id="balloonGloss5" cx="35%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#f472b6"/>
+      <stop offset="80%" stop-color="#db2777"/>
+      <stop offset="100%" stop-color="#9d174d"/>
+    </radialGradient>
+    <filter id="shadowBal5" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="1.5" dy="3.5" stdDeviation="3.5" flood-color="#020617" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <!-- Corpo Orgânico Inflado do Balão -->
+  <path d="M 50 12 C 22 12, 12 38, 18 68 C 24 95, 44 110, 48 116 L 52 116 C 56 110, 76 95, 82 68 C 88 38, 78 12, 50 12 Z" fill="url(#balloonGloss5)" filter="url(#shadowBal5)"/>
+  <!-- Brilho Especular Curvo de Estúdio -->
+  <ellipse cx="38" cy="38" rx="10" ry="18" transform="rotate(-30 38 38)" fill="#ffffff" opacity="0.65"/>
+  <circle cx="34" cy="54" r="3" fill="#ffffff" opacity="0.45"/>
+  <!-- Nó Franzido e Amarrado -->
+  <polygon points="46,116 54,116 56,122 44,122" fill="#9d174d"/>
+  <circle cx="50" cy="119" r="2.5" fill="#db2777"/>
+</svg>`;
+
+export const SVG_BALLOON_9INCH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 150" width="120" height="150">
+  <defs>
+    <radialGradient id="balloonGloss9" cx="35%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#38bdf8"/>
+      <stop offset="80%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </radialGradient>
+    <filter id="shadowBal9" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="4" stdDeviation="4" flood-color="#020617" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <path d="M 60 14 C 26 14, 15 45, 22 78 C 28 110, 52 128, 57 134 L 63 134 C 68 128, 92 110, 98 78 C 105 45, 94 14, 60 14 Z" fill="url(#balloonGloss9)" filter="url(#shadowBal9)"/>
+  <ellipse cx="46" cy="45" rx="12" ry="22" transform="rotate(-30 46 45)" fill="#ffffff" opacity="0.65"/>
+  <circle cx="40" cy="64" r="3.5" fill="#ffffff" opacity="0.45"/>
+  <polygon points="56,134 64,134 66,142 54,142" fill="#0369a1"/>
+  <circle cx="60" cy="138" r="3" fill="#0284c7"/>
+</svg>`;
+
+export const SVG_BALLOON_11INCH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 175" width="140" height="175">
+  <defs>
+    <radialGradient id="balloonGloss11" cx="35%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#fde047"/>
+      <stop offset="80%" stop-color="#eab308"/>
+      <stop offset="100%" stop-color="#a16207"/>
+    </radialGradient>
+    <filter id="shadowBal11" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="4.5" stdDeviation="4.5" flood-color="#020617" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <path d="M 70 16 C 30 16, 18 52, 26 90 C 34 128, 62 148, 67 156 L 73 156 C 78 148, 106 128, 114 90 C 122 52, 110 16, 70 16 Z" fill="url(#balloonGloss11)" filter="url(#shadowBal11)"/>
+  <ellipse cx="54" cy="52" rx="14" ry="26" transform="rotate(-30 54 52)" fill="#ffffff" opacity="0.65"/>
+  <circle cx="48" cy="74" r="4" fill="#ffffff" opacity="0.45"/>
+  <polygon points="65,156 75,156 77,165 63,165" fill="#a16207"/>
+  <circle cx="70" cy="160" r="3.5" fill="#ca8a04"/>
+</svg>`;
+
+export const SVG_BALLOON_16INCH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 200" width="160" height="200">
+  <defs>
+    <radialGradient id="balloonGloss16" cx="35%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#c084fc"/>
+      <stop offset="80%" stop-color="#9333ea"/>
+      <stop offset="100%" stop-color="#6b21a8"/>
+    </radialGradient>
+    <filter id="shadowBal16" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="5" stdDeviation="5" flood-color="#020617" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <path d="M 80 18 C 34 18, 20 60, 30 102 C 38 146, 70 170, 76 178 L 84 178 C 90 170, 122 146, 130 102 C 140 60, 126 18, 80 18 Z" fill="url(#balloonGloss16)" filter="url(#shadowBal16)"/>
+  <ellipse cx="62" cy="60" rx="16" ry="30" transform="rotate(-30 62 60)" fill="#ffffff" opacity="0.65"/>
+  <circle cx="54" cy="85" r="4.5" fill="#ffffff" opacity="0.45"/>
+  <polygon points="74,178 86,178 88,188 72,188" fill="#6b21a8"/>
+  <circle cx="80" cy="183" r="4" fill="#9333ea"/>
+</svg>`;
+
+// 26. Balão Bubble (Silicone Transparente) 45cm / 18"
+export const SVG_BALLOON_BUBBLE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 200" width="160" height="200">
+  <defs>
+    <radialGradient id="crystalBubbleGrad" cx="35%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6"/>
+      <stop offset="25%" stop-color="#e0f2fe" stop-opacity="0.25"/>
+      <stop offset="65%" stop-color="#38bdf8" stop-opacity="0.12"/>
+      <stop offset="90%" stop-color="#0284c7" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.5"/>
+    </radialGradient>
+    <filter id="shadowBubble" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="1" dy="4" stdDeviation="4.5" flood-color="#020617" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- Esfera de Silicone Cristal -->
+  <circle cx="80" cy="85" r="68" fill="url(#crystalBubbleGrad)" stroke="rgba(56, 189, 248, 0.6)" stroke-width="1.8" filter="url(#shadowBubble)"/>
+
+  <!-- Brilho Perimetral em Arco Superior (Reflexo Esférico) -->
+  <path d="M 35 45 C 50 25, 105 25, 125 45" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+  <!-- Destaque Especular Primário Curvo -->
+  <ellipse cx="58" cy="52" rx="18" ry="8" transform="rotate(-35 58 52)" fill="#ffffff" opacity="0.85"/>
+  <!-- Destaque Secundário Inferior -->
+  <path d="M 45 125 C 60 142, 100 142, 115 125" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Válvula / Gargalo com Laço de Fita de Cetim -->
+  <polygon points="76,153 84,153 82,160 78,160" fill="#0284c7"/>
+  <!-- Laço de Fita Delicado no Gargalo -->
+  <path d="M 80 158 C 72 154, 68 162, 78 162 Z" fill="#38bdf8"/>
+  <path d="M 80 158 C 88 154, 92 162, 82 162 Z" fill="#38bdf8"/>
+  <circle cx="80" cy="159" r="2" fill="#ffffff"/>
+  <!-- Fio Transparente -->
+  <path d="M 80 162 Q 76 178 84 195" fill="none" stroke="rgba(148, 163, 184, 0.7)" stroke-width="1.2"/>
+</svg>`;
+
+// 27. Balão Metalizado Número 75cm / 32"
+export const SVG_BALLOON_NUMBER = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 240" width="160" height="240">
+  <defs>
+    <linearGradient id="foilChromeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="20%" stop-color="#fef08a"/>
+      <stop offset="45%" stop-color="#eab308"/>
+      <stop offset="70%" stop-color="#ffffff"/>
+      <stop offset="85%" stop-color="#ca8a04"/>
+      <stop offset="100%" stop-color="#854d0e"/>
+    </linearGradient>
+    <filter id="foilGlowRealistic" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="1.5" dy="5" stdDeviation="5" flood-color="#78350f" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#foilGlowRealistic)">
+    <!-- Silhueta Foil Metalizada Inflada com Relevo -->
+    <path d="M 50 65 L 75 40 L 98 40 L 98 190 L 120 190 L 120 215 L 40 215 L 40 190 L 68 190 L 68 85 L 45 95 Z" fill="url(#foilChromeGrad)" stroke="#78350f" stroke-width="2.2" stroke-linejoin="round"/>
+    <!-- Costura Perimetral de Solda de Fábrica -->
+    <path d="M 53 67 L 76 43 L 95 43 L 95 187 L 117 187 L 117 212 L 43 212 L 43 187 L 71 187 L 71 83 L 48 93 Z" fill="none" stroke="rgba(254, 240, 138, 0.7)" stroke-width="1.2" stroke-linejoin="round"/>
+    <!-- Dobras de Tensão e Reflexo Cromado Central -->
+    <line x1="75" y1="40" x2="68" y2="85" stroke="#ffffff" stroke-width="2" opacity="0.75"/>
+    <line x1="98" y1="40" x2="98" y2="190" stroke="#ffffff" stroke-width="2.5" opacity="0.75"/>
   </g>
-  <circle cx="80" cy="225" r="3" fill="#ca8a04"/>
-  <text x="80" y="145" font-family="sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);">32" (75cm)</text>
-</svg>
-`;
+  <!-- Válvula de Inflar Discreta -->
+  <rect x="76" y="215" width="8" height="8" rx="1.5" fill="#ca8a04"/>
+</svg>`;
 
 // 28. Tapete Redondo 2,00m
-export const SVG_RUG_ROUND_200 = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 280" width="280" height="280">
+export const SVG_RUG_ROUND_200 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 280" width="280" height="280">
   <defs>
-    <radialGradient id="rug200Grad" cx="50%" cy="50%" r="50%">
+    <radialGradient id="rug200Studio" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="60%" stop-color="#f8fafc"/>
-      <stop offset="90%" stop-color="#f1f5f9"/>
+      <stop offset="55%" stop-color="#f8fafc"/>
+      <stop offset="85%" stop-color="#f1f5f9"/>
       <stop offset="100%" stop-color="#cbd5e1"/>
     </radialGradient>
-    <filter id="shadowRug200" x="-15%" y="-15%" width="130%" height="130%">
-      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-opacity="0.15"/>
+    <filter id="shadowRug200Realistic" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.16"/>
     </filter>
   </defs>
-  <circle cx="140" cy="140" r="130" fill="url(#rug200Grad)" stroke="#94a3b8" stroke-width="2.5" filter="url(#shadowRug200)"/>
-  <circle cx="140" cy="140" r="124" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="6,4"/>
-  <text x="140" y="145" font-family="sans-serif" font-size="13" font-weight="bold" fill="#64748b" text-anchor="middle">TAPETE REDONDO 2,00m</text>
-</svg>
-`;
+  <circle cx="140" cy="140" r="130" fill="url(#rug200Studio)" stroke="#94a3b8" stroke-width="2" filter="url(#shadowRug200Realistic)"/>
+  <!-- Borda Pespontada de Alfaiataria sem Texto -->
+  <circle cx="140" cy="140" r="126" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8"/>
+  <circle cx="140" cy="140" r="122" fill="none" stroke="rgba(203,213,225,0.6)" stroke-width="1"/>
+</svg>`;
 
 // 29. Tapete Retangular / Lona 2,50m x 2,00m
-export const SVG_RUG_RECT_250x200 = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200" width="300" height="200">
+export const SVG_RUG_RECT_250x200 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200" width="300" height="200">
   <defs>
-    <linearGradient id="rugRect250Grad" x1="0%" y1="0%" x2="0%" y2="100%">
+    <linearGradient id="rugRectStudio" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="45%" stop-color="#ffffff"/>
+      <stop offset="85%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <filter id="shadowRugRectRealistic" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5.5" flood-color="#0f172a" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+  <polygon points="35,20 265,20 290,180 10,180" fill="url(#rugRectStudio)" stroke="#94a3b8" stroke-width="1.8" filter="url(#shadowRugRectRealistic)"/>
+  <!-- Acabamento Perimetral sem Linhas Pontilhadas Tosca -->
+  <polygon points="38,24 262,24 285,176 15,176" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.5"/>
+  <polygon points="41,28 259,28 280,172 20,172" fill="none" stroke="rgba(203,213,225,0.5)" stroke-width="1"/>
+</svg>`;
+
+// 30. Bandeja de Doces Baixa 20x5cm
+export const SVG_TRAY_LOW = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" width="160" height="80">
+  <defs>
+    <linearGradient id="trayPorcelain" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="goldEdgeTray" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ca8a04"/>
+      <stop offset="50%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#a16207"/>
+    </linearGradient>
+    <filter id="shadowTrayLow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3.5" stdDeviation="3.5" flood-color="#0f172a" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <ellipse cx="80" cy="55" rx="70" ry="15" fill="#cbd5e1"/>
+  <path d="M 12 40 L 12 50 A 68 15 0 0 0 148 50 L 148 40 Z" fill="url(#trayPorcelain)" stroke="#cbd5e1" stroke-width="1.2" filter="url(#shadowTrayLow)"/>
+  <ellipse cx="80" cy="40" rx="68" ry="15" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <!-- Friso Nobre Dourado na Borda -->
+  <ellipse cx="80" cy="40" rx="67" ry="14" fill="none" stroke="url(#goldEdgeTray)" stroke-width="1.2"/>
+</svg>`;
+
+// 31. Display de Mesa MDF 25cm
+export const SVG_DISPLAY_TABLE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 180" width="140" height="180">
+  <defs>
+    <linearGradient id="photoFrameGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="25%" stop-color="#fef08a"/>
+      <stop offset="60%" stop-color="#ca8a04"/>
+      <stop offset="100%" stop-color="#854d0e"/>
+    </linearGradient>
+    <linearGradient id="glassPhotoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#f8fafc"/>
       <stop offset="50%" stop-color="#ffffff"/>
       <stop offset="100%" stop-color="#e2e8f0"/>
     </linearGradient>
-    <filter id="shadowRugRect250" x="-15%" y="-15%" width="130%" height="130%">
-      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.16"/>
+    <filter id="shadowDispTableRealistic" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.18"/>
     </filter>
   </defs>
-  <polygon points="35,20 265,20 290,180 10,180" fill="url(#rugRect250Grad)" stroke="#94a3b8" stroke-width="2" filter="url(#shadowRugRect250)"/>
-  <polygon points="42,28 258,28 280,172 20,172" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="7,5"/>
-  <text x="150" y="105" font-family="sans-serif" font-size="12" font-weight="bold" fill="#64748b" text-anchor="middle">LONA / TAPETE RETANGULAR</text>
-  <text x="150" y="122" font-family="sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">2,50m x 2,00m</text>
-</svg>
-`;
 
-// 30. Bandeja de Doces Baixa 20x5cm
-export const SVG_TRAY_LOW = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" width="160" height="80">
-  <defs>
-    <linearGradient id="trayLowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="40%" stop-color="#fdf4ff"/>
-      <stop offset="100%" stop-color="#fae8ff"/>
-    </linearGradient>
-  </defs>
-  <ellipse cx="80" cy="55" rx="70" ry="15" fill="#e2e8f0"/>
-  <path d="M 12 40 L 12 50 A 68 15 0 0 0 148 50 L 148 40 Z" fill="url(#trayLowGrad)" stroke="#d946ef" stroke-width="1.5"/>
-  <ellipse cx="80" cy="40" rx="68" ry="15" fill="#ffffff" stroke="#d946ef" stroke-width="1.5"/>
-  <text x="80" y="44" font-family="sans-serif" font-size="8" font-weight="bold" fill="#a21caf" text-anchor="middle">BANDEJA BAIXA 20x5cm</text>
-</svg>
-`;
+  <!-- Gravata de Apoio Traseira com Sombra de Piso -->
+  <ellipse cx="70" cy="170" rx="42" ry="6" fill="#0f172a" opacity="0.25"/>
+  <polygon points="62,70 78,70 86,168 54,168" fill="#451a03" stroke="#1c0b02" stroke-width="1"/>
 
-// 31. Display de Mesa MDF 25cm
-export const SVG_DISPLAY_TABLE = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 180" width="140" height="180">
-  <defs>
-    <linearGradient id="displayTableGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="60%" stop-color="#f8fafc"/>
-      <stop offset="100%" stop-color="#e2e8f0"/>
-    </linearGradient>
-    <filter id="shadowDispTable" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.16"/>
-    </filter>
-  </defs>
-  <ellipse cx="70" cy="170" rx="45" ry="7" fill="#78350f" opacity="0.3"/>
-  <rect x="52" y="162" width="36" height="8" rx="2" fill="#b45309" stroke="#78350f" stroke-width="1"/>
-  <rect x="25" y="15" width="90" height="148" rx="6" fill="url(#displayTableGrad)" stroke="#cbd5e1" stroke-width="2" filter="url(#shadowDispTable)"/>
-  <rect x="30" y="20" width="80" height="138" rx="4" fill="none" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>
-  <text x="70" y="85" font-family="sans-serif" font-size="9" font-weight="bold" fill="#64748b" text-anchor="middle">DISPLAY DE MESA</text>
-  <text x="70" y="100" font-family="sans-serif" font-size="8" fill="#94a3b8" text-anchor="middle">25cm</text>
-</svg>
-`;
+  <!-- Moldura Bisotada Dourada de Mesa -->
+  <rect x="22" y="16" width="96" height="146" rx="5" fill="url(#photoFrameGold)" stroke="#854d0e" stroke-width="1.8" filter="url(#shadowDispTableRealistic)"/>
+  <!-- Passe-partout Interno Nobre -->
+  <rect x="30" y="24" width="80" height="130" rx="3" fill="#ffffff" stroke="#ca8a04" stroke-width="1"/>
+  <!-- Vidro de Proteção com Reflexo Diagonal Suave -->
+  <rect x="34" y="28" width="72" height="122" rx="2" fill="url(#glassPhotoGrad)" stroke="#cbd5e1" stroke-width="0.8"/>
+  <line x1="38" y1="32" x2="102" y2="96" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>
+  <!-- Ícone Cenográfico Minimalista / Monograma Decorativo -->
+  <circle cx="70" cy="85" r="14" fill="none" stroke="#ca8a04" stroke-width="1.2"/>
+  <circle cx="70" cy="85" r="10" fill="none" stroke="#eab308" stroke-width="0.8"/>
+  <circle cx="70" cy="85" r="3" fill="#ca8a04"/>
+</svg>`;
 
 // Lista Principal de Presets de Fábrica
 export const DEFAULT_PRESET_ITEMS = [
@@ -2028,8 +2669,57 @@ export const DEFAULT_PRESET_ITEMS = [
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 25
-  }
-];
+  },
+  // --- NOVAS ADIÇÕES PREMIUM SUGERIDAS ---
+  {
+    id: 'preset-letreiro-neon-oh-baby',
+    name: 'Letreiro LED Neon Oh Baby em Acrílico',
+    category: 'displays',
+    type: 'display',
+    widthCm: 60,
+    heightCm: 30,
+    previewUrl: svgToDataUrl(SVG_DISPLAY_NEON_OH_BABY),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 35
+  },
+  {
+    id: 'preset-caixa-presente-luxo',
+    name: 'Caixa de Presente Cenográfica com Laço Luxo',
+    category: 'displays',
+    type: 'display',
+    widthCm: 50,
+    heightCm: 55,
+    previewUrl: svgToDataUrl(SVG_GIFT_BOX_LUXURY),
+    isCustom: false,
+    stockQuantity: 2,
+    rentalPrice: 25
+  },
+  {
+    id: 'preset-torre-doces-3-andares',
+    name: 'Torre de Doces 3 Andares em Porcelana',
+    category: 'acessorios',
+    type: 'generic',
+    widthCm: 35,
+    heightCm: 45,
+    previewUrl: svgToDataUrl(SVG_SWEET_TOWER_3TIER),
+    isCustom: false,
+    stockQuantity: 2,
+    rentalPrice: 20
+  },
+  {
+    id: 'preset-tapete-boho-sisal',
+    name: 'Tapete Redondo Boho Sisal Trançado 1,50m',
+    category: 'tapetes',
+    type: 'rug_round',
+    widthCm: 150,
+    heightCm: 150,
+    previewUrl: svgToDataUrl(SVG_RUG_BOHO_SISAL),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 35
+  },
+  ];
 
 // Presets de Capas e Estampas de Demonstração (Imagens Realistas de Festas Reais)
 export const DEFAULT_THEME_COVERS = [

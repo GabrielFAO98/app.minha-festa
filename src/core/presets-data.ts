@@ -3307,20 +3307,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
 
   // 3. BALÕES
-  {
-    id: 'preset-arco-baloes',
-    name: 'Arco Orgânico / Guirlanda Desconstruída',
-    category: 'baloes',
-    type: 'balloon_arch',
-    balloonColors: ['#c97a8e', '#f7dbe1', '#d4af37', '#fdfbf7'],
-    widthCm: 220,
-    heightCm: 220,
-    previewUrl: generateBalloonArchDataUrl(['#c97a8e', '#f7dbe1', '#d4af37', '#fdfbf7']),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 120
-  },
-  {
+    {
     id: 'preset-balao-latex-5',
     name: 'Balão de Látex 5" (13cm)',
     category: 'baloes',

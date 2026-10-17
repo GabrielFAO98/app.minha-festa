@@ -55,5 +55,5 @@ export const BALLOON_PALETTES: BalloonPalette[] = [
  * com canal alpha e sombreamento de estúdio profissional.
  */
 export function generateBalloonArchDataUrl(_colors?: string[]): string {
-  return '/assets/arco-baloes.png';
+  return '';
 }

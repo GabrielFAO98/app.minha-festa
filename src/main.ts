@@ -110,13 +110,11 @@ async function loadDefaultScene(canvasEngine) {
   try {
     const allPanels = await getItemsByCategory('paineis');
     const allCylinders = await getItemsByCategory('cilindros');
-    const allBalloons = await getItemsByCategory('baloes');
 
     const panel = allPanels.find((p) => p.id === 'preset-painel-redondo');
     const cylG = allCylinders.find((c) => c.id === 'preset-cilindro-g');
     const cylM = allCylinders.find((c) => c.id === 'preset-cilindro-m');
     const cylP = allCylinders.find((c) => c.id === 'preset-cilindro-p');
-    const balloons = allBalloons.find((b) => b.id === 'preset-arco-baloes');
 
     const centerX = 540; // Centro exato de 1080
     const floorY = 1380; // Linha do cho vertical 9:16
@@ -128,15 +126,6 @@ async function loadDefaultScene(canvasEngine) {
         y: floorY - 600
       }, false);
     }
-
-    // 2. Arco de Bales no Canto Superior Esquerdo
-    if (balloons) {
-      await canvasEngine.addItem(balloons, {
-        x: centerX - 440,
-        y: floorY - 760
-      }, false);
-    }
-
     // 3. Trio de Cilindros P, M, G  frente no piso
     if (cylG) {
       await canvasEngine.addItem(cylG, {

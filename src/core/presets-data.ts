@@ -3257,30 +3257,6 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     rentalPrice: 35
   },
   {
-    id: 'preset-mesa-organica-feijao',
-    name: 'Mesa Orgânica (Feijão / Rim) 1,50m',
-    category: 'mesas',
-    type: 'table_organic',
-    widthCm: 150,
-    heightCm: 80,
-    previewUrl: svgToDataUrl(SVG_TABLE_ORGANIC),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 55
-  },
-  {
-    id: 'preset-mesa-organica-gota',
-    name: 'Mesa Orgânica de Apoio (Gota) 80cm',
-    category: 'mesas',
-    type: 'table_drop',
-    widthCm: 80,
-    heightCm: 60,
-    previewUrl: svgToDataUrl(SVG_TABLE_ORGANIC_DROP),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 35
-  },
-  {
     id: 'preset-mesa-cavalete',
     name: 'Mesa Tradicional / Cavalete 1,50m',
     category: 'mesas',
@@ -3317,93 +3293,8 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     rentalPrice: 50
   },
 
-  // 3. BALÕES
-    {
-    id: 'preset-balao-latex-5',
-    name: 'Balão de Látex 5" (13cm)',
-    category: 'baloes',
-    type: 'balloon_single',
-    widthCm: 13,
-    heightCm: 17,
-    previewUrl: svgToDataUrl(SVG_BALLOON_5INCH),
-    isCustom: false,
-    stockQuantity: 50,
-    rentalPrice: 2
-  },
-  {
-    id: 'preset-balao-latex-9',
-    name: 'Balão de Látex 9" (23cm)',
-    category: 'baloes',
-    type: 'balloon_single',
-    widthCm: 23,
-    heightCm: 29,
-    previewUrl: svgToDataUrl(SVG_BALLOON_9INCH),
-    isCustom: false,
-    stockQuantity: 50,
-    rentalPrice: 3
-  },
-  {
-    id: 'preset-balao-latex-11',
-    name: 'Balão de Látex 11" (28cm)',
-    category: 'baloes',
-    type: 'balloon_single',
-    widthCm: 28,
-    heightCm: 35,
-    previewUrl: svgToDataUrl(SVG_BALLOON_11INCH),
-    isCustom: false,
-    stockQuantity: 50,
-    rentalPrice: 4
-  },
-  {
-    id: 'preset-balao-latex-16',
-    name: 'Balão de Látex 16" (40cm)',
-    category: 'baloes',
-    type: 'balloon_single',
-    widthCm: 40,
-    heightCm: 48,
-    previewUrl: svgToDataUrl(SVG_BALLOON_16INCH),
-    isCustom: false,
-    stockQuantity: 20,
-    rentalPrice: 8
-  },
-  {
-    id: 'preset-balao-bubble-18',
-    name: 'Balão Bubble (Silicone) 45cm / 18"',
-    category: 'baloes',
-    type: 'balloon_bubble',
-    widthCm: 45,
-    heightCm: 50,
-    previewUrl: svgToDataUrl(SVG_BALLOON_BUBBLE),
-    isCustom: false,
-    stockQuantity: 10,
-    rentalPrice: 25
-  },
-  {
-    id: 'preset-balao-metalizado-numero',
-    name: 'Balão Metalizado Número 75cm / 32"',
-    category: 'baloes',
-    type: 'balloon_number',
-    widthCm: 50,
-    heightCm: 75,
-    previewUrl: svgToDataUrl(SVG_BALLOON_NUMBER),
-    isCustom: false,
-    stockQuantity: 5,
-    rentalPrice: 30
-  },
 
   // 4. PISO (TAPETES)
-  {
-    id: 'preset-tapete-redondo',
-    name: 'Tapete Redondo Sublimado 2,00m',
-    category: 'tapetes',
-    type: 'rug_round',
-    widthCm: 200,
-    heightCm: 200,
-    previewUrl: svgToDataUrl(SVG_RUG_ROUND_200),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 50
-  },
   {
     id: 'preset-tapete-retangular-3d',
     name: 'Tapete Retangular / Lona 2,50x2,00m',
@@ -3582,30 +3473,6 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     rentalPrice: 35
   },
   {
-    id: 'preset-letreiro-neon-parabens',
-    name: 'Letreiro LED Neon Parabéns em Acrílico',
-    category: 'displays',
-    type: 'display',
-    widthCm: 70,
-    heightCm: 35,
-    previewUrl: svgToDataUrl(SVG_DISPLAY_NEON_PARABENS),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 40
-  },
-  {
-    id: 'preset-cavalete-boas-vindas',
-    name: 'Cavalete Boas-Vindas com Flores',
-    category: 'displays',
-    type: 'display',
-    widthCm: 50,
-    heightCm: 115,
-    previewUrl: svgToDataUrl(SVG_DISPLAY_EASEL_WELCOME),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 45
-  },
-  {
     id: 'preset-luminoso-led',
     name: 'Luminoso LED Neon Número 1 Dourado',
     category: 'displays',
@@ -3631,18 +3498,6 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   // --- NOVAS ADIÇÕES PREMIUM SUGERIDAS ---
   {
-    id: 'preset-letreiro-neon-oh-baby',
-    name: 'Letreiro LED Neon Oh Baby em Acrílico',
-    category: 'displays',
-    type: 'display',
-    widthCm: 60,
-    heightCm: 30,
-    previewUrl: svgToDataUrl(SVG_DISPLAY_NEON_OH_BABY),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 35
-  },
-  {
     id: 'preset-caixa-presente-luxo',
     name: 'Caixa de Presente Cenográfica com Laço Luxo',
     category: 'displays',
@@ -3665,18 +3520,6 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     isCustom: false,
     stockQuantity: 2,
     rentalPrice: 20
-  },
-  {
-    id: 'preset-tapete-boho-sisal',
-    name: 'Tapete Redondo Boho Sisal Trançado 1,50m',
-    category: 'tapetes',
-    type: 'rug_round',
-    widthCm: 150,
-    heightCm: 150,
-    previewUrl: svgToDataUrl(SVG_RUG_BOHO_SISAL),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 35
   },
   ];
 

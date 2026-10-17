@@ -1,8 +1,11 @@
 import Konva from 'konva';
 
+// Cache em memória de imagens e SVGs pré-rasterizados em GPU Bitmap
+const imageBitmapCache = new Map<string, HTMLImageElement | HTMLCanvasElement>();
+
 /**
- * Cria a função de recorte (clipFunc) no contexto 2D do Canvas Konva
- * para vestir capas e cores sólidas sobre toda a estrutura, sem contornos.
+ * Gera a função de recorte (clipFunc) do Konva baseada no formato geométrico da peça.
+ * As coordenadas são proporcionais à largura (width) e altura (height) do nó no palco.
  */
 export function createClipFunction(type: string, width: number, height: number) {
   if (type === 'panel_round') {
@@ -10,7 +13,7 @@ export function createClipFunction(type: string, width: number, height: number) 
     const cy = height * (150 / 380);
     const radius = width * (142 / 300);
 
-    return function (ctx: any) {
+    return (ctx: any) => {
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2, false);
       ctx.closePath();
@@ -20,41 +23,46 @@ export function createClipFunction(type: string, width: number, height: number) 
   if (type === 'panel_arch') {
     const scaleX = width / 200;
     const scaleY = height / 380;
-    const cx = 100 * scaleX;
-    const cy = 100 * scaleY;
-    const rx = 82 * scaleX;
-    const ry = 82 * scaleY;
-    const xLeft = cx - rx;
-    const xRight = cx + rx;
-    const yBottom = 368 * scaleY;
 
-    return function (ctx: any) {
+    return (ctx: any) => {
       ctx.beginPath();
-      ctx.moveTo(xLeft, yBottom);
-      ctx.lineTo(xLeft, cy);
-      ctx.ellipse(cx, cy, rx, ry, 0, Math.PI, 0, false);
-      ctx.lineTo(xRight, yBottom);
+      ctx.moveTo(18 * scaleX, 345 * scaleY);
+      ctx.lineTo(18 * scaleX, 100 * scaleY);
+      ctx.ellipse(100 * scaleX, 100 * scaleY, 82 * scaleX, 82 * scaleY, 0, Math.PI, 0, false);
+      ctx.lineTo(182 * scaleX, 345 * scaleY);
       ctx.closePath();
     };
   }
 
-  if (type === 'cylinder') {
+  if (type === 'panel_half_moon') {
+    const scaleX = width / 240;
+    const scaleY = height / 380;
+
+    return (ctx: any) => {
+      ctx.beginPath();
+      ctx.moveTo(148 * scaleX, 18 * scaleY);
+      ctx.bezierCurveTo(22 * scaleX, 38 * scaleY, 22 * scaleX, 322 * scaleY, 148 * scaleX, 342 * scaleY);
+      ctx.bezierCurveTo(208 * scaleX, 330 * scaleY, 222 * scaleX, 250 * scaleY, 222 * scaleX, 180 * scaleY);
+      ctx.bezierCurveTo(222 * scaleX, 110 * scaleY, 208 * scaleX, 30 * scaleY, 148 * scaleX, 18 * scaleY);
+      ctx.closePath();
+    };
+  }
+
+  if (type === 'cylinder' || type === 'cylinder_fluted') {
     const scaleX = width / 160;
     const scaleY = height / 220;
-    const cx = width * 0.5;
+    const cx = 80 * scaleX;
     const rx = 65.5 * scaleX;
     const ry = 12.5 * scaleY;
-    const xLeft = cx - rx;
-    const xRight = cx + rx;
     const yTop = 35 * scaleY;
     const yBottom = 195 * scaleY;
 
-    return function (ctx: any) {
+    return (ctx: any) => {
       ctx.beginPath();
+      ctx.moveTo(cx - rx, yTop);
       ctx.ellipse(cx, yTop, rx, ry, 0, Math.PI, 0, false);
-      ctx.lineTo(xRight, yBottom);
+      ctx.lineTo(cx + rx, yBottom);
       ctx.ellipse(cx, yBottom, rx, ry, 0, 0, Math.PI, false);
-      ctx.lineTo(xLeft, yTop);
       ctx.closePath();
     };
   }
@@ -65,7 +73,7 @@ export function createClipFunction(type: string, width: number, height: number) 
     const rx = width * (133 / 280);
     const ry = height * (53 / 120);
 
-    return function (ctx: any) {
+    return (ctx: any) => {
       ctx.beginPath();
       ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2, false);
       ctx.closePath();
@@ -77,7 +85,7 @@ export function createClipFunction(type: string, width: number, height: number) 
     const cy = height * 0.5;
     const radius = Math.min(width, height) * (127 / 260);
 
-    return function (ctx: any) {
+    return (ctx: any) => {
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2, false);
       ctx.closePath();
@@ -87,51 +95,13 @@ export function createClipFunction(type: string, width: number, height: number) 
   if (type === 'rug_rect_3d') {
     const scaleX = width / 280;
     const scaleY = height / 140;
-    const xBottomLeft = 9 * scaleX;
-    const xTopLeft = 34 * scaleX;
-    const xTopRight = 246 * scaleX;
-    const xBottomRight = 271 * scaleX;
-    const yTop = 14 * scaleY;
-    const yBottom = 126 * scaleY;
 
-    return function (ctx: any) {
+    return (ctx: any) => {
       ctx.beginPath();
-      ctx.moveTo(xBottomLeft, yBottom);
-      ctx.lineTo(xTopLeft, yTop);
-      ctx.lineTo(xTopRight, yTop);
-      ctx.lineTo(xBottomRight, yBottom);
-      ctx.closePath();
-    };
-  }
-
-  if (type === 'panel_rect') {
-    const scaleX = width / 300;
-    const scaleY = height / 260;
-    const x = 15 * scaleX;
-    const y = 15 * scaleY;
-    const w = 270 * scaleX;
-    const h = 215 * scaleY;
-
-    return function (ctx: any) {
-      ctx.beginPath();
-      ctx.rect(x, y, w, h);
-      ctx.closePath();
-    };
-  }
-
-  if (type === 'panel_half_moon') {
-    const scaleX = width / 220;
-    const scaleY = height / 380;
-    const xLeft = 20 * scaleX;
-    const xRight = 200 * scaleX;
-    const yBottom = 352 * scaleY;
-
-    return function (ctx: any) {
-      ctx.beginPath();
-      ctx.moveTo(xLeft, yBottom);
-      ctx.lineTo(xLeft, 150 * scaleY);
-      ctx.bezierCurveTo(xLeft, 35 * scaleY, 110 * scaleX, 20 * scaleY, xRight, 25 * scaleY);
-      ctx.lineTo(xRight, yBottom);
+      ctx.moveTo(34 * scaleX, 14 * scaleY);
+      ctx.lineTo(246 * scaleX, 14 * scaleY);
+      ctx.lineTo(271 * scaleX, 126 * scaleY);
+      ctx.lineTo(9 * scaleX, 126 * scaleY);
       ctx.closePath();
     };
   }
@@ -139,7 +109,8 @@ export function createClipFunction(type: string, width: number, height: number) 
   if (type === 'cube') {
     const scaleX = width / 160;
     const scaleY = height / 235;
-    return function (ctx: any) {
+
+    return (ctx: any) => {
       ctx.beginPath();
       ctx.moveTo(80 * scaleX, 18 * scaleY);
       ctx.lineTo(145 * scaleX, 38 * scaleY);
@@ -151,7 +122,18 @@ export function createClipFunction(type: string, width: number, height: number) 
     };
   }
 
-  return function (ctx: any) {
+  if (type === 'panel_rect') {
+    const scaleX = width / 300;
+    const scaleY = height / 260;
+
+    return (ctx: any) => {
+      ctx.beginPath();
+      ctx.rect(15 * scaleX, 15 * scaleY, 270 * scaleX, 215 * scaleY);
+      ctx.closePath();
+    };
+  }
+
+  return (ctx: any) => {
     ctx.beginPath();
     ctx.rect(0, 0, width, height);
     ctx.closePath();
@@ -159,404 +141,271 @@ export function createClipFunction(type: string, width: number, height: number) 
 }
 
 /**
- * Calcula o posicionamento, escala (zoom) e deslocamento (pan/arrasto estilo Facebook) da capa
- * dentro da máscara da estrutura SVG.
+ * Calcula o posicionamento e escala (object-fit: cover + zoom/pan estilo Facebook)
+ * para que a imagem da capa preencha exatamente a área útil da peça
  */
 export function calculateCoverPlacement(
   type: string,
-  width: number,
-  height: number,
-  imgW: number,
-  imgH: number,
-  coverScale: number = 1,
-  coverOffsetX: number = 0,
-  coverOffsetY: number = 0
+  nodeWidth: number,
+  nodeHeight: number,
+  imgWidth: number,
+  imgHeight: number,
+  customScale: number = 1,
+  offsetX: number = 0,
+  offsetY: number = 0
 ) {
-  let targetBox = { x: 0, y: 0, w: width, h: height, cx: width / 2, cy: height / 2 };
+  let targetX = 0;
+  let targetY = 0;
+  let targetW = nodeWidth;
+  let targetH = nodeHeight;
 
   if (type === 'panel_round') {
-    const cx = width * 0.5;
-    const cy = height * (150 / 380);
-    const r = width * (142 / 300);
-    targetBox = {
-      x: cx - r,
-      y: cy - r,
-      w: r * 2,
-      h: r * 2,
-      cx: cx,
-      cy: cy
-    };
+    const diameter = nodeWidth * (284 / 300);
+    targetW = diameter;
+    targetH = diameter;
+    targetX = (nodeWidth - diameter) / 2;
+    targetY = nodeHeight * (150 / 380) - diameter / 2;
   } else if (type === 'panel_arch') {
-    const scaleX = width / 200;
-    const scaleY = height / 380;
-    const cx = 100 * scaleX;
-    const rx = 82 * scaleX;
-    const ry = 82 * scaleY;
-    const xLeft = cx - rx;
-    const archW = rx * 2;
-    const yTop = 100 * scaleY - ry;
-    const yBottom = 368 * scaleY;
-    const archH = yBottom - yTop;
-
-    targetBox = {
-      x: xLeft,
-      y: yTop,
-      w: archW,
-      h: archH,
-      cx: cx,
-      cy: yTop + archH / 2
-    };
-  } else if (type === 'cylinder') {
-    const scaleX = width / 160;
-    const scaleY = height / 220;
-    const cx = width * 0.5;
-    const rx = 65.5 * scaleX;
-    const ry = 12.5 * scaleY;
-    const xLeft = cx - rx;
-    const cylW = rx * 2;
-    const yTop = (35 * scaleY) - ry;
-    const yBottom = (195 * scaleY) + ry;
-    const cylH = yBottom - yTop;
-    targetBox = {
-      x: xLeft,
-      y: yTop,
-      w: cylW,
-      h: cylH,
-      cx: cx,
-      cy: yTop + cylH / 2
-    };
-  } else if (type === 'rug_oval') {
-    const cx = width * 0.5;
-    const cy = height * 0.5;
-    const rx = width * (133 / 280);
-    const ry = height * (53 / 120);
-    targetBox = {
-      x: cx - rx,
-      y: cy - ry,
-      w: rx * 2,
-      h: ry * 2,
-      cx: cx,
-      cy: cy
-    };
-  } else if (type === 'rug_round') {
-    const cx = width * 0.5;
-    const cy = height * 0.5;
-    const radius = Math.min(width, height) * (127 / 260);
-    targetBox = {
-      x: cx - radius,
-      y: cy - radius,
-      w: radius * 2,
-      h: radius * 2,
-      cx: cx,
-      cy: cy
-    };
-  } else if (type === 'rug_rect_3d') {
-    const scaleX = width / 280;
-    const scaleY = height / 140;
-    const xLeft = 9 * scaleX;
-    const xRight = 271 * scaleX;
-    const yTop = 14 * scaleY;
-    const yBottom = 126 * scaleY;
-    const rectW = xRight - xLeft;
-    const rectH = yBottom - yTop;
-
-    targetBox = {
-      x: xLeft,
-      y: yTop,
-      w: rectW,
-      h: rectH,
-      cx: xLeft + rectW / 2,
-      cy: yTop + rectH / 2
-    };
-  } else if (type === 'panel_rect') {
-    const scaleX = width / 300;
-    const scaleY = height / 260;
-    targetBox = {
-      x: 15 * scaleX,
-      y: 15 * scaleY,
-      w: 270 * scaleX,
-      h: 215 * scaleY,
-      cx: 150 * scaleX,
-      cy: 122.5 * scaleY
-    };
+    targetX = nodeWidth * (18 / 200);
+    targetY = nodeHeight * (18 / 380);
+    targetW = nodeWidth * (164 / 200);
+    targetH = nodeHeight * (327 / 380);
   } else if (type === 'panel_half_moon') {
-    const scaleX = width / 220;
-    const scaleY = height / 380;
-    targetBox = {
-      x: 20 * scaleX,
-      y: 20 * scaleY,
-      w: 180 * scaleX,
-      h: 332 * scaleY,
-      cx: 110 * scaleX,
-      cy: 186 * scaleY
-    };
+    targetX = nodeWidth * (22 / 240);
+    targetY = nodeHeight * (18 / 380);
+    targetW = nodeWidth * (200 / 240);
+    targetH = nodeHeight * (324 / 380);
+  } else if (type === 'cylinder' || type === 'cylinder_fluted') {
+    targetX = nodeWidth * (14.5 / 160);
+    targetY = nodeHeight * (22.5 / 220);
+    targetW = nodeWidth * (131 / 160);
+    targetH = nodeHeight * (185 / 220);
   } else if (type === 'cube') {
-    const scaleX = width / 160;
-    const scaleY = height / 235;
-    targetBox = {
-      x: 15 * scaleX,
-      y: 18 * scaleY,
-      w: 130 * scaleX,
-      h: 207 * scaleY,
-      cx: 80 * scaleX,
-      cy: 121.5 * scaleY
-    };
+    targetX = nodeWidth * (15 / 160);
+    targetY = nodeHeight * (18 / 235);
+    targetW = nodeWidth * (130 / 160);
+    targetH = nodeHeight * (207 / 235);
+  } else if (type === 'panel_rect') {
+    targetX = nodeWidth * (15 / 300);
+    targetY = nodeHeight * (15 / 260);
+    targetW = nodeWidth * (270 / 300);
+    targetH = nodeHeight * (215 / 260);
   }
 
-  const safeImgW = Math.max(1, imgW || targetBox.w);
-  const safeImgH = Math.max(1, imgH || targetBox.h);
-
-  const baseScale = Math.max(targetBox.w / safeImgW, targetBox.h / safeImgH);
-  const effectiveScale = baseScale * Math.max(0.35, Math.min(4.0, coverScale || 1));
-
-  const finalW = safeImgW * effectiveScale;
-  const finalH = safeImgH * effectiveScale;
+  const baseScale = Math.max(targetW / (imgWidth || 1), targetH / (imgHeight || 1));
+  const finalScale = baseScale * Math.max(0.35, Math.min(3.5, customScale || 1));
+  const scaledW = imgWidth * finalScale;
+  const scaledH = imgHeight * finalScale;
 
   return {
-    x: (targetBox.cx - finalW / 2) + (coverOffsetX || 0),
-    y: (targetBox.cy - finalH / 2) + (coverOffsetY || 0),
-    width: finalW,
-    height: finalH,
-    targetBox
+    x: targetX + (targetW - scaledW) / 2 + (offsetX || 0),
+    y: targetY + (targetH - scaledH) / 2 + (offsetY || 0),
+    width: scaledW,
+    height: scaledH
   };
 }
 
 /**
- * Cria a camada de sombreamento 3D realista sobre capas e pinturas sólidas,
- * estritamente SEM BORDAS / SEM CONTORNOS para que a capa cubra toda a estrutura.
+ * Cria uma camada pré-renderizada de sombreamento volumétrico (sem bordas/contornos)
+ * em um Canvas Offscreen para zero custo de CPU/GPU durante o arraste (60fps).
  */
 export function createShadingOverlay(type: string, width: number, height: number) {
-  if (type === 'cylinder') {
-    const scaleX = width / 160;
-    const scaleY = height / 220;
-    const cx = width * 0.5;
+  const w = Math.max(1, Math.round(width));
+  const h = Math.max(1, Math.round(height));
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = w;
+  offCanvas.height = h;
+  const ctx = offCanvas.getContext('2d');
+
+  if (!ctx) {
+    return new Konva.Shape({ name: 'shading-overlay', listening: false });
+  }
+
+  if (type === 'cylinder' || type === 'cylinder_fluted') {
+    const scaleX = w / 160;
+    const scaleY = h / 220;
+    const cx = 80 * scaleX;
     const rx = 65.5 * scaleX;
     const ry = 12.5 * scaleY;
     const yTop = 35 * scaleY;
     const yBottom = 195 * scaleY;
-
-    return new Konva.Shape({
-      name: 'shading-overlay',
-      listening: false,
-      sceneFunc: (context) => {
-        const ctx = context._context;
-
-        // 1. Curvatura cilíndrica horizontal suave sem contorno
-        const cylGrad = ctx.createLinearGradient(cx - rx, 0, cx + rx, 0);
-        cylGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.22)');
-        cylGrad.addColorStop(0.16, 'rgba(0, 0, 0, 0.04)');
-        cylGrad.addColorStop(0.30, 'rgba(255, 255, 255, 0.16)');
-        cylGrad.addColorStop(0.55, 'rgba(255, 255, 255, 0.02)');
-        cylGrad.addColorStop(0.85, 'rgba(0, 0, 0, 0.12)');
-        cylGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.26)');
-
-        ctx.fillStyle = cylGrad;
-        ctx.fillRect(cx - rx, yTop - ry, rx * 2, yBottom - yTop + (ry * 2));
-
-        // 2. Face do tampo superior iluminada (sem stroke/borda)
-        ctx.beginPath();
-        ctx.ellipse(cx, yTop, rx, ry, 0, 0, Math.PI * 2, false);
-        const topGrad = ctx.createLinearGradient(0, yTop - ry, 0, yTop + ry);
-        topGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.15)');
-        topGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.03)');
-        ctx.fillStyle = topGrad;
-        ctx.fill();
-
-        // 3. Sombra suave de contato na base inferior
-        const baseGrad = ctx.createLinearGradient(0, yBottom - 6 * scaleY, 0, yBottom + ry);
-        baseGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-        baseGrad.addColorStop(1, 'rgba(0, 0, 0, 0.18)');
-        ctx.fillStyle = baseGrad;
-        ctx.fillRect(cx - rx, yBottom - 6 * scaleY, rx * 2, ry + 8 * scaleY);
-      }
-    });
-  }
-
-  if (type === 'panel_round') {
-    const cx = width * 0.5;
-    const cy = height * (150 / 380);
-    const radius = width * (142 / 300);
-
-    return new Konva.Shape({
-      name: 'shading-overlay',
-      listening: false,
-      sceneFunc: (context) => {
-        const ctx = context._context;
-
-        // Iluminação suave de estúdio sem nenhuma borda ou contorno
-        const vertGrad = ctx.createLinearGradient(0, cy - radius, 0, cy + radius);
-        vertGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.08)');
-        vertGrad.addColorStop(0.50, 'rgba(255, 255, 255, 0.0)');
-        vertGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.10)');
-
-        ctx.fillStyle = vertGrad;
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius, 0, Math.PI * 2, false);
-        ctx.fill();
-      }
-    });
-  }
-
-  if (type === 'panel_arch') {
-    const scaleX = width / 200;
-    const scaleY = height / 380;
-    const cx = 100 * scaleX;
-    const cy = 100 * scaleY;
-    const rx = 82 * scaleX;
-    const ry = 82 * scaleY;
     const xLeft = cx - rx;
-    const yTop = cy - ry;
-    const yBottom = 368 * scaleY;
+    const xRight = cx + rx;
 
-    return new Konva.Shape({
-      name: 'shading-overlay',
-      listening: false,
-      sceneFunc: (context) => {
-        const ctx = context._context;
+    const bodyGrad = ctx.createLinearGradient(xLeft, 0, xRight, 0);
+    bodyGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.24)');
+    bodyGrad.addColorStop(0.14, 'rgba(0, 0, 0, 0.06)');
+    bodyGrad.addColorStop(0.34, 'rgba(255, 255, 255, 0.14)');
+    bodyGrad.addColorStop(0.55, 'rgba(255, 255, 255, 0.0)');
+    bodyGrad.addColorStop(0.84, 'rgba(0, 0, 0, 0.14)');
+    bodyGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.32)');
 
-        const vertGrad = ctx.createLinearGradient(0, yTop, 0, yBottom);
-        vertGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.08)');
-        vertGrad.addColorStop(0.45, 'rgba(255, 255, 255, 0.0)');
-        vertGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.10)');
+    ctx.fillStyle = bodyGrad;
+    ctx.fillRect(xLeft, yTop - ry, rx * 2, (yBottom - yTop) + ry * 2);
 
-        ctx.fillStyle = vertGrad;
-        ctx.fillRect(xLeft, yTop, rx * 2, yBottom - yTop);
-      }
-    });
-  }
+    const topGrad = ctx.createLinearGradient(cx, yTop - ry, cx, yTop + ry);
+    topGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.25)');
+    topGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.08)');
+    topGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.12)');
 
-  if (type === 'rug_oval') {
-    const cx = width * 0.5;
-    const cy = height * 0.5;
-    const rx = width * (133 / 280);
-    const ry = height * (53 / 120);
+    ctx.fillStyle = topGrad;
+    ctx.beginPath();
+    ctx.ellipse(cx, yTop, rx, ry, 0, 0, Math.PI * 2, false);
+    ctx.fill();
+  } else if (type === 'panel_round') {
+    const cx = w * 0.5;
+    const cy = h * (150 / 380);
+    const radius = w * (142 / 300);
 
-    return new Konva.Shape({
-      name: 'shading-overlay',
-      listening: false,
-      sceneFunc: (context) => {
-        const ctx = context._context;
-        const floorGrad = ctx.createLinearGradient(0, cy - ry, 0, cy + ry);
-        floorGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.14)');
-        floorGrad.addColorStop(0.50, 'rgba(0, 0, 0, 0.0)');
-        floorGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.08)');
+    const radGrad = ctx.createRadialGradient(
+      cx - radius * 0.2,
+      cy - radius * 0.2,
+      radius * 0.15,
+      cx,
+      cy,
+      radius
+    );
+    radGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.08)');
+    radGrad.addColorStop(0.75, 'rgba(0, 0, 0, 0.0)');
+    radGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.12)');
 
-        ctx.fillStyle = floorGrad;
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2, false);
-        ctx.fill();
-      }
-    });
-  }
+    ctx.fillStyle = radGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2, false);
+    ctx.fill();
+  } else if (type === 'panel_arch') {
+    const scaleX = w / 200;
+    const scaleY = h / 380;
+    const cx = 100 * scaleX;
+    const rx = 82 * scaleX;
+    const xLeft = cx - rx;
+    const yTop = 18 * scaleY;
+    const yBottom = 345 * scaleY;
 
-  if (type === 'cube') {
-    const scaleX = width / 160;
-    const scaleY = height / 235;
-    return new Konva.Shape({
-      name: 'shading-overlay',
-      listening: false,
-      sceneFunc: (context) => {
-        const ctx = context._context;
-        // 1. Faceta do topo (iluminação superior)
-        ctx.beginPath();
-        ctx.moveTo(80 * scaleX, 18 * scaleY);
-        ctx.lineTo(145 * scaleX, 38 * scaleY);
-        ctx.lineTo(80 * scaleX, 58 * scaleY);
-        ctx.lineTo(15 * scaleX, 38 * scaleY);
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
-        ctx.fill();
+    const vertGrad = ctx.createLinearGradient(0, yTop, 0, yBottom);
+    vertGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.08)');
+    vertGrad.addColorStop(0.45, 'rgba(255, 255, 255, 0.0)');
+    vertGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.10)');
 
-        // 2. Face esquerda em sombra suave
-        ctx.beginPath();
-        ctx.moveTo(15 * scaleX, 38 * scaleY);
-        ctx.lineTo(80 * scaleX, 58 * scaleY);
-        ctx.lineTo(80 * scaleX, 225 * scaleY);
-        ctx.lineTo(15 * scaleX, 205 * scaleY);
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
-        ctx.fill();
+    ctx.fillStyle = vertGrad;
+    ctx.fillRect(xLeft, yTop, rx * 2, yBottom - yTop);
+  } else if (type === 'rug_oval') {
+    const cx = w * 0.5;
+    const cy = h * 0.5;
+    const rx = w * (133 / 280);
+    const ry = h * (53 / 120);
 
-        // 3. Face direita em luz direta
-        ctx.beginPath();
-        ctx.moveTo(80 * scaleX, 58 * scaleY);
-        ctx.lineTo(145 * scaleX, 38 * scaleY);
-        ctx.lineTo(145 * scaleX, 205 * scaleY);
-        ctx.lineTo(80 * scaleX, 225 * scaleY);
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
-        ctx.fill();
-      }
-    });
-  }
+    const floorGrad = ctx.createLinearGradient(0, cy - ry, 0, cy + ry);
+    floorGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.14)');
+    floorGrad.addColorStop(0.50, 'rgba(0, 0, 0, 0.0)');
+    floorGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.08)');
 
-  if (type === 'panel_rect') {
-    const scaleX = width / 300;
-    const scaleY = height / 260;
+    ctx.fillStyle = floorGrad;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2, false);
+    ctx.fill();
+  } else if (type === 'cube') {
+    const scaleX = w / 160;
+    const scaleY = h / 235;
+
+    ctx.beginPath();
+    ctx.moveTo(80 * scaleX, 18 * scaleY);
+    ctx.lineTo(145 * scaleX, 38 * scaleY);
+    ctx.lineTo(80 * scaleX, 58 * scaleY);
+    ctx.lineTo(15 * scaleX, 38 * scaleY);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(15 * scaleX, 38 * scaleY);
+    ctx.lineTo(80 * scaleX, 58 * scaleY);
+    ctx.lineTo(80 * scaleX, 225 * scaleY);
+    ctx.lineTo(15 * scaleX, 205 * scaleY);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(80 * scaleX, 58 * scaleY);
+    ctx.lineTo(145 * scaleX, 38 * scaleY);
+    ctx.lineTo(145 * scaleX, 205 * scaleY);
+    ctx.lineTo(80 * scaleX, 225 * scaleY);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+    ctx.fill();
+  } else if (type === 'panel_rect') {
+    const scaleX = w / 300;
+    const scaleY = h / 260;
     const x = 15 * scaleX;
     const y = 15 * scaleY;
-    const w = 270 * scaleX;
-    const h = 215 * scaleY;
-    return new Konva.Shape({
-      name: 'shading-overlay',
-      listening: false,
-      sceneFunc: (context) => {
-        const ctx = context._context;
-        const vertGrad = ctx.createLinearGradient(0, y, 0, y + h);
-        vertGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.08)');
-        vertGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.0)');
-        vertGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.10)');
-        ctx.fillStyle = vertGrad;
-        ctx.fillRect(x, y, w, h);
-      }
-    });
+    const rectW = 270 * scaleX;
+    const rectH = 215 * scaleY;
+
+    const vertGrad = ctx.createLinearGradient(0, y, 0, y + rectH);
+    vertGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.08)');
+    vertGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.0)');
+    vertGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.10)');
+    ctx.fillStyle = vertGrad;
+    ctx.fillRect(x, y, rectW, rectH);
+  } else {
+    const vignette = ctx.createLinearGradient(0, 0, 0, h);
+    vignette.addColorStop(0.0, 'rgba(255, 255, 255, 0.05)');
+    vignette.addColorStop(0.5, 'rgba(0, 0, 0, 0.0)');
+    vignette.addColorStop(1.0, 'rgba(0, 0, 0, 0.10)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, w, h);
   }
 
-  return new Konva.Shape({
+  return new Konva.Image({
     name: 'shading-overlay',
-    listening: false,
-    sceneFunc: (context) => {
-      const ctx = context._context;
-      const vignette = ctx.createLinearGradient(0, 0, 0, height);
-      vignette.addColorStop(0.0, 'rgba(255, 255, 255, 0.05)');
-      vignette.addColorStop(0.5, 'rgba(0, 0, 0, 0.0)');
-      vignette.addColorStop(1.0, 'rgba(0, 0, 0, 0.10)');
-      ctx.fillStyle = vignette;
-      ctx.fillRect(0, 0, width, height);
-    }
+    image: offCanvas,
+    width: width,
+    height: height,
+    listening: false
   });
 }
 
 /**
- * Cria a sombra projetada de chão/tapete para cilindros
+ * Cria a sombra projetada de chão/tapete para cilindros pré-renderizada em Canvas Offscreen
  */
 export function createCylinderFloorShadow(width: number, height: number) {
-  const scaleX = width / 160;
-  const scaleY = height / 220;
-  const cx = width * 0.5;
-  const rxShadow = (65.5 * scaleX) * 1.12;
-  const ryShadow = (12.5 * scaleY) * 1.45;
-  const cyShadow = (195 * scaleY) + (12.5 * scaleY * 0.35);
+  const w = Math.max(1, Math.round(width));
+  const h = Math.max(1, Math.round(height));
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = w;
+  offCanvas.height = h;
+  const ctx = offCanvas.getContext('2d');
 
-  return new Konva.Shape({
+  if (ctx) {
+    const scaleX = w / 160;
+    const scaleY = h / 220;
+    const cx = w * 0.5;
+    const rxShadow = (65.5 * scaleX) * 1.12;
+    const ryShadow = (12.5 * scaleY) * 1.45;
+    const cyShadow = (195 * scaleY) + (12.5 * scaleY * 0.35);
+
+    ctx.save();
+    ctx.translate(cx, cyShadow);
+    ctx.scale(1.0, ryShadow / rxShadow);
+    const radGrad = ctx.createRadialGradient(0, 0, rxShadow * 0.2, 0, 0, rxShadow);
+    radGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.40)');
+    radGrad.addColorStop(0.40, 'rgba(0, 0, 0, 0.22)');
+    radGrad.addColorStop(0.75, 'rgba(0, 0, 0, 0.07)');
+    radGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = radGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, rxShadow, 0, Math.PI * 2, false);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  return new Konva.Image({
     name: 'cylinder-floor-shadow',
-    listening: false,
-    sceneFunc: (context) => {
-      const ctx = context._context;
-      ctx.save();
-      ctx.translate(cx, cyShadow);
-      ctx.scale(1.0, ryShadow / rxShadow);
-      const radGrad = ctx.createRadialGradient(0, 0, rxShadow * 0.2, 0, 0, rxShadow);
-      radGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.40)');
-      radGrad.addColorStop(0.40, 'rgba(0, 0, 0, 0.22)');
-      radGrad.addColorStop(0.75, 'rgba(0, 0, 0, 0.07)');
-      radGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = radGrad;
-      ctx.beginPath();
-      ctx.arc(0, 0, rxShadow, 0, Math.PI * 2, false);
-      ctx.fill();
-      ctx.restore();
-    }
+    image: offCanvas,
+    width: width,
+    height: height,
+    listening: false
   });
 }
 
@@ -661,13 +510,79 @@ export function isPointInsideMask(type: string, x: number, y: number, width: num
 }
 
 /**
- * Carrega uma imagem a partir de uma URL ou DataURI assincronamente
+ * Constrói uma grade 64x64 de opacidade (Alpha Hit-Test) em memória para evitar
+ * chamadas síncronas de getImageData na GPU durante o toque no mobile.
+ */
+function attachAlphaHitGrid(source: HTMLImageElement | HTMLCanvasElement) {
+  try {
+    const gridSize = 64;
+    const hitCanvas = document.createElement('canvas');
+    hitCanvas.width = gridSize;
+    hitCanvas.height = gridSize;
+    const ctx = hitCanvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+
+    ctx.drawImage(source, 0, 0, gridSize, gridSize);
+    const data = ctx.getImageData(0, 0, gridSize, gridSize).data;
+    const alphaGrid = new Uint8Array(gridSize * gridSize);
+    for (let i = 0; i < gridSize * gridSize; i++) {
+      alphaGrid[i] = data[i * 4 + 3];
+    }
+    (source as any).__alphaGrid = alphaGrid;
+    (source as any).__alphaGridSize = gridSize;
+  } catch {
+    // Fallback silencioso se CORS bloquear
+  }
+}
+
+/**
+ * Carrega uma imagem ou SVG a partir de uma URL/DataURI e pré-rasteriza SVGs em
+ * um Canvas Bitmap de alta performance (eliminando recálculo de filtros SVG a cada frame).
  */
 export function loadImageAsync(src: string): Promise<HTMLImageElement> {
+  const cached = imageBitmapCache.get(src);
+  if (cached) {
+    return Promise.resolve(cached as HTMLImageElement);
+  }
+
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'Anonymous';
-    img.onload = () => resolve(img);
+    img.onload = () => {
+      const isSvg = src.startsWith('data:image/svg+xml') || src.endsWith('.svg');
+
+      if (isSvg) {
+        try {
+          const natW = img.naturalWidth || img.width || 300;
+          const natH = img.naturalHeight || img.height || 300;
+          const maxDim = 768;
+          const scale = Math.min(2, maxDim / Math.max(natW, natH, 1));
+          const targetW = Math.max(1, Math.round(natW * scale));
+          const targetH = Math.max(1, Math.round(natH * scale));
+
+          const rasterCanvas = document.createElement('canvas');
+          rasterCanvas.width = targetW;
+          rasterCanvas.height = targetH;
+          const rCtx = rasterCanvas.getContext('2d');
+          if (rCtx) {
+            rCtx.drawImage(img, 0, 0, targetW, targetH);
+            (rasterCanvas as any).naturalWidth = natW;
+            (rasterCanvas as any).naturalHeight = natH;
+            (rasterCanvas as any).complete = true;
+            attachAlphaHitGrid(rasterCanvas);
+            imageBitmapCache.set(src, rasterCanvas);
+            resolve(rasterCanvas as unknown as HTMLImageElement);
+            return;
+          }
+        } catch {
+          // Fallback para o elemento img padrão
+        }
+      }
+
+      attachAlphaHitGrid(img);
+      imageBitmapCache.set(src, img);
+      resolve(img);
+    };
     img.onerror = (err) => reject(err);
     img.src = src;
   });

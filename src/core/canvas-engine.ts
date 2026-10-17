@@ -13,8 +13,13 @@ import { getItemCustomizationMode, generateModularSvgDataUrl } from './modular-s
 
 import type { PresetItem, SceneElement } from '../types';
 
-// OTIMIZAÇÃO CRÍTICA PARA MOBILE: Desativa detecção de colisão durante o arrasto contínuo
+// OTIMIZAÇÃO CRÍTICA PARA MOBILE:
+// 1. Desativa detecção de colisão durante arraste
+// 2. Limita pixelRatio em 2x (Retina) para evitar sobrecarga de fill-rate 3x/3.5x em GPUs mobile
 Konva.hitOnDragEnabled = false;
+if (typeof window !== 'undefined') {
+  Konva.pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+}
 
 export class CanvasEngine {
   stage: Konva.Stage | null;
@@ -41,7 +46,27 @@ export class CanvasEngine {
   // Modo Enquadrar Capa (Estilo Facebook Cover Reposition)
   isRepositioningCover: boolean;
   private isDraggingCoverInternal: boolean;
-  private lastCoverDragPt: { x: number; y: number } | null;
+
+  // Motor Direto 1:1 de Arraste (Zero Lag no Mobile)
+  private draggingNode: Konva.Group | null;
+  private dragStartClientX: number;
+  private dragStartClientY: number;
+  private dragStartNodeX: number;
+  private dragStartNodeY: number;
+  private dragStartCoverOffsetX: number;
+  private dragStartCoverOffsetY: number;
+  private dragContainerScaleX: number;
+  private dragContainerScaleY: number;
+  private hasMovedDuringDrag: boolean;
+  private wasAlreadySelectedOnDown: boolean;
+  private wasSelectedByCycleOrLayer: boolean;
+  private dragCandidatesOnDown: Konva.Group[];
+  private pendingDragPos: { x: number; y: number } | null;
+  private pendingCoverRefresh: boolean;
+  private rafId: number | null;
+  private lastTouchTime: number;
+  private lastTapTime: number;
+  private lastTapNode: Konva.Group | null;
 
   hitCanvas: HTMLCanvasElement;
   hitCtx: CanvasRenderingContext2D | null;
@@ -76,7 +101,26 @@ export class CanvasEngine {
 
     this.isRepositioningCover = false;
     this.isDraggingCoverInternal = false;
-    this.lastCoverDragPt = null;
+
+    this.draggingNode = null;
+    this.dragStartClientX = 0;
+    this.dragStartClientY = 0;
+    this.dragStartNodeX = 0;
+    this.dragStartNodeY = 0;
+    this.dragStartCoverOffsetX = 0;
+    this.dragStartCoverOffsetY = 0;
+    this.dragContainerScaleX = 1;
+    this.dragContainerScaleY = 1;
+    this.hasMovedDuringDrag = false;
+    this.wasAlreadySelectedOnDown = false;
+    this.wasSelectedByCycleOrLayer = false;
+    this.dragCandidatesOnDown = [];
+    this.pendingDragPos = null;
+    this.pendingCoverRefresh = false;
+    this.rafId = null;
+    this.lastTouchTime = 0;
+    this.lastTapTime = 0;
+    this.lastTapNode = null;
 
     this.hitCanvas = document.createElement('canvas');
     this.hitCanvas.width = 1;
@@ -103,14 +147,16 @@ export class CanvasEngine {
     this.bgLayer = new Konva.Layer({ listening: false });
     this.stage.add(this.bgLayer);
 
-    this.decorLayer = new Konva.Layer();
+    // decorLayer com listening: false elimina 100% da renderização de HitCanvas e leituras getImageData do Konva
+    this.decorLayer = new Konva.Layer({ listening: false });
     this.stage.add(this.decorLayer);
 
-    this.uiLayer = new Konva.Layer();
+    // Apenas uiLayer possui listening: true para as 4 âncoras de redimensionamento/rotação do Transformer
+    this.uiLayer = new Konva.Layer({ listening: true });
     this.stage.add(this.uiLayer);
 
     this.setupTransformer();
-    this.setupSmartSelection();
+    this.setupDirectInteraction();
     this.setupKeyboardShortcuts();
     this.renderEnvironment();
     this.fitToView();
@@ -200,10 +246,25 @@ export class CanvasEngine {
       borderStroke: '#ec4899',
       borderStrokeWidth: 2.5,
       borderDash: [6, 4],
-      keepRatio: true
+      keepRatio: true,
+      shouldOverdrawWholeArea: false
+    });
+
+    // Desativa o interceptador '.back' interno do Transformer que causava conflito de drag no mobile
+    const backShape = this.transformer.findOne('.back');
+    if (backShape) {
+      backShape.listening(false);
+      backShape.draggable(false);
+    }
+
+    this.transformer.on('transform', () => {
+      this.decorLayer?.drawScene();
+      this.uiLayer?.drawScene();
     });
 
     this.transformer.on('transformend', () => {
+      this.decorLayer?.batchDraw();
+      this.uiLayer?.draw();
       this.saveSnapshot();
       this.notifyLayersChange();
     });
@@ -211,38 +272,108 @@ export class CanvasEngine {
     this.uiLayer.add(this.transformer);
   }
 
+  private isTransformerAnchor(target: Konva.Node | null | undefined): boolean {
+    if (!target || !this.transformer) return false;
+    const name = target.name ? target.name() : '';
+    return target.getParent() === (this.transformer as any) && name.includes('_anchor');
+  }
+
+  /**
+   * Agenda um único frame de renderização rápida (apenas drawScene, sem HitCanvas)
+   * sincronizado com a taxa de atualização da tela (60Hz / 120Hz).
+   */
+  private scheduleFastDraw() {
+    if (this.rafId !== null) return;
+    this.rafId = requestAnimationFrame(() => {
+      this.rafId = null;
+
+      if (this.draggingNode && this.pendingDragPos) {
+        this.draggingNode._setAttr('x', this.pendingDragPos.x);
+        this.draggingNode._setAttr('y', this.pendingDragPos.y);
+        (this.draggingNode as any)._clearTransform();
+        (this.draggingNode as any)._clearSelfAndDescendantCache('absoluteTransform');
+
+        if (this.transformer && this.transformer.nodes().length > 0) {
+          (this.transformer as any)._resetTransformCache();
+          this.transformer.update();
+        }
+      }
+
+      if (this.pendingCoverRefresh && this.selectedNode) {
+        this.pendingCoverRefresh = false;
+        this.refreshCoverPlacementOnNode(this.selectedNode, false);
+      }
+
+      this.decorLayer?.drawScene();
+      this.uiLayer?.drawScene();
+    });
+  }
+
   // ========================================================
-  // SELEÇÃO E ENQUADRAMENTO DE CAPA ESTILO FACEBOOK
+  // MOTOR DE SELEÇÃO E ARRASTE DIRETO 1:1 (ZERO LAG MOBILE)
   // ========================================================
-  setupSmartSelection() {
+  setupDirectInteraction() {
     if (!this.stage) return;
 
-    this.stage.on('pointerdown', (e) => {
+    const handleDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
       if (!this.stage) return;
+      const rawEvt = e.evt;
+      const isTouch = rawEvt.type.startsWith('touch');
 
-      // Se estamos no modo de enquadrar capa estilo Facebook
+      if (isTouch) {
+        this.lastTouchTime = performance.now();
+        const touchEvt = rawEvt as TouchEvent;
+        if (touchEvt.touches && touchEvt.touches.length > 1) return;
+      } else {
+        // Ignora mousedown sintético disparado pelo navegador mobile após touchstart
+        if (performance.now() - this.lastTouchTime < 500) return;
+        const mouseEvt = rawEvt as MouseEvent;
+        if (mouseEvt.button !== undefined && mouseEvt.button !== 0) return;
+      }
+
+      // Se clicou/tocou em uma das 4 âncoras de canto ou rotação do Transformer, deixa o Transformer agir
+      if (this.isTransformerAnchor(e.target)) {
+        return;
+      }
+
+      if (isTouch && rawEvt.cancelable) {
+        rawEvt.preventDefault();
+      }
+
+      const clientX = isTouch
+        ? (rawEvt as TouchEvent).touches[0].clientX
+        : (rawEvt as MouseEvent).clientX;
+      const clientY = isTouch
+        ? (rawEvt as TouchEvent).touches[0].clientY
+        : (rawEvt as MouseEvent).clientY;
+
+      const contentEl = this.stage.content || this.stage.container();
+      const rect = contentEl.getBoundingClientRect();
+      this.dragContainerScaleX = (rect.width / (this.stage.width() || 1)) || 1;
+      this.dragContainerScaleY = (rect.height / (this.stage.height() || 1)) || 1;
+
+      const pointerPos = {
+        x: (clientX - rect.left) / this.dragContainerScaleX,
+        y: (clientY - rect.top) / this.dragContainerScaleY
+      };
+
+      // 1. Se estamos no modo de enquadrar capa estilo Facebook
       if (this.isRepositioningCover && this.selectedNode) {
-        const pointerPos = this.stage.getPointerPosition();
-        if (!pointerPos) return;
         const candidates = this.findOpaqueItemsAtPoint(pointerPos);
         if (candidates.includes(this.selectedNode)) {
           this.isDraggingCoverInternal = true;
-          const transform = this.selectedNode.getAbsoluteTransform().copy().invert();
-          this.lastCoverDragPt = transform.point(pointerPos);
+          this.dragStartClientX = clientX;
+          this.dragStartClientY = clientY;
+          const meta = this.selectedNode.getAttr('itemMeta') || {};
+          this.dragStartCoverOffsetX = meta.coverOffsetX || 0;
+          this.dragStartCoverOffsetY = meta.coverOffsetY || 0;
           return;
         } else {
-          // Clicou fora da peça: finaliza o modo de enquadramento
           this.exitCoverRepositionMode();
         }
       }
 
-      if (e.target && (e.target.getParent() === (this.transformer as any) || (e.target as any) === this.transformer)) {
-        return;
-      }
-
-      const pointerPos = this.stage.getPointerPosition();
-      if (!pointerPos) return;
-
+      // 2. Busca peças opacas exatamente sob o dedo/cursor
       const candidates = this.findOpaqueItemsAtPoint(pointerPos);
 
       if (candidates.length === 0) {
@@ -250,38 +381,156 @@ export class CanvasEngine {
         return;
       }
 
-      const isAlreadySelected = this.selectedNode && candidates.includes(this.selectedNode);
-
-      if (isAlreadySelected && this.selectedNode) {
-        const targetNode = this.selectedNode;
-        targetNode.draggable(true);
-        targetNode.startDrag({ evt: e.evt });
-      } else {
-        const targetNode = candidates[0];
-        this.selectNode(targetNode);
+      // Detecta duplo toque / duplo clique para ativar enquadramento de capa
+      const now = performance.now();
+      const topCandidate = candidates[0];
+      if (now - this.lastTapTime < 320 && this.lastTapNode === topCandidate) {
+        this.lastTapTime = 0;
+        this.lastTapNode = null;
+        const meta = topCandidate.getAttr('itemMeta') || {};
+        if (meta.customCoverUrl) {
+          this.selectNode(topCandidate);
+          this.enterCoverRepositionMode();
+          return;
+        }
       }
-    });
+      this.lastTapTime = now;
+      this.lastTapNode = topCandidate;
 
-    this.stage.on('pointermove', () => {
-      if (!this.isRepositioningCover || !this.isDraggingCoverInternal || !this.selectedNode || !this.stage) return;
-      const pointerPos = this.stage.getPointerPosition();
-      if (!pointerPos || !this.lastCoverDragPt) return;
+      // Decide qual peça selecionar/arrastar imediatamente no mesmo gesto
+      const keepCurrentSelected =
+        Boolean(this.selectedNode && candidates.includes(this.selectedNode)) &&
+        (candidates[0] === this.selectedNode || this.wasSelectedByCycleOrLayer);
 
-      const transform = this.selectedNode.getAbsoluteTransform().copy().invert();
-      const currentPt = transform.point(pointerPos);
-      const dx = currentPt.x - this.lastCoverDragPt.x;
-      const dy = currentPt.y - this.lastCoverDragPt.y;
-      this.lastCoverDragPt = currentPt;
+      if (keepCurrentSelected && this.selectedNode) {
+        this.wasAlreadySelectedOnDown = true;
+      } else {
+        this.wasAlreadySelectedOnDown = false;
+        this.wasSelectedByCycleOrLayer = false;
+        this.selectNode(candidates[0]);
+      }
 
-      this.panSelectedCoverBy(dx, dy);
-    });
+      if (this.selectedNode && !this.selectedNode.getAttr('locked')) {
+        this.draggingNode = this.selectedNode;
+        this.dragStartClientX = clientX;
+        this.dragStartClientY = clientY;
+        this.dragStartNodeX = this.selectedNode.x();
+        this.dragStartNodeY = this.selectedNode.y();
+        this.hasMovedDuringDrag = false;
+        this.dragCandidatesOnDown = candidates;
+        this.pendingDragPos = null;
+      }
+    };
 
-    window.addEventListener('pointerup', () => {
+    const handleMove = (evt: MouseEvent | TouchEvent) => {
+      if (!this.draggingNode && !this.isDraggingCoverInternal) return;
+      if (this.transformer && (this.transformer as any).isTransforming && (this.transformer as any).isTransforming()) {
+        this.draggingNode = null;
+        return;
+      }
+
+      const isTouch = evt.type.startsWith('touch');
+      if (isTouch) {
+        const touchEvt = evt as TouchEvent;
+        if (!touchEvt.touches || touchEvt.touches.length === 0) return;
+      }
+
+      if (evt.cancelable) {
+        evt.preventDefault();
+      }
+
+      const clientX = isTouch
+        ? (evt as TouchEvent).touches[0].clientX
+        : (evt as MouseEvent).clientX;
+      const clientY = isTouch
+        ? (evt as TouchEvent).touches[0].clientY
+        : (evt as MouseEvent).clientY;
+
+      const screenDx = clientX - this.dragStartClientX;
+      const screenDy = clientY - this.dragStartClientY;
+
+      const layerScale = this.decorLayer?.scaleX() || 1;
+      const virtualDx = screenDx / (layerScale * (this.dragContainerScaleX || 1));
+      const virtualDy = screenDy / (layerScale * (this.dragContainerScaleY || 1));
+
+      // Arraste interno de capa estilo Facebook
+      if (this.isDraggingCoverInternal && this.selectedNode) {
+        const nodeScaleX = Math.abs(this.selectedNode.scaleX() || 1);
+        const nodeScaleY = Math.abs(this.selectedNode.scaleY() || 1);
+        const flipSignX = (this.selectedNode.scaleX() || 1) < 0 ? -1 : 1;
+        const meta = this.selectedNode.getAttr('itemMeta') || {};
+        meta.coverOffsetX = this.dragStartCoverOffsetX + (virtualDx / nodeScaleX) * flipSignX;
+        meta.coverOffsetY = this.dragStartCoverOffsetY + (virtualDy / nodeScaleY);
+        this.selectedNode.setAttr('itemMeta', meta);
+        this.pendingCoverRefresh = true;
+        this.scheduleFastDraw();
+        return;
+      }
+
+      // Arraste 1:1 da peça no palco
+      if (this.draggingNode) {
+        if (!this.hasMovedDuringDrag) {
+          if (Math.abs(screenDx) < 2 && Math.abs(screenDy) < 2) return;
+          this.hasMovedDuringDrag = true;
+        }
+
+        const w = this.draggingNode.width() * Math.abs(this.draggingNode.scaleX() || 1);
+        const h = this.draggingNode.height() * Math.abs(this.draggingNode.scaleY() || 1);
+
+        const newX = Math.max(-180, Math.min(this.VIRTUAL_WIDTH - w + 180, this.dragStartNodeX + virtualDx));
+        const newY = Math.max(-180, Math.min(this.VIRTUAL_HEIGHT - h + 180, this.dragStartNodeY + virtualDy));
+
+        this.pendingDragPos = { x: newX, y: newY };
+        this.scheduleFastDraw();
+      }
+    };
+
+    const handleUp = () => {
       if (this.isDraggingCoverInternal) {
         this.isDraggingCoverInternal = false;
-        this.lastCoverDragPt = null;
+        this.decorLayer?.batchDraw();
+        return;
       }
-    });
+
+      if (!this.draggingNode) return;
+
+      const moved = this.hasMovedDuringDrag;
+      const finalPos = this.pendingDragPos;
+      const node = this.draggingNode;
+
+      this.draggingNode = null;
+      this.pendingDragPos = null;
+      this.hasMovedDuringDrag = false;
+
+      if (moved) {
+        if (finalPos) {
+          node.position(finalPos);
+        }
+        if (this.transformer) {
+          (this.transformer as any)._resetTransformCache();
+          this.transformer.update();
+        }
+        this.decorLayer?.batchDraw();
+        this.uiLayer?.draw();
+        this.saveSnapshot();
+        this.notifyLayersChange();
+      } else {
+        // Toque rápido sem arrastar: se havia mais de 1 peça sobreposta, alterna para a peça de baixo
+        if (this.wasAlreadySelectedOnDown && this.dragCandidatesOnDown.length > 1 && this.selectedNode) {
+          const currentIndex = this.dragCandidatesOnDown.indexOf(this.selectedNode);
+          const nextIndex = (currentIndex + 1) % this.dragCandidatesOnDown.length;
+          this.wasSelectedByCycleOrLayer = true;
+          this.selectNode(this.dragCandidatesOnDown[nextIndex]);
+        }
+      }
+    };
+
+    this.stage.on('mousedown touchstart', handleDown);
+    window.addEventListener('mousemove', handleMove, { passive: false });
+    window.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('mouseup', handleUp);
+    window.addEventListener('touchend', handleUp);
+    window.addEventListener('touchcancel', handleUp);
 
     // Zoom da capa com roda do mouse quando em Modo Enquadrar Capa
     this.stage.on('wheel', (e) => {
@@ -293,37 +542,6 @@ export class CanvasEngine {
       const delta = e.evt.deltaY < 0 ? 0.08 : -0.08;
       this.setCoverScale(currentScale + delta, false);
     });
-
-    // Duplo clique / duplo toque em peça com capa ativa o Modo Enquadrar Capa estilo Facebook
-    this.stage.on('dblclick dbltap', () => {
-      if (!this.selectedNode) return;
-      const meta = this.selectedNode.getAttr('itemMeta') || {};
-      if (meta.customCoverUrl) {
-        if (this.isRepositioningCover) {
-          this.exitCoverRepositionMode();
-        } else {
-          this.enterCoverRepositionMode();
-        }
-      }
-    });
-
-    this.stage.on('click tap', (e) => {
-      if (this.isRepositioningCover) return;
-      if (!this.stage) return;
-      if (e.target && (e.target.getParent() === (this.transformer as any) || (e.target as any) === this.transformer)) {
-        return;
-      }
-
-      const pointerPos = this.stage.getPointerPosition();
-      if (!pointerPos) return;
-
-      const candidates = this.findOpaqueItemsAtPoint(pointerPos);
-      if (candidates.length > 1 && this.selectedNode && candidates.includes(this.selectedNode)) {
-        const currentIndex = candidates.indexOf(this.selectedNode);
-        const nextIndex = (currentIndex + 1) % candidates.length;
-        this.selectNode(candidates[nextIndex]);
-      }
-    });
   }
 
   enterCoverRepositionMode() {
@@ -332,13 +550,13 @@ export class CanvasEngine {
     if (!meta.customCoverUrl) return;
 
     this.isRepositioningCover = true;
-    this.selectedNode.draggable(false);
+    this.draggingNode = null;
     if (this.transformer) {
-      this.transformer.borderStroke('#f59e0b');
+      this.transformer.borderStroke('#38bdf8');
       this.transformer.borderDash([4, 4]);
       this.transformer.enabledAnchors([]);
       this.transformer.rotateEnabled(false);
-      this.uiLayer?.batchDraw();
+      this.uiLayer?.draw();
     }
     if (this.stage) {
       this.stage.container().style.cursor = 'grab';
@@ -352,17 +570,13 @@ export class CanvasEngine {
     if (!this.isRepositioningCover) return;
     this.isRepositioningCover = false;
     this.isDraggingCoverInternal = false;
-    this.lastCoverDragPt = null;
 
-    if (this.selectedNode) {
-      this.selectedNode.draggable(true);
-    }
     if (this.transformer) {
       this.transformer.borderStroke('#ec4899');
       this.transformer.borderDash([6, 4]);
       this.transformer.enabledAnchors(['top-left', 'top-right', 'bottom-left', 'bottom-right']);
       this.transformer.rotateEnabled(true);
-      this.uiLayer?.batchDraw();
+      this.uiLayer?.draw();
     }
     if (this.stage) {
       this.stage.container().style.cursor = 'default';
@@ -423,7 +637,7 @@ export class CanvasEngine {
     }
   }
 
-  refreshCoverPlacementOnNode(node: Konva.Group) {
+  refreshCoverPlacementOnNode(node: Konva.Group, redraw: boolean = true) {
     const meta = node.getAttr('itemMeta') || {};
     const coverGroup = node.findOne('.cover-group') as Konva.Group | null;
     if (!coverGroup) return;
@@ -435,8 +649,8 @@ export class CanvasEngine {
 
     const w = node.width();
     const h = node.height();
-    const imgNatW = imgEl.naturalWidth || imgEl.width;
-    const imgNatH = imgEl.naturalHeight || imgEl.height;
+    const imgNatW = (imgEl as any).naturalWidth || imgEl.width;
+    const imgNatH = (imgEl as any).naturalHeight || imgEl.height;
 
     const placement = calculateCoverPlacement(
       meta.type,
@@ -451,7 +665,9 @@ export class CanvasEngine {
 
     coverImgNode.position({ x: placement.x, y: placement.y });
     coverImgNode.size({ width: placement.width, height: placement.height });
-    this.decorLayer.batchDraw();
+    if (redraw) {
+      this.decorLayer.batchDraw();
+    }
   }
 
   isPointOpaqueInGroup(group: Konva.Group, stagePoint: { x: number; y: number }): boolean {
@@ -472,7 +688,6 @@ export class CanvasEngine {
       return isPointInsideMask(meta.type, localPt.x, localPt.y, w, h);
     }
 
-    // Se tem pintura sólida ou capa aplicada na estrutura, valida pela máscara ou baseImage
     if (meta.customColor || meta.customCoverUrl) {
       return isPointInsideMask(meta.type, localPt.x, localPt.y, w, h);
     }
@@ -480,13 +695,26 @@ export class CanvasEngine {
     const baseImgNode = group.findOne('.base-image') as Konva.Image | null;
     if (!baseImgNode) return true;
 
-    const imgEl = baseImgNode.image() as HTMLImageElement | null;
-    if (!imgEl || !imgEl.complete || !imgEl.naturalWidth || !this.hitCtx) return true;
+    const imgEl = baseImgNode.image() as any;
+    if (!imgEl) return true;
 
-    const natX = Math.floor((localPt.x / w) * imgEl.naturalWidth);
-    const natY = Math.floor((localPt.y / h) * imgEl.naturalHeight);
+    // Consulta O(1) na grade 64x64 de opacidade pré-calculada em RAM (Zero chamadas GPU getImageData!)
+    const alphaGrid: Uint8Array | undefined = imgEl.__alphaGrid;
+    const gridSize: number | undefined = imgEl.__alphaGridSize;
+    if (alphaGrid && gridSize) {
+      const gx = Math.min(gridSize - 1, Math.max(0, Math.floor((localPt.x / w) * gridSize)));
+      const gy = Math.min(gridSize - 1, Math.max(0, Math.floor((localPt.y / h) * gridSize)));
+      return alphaGrid[gy * gridSize + gx] > 20;
+    }
 
-    if (natX < 0 || natX >= imgEl.naturalWidth || natY < 0 || natY >= imgEl.naturalHeight) {
+    const imgW = imgEl.naturalWidth || imgEl.width || 0;
+    const imgH = imgEl.naturalHeight || imgEl.height || 0;
+    if (!imgW || !imgH || !this.hitCtx) return true;
+
+    const natX = Math.floor((localPt.x / w) * imgW);
+    const natY = Math.floor((localPt.y / h) * imgH);
+
+    if (natX < 0 || natX >= imgW || natY < 0 || natY >= imgH) {
       return false;
     }
 
@@ -575,25 +803,24 @@ export class CanvasEngine {
       width: widthPx,
       height: heightPx,
       draggable: false,
-      dragDistance: 6,
-      name: 'decor-item',
-      dragBoundFunc: (pos) => {
-        const layer = group.getLayer();
-        const scale = layer ? layer.scaleX() : 1;
-        const offsetX = layer ? layer.x() : 0;
-        const offsetY = layer ? layer.y() : 0;
-
-        const minX = offsetX - 100 * scale;
-        const maxX = offsetX + (this.VIRTUAL_WIDTH - widthPx + 100) * scale;
-        const minY = offsetY - 100 * scale;
-        const maxY = offsetY + (this.VIRTUAL_HEIGHT - heightPx + 100) * scale;
-
-        return {
-          x: Math.max(minX, Math.min(maxX, pos.x)),
-          y: Math.max(minY, Math.min(maxY, pos.y))
-        };
-      }
+      listening: false,
+      name: 'decor-item'
     });
+
+    // Otimização O(1) para getClientRect: impede que o Transformer percorra filhos recursivamente
+    // a cada frame de movimento e impede que capas com zoom expandam a caixa de seleção
+    (group as any).getClientRect = function (config: any = {}) {
+      const selfRect = {
+        x: 0,
+        y: 0,
+        width: this.width(),
+        height: this.height()
+      };
+      if (!config.skipTransform) {
+        return this._transformedRect(selfRect, config.relativeTo);
+      }
+      return selfRect;
+    };
 
     const svgRole = getItemCustomizationMode(itemData);
 
@@ -627,7 +854,8 @@ export class CanvasEngine {
       name: 'base-image',
       image: imgElement,
       width: widthPx,
-      height: heightPx
+      height: heightPx,
+      listening: false
     });
     group.add(baseImage);
 
@@ -638,16 +866,6 @@ export class CanvasEngine {
         this.attachSolidColorToNode(group, itemData.customColor);
       }
     }
-
-    group.on('dragmove', () => {
-      this.uiLayer?.batchDraw();
-    });
-
-    group.on('dragend', () => {
-      this.uiLayer?.batchDraw();
-      this.saveSnapshot();
-      this.notifyLayersChange();
-    });
 
     this.decorLayer.add(group);
     if (isRug && !position) {
@@ -670,18 +888,10 @@ export class CanvasEngine {
       this.exitCoverRepositionMode(false);
     }
 
-    if (this.selectedNode && this.selectedNode !== node) {
-      this.selectedNode.draggable(false);
-    }
-
     this.selectedNode = node as Konva.Group | null;
 
-    if (node && !this.isRepositioningCover) {
-      node.draggable(true);
-    }
-
     this.transformer?.nodes(node ? [node] : []);
-    this.uiLayer?.batchDraw();
+    this.uiLayer?.draw();
 
     if (this.onSelectionChange) {
       const meta = node ? node.getAttr('itemMeta') : null;
@@ -693,12 +903,11 @@ export class CanvasEngine {
     if (this.isRepositioningCover) {
       this.exitCoverRepositionMode(false);
     }
-    if (this.selectedNode) {
-      this.selectedNode.draggable(false);
-    }
+    this.draggingNode = null;
     this.selectedNode = null;
+    this.wasSelectedByCycleOrLayer = false;
     this.transformer?.nodes([]);
-    this.uiLayer?.batchDraw();
+    this.uiLayer?.draw();
 
     if (this.onSelectionChange) {
       this.onSelectionChange(null, null);
@@ -712,12 +921,10 @@ export class CanvasEngine {
     if (!this.selectedNode) return false;
     const meta = this.selectedNode.getAttr('itemMeta') as PresetItem;
 
-    // Regra: Apenas itens de SVG estruturais permitem capas
     if (coverImageUrl && getItemCustomizationMode(meta) !== 'structural') {
       return false;
     }
 
-    // Ao trocar de capa, reseta o pan/zoom para centralizado
     if (coverImageUrl !== meta.customCoverUrl) {
       meta.coverOffsetX = 0;
       meta.coverOffsetY = 0;
@@ -787,7 +994,6 @@ export class CanvasEngine {
     if (baseImage && (meta.type === 'cylinder' || meta.type === 'cube' || (meta.type && meta.type.startsWith('rug')))) {
       baseImage.visible(false);
     } else if (baseImage) {
-      // Nos painéis, mantém a baseImage visível para preservar os pés dourados discretos e a sombra de piso
       baseImage.visible(true);
     }
 
@@ -797,7 +1003,8 @@ export class CanvasEngine {
 
     const coverGroup = new Konva.Group({
       name: 'cover-group',
-      clipFunc: clipFunc
+      clipFunc: clipFunc,
+      listening: false
     });
 
     const colorRect = new Konva.Rect({
@@ -806,7 +1013,8 @@ export class CanvasEngine {
       y: 0,
       width: w,
       height: h,
-      fill: colorHex
+      fill: colorHex,
+      listening: false
     });
     coverGroup.add(colorRect);
 
@@ -847,8 +1055,8 @@ export class CanvasEngine {
     const coverImg = await loadImageAsync(coverImageUrl);
     const clipFunc = createClipFunction(meta.type, w, h);
 
-    const imgNatW = coverImg.naturalWidth || coverImg.width;
-    const imgNatH = coverImg.naturalHeight || coverImg.height;
+    const imgNatW = (coverImg as any).naturalWidth || coverImg.width;
+    const imgNatH = (coverImg as any).naturalHeight || coverImg.height;
     const placement = calculateCoverPlacement(
       meta.type,
       w,
@@ -862,7 +1070,8 @@ export class CanvasEngine {
 
     const coverGroup = new Konva.Group({
       name: 'cover-group',
-      clipFunc: clipFunc
+      clipFunc: clipFunc,
+      listening: false
     });
 
     const coverImageNode = new Konva.Image({
@@ -871,7 +1080,8 @@ export class CanvasEngine {
       x: placement.x,
       y: placement.y,
       width: placement.width,
-      height: placement.height
+      height: placement.height,
+      listening: false
     });
 
     coverGroup.add(coverImageNode);
@@ -1003,20 +1213,24 @@ export class CanvasEngine {
     } else {
       this.selectedNode.offsetX(0);
     }
+    if (this.transformer) {
+      (this.transformer as any)._resetTransformCache();
+      this.transformer.update();
+      this.uiLayer?.draw();
+    }
     this.decorLayer.batchDraw();
     this.saveSnapshot();
   }
 
   toggleLockNode(node: Konva.Node | Konva.Group): boolean {
-    const isDraggable = node.draggable();
-    node.draggable(!isDraggable);
-    if (!isDraggable) {
-      if (this.selectedNode === node) {
-        this.transformer?.nodes([]);
-      }
+    const isLocked = Boolean(node.getAttr('locked'));
+    node.setAttr('locked', !isLocked);
+    if (!isLocked && this.selectedNode === node) {
+      this.transformer?.nodes([]);
+      this.uiLayer?.draw();
     }
     this.decorLayer.batchDraw();
-    return !isDraggable;
+    return !isLocked;
   }
 
   async duplicateSelected() {

@@ -14,14 +14,17 @@ export type ItemType =
   | 'panel_round'
   | 'panel_arch'
   | 'panel_rect'
+  | 'panel_slat'
   | 'panel_half_moon'
   | 'shimmer_wall'
   | 'cylinder'
+  | 'cylinder_fluted'
   | 'cube'
   | 'table'
   | 'table_organic'
   | 'table_drop'
   | 'table_side'
+  | 'dresser_bombe'
   | 'balloon_arch'
   | 'balloon_single'
   | 'balloon_bubble'
@@ -30,8 +33,11 @@ export type ItemType =
   | 'rug_rect_3d'
   | 'rug_oval'
   | 'display'
+  | 'moinho'
   | 'generic'
   | string;
+
+export type SvgRole = 'structural' | 'modular' | 'photo';
 
 export interface BalloonColors {
   primary: string;
@@ -46,6 +52,7 @@ export interface PresetItem {
   name: string;
   category: ItemCategory | string;
   type: ItemType;
+  svgRole?: SvgRole;
   widthCm: number;
   heightCm: number;
   previewUrl: string;
@@ -55,6 +62,11 @@ export interface PresetItem {
   notes?: string;
   createdAt?: number;
   customCoverUrl?: string | null;
+  customColor?: string | null;
+  coverOffsetX?: number;
+  coverOffsetY?: number;
+  coverScale?: number;
+  modularColors?: string[] | null;
   balloonColors?: string[] | BalloonColors | null;
   instanceId?: string;
   currentColor?: string;

@@ -1,7 +1,8 @@
 // Barra Flutuante de Ações da Peça no Cenário Mobile
 import type { CanvasEngine } from '../core/canvas-engine';
 import type { PresetItem } from '../types';
-import { generateMoinhoSVG, svgToDataUrl } from '../core/presets-data';
+import { generateMoinhoSVG } from '../core/presets-data';
+import { getItemCustomizationMode } from '../core/modular-svg-generator';
 import type Konva from 'konva';
 
 export class ItemToolbar {
@@ -32,12 +33,12 @@ export class ItemToolbar {
 
     const btnDelete = document.getElementById('btn-action-delete');
     const btnCover = document.getElementById('btn-action-cover');
+    const btnReposition = document.getElementById('btn-action-reposition');
     const btnFront = document.getElementById('btn-action-front');
     const btnBack = document.getElementById('btn-action-back');
     const btnFlip = document.getElementById('btn-action-flip');
     const btnDuplicate = document.getElementById('btn-action-duplicate');
 
-    // EXCLUSÃO RÁPIDA E DIRETA
     btnDelete?.addEventListener('click', (e) => {
       e.stopPropagation();
       if (this.selectedNode) {
@@ -60,14 +61,22 @@ export class ItemToolbar {
         this.updateSelection(updatedMeta, this.selectedNode);
         return;
       }
-      e.stopPropagation();
-      if (!this.selectedNode || !this.selectedMeta) return;
 
-      const isBalloons = this.selectedMeta.category === 'baloes' || this.selectedMeta.type === 'balloon_arch';
-      if (isBalloons && this.onOpenBalloonModal) {
+      const mode = getItemCustomizationMode(this.selectedMeta);
+      if (mode === 'modular' && this.onOpenBalloonModal) {
         this.onOpenBalloonModal(this.selectedNode);
-      } else if (this.onOpenCoverModal) {
+      } else if (mode === 'structural' && this.onOpenCoverModal) {
         this.onOpenCoverModal(this.selectedMeta);
+      }
+    });
+
+    btnReposition?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!this.selectedNode || !this.selectedMeta?.customCoverUrl) return;
+      if (this.canvasEngine.isRepositioningCover) {
+        this.canvasEngine.exitCoverRepositionMode();
+      } else {
+        this.canvasEngine.enterCoverRepositionMode();
       }
     });
 
@@ -90,10 +99,6 @@ export class ItemToolbar {
       e.stopPropagation();
       this.canvasEngine.duplicateSelected();
     });
-
-    this.canvasEngine.onSelectionChange = (meta, node) => {
-      this.updateSelection(meta, node);
-    };
   }
 
   updateSelection(meta: PresetItem | null, node: Konva.Group | Konva.Node | null): void {
@@ -103,6 +108,7 @@ export class ItemToolbar {
     const badge = document.getElementById('selection-badge');
     const badgeName = document.getElementById('selection-badge-name');
     const btnCover = document.getElementById('btn-action-cover');
+    const btnReposition = document.getElementById('btn-action-reposition');
 
     if (!node || !meta) {
       this.toolbarEl?.classList.remove('active');
@@ -112,30 +118,40 @@ export class ItemToolbar {
 
     this.toolbarEl?.classList.add('active');
 
+    const mode = getItemCustomizationMode(meta);
+
     if (badge && badgeName) {
-      badgeName.textContent = meta.name;
+      const roleTag = mode === 'structural' ? '[SVG • Capa/Cor]' : (mode === 'modular' ? '[SVG • Cores]' : '[Acervo Real]');
+      badgeName.textContent = `${meta.name} ${roleTag}`;
       badge.classList.add('visible');
     }
 
     if (btnCover) {
-      const isBalloons = meta.category === 'baloes' || meta.type === 'balloon_arch';
-      const isCoverable = [
-        'cylinder', 'cube',
-        'panel_round', 'panel_arch', 'panel_rect', 'panel_half_moon', 'shimmer_wall',
-        'table', 'table_organic', 'table_drop', 'table_side',
-        'rug_oval', 'rug_round', 'rug_rect_3d',
-        'display'
-      ].includes(meta.type) || (meta.type && (meta.type.startsWith('panel') || meta.type.startsWith('rug') || meta.type.startsWith('table') || meta.type.startsWith('cube')));
-
-      if (isBalloons) {
+      if (meta.type === 'moinho') {
+        const colorLabel = (meta.currentColor || 'marrom').toUpperCase();
+        btnCover.style.display = 'inline-flex';
+        btnCover.innerHTML = `🎨 ${colorLabel}`;
+        btnCover.title = 'Alternar Acabamento do Moinho';
+      } else if (mode === 'structural') {
+        btnCover.style.display = 'inline-flex';
+        btnCover.innerHTML = '🎨 Capa / Cor';
+        btnCover.title = 'Vestir Capa ou Pintar Estrutura';
+      } else if (mode === 'modular') {
+        btnCover.style.display = 'inline-flex';
         btnCover.innerHTML = '🎨 Cores';
-        btnCover.title = 'Trocar Paleta de Balões';
-      } else if (isCoverable) {
-        btnCover.innerHTML = '🎨 Capa';
-        btnCover.title = 'Vestir Capa / Estampa';
+        btnCover.title = 'Personalizar Cores dos Elementos SVG';
       } else {
-        btnCover.innerHTML = '🖼️ Imagem';
-        btnCover.title = 'Alterar Imagem';
+        btnCover.style.display = 'none';
+      }
+    }
+
+    if (btnReposition) {
+      if (mode === 'structural' && meta.customCoverUrl) {
+        btnReposition.style.display = 'inline-flex';
+        btnReposition.innerHTML = '✋ Enquadrar';
+        btnReposition.title = 'Arrastar e Dar Zoom na Capa';
+      } else {
+        btnReposition.style.display = 'none';
       }
     }
   }

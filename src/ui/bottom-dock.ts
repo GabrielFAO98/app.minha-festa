@@ -1,31 +1,27 @@
-import { getAllItems, getItemsByCategory, getAllCovers } from '../core/db';
-import {
-  REALISTIC_ENVIRONMENTS,
-  WALL_OPTIONS,
-  FLOOR_OPTIONS
-} from '../core/textures-data';
+import { getItemsByCategory, getAllItems, getAllCovers } from '../core/db';
+import { getItemCustomizationMode } from '../core/modular-svg-generator';
+import { REALISTIC_ENVIRONMENTS, WALL_OPTIONS, FLOOR_OPTIONS } from '../core/textures-data';
 import type { CanvasEngine } from '../core/canvas-engine';
 import type { PresetItem, ItemCategory } from '../types';
 
 export class BottomDock {
   canvasEngine: CanvasEngine;
-  onOpenInventoryModal?: (() => void) | null;
-  onOpenCoverModal?: ((meta: PresetItem | null) => void) | null;
-
+  onOpenInventoryModal: () => void;
+  onOpenCoverModal: (meta: PresetItem | null) => void;
   activeTab: string | null;
-  currentCategory: ItemCategory | string;
-
+  currentCategory: string;
   sheetEl: HTMLElement | null;
   sheetBody: HTMLElement | null;
   sheetTitle: HTMLElement | null;
   categoriesBar: HTMLElement | null;
-  btnClose: HTMLElement | null;
   handleBar: HTMLElement | null;
+  closeBtn: HTMLElement | null;
+  tabButtons: NodeListOf<Element>;
 
   constructor(
     canvasEngine: CanvasEngine,
-    onOpenInventoryModal?: (() => void) | null,
-    onOpenCoverModal?: ((meta: PresetItem | null) => void) | null
+    onOpenInventoryModal: () => void,
+    onOpenCoverModal: (meta: PresetItem | null) => void
   ) {
     this.canvasEngine = canvasEngine;
     this.onOpenInventoryModal = onOpenInventoryModal;
@@ -38,18 +34,18 @@ export class BottomDock {
     this.sheetBody = document.getElementById('sheet-body-content');
     this.sheetTitle = document.getElementById('sheet-current-title');
     this.categoriesBar = document.getElementById('sheet-categories-bar');
-    this.btnClose = document.getElementById('btn-close-sheet');
     this.handleBar = document.getElementById('sheet-handle-bar');
+    this.closeBtn = document.getElementById('btn-close-sheet');
+    this.tabButtons = document.querySelectorAll('.dock-tab-btn');
 
     this.setupEvents();
   }
 
   setupEvents(): void {
-    const dockButtons = document.querySelectorAll('.dock-tab-btn');
-    dockButtons.forEach((btnNode) => {
-      const btn = btnNode as HTMLElement;
+    this.tabButtons.forEach((btn) => {
       btn.addEventListener('click', () => {
-        const tab = btn.dataset.tab || '';
+        const tab = (btn as HTMLElement).dataset.tab;
+        if (!tab) return;
         if (this.activeTab === tab && this.sheetEl?.classList.contains('open')) {
           this.closeSheet();
         } else {
@@ -58,26 +54,29 @@ export class BottomDock {
       });
     });
 
-    this.btnClose?.addEventListener('click', () => this.closeSheet());
-    this.handleBar?.addEventListener('click', () => this.closeSheet());
+    this.closeBtn?.addEventListener('click', () => this.closeSheet());
+    this.handleBar?.addEventListener('click', () => {
+      if (this.sheetEl?.classList.contains('open')) {
+        this.closeSheet();
+      }
+    });
   }
 
-  openTab(tabName: string): void {
+  async openTab(tabName: string): Promise<void> {
     this.activeTab = tabName;
 
-    document.querySelectorAll('.dock-tab-btn').forEach((bNode) => {
-      const b = bNode as HTMLElement;
-      b.classList.toggle('active', b.dataset.tab === tabName);
+    this.tabButtons.forEach((btn) => {
+      btn.classList.toggle('active', (btn as HTMLElement).dataset.tab === tabName);
     });
 
     this.sheetEl?.classList.add('open');
 
     if (tabName === 'presets') {
-      this.renderPresetsTab();
+      await this.renderPresetsTab();
     } else if (tabName === 'my-items') {
-      this.renderMyItemsTab();
+      await this.renderMyItemsTab();
     } else if (tabName === 'covers') {
-      this.renderCoversTab();
+      await this.renderCoversTab();
     } else if (tabName === 'environment') {
       this.renderEnvironmentTab();
     } else if (tabName === 'layers') {
@@ -86,22 +85,19 @@ export class BottomDock {
   }
 
   closeSheet(): void {
-    this.activeTab = null;
     this.sheetEl?.classList.remove('open');
-    document.querySelectorAll('.dock-tab-btn').forEach((b) => b.classList.remove('active'));
+    this.tabButtons.forEach((btn) => btn.classList.remove('active'));
+    this.activeTab = null;
   }
 
-  // ABA 1: Presets Base de Fábrica
+  // ABA 1: Peças Base (Presets)
   async renderPresetsTab(): Promise<void> {
-    if (this.sheetTitle) this.sheetTitle.innerHTML = '✨ Peças Base para Adicionar';
-    if (this.categoriesBar) {
-      this.categoriesBar.style.display = 'flex';
-      this.renderCategoryPills();
-    }
+    if (this.sheetTitle) this.sheetTitle.innerHTML = '✨ Peças Base (Presets)';
+    if (this.categoriesBar) this.categoriesBar.style.display = 'flex';
+    this.renderCategoryPills();
 
     const items = await getItemsByCategory(this.currentCategory);
     const presetItems = items.filter((i) => !i.isCustom);
-
     this.renderItemsGrid(presetItems, false);
   }
 
@@ -112,7 +108,6 @@ export class BottomDock {
       { id: 'paineis', label: 'Painéis' },
       { id: 'cilindros', label: 'Cilindros' },
       { id: 'mesas', label: 'Mesas' },
-      { id: 'baloes', label: 'Balões' },
       { id: 'tapetes', label: 'Tapetes' },
       { id: 'displays', label: 'Displays' },
       { id: 'acessorios', label: 'Acessórios' }
@@ -185,9 +180,13 @@ export class BottomDock {
     if (!this.sheetBody) return;
 
     this.sheetBody.innerHTML = `
+      <div class="covers-rule-banner" style="margin-bottom: 10px;">
+        <span>📐</span>
+        <span>Capas vestem apenas <strong>Estruturas SVG</strong> (Painéis Lisos, Cilindros, Cubos e Tapetes).</span>
+      </div>
       <div style="margin-bottom: 12px;">
         <button id="btn-add-new-cover" class="btn-primary" style="width: 100%; height: 42px;">
-          📸 Subir Estampa da Galeria
+          📸 Subir Estampa da Galeria / Pintar Cor
         </button>
       </div>
       <div class="covers-grid" id="sheet-covers-grid"></div>
@@ -202,19 +201,26 @@ export class BottomDock {
         <div class="cover-card-label">${cover.name}</div>
       `;
       card.addEventListener('click', async () => {
-        if (this.canvasEngine.selectedNode) {
-          await this.canvasEngine.applyCoverToSelected(cover.imageUrl);
-          this.closeSheet();
-        } else {
-          alert('Toque primeiro em um cilindro ou painel no cenário para vestir esta capa.');
+        const selected = this.canvasEngine.selectedNode;
+        if (!selected) {
+          alert('Toque primeiro em uma Estrutura SVG no palco (ex: Painel Liso, Cilindro ou Cubo) para vestir esta capa.');
+          return;
         }
+        const meta = selected.getAttr('itemMeta') as PresetItem | undefined;
+        if (!meta || getItemCustomizationMode(meta) !== 'structural') {
+          alert('Esta peça não aceita capas sublimadas. Capas são exclusivas para Estruturas SVG de base (Painéis Lisos, Cilindros Lisos, Cubos e Tapetes).');
+          return;
+        }
+        await this.canvasEngine.applyCoverToSelected(cover.imageUrl);
+        this.closeSheet();
       });
       grid?.appendChild(card);
     });
 
     document.getElementById('btn-add-new-cover')?.addEventListener('click', () => {
       if (this.onOpenCoverModal) {
-        this.onOpenCoverModal(null);
+        const meta = this.canvasEngine.selectedNode?.getAttr('itemMeta') || null;
+        this.onOpenCoverModal(meta);
       }
     });
   }
@@ -312,10 +318,19 @@ export class BottomDock {
   }
 
   createItemCard(item: PresetItem, isCustom: boolean): HTMLElement {
+    const mode = getItemCustomizationMode(item);
+    const badgeHtml =
+      mode === 'structural'
+        ? '<span class="asset-role-badge badge-structural">📐 SVG • CAPA/COR</span>'
+        : mode === 'modular'
+          ? '<span class="asset-role-badge badge-modular">🎨 SVG • CORES</span>'
+          : '<span class="asset-role-badge badge-photo">📷 PEÇA REAL</span>';
+
     const card = document.createElement('div');
-    card.className = 'item-card';
+    card.className = `item-card card-mode-${mode}`;
     card.innerHTML = `
-      <div class="item-card-preview">
+      <div class="item-card-preview" style="position: relative;">
+        ${badgeHtml}
         <img src="${item.previewUrl}" alt="${item.name}" loading="lazy"/>
       </div>
       <div class="item-card-title">${item.name}</div>
@@ -372,11 +387,14 @@ export class BottomDock {
         row.style.background = 'rgba(236, 72, 153, 0.15)';
       }
 
+      const mode = getItemCustomizationMode(elem);
+      const miniBadge = mode === 'structural' ? '📐 SVG' : (mode === 'modular' ? '🎨 SVG' : '📷 Real');
+
       row.innerHTML = `
         <img src="${elem.previewUrl}" style="width: 38px; height: 38px; object-fit: contain; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 2px;" alt="" />
         <div style="flex: 1; min-width: 0;">
           <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${elem.name}</div>
-          <div style="font-size: 0.68rem; color: var(--text-muted);">${elem.widthCm}x${elem.heightCm}cm</div>
+          <div style="font-size: 0.68rem; color: var(--text-muted);">${elem.widthCm}x${elem.heightCm}cm • ${miniBadge}</div>
         </div>
         <div style="display: flex; gap: 6px;">
           <button class="layer-action-btn layer-btn-front" style="width: 34px; height: 34px; border-radius: 6px; background: rgba(255,255,255,0.08); font-size: 0.85rem;" title="Trazer para Frente">⬆️</button>

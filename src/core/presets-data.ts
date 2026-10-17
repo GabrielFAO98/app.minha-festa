@@ -237,67 +237,37 @@ export const SVG_PANEL_ROUND = `<svg xmlns="http://www.w3.org/2000/svg" viewBox=
   <defs>
     <radialGradient id="roundFabricStudio" cx="42%" cy="35%" r="65%">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="50%" stop-color="#f8fafc"/>
-      <stop offset="82%" stop-color="#f1f5f9"/>
-      <stop offset="95%" stop-color="#e2e8f0"/>
-      <stop offset="100%" stop-color="#cbd5e1"/>
+      <stop offset="55%" stop-color="#f8fafc"/>
+      <stop offset="88%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
     </radialGradient>
-    <linearGradient id="roundRim3D" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="45%" stop-color="#cbd5e1"/>
-      <stop offset="100%" stop-color="#64748b"/>
-    </linearGradient>
-    <linearGradient id="steelTubeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0f172a"/>
-      <stop offset="35%" stop-color="#475569"/>
-      <stop offset="55%" stop-color="#64748b"/>
-      <stop offset="80%" stop-color="#1e293b"/>
-      <stop offset="100%" stop-color="#020617"/>
-    </linearGradient>
-    <linearGradient id="goldPin" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#ca8a04"/>
-      <stop offset="50%" stop-color="#fef08a"/>
+    <linearGradient id="goldFootDiscreet" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#9a6f0a"/>
+      <stop offset="45%" stop-color="#fef08a"/>
+      <stop offset="70%" stop-color="#d4af37"/>
       <stop offset="100%" stop-color="#854d0e"/>
     </linearGradient>
     <filter id="panelRoundShadow" x="-15%" y="-15%" width="130%" height="130%">
-      <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#0f172a" flood-opacity="0.22"/>
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.18"/>
     </filter>
     <filter id="floorContactBlur" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="4"/>
+      <feGaussianBlur stdDeviation="3.5"/>
     </filter>
   </defs>
 
-  <!-- Sombras de Contato Realistas no Piso -->
-  <ellipse cx="90" cy="371" rx="34" ry="5" fill="#0f172a" opacity="0.28" filter="url(#floorContactBlur)"/>
-  <ellipse cx="210" cy="371" rx="34" ry="5" fill="#0f172a" opacity="0.28" filter="url(#floorContactBlur)"/>
-  <ellipse cx="150" cy="372" rx="75" ry="4" fill="#0f172a" opacity="0.14" filter="url(#floorContactBlur)"/>
+  <!-- Sombras Discretas no Piso -->
+  <ellipse cx="96" cy="370" rx="22" ry="3.5" fill="#0f172a" opacity="0.20" filter="url(#floorContactBlur)"/>
+  <ellipse cx="204" cy="370" rx="22" ry="3.5" fill="#0f172a" opacity="0.20" filter="url(#floorContactBlur)"/>
 
-  <!-- Estrutura Metálica Tubular Industrial (Pés e Travessas) -->
-  <!-- Haste Esquerda -->
-  <rect x="86" y="268" width="9" height="100" rx="2" fill="url(#steelTubeGrad)"/>
-  <!-- Haste Direita -->
-  <rect x="205" y="268" width="9" height="100" rx="2" fill="url(#steelTubeGrad)"/>
-  <!-- Travessa Horizontal de Reforço -->
-  <rect x="92" y="332" width="116" height="6" fill="url(#steelTubeGrad)"/>
-  <!-- Parafusos Borboleta Dourados de Fixação -->
-  <circle cx="90.5" cy="312" r="3.5" fill="url(#goldPin)" stroke="#78350f" stroke-width="0.6"/>
-  <circle cx="209.5" cy="312" r="3.5" fill="url(#goldPin)" stroke="#78350f" stroke-width="0.6"/>
-  <!-- Bases de Apoio no Chão em Perspectiva -->
-  <path d="M 62 370 L 90 364 L 118 370 L 114 373 L 90 368 L 66 373 Z" fill="url(#steelTubeGrad)"/>
-  <path d="M 182 370 L 210 364 L 238 370 L 234 373 L 210 368 L 186 373 Z" fill="url(#steelTubeGrad)"/>
-  <!-- Sapatas Niveladoras Emborrachadas -->
-  <rect x="59" y="369" width="9" height="5" rx="1.5" fill="#020617"/>
-  <rect x="112" y="369" width="9" height="5" rx="1.5" fill="#020617"/>
-  <rect x="179" y="369" width="9" height="5" rx="1.5" fill="#020617"/>
-  <rect x="232" y="369" width="9" height="5" rx="1.5" fill="#020617"/>
+  <!-- Pés Dourados Discretos e Elegantes -->
+  <rect x="94" y="275" width="4.5" height="93" rx="2" fill="url(#goldFootDiscreet)"/>
+  <path d="M 80 368 L 96.2 365 L 112 368 L 110 370.5 L 82 370.5 Z" fill="url(#goldFootDiscreet)"/>
 
-  <!-- Aro Traseiro 3D (Espessura do MDF / Tubo) -->
-  <circle cx="150" cy="152" r="142" fill="#94a3b8" filter="url(#panelRoundShadow)"/>
-  <!-- Tampo Circular Vestido em Tecido Sublimado Premium -->
-  <circle cx="150" cy="150" r="142" fill="url(#roundFabricStudio)" stroke="url(#roundRim3D)" stroke-width="2.5"/>
-  <!-- Costura de Elástico Perimetral e Vinco de Tensão Sutil -->
-  <circle cx="150" cy="150" r="139" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.9"/>
-  <circle cx="150" cy="150" r="135" fill="none" stroke="#cbd5e1" stroke-width="0.8" stroke-dasharray="6,4" opacity="0.55"/>
+  <rect x="201.5" y="275" width="4.5" height="93" rx="2" fill="url(#goldFootDiscreet)"/>
+  <path d="M 188 368 L 203.8 365 L 220 368 L 218 370.5 L 190 370.5 Z" fill="url(#goldFootDiscreet)"/>
+
+  <!-- Estrutura Circular Sem Bordas (Cobertura Total) -->
+  <circle cx="150" cy="150" r="142" fill="url(#roundFabricStudio)" stroke="none" filter="url(#panelRoundShadow)"/>
 </svg>`;
 
 // 2. Painel Arco Romano (100x200cm)
@@ -305,44 +275,31 @@ export const SVG_PANEL_ARCH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="
   <defs>
     <linearGradient id="archFabricStudio" x1="15%" y1="10%" x2="85%" y2="95%">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="45%" stop-color="#f8fafc"/>
-      <stop offset="80%" stop-color="#f1f5f9"/>
-      <stop offset="100%" stop-color="#cbd5e1"/>
+      <stop offset="55%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
     </linearGradient>
-    <linearGradient id="archRimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="50%" stop-color="#cbd5e1"/>
-      <stop offset="100%" stop-color="#64748b"/>
-    </linearGradient>
-    <linearGradient id="archSteelFoot" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0f172a"/>
-      <stop offset="45%" stop-color="#475569"/>
-      <stop offset="100%" stop-color="#0f172a"/>
+    <linearGradient id="archGoldFoot" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#9a6f0a"/>
+      <stop offset="50%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#b4830e"/>
     </linearGradient>
     <filter id="archDropShadow" x="-18%" y="-10%" width="136%" height="125%">
-      <feDropShadow dx="2" dy="7" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.22"/>
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.18"/>
     </filter>
     <filter id="archFloorBlur" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="3.5"/>
+      <feGaussianBlur stdDeviation="3"/>
     </filter>
   </defs>
 
   <!-- Sombra de Contato no Piso -->
-  <ellipse cx="100" cy="374" rx="86" ry="5" fill="#0f172a" opacity="0.26" filter="url(#archFloorBlur)"/>
+  <ellipse cx="100" cy="373" rx="82" ry="4" fill="#0f172a" opacity="0.20" filter="url(#archFloorBlur)"/>
 
-  <!-- Sapatas Metálicas Laterais Estabilizadoras -->
-  <path d="M 14 372 L 56 372 L 52 376 L 18 376 Z" fill="url(#archSteelFoot)"/>
-  <path d="M 144 372 L 186 372 L 182 376 L 148 376 Z" fill="url(#archSteelFoot)"/>
+  <!-- Pés Dourados Discretos na Base -->
+  <path d="M 22 367 L 46 367 L 44 371.5 L 24 371.5 Z" fill="url(#archGoldFoot)"/>
+  <path d="M 154 367 L 178 367 L 176 371.5 L 156 371.5 Z" fill="url(#archGoldFoot)"/>
 
-  <!-- Espessura Lateral 3D do Painel Arco Romano -->
-  <path d="M 21 372 L 21 100 A 82 82 0 0 1 185 100 L 185 372 Z" fill="#94a3b8" filter="url(#archDropShadow)"/>
-
-  <!-- Face Frontal do Arco Romano (Exatamente xLeft=18, xRight=182, cy=100, r=82, yBottom=371.5) -->
-  <path d="M 18 371.5 L 18 100 A 82 82 0 0 1 182 100 L 182 371.5 Z" fill="url(#archFabricStudio)" stroke="url(#archRimGrad)" stroke-width="2"/>
-
-  <!-- Bisotê Iluminado e Costura Interna de Alfaiataria -->
-  <path d="M 20.5 369.5 L 20.5 100 A 79.5 79.5 0 0 1 179.5 100 L 179.5 369.5 Z" fill="none" stroke="#ffffff" stroke-width="1.6" opacity="0.9"/>
-  <path d="M 24 367 L 24 100 A 76 76 0 0 1 176 100 L 176 367" fill="none" stroke="#cbd5e1" stroke-width="0.8" stroke-dasharray="5,4" opacity="0.5"/>
+  <!-- Face Frontal do Arco Romano Sem Bordas / Sem Contornos (yBottom=368) -->
+  <path d="M 18 368 L 18 100 A 82 82 0 0 1 182 100 L 182 368 Z" fill="url(#archFabricStudio)" stroke="none" filter="url(#archDropShadow)"/>
 </svg>`;
 
 // 3. Painel Ripado Pinus (180x200cm)
@@ -482,13 +439,13 @@ export const SVG_CYLINDER_G = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="
   <ellipse cx="80" cy="199" rx="68" ry="13" fill="#0f172a" opacity="0.24" filter="url(#cylFloorBlur_G)"/>
 
   <!-- Corpo Cilíndrico Tangente C1 (xLeft=14.5, xRight=145.5, yTop=35, yBottom=195, rx=65.5, ry=12.5) -->
-  <path d="M 14.5 35 L 14.5 195 A 65.5 12.5 0 0 0 145.5 195 L 145.5 35 Z" fill="url(#cylBody_G)" stroke="#94a3b8" stroke-width="1.2" filter="url(#cylShadow_G)"/>
+  <path d="M 14.5 35 L 14.5 195 A 65.5 12.5 0 0 0 145.5 195 L 145.5 35 Z" fill="url(#cylBody_G)" stroke="none" filter="url(#cylShadow_G)"/>
 
   <!-- Sombra Sob o Tampo de MDF (Oclusão da Borda Superior) -->
   <path d="M 14.5 36.5 A 65.5 12.5 0 0 0 145.5 36.5 L 145.5 40 A 65.5 12.5 0 0 1 14.5 40 Z" fill="#475569" opacity="0.18"/>
 
   <!-- Tampo Superior Elíptico com Bisotê Iluminado -->
-  <ellipse cx="80" cy="35" rx="65.5" ry="12.5" fill="url(#cylTop_G)" stroke="#94a3b8" stroke-width="1.2"/>
+  <ellipse cx="80" cy="35" rx="65.5" ry="12.5" fill="url(#cylTop_G)" stroke="none"/>
   <ellipse cx="80" cy="35" rx="63.5" ry="11" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.95"/>
 
   <!-- Costura de Acabamento na Base -->
@@ -525,13 +482,13 @@ export const SVG_CYLINDER_M = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="
   <ellipse cx="80" cy="199" rx="68" ry="13" fill="#0f172a" opacity="0.24" filter="url(#cylFloorBlur_M)"/>
 
   <!-- Corpo Cilíndrico Tangente C1 (xLeft=14.5, xRight=145.5, yTop=35, yBottom=195, rx=65.5, ry=12.5) -->
-  <path d="M 14.5 35 L 14.5 195 A 65.5 12.5 0 0 0 145.5 195 L 145.5 35 Z" fill="url(#cylBody_M)" stroke="#94a3b8" stroke-width="1.2" filter="url(#cylShadow_M)"/>
+  <path d="M 14.5 35 L 14.5 195 A 65.5 12.5 0 0 0 145.5 195 L 145.5 35 Z" fill="url(#cylBody_M)" stroke="none" filter="url(#cylShadow_M)"/>
 
   <!-- Sombra Sob o Tampo de MDF (Oclusão da Borda Superior) -->
   <path d="M 14.5 36.5 A 65.5 12.5 0 0 0 145.5 36.5 L 145.5 40 A 65.5 12.5 0 0 1 14.5 40 Z" fill="#475569" opacity="0.18"/>
 
   <!-- Tampo Superior Elíptico com Bisotê Iluminado -->
-  <ellipse cx="80" cy="35" rx="65.5" ry="12.5" fill="url(#cylTop_M)" stroke="#94a3b8" stroke-width="1.2"/>
+  <ellipse cx="80" cy="35" rx="65.5" ry="12.5" fill="url(#cylTop_M)" stroke="none"/>
   <ellipse cx="80" cy="35" rx="63.5" ry="11" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.95"/>
 
   <!-- Costura de Acabamento na Base -->
@@ -568,13 +525,13 @@ export const SVG_CYLINDER_P = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="
   <ellipse cx="80" cy="199" rx="68" ry="13" fill="#0f172a" opacity="0.24" filter="url(#cylFloorBlur_P)"/>
 
   <!-- Corpo Cilíndrico Tangente C1 (xLeft=14.5, xRight=145.5, yTop=35, yBottom=195, rx=65.5, ry=12.5) -->
-  <path d="M 14.5 35 L 14.5 195 A 65.5 12.5 0 0 0 145.5 195 L 145.5 35 Z" fill="url(#cylBody_P)" stroke="#94a3b8" stroke-width="1.2" filter="url(#cylShadow_P)"/>
+  <path d="M 14.5 35 L 14.5 195 A 65.5 12.5 0 0 0 145.5 195 L 145.5 35 Z" fill="url(#cylBody_P)" stroke="none" filter="url(#cylShadow_P)"/>
 
   <!-- Sombra Sob o Tampo de MDF (Oclusão da Borda Superior) -->
   <path d="M 14.5 36.5 A 65.5 12.5 0 0 0 145.5 36.5 L 145.5 40 A 65.5 12.5 0 0 1 14.5 40 Z" fill="#475569" opacity="0.18"/>
 
   <!-- Tampo Superior Elíptico com Bisotê Iluminado -->
-  <ellipse cx="80" cy="35" rx="65.5" ry="12.5" fill="url(#cylTop_P)" stroke="#94a3b8" stroke-width="1.2"/>
+  <ellipse cx="80" cy="35" rx="65.5" ry="12.5" fill="url(#cylTop_P)" stroke="none"/>
   <ellipse cx="80" cy="35" rx="63.5" ry="11" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.95"/>
 
   <!-- Costura de Acabamento na Base -->
@@ -760,7 +717,7 @@ export const SVG_DRESSER_BOMBE = `<svg xmlns="http://www.w3.org/2000/svg" viewBo
              C 171 171, 178 170, 178 166
              C 174 146, 173 128, 178 118
              C 192 88, 186 55, 172 28 Z"
-          fill="url(#bombeBodyLaca)" stroke="#94a3b8" stroke-width="1.2"/>
+          fill="url(#bombeBodyLaca)" stroke="none"/>
 
     <!-- Frisos Dourados Laterais e Saia Provençal -->
     <path d="M 31 30 C 19 56, 14 88, 27 118 C 31 128, 29 148, 26 165" fill="none" stroke="url(#bombeGoldTrim)" stroke-width="1.6"/>
@@ -1709,7 +1666,7 @@ export const SVG_DISPLAY_ASTRONAUT_BABY = `<svg xmlns="http://www.w3.org/2000/sv
     <circle cx="90" cy="222" r="18" fill="#ffffff"/>
 
     <!-- Traje Espacial Acolchoado com Pernas, Botas e Luvas -->
-    <ellipse cx="90" cy="172" rx="32" ry="34" fill="url(#spaceSuit3D)" stroke="#94a3b8" stroke-width="1.2"/>
+    <ellipse cx="90" cy="172" rx="32" ry="34" fill="url(#spaceSuit3D)" stroke="none"/>
     <!-- Cinto Espacial Metálico -->
     <rect x="60" y="184" width="60" height="7" rx="3" fill="#1e3a8a"/>
     <rect x="83" y="182" width="14" height="11" rx="2" fill="#eab308"/>
@@ -1915,46 +1872,35 @@ export const SVG_PANEL_RECT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="
   <defs>
     <linearGradient id="rectFabricGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="50%" stop-color="#f8fafc"/>
-      <stop offset="85%" stop-color="#f1f5f9"/>
-      <stop offset="100%" stop-color="#cbd5e1"/>
+      <stop offset="55%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
     </linearGradient>
-    <linearGradient id="rectSteelTube" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0f172a"/>
-      <stop offset="40%" stop-color="#475569"/>
-      <stop offset="65%" stop-color="#64748b"/>
-      <stop offset="100%" stop-color="#020617"/>
+    <linearGradient id="rectGoldFoot" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#9a6f0a"/>
+      <stop offset="50%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#b4830e"/>
     </linearGradient>
     <filter id="rectDropShadow" x="-15%" y="-15%" width="130%" height="130%">
-      <feDropShadow dx="0" dy="7" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.22"/>
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.18"/>
     </filter>
     <filter id="rectFootBlur" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="3.5"/>
+      <feGaussianBlur stdDeviation="3"/>
     </filter>
   </defs>
 
-  <!-- Sombras no Piso -->
-  <ellipse cx="55" cy="253" rx="34" ry="4.5" fill="#0f172a" opacity="0.28" filter="url(#rectFootBlur)"/>
-  <ellipse cx="245" cy="253" rx="34" ry="4.5" fill="#0f172a" opacity="0.28" filter="url(#rectFootBlur)"/>
+  <!-- Sombras Discretas no Piso -->
+  <ellipse cx="55" cy="252" rx="22" ry="3.5" fill="#0f172a" opacity="0.20" filter="url(#rectFootBlur)"/>
+  <ellipse cx="245" cy="252" rx="22" ry="3.5" fill="#0f172a" opacity="0.20" filter="url(#rectFootBlur)"/>
 
-  <!-- Pés Metálicos Tubulares com Sapatas e Mão-Francesa -->
-  <rect x="51" y="210" width="8" height="42" fill="url(#rectSteelTube)"/>
-  <path d="M 24 252 L 55 246 L 86 252 L 82 255 L 55 250 L 28 255 Z" fill="url(#rectSteelTube)"/>
-  <rect x="22" y="251" width="8" height="5" rx="1.5" fill="#020617"/>
-  <rect x="80" y="251" width="8" height="5" rx="1.5" fill="#020617"/>
+  <!-- Pés Dourados Discretos -->
+  <rect x="53" y="226" width="4" height="24" rx="1.5" fill="url(#rectGoldFoot)"/>
+  <path d="M 40 250 L 55 247.5 L 70 250 L 68 252.5 L 42 252.5 Z" fill="url(#rectGoldFoot)"/>
 
-  <rect x="241" y="210" width="8" height="42" fill="url(#rectSteelTube)"/>
-  <path d="M 214 252 L 245 246 L 276 252 L 272 255 L 245 250 L 218 255 Z" fill="url(#rectSteelTube)"/>
-  <rect x="212" y="251" width="8" height="5" rx="1.5" fill="#020617"/>
-  <rect x="270" y="251" width="8" height="5" rx="1.5" fill="#020617"/>
+  <rect x="243" y="226" width="4" height="24" rx="1.5" fill="url(#rectGoldFoot)"/>
+  <path d="M 230 250 L 245 247.5 L 260 250 L 258 252.5 L 232 252.5 Z" fill="url(#rectGoldFoot)"/>
 
-  <!-- Espessura Traseira 3D -->
-  <rect x="17" y="17" width="270" height="200" rx="5" fill="#94a3b8" filter="url(#rectDropShadow)"/>
-
-  <!-- Lona / Tecido Tensionado Principal (Exatamente 15,15 270x200) -->
-  <rect x="15" y="15" width="270" height="200" rx="4" fill="url(#rectFabricGrad)" stroke="#cbd5e1" stroke-width="2"/>
-  <rect x="18" y="18" width="264" height="194" rx="3" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.9"/>
-  <rect x="22" y="22" width="256" height="186" rx="2" fill="none" stroke="#cbd5e1" stroke-width="0.8" stroke-dasharray="6,4" opacity="0.5"/>
+  <!-- Painel Retangular Sem Bordas (Exatamente 15,15 270x215) -->
+  <rect x="15" y="15" width="270" height="215" fill="url(#rectFabricGrad)" stroke="none" filter="url(#rectDropShadow)"/>
 </svg>`;
 
 // 18. Painel Ripado 1,00m x 2,20m
@@ -2069,35 +2015,30 @@ export const SVG_PANEL_HALF_MOON = `<svg xmlns="http://www.w3.org/2000/svg" view
   <defs>
     <linearGradient id="halfMoonFabric" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="45%" stop-color="#fdf4ff"/>
-      <stop offset="80%" stop-color="#fae8ff"/>
-      <stop offset="100%" stop-color="#e9d5ff"/>
+      <stop offset="55%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
     </linearGradient>
-    <linearGradient id="hmSteelTube" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#0f172a"/>
-      <stop offset="45%" stop-color="#475569"/>
-      <stop offset="100%" stop-color="#0f172a"/>
+    <linearGradient id="hmGoldFoot" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#9a6f0a"/>
+      <stop offset="50%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#b4830e"/>
     </linearGradient>
     <filter id="hmShadow" x="-18%" y="-10%" width="136%" height="125%">
-      <feDropShadow dx="2" dy="7" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.22"/>
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.18"/>
     </filter>
   </defs>
 
   <!-- Sombra no Piso -->
-  <ellipse cx="110" cy="374" rx="88" ry="5" fill="#0f172a" opacity="0.25"/>
+  <ellipse cx="110" cy="373" rx="80" ry="4" fill="#0f172a" opacity="0.20"/>
 
-  <!-- Pés Tubulares Metálicos -->
-  <rect x="42" y="342" width="7" height="30" fill="url(#hmSteelTube)"/>
-  <path d="M 20 372 L 45.5 367 L 71 372 L 68 375 L 45.5 371 L 23 375 Z" fill="url(#hmSteelTube)"/>
-  <rect x="171" y="342" width="7" height="30" fill="url(#hmSteelTube)"/>
-  <path d="M 149 372 L 174.5 367 L 200 372 L 197 375 L 174.5 371 L 152 375 Z" fill="url(#hmSteelTube)"/>
+  <!-- Pés Dourados Discretos -->
+  <rect x="44" y="350" width="4" height="21" rx="1.5" fill="url(#hmGoldFoot)"/>
+  <path d="M 32 371 L 46 368.5 L 60 371 L 58 373 L 34 373 Z" fill="url(#hmGoldFoot)"/>
+  <rect x="172" y="350" width="4" height="21" rx="1.5" fill="url(#hmGoldFoot)"/>
+  <path d="M 160 371 L 174 368.5 L 188 371 L 186 373 L 162 373 Z" fill="url(#hmGoldFoot)"/>
 
-  <!-- Espessura Lateral 3D -->
-  <path d="M 23 345 L 23 150 C 23 35, 113 20, 203 25 L 203 345 Z" fill="#a855f7" opacity="0.28" filter="url(#hmShadow)"/>
-
-  <!-- Face Principal Assimétrica (Alinhada com mask-renderer) -->
-  <path d="M 20 345 L 20 150 C 20 35, 110 20, 200 25 L 200 345 Z" fill="url(#halfMoonFabric)" stroke="#d8b4fe" stroke-width="2" filter="url(#hmShadow)"/>
-  <path d="M 22.5 342.5 L 22.5 150 C 22.5 38, 110 23, 197.5 27.5 L 197.5 342.5 Z" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.9"/>
+  <!-- Face Principal Assimétrica Sem Bordas (yBottom=352) -->
+  <path d="M 20 352 L 20 150 C 20 35, 110 20, 200 25 L 200 352 Z" fill="url(#halfMoonFabric)" stroke="none" filter="url(#hmShadow)"/>
 </svg>`;
 
 // 20. Shimmer Wall (Paetê Dourado) 30x30cm (Placa Modular)
@@ -3138,7 +3079,8 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     id: 'preset-painel-ripado',
     name: 'Painel Ripado 1,00x2,20m',
     category: 'paineis',
-    type: 'panel_rect',
+    type: 'panel_slat',
+    svgRole: 'modular',
     widthCm: 100,
     heightCm: 220,
     previewUrl: svgToDataUrl(SVG_PANEL_SLAT_100x220),
@@ -3212,7 +3154,8 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     id: 'preset-cilindro-canelado',
     name: 'Cilindro Canelado Dourado Luxo',
     category: 'cilindros',
-    type: 'cylinder',
+    type: 'cylinder_fluted',
+    svgRole: 'modular',
     widthCm: 50,
     heightCm: 80,
     previewUrl: svgToDataUrl(SVG_CYLINDER_FLUTED),

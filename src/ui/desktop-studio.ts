@@ -1,5 +1,5 @@
-import { generateMoinhoSVG, svgToDataUrl } from '../core/presets-data';
-// Modo Desktop Studio - Painéis Laterais de Catálogo, Inspetor e Camadas
+import { generateMoinhoSVG } from '../core/presets-data';
+import { getItemCustomizationMode } from '../core/modular-svg-generator';
 import { getItemsByCategory, getAllItems, getAllCovers } from '../core/db';
 import { REALISTIC_ENVIRONMENTS } from '../core/textures-data';
 import type { CanvasEngine } from '../core/canvas-engine';
@@ -39,7 +39,6 @@ export class DesktopStudio {
     this.updateInspector(null, null);
     this.renderLayersList([]);
 
-    // Sincroniza seleção e camadas no painel desktop
     this.canvasEngine.onLayersChange = (elements) => {
       this.renderLayersList(elements);
     };
@@ -75,9 +74,19 @@ export class DesktopStudio {
     }
   }
 
+  getBadgeHtml(item: PresetItem): string {
+    const mode = getItemCustomizationMode(item);
+    if (mode === 'structural') {
+      return '<span class="asset-role-badge badge-structural">📐 SVG • CAPA/COR</span>';
+    }
+    if (mode === 'modular') {
+      return '<span class="asset-role-badge badge-modular">🎨 SVG • CORES</span>';
+    }
+    return '<span class="asset-role-badge badge-photo">📷 PEÇA REAL</span>';
+  }
+
   // ABA 1: Presets Base
   async renderPresets(container: HTMLElement): Promise<void> {
-    // Categorias de Presets
     const catBar = document.createElement('div');
     catBar.className = 'desktop-category-pills';
 
@@ -86,7 +95,6 @@ export class DesktopStudio {
       { id: 'paineis', label: 'Painéis' },
       { id: 'cilindros', label: 'Cilindros' },
       { id: 'mesas', label: 'Mesas' },
-      { id: 'baloes', label: 'Balões' },
       { id: 'tapetes', label: 'Tapetes' },
       { id: 'displays', label: 'Displays' },
       { id: 'acessorios', label: 'Acessórios' }
@@ -113,9 +121,11 @@ export class DesktopStudio {
 
     presetItems.forEach((item) => {
       const card = document.createElement('div');
-      card.className = 'desktop-item-card';
+      const mode = getItemCustomizationMode(item);
+      card.className = `desktop-item-card card-mode-${mode}`;
       card.innerHTML = `
         <div class="card-thumb-wrap">
+          ${this.getBadgeHtml(item)}
           <img src="${item.previewUrl}" alt="${item.name}" loading="lazy" />
         </div>
         <div class="card-title">${item.name}</div>
@@ -154,7 +164,7 @@ export class DesktopStudio {
       empty.innerHTML = `
         <div style="font-size: 1.8rem; margin-bottom: 6px;">📦</div>
         <div>Nenhuma peça cadastrada ainda.</div>
-        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Tire fotos das suas mesas e painéis próprios!</div>
+        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Tire fotos das suas mesas e peças reais em WebP/PNG!</div>
       `;
       container.appendChild(empty);
       return;
@@ -165,9 +175,10 @@ export class DesktopStudio {
 
     customItems.forEach((item) => {
       const card = document.createElement('div');
-      card.className = 'desktop-item-card';
+      card.className = 'desktop-item-card card-mode-photo';
       card.innerHTML = `
         <div class="card-thumb-wrap">
+          <span class="asset-role-badge badge-photo">📷 MEU ACERVO</span>
           <img src="${item.previewUrl}" alt="${item.name}" loading="lazy" />
         </div>
         <div class="card-title">${item.name}</div>
@@ -184,6 +195,14 @@ export class DesktopStudio {
 
   // ABA 3: Capas e Estampas
   async renderCovers(container: HTMLElement): Promise<void> {
+    const infoBanner = document.createElement('div');
+    infoBanner.className = 'covers-rule-banner';
+    infoBanner.innerHTML = `
+      <span>📐</span>
+      <span>Capas vestem apenas <strong>Estruturas SVG</strong> (Painéis Lisos, Cilindros, Cubos e Tapetes).</span>
+    `;
+    container.appendChild(infoBanner);
+
     const covers = await getAllCovers();
     const grid = document.createElement('div');
     grid.className = 'desktop-catalog-grid';
@@ -199,11 +218,17 @@ export class DesktopStudio {
         <div class="card-dimensions">${cover.themeName}</div>
       `;
       card.addEventListener('click', async () => {
-        if (this.canvasEngine.selectedNode) {
-          await this.canvasEngine.applyCoverToSelected(cover.imageUrl);
-        } else {
-          alert('Selecione primeiro um painel, cilindro ou tapete no centro para vestir a capa.');
+        const node = this.canvasEngine.selectedNode;
+        if (!node) {
+          alert('Selecione primeiro uma Estrutura SVG no palco (ex: Painel Redondo, Arco Romano, Cilindro ou Cubo) para vestir a capa.');
+          return;
         }
+        const meta = node.getAttr('itemMeta') as PresetItem;
+        if (getItemCustomizationMode(meta) !== 'structural') {
+          alert(`A peça "${meta.name}" não utiliza capas de tecido. Apenas itens marcados com [📐 SVG • CAPA/COR] aceitam capas.`);
+          return;
+        }
+        await this.canvasEngine.applyCoverToSelected(cover.imageUrl);
       });
       grid.appendChild(card);
     });
@@ -267,9 +292,10 @@ export class DesktopStudio {
         return;
       }
 
-      if (meta.category === 'baloes' || meta.type === 'balloon_arch') {
+      const mode = getItemCustomizationMode(meta);
+      if (mode === 'modular') {
         this.onOpenBalloonModal(node);
-      } else {
+      } else if (mode === 'structural') {
         this.onOpenCoverModal(meta);
       }
     });
@@ -280,8 +306,10 @@ export class DesktopStudio {
     const emptyBox = document.getElementById('desktop-inspector-empty');
     const titleEl = document.getElementById('desktop-inspector-title');
     const sizeEl = document.getElementById('desktop-inspector-size');
+    const roleBadgeEl = document.getElementById('desktop-inspector-role-badge');
     const thumbEl = document.getElementById('desktop-inspector-thumb') as HTMLImageElement | null;
     const btnCover = document.getElementById('btn-desktop-cover');
+    const framingPanel = document.getElementById('desktop-cover-framing-panel');
 
     if (!node || !meta) {
       if (box) box.style.display = 'none';
@@ -292,17 +320,93 @@ export class DesktopStudio {
     if (box) box.style.display = 'flex';
     if (emptyBox) emptyBox.style.display = 'none';
 
+    const mode = getItemCustomizationMode(meta);
+
     if (titleEl) titleEl.textContent = meta.name;
-    if (sizeEl) sizeEl.textContent = `${meta.widthCm}cm de largura • ${meta.heightCm}cm de altura`;
+    if (sizeEl) sizeEl.textContent = `${meta.widthCm}cm × ${meta.heightCm}cm`;
     if (thumbEl) thumbEl.src = meta.previewUrl;
 
+    if (roleBadgeEl) {
+      if (mode === 'structural') {
+        roleBadgeEl.className = 'inspector-role-pill pill-structural';
+        roleBadgeEl.textContent = '📐 Estrutura SVG • Aceita Capa ou Pintura';
+      } else if (mode === 'modular') {
+        roleBadgeEl.className = 'inspector-role-pill pill-modular';
+        roleBadgeEl.textContent = '🎨 SVG Autossuficiente • Cores Modulares';
+      } else {
+        roleBadgeEl.className = 'inspector-role-pill pill-photo';
+        roleBadgeEl.textContent = '📷 Peça Fotográfica Real • Sem Capa';
+      }
+    }
+
     if (btnCover) {
-      const isBalloons = meta.category === 'baloes' || meta.type === 'balloon_arch';
       if (meta.type === 'moinho') {
         const colorLabel = (meta.currentColor || 'marrom').toUpperCase();
-        btnCover.textContent = '🎨 Cor: ' + colorLabel;
+        btnCover.style.display = 'inline-flex';
+        btnCover.textContent = `🎨 Cor MDF: ${colorLabel}`;
+      } else if (mode === 'structural') {
+        btnCover.style.display = 'inline-flex';
+        btnCover.textContent = '🎨 Vestir Capa ou Pintar Cor';
+      } else if (mode === 'modular') {
+        btnCover.style.display = 'inline-flex';
+        btnCover.textContent = '🎨 Personalizar Cores SVG';
       } else {
-        btnCover.textContent = isBalloons ? '🎨 Cores dos Balões' : '🎨 Vestir Capa';
+        btnCover.style.display = 'none';
+      }
+    }
+
+    if (framingPanel) {
+      if (mode === 'structural' && meta.customCoverUrl) {
+        framingPanel.style.display = 'flex';
+        const isRepositioning = this.canvasEngine.isRepositioningCover;
+        const scaleVal = meta.coverScale || 1;
+        framingPanel.innerHTML = `
+          <div class="framing-panel-header">
+            <span>✋ Enquadramento da Capa</span>
+            <span class="framing-zoom-tag">${Math.round(scaleVal * 100)}%</span>
+          </div>
+          <div class="framing-zoom-row">
+            <span style="font-size: 0.72rem; color: var(--text-muted);">🔍</span>
+            <input type="range" id="inspector-cover-zoom-slider" min="0.4" max="3.0" step="0.02" value="${scaleVal}" style="flex: 1; accent-color: var(--primary);" />
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" id="btn-inspector-toggle-reposition" class="btn-inspector-action ${isRepositioning ? 'btn-inspector-highlight' : ''}" style="flex: 1;">
+              ${isRepositioning ? '✓ Concluir Arrasto' : '✋ Arrastar Capa'}
+            </button>
+            <button type="button" id="btn-inspector-reset-cover" class="btn-inspector-action" title="Centralizar Capa">
+              ↺ Resetar
+            </button>
+          </div>
+        `;
+
+        const slider = framingPanel.querySelector('#inspector-cover-zoom-slider') as HTMLInputElement | null;
+        const zoomTag = framingPanel.querySelector('.framing-zoom-tag');
+        slider?.addEventListener('input', (e) => {
+          const val = parseFloat((e.target as HTMLInputElement).value);
+          if (zoomTag) zoomTag.textContent = `${Math.round(val * 100)}%`;
+          this.canvasEngine.setCoverScale(val, false);
+        });
+        slider?.addEventListener('change', (e) => {
+          const val = parseFloat((e.target as HTMLInputElement).value);
+          this.canvasEngine.setCoverScale(val, true);
+        });
+
+        framingPanel.querySelector('#btn-inspector-toggle-reposition')?.addEventListener('click', () => {
+          if (this.canvasEngine.isRepositioningCover) {
+            this.canvasEngine.exitCoverRepositionMode();
+          } else {
+            this.canvasEngine.enterCoverRepositionMode();
+          }
+          this.updateInspector(this.canvasEngine.selectedNode?.getAttr('itemMeta') || meta, node);
+        });
+
+        framingPanel.querySelector('#btn-inspector-reset-cover')?.addEventListener('click', () => {
+          this.canvasEngine.resetCoverTransform();
+          this.updateInspector(this.canvasEngine.selectedNode?.getAttr('itemMeta') || meta, node);
+        });
+      } else {
+        framingPanel.style.display = 'none';
+        framingPanel.innerHTML = '';
       }
     }
   }
@@ -321,7 +425,6 @@ export class DesktopStudio {
       return;
     }
 
-    // Renderiza do topo para a base (invertido para parecer camadas)
     const reversed = [...elements].reverse();
 
     reversed.forEach((elem) => {
@@ -331,11 +434,14 @@ export class DesktopStudio {
       const isSelected = (this.canvasEngine.selectedNode as any)?.getAttr('itemMeta')?.instanceId === elem.instanceId;
       if (isSelected) row.classList.add('selected');
 
+      const mode = getItemCustomizationMode(elem);
+      const miniBadge = mode === 'structural' ? '📐 SVG' : (mode === 'modular' ? '🎨 SVG' : '📷 Real');
+
       row.innerHTML = `
         <img class="layer-thumb" src="${elem.previewUrl}" alt="" />
         <div class="layer-info">
           <div class="layer-title">${elem.name}</div>
-          <div class="layer-sub">${elem.widthCm}x${elem.heightCm}cm</div>
+          <div class="layer-sub">${elem.widthCm}x${elem.heightCm}cm • ${miniBadge}</div>
         </div>
       `;
 

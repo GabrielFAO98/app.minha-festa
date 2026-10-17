@@ -66,6 +66,27 @@
             <span>✨</span>
             <span id="selection-badge-name">Peça</span>
           </div>
+
+          <!-- BARRA DE ENQUADRAMENTO DE CAPA ESTILO FACEBOOK -->
+          <div id="cover-reposition-bar" class="cover-reposition-bar" style="display: none;">
+            <div class="reposition-bar-top">
+              <span class="reposition-bar-hint">✋ Arraste a capa na peça para posicionar</span>
+              <div class="reposition-bar-actions">
+                <button type="button" id="btn-stage-cover-reset" class="btn-reposition-bar-ghost" title="Centralizar Capa">
+                  ↺ Centralizar
+                </button>
+                <button type="button" id="btn-stage-cover-done" class="btn-reposition-bar-done">
+                  ✓ Concluir
+                </button>
+              </div>
+            </div>
+            <div class="reposition-bar-zoom">
+              <span>🔍 Zoom:</span>
+              <input type="range" id="stage-cover-zoom-slider" min="0.4" max="3.0" step="0.02" value="1" />
+              <span id="stage-cover-zoom-value">100%</span>
+            </div>
+          </div>
+
           <div id="konva-container"></div>
         </div>
       </main>
@@ -85,9 +106,13 @@
               </div>
             </div>
 
+            <div id="desktop-inspector-role-badge" class="inspector-role-pill"></div>
+
             <button id="btn-desktop-cover" class="btn-inspector-action btn-inspector-highlight" style="width: 100%;">
-              🎨 Capa
+              🎨 Capa / Cores
             </button>
+
+            <div id="desktop-cover-framing-panel" class="desktop-cover-framing-panel" style="display: none;"></div>
 
             <div class="inspector-actions-grid">
               <button id="btn-desktop-duplicate" class="btn-inspector-action">
@@ -133,6 +158,9 @@
       </button>
       <button id="btn-action-cover" class="item-action-btn btn-cover-direct" title="Vestir Capa / Cores">
         🎨 Capa
+      </button>
+      <button id="btn-action-reposition" class="item-action-btn btn-reposition-direct" style="display: none;" title="Arrastar e Dar Zoom na Capa">
+        ✋ Enquadrar
       </button>
       <button id="btn-action-front" class="item-action-btn" title="Trazer para Frente">
         ⬆️ Frente
@@ -186,17 +214,20 @@
     </nav>
   </div>
 
-  <!-- MODAL: Aplicar / Trocar Capa -->
+  <!-- MODAL: Aplicar / Trocar Capa ou Cor Sólida (Estruturas SVG) -->
   <div id="cover-modal" class="modal-backdrop">
     <div class="modal-container">
       <div class="modal-header">
         <div>
-          <div class="modal-title">🎨 Capas & Estampas</div>
-          <div style="font-size: 0.72rem; color: var(--text-muted);" id="cover-modal-subtitle">Toque na estampa para vestir a peça</div>
+          <div class="modal-title">🎨 Capas & Cores de Estrutura</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);" id="cover-modal-subtitle">Escolha uma cor sólida ou vista uma capa sublimada</div>
         </div>
         <button id="btn-close-cover-modal" class="modal-close-btn">✕</button>
       </div>
       <div class="modal-body">
+        <div id="solid-colors-modal-section"></div>
+
+        <div class="modal-section-title" style="margin-top: 6px;">Estampas & Capas Sublimadas:</div>
         <div style="display: flex; gap: 8px;">
           <button id="btn-upload-cover-trigger" class="btn-primary" style="flex: 1;">
             📁 Subir da Galeria
@@ -211,25 +242,25 @@
     </div>
   </div>
 
-  <!-- MODAL: Personalizar Arco de Balões Paramétrico -->
+  <!-- MODAL: Personalizar Cores Modulares SVG -->
   <div id="balloon-modal" class="modal-backdrop">
     <div class="modal-container">
       <div class="modal-header">
         <div>
-          <div class="modal-title">🎈 Personalizar Arco de Balões</div>
-          <div style="font-size: 0.72rem; color: var(--text-muted);">Escolha uma paleta de cores ou personalize cada tom</div>
+          <div class="modal-title" id="modular-modal-title">🎨 Personalizar Cores SVG</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);" id="modular-modal-subtitle">Escolha uma combinação pronta ou personalize cada elemento</div>
         </div>
         <button id="btn-close-balloon-modal" class="modal-close-btn">✕</button>
       </div>
       <div class="modal-body">
         <div class="balloon-preview-wrapper">
-          <img id="balloon-preview-img" class="balloon-preview-img" alt="Prévia do Arco de Balões" />
+          <img id="balloon-preview-img" class="balloon-preview-img" alt="Prévia da Peça SVG" />
         </div>
 
-        <div class="modal-section-title">Paletas Populares de Festa:</div>
+        <div class="modal-section-title">Combinações Sugeridas:</div>
         <div id="balloon-palettes-grid" class="balloon-palettes-grid"></div>
 
-        <div class="modal-section-title" style="margin-top: 14px;">Cores Individuais da Paleta:</div>
+        <div class="modal-section-title" style="margin-top: 14px;">Cores por Elemento da Peça:</div>
         <div id="balloon-color-pickers" class="balloon-color-pickers-grid"></div>
 
         <button id="btn-apply-balloon-colors" class="btn-primary" style="width: 100%; margin-top: 14px;">
@@ -272,7 +303,6 @@
               <option value="paineis">Painéis</option>
               <option value="cilindros">Cilindros</option>
               <option value="displays">Displays</option>
-              <option value="baloes">Balões</option>
               <option value="acessorios">Acessórios / Mesa</option>
             </select>
           </div>

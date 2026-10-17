@@ -24,8 +24,8 @@ async function bootstrap() {
   const exportModal = new ExportModal(canvasEngine);
   const projectsModal = new ProjectsModal(canvasEngine);
 
-  let bottomDock = null;
-  let desktopStudio = null;
+  let bottomDock: BottomDock | null = null;
+  let desktopStudio: DesktopStudio | null = null;
 
   const inventoryModal = new InventoryModal(async (newItem) => {
     await canvasEngine.addItem(newItem);
@@ -37,7 +37,7 @@ async function bootstrap() {
     }
   });
 
-  // 4. Barra de Aes Mobile da Pea
+  // 4. Barra de Ações Mobile da Peça
   const itemToolbar = new ItemToolbar(
     canvasEngine,
     (meta) => coverModal.open(meta),
@@ -51,7 +51,7 @@ async function bootstrap() {
     (meta) => coverModal.open(meta)
   );
 
-  // 6. Modo Desktop Studio (Sidebar Esquerda Catlogo + Sidebar Direita Inspetor/Camadas)
+  // 6. Modo Desktop Studio (Sidebar Esquerda Catálogo + Sidebar Direita Inspetor/Camadas)
   desktopStudio = new DesktopStudio(
     canvasEngine,
     () => inventoryModal.open(),
@@ -59,14 +59,66 @@ async function bootstrap() {
     (node) => balloonModal.open(node)
   );
 
-  // Sincronizao centralizada de seleo e camadas
+  // Barra Flutuante Estilo Facebook para Enquadramento de Capa no Palco
+  const repositionBar = document.getElementById('cover-reposition-bar');
+  const stageZoomSlider = document.getElementById('stage-cover-zoom-slider') as HTMLInputElement | null;
+  const stageZoomValue = document.getElementById('stage-cover-zoom-value');
+  const btnStageReset = document.getElementById('btn-stage-cover-reset');
+  const btnStageDone = document.getElementById('btn-stage-cover-done');
+
+  stageZoomSlider?.addEventListener('input', (e) => {
+    const val = parseFloat((e.target as HTMLInputElement).value);
+    if (stageZoomValue) stageZoomValue.textContent = `${Math.round(val * 100)}%`;
+    canvasEngine.setCoverScale(val, false);
+    if (desktopStudio && canvasEngine.selectedNode) {
+      desktopStudio.updateInspector(canvasEngine.selectedNode.getAttr('itemMeta') || null, canvasEngine.selectedNode);
+    }
+  });
+
+  stageZoomSlider?.addEventListener('change', (e) => {
+    const val = parseFloat((e.target as HTMLInputElement).value);
+    canvasEngine.setCoverScale(val, true);
+  });
+
+  btnStageReset?.addEventListener('click', () => {
+    canvasEngine.resetCoverTransform();
+    if (stageZoomSlider) stageZoomSlider.value = '1';
+    if (stageZoomValue) stageZoomValue.textContent = '100%';
+    if (desktopStudio && canvasEngine.selectedNode) {
+      desktopStudio.updateInspector(canvasEngine.selectedNode.getAttr('itemMeta') || null, canvasEngine.selectedNode);
+    }
+  });
+
+  btnStageDone?.addEventListener('click', () => {
+    canvasEngine.exitCoverRepositionMode();
+  });
+
+  canvasEngine.onCoverRepositionChange = (active, meta) => {
+    if (repositionBar) {
+      repositionBar.style.display = active ? 'flex' : 'none';
+    }
+    if (active && meta) {
+      const scaleVal = meta.coverScale || 1;
+      if (stageZoomSlider) stageZoomSlider.value = String(scaleVal);
+      if (stageZoomValue) stageZoomValue.textContent = `${Math.round(scaleVal * 100)}%`;
+    }
+    if (desktopStudio) {
+      desktopStudio.updateInspector(meta, canvasEngine.selectedNode);
+    }
+    itemToolbar.updateSelection(meta, canvasEngine.selectedNode);
+  };
+
+  // Sincronização centralizada de seleção e camadas
   canvasEngine.onSelectionChange = (meta, node) => {
     itemToolbar.updateSelection(meta, node);
-    desktopStudio.updateInspector(meta, node);
+    desktopStudio?.updateInspector(meta, node);
+    if (!canvasEngine.isRepositioningCover && repositionBar) {
+      repositionBar.style.display = 'none';
+    }
   };
 
   canvasEngine.onLayersChange = (elements) => {
-    desktopStudio.renderLayersList(elements);
+    desktopStudio?.renderLayersList(elements);
   };
 
   // 7. Header Actions, Salvar e Histórico (Desfazer / Refazer)
@@ -101,12 +153,12 @@ async function bootstrap() {
     exportModal.open();
   });
 
-  // 8. Carrega Cenrio Inicial e Salva Estado Base de Histrico
+  // 8. Carrega Cenário Inicial e Salva Estado Base de Histórico
   await loadDefaultScene(canvasEngine);
   canvasEngine.saveSnapshot();
 }
 
-async function loadDefaultScene(canvasEngine) {
+async function loadDefaultScene(canvasEngine: CanvasEngine) {
   try {
     const allPanels = await getItemsByCategory('paineis');
     const allCylinders = await getItemsByCategory('cilindros');
@@ -117,7 +169,7 @@ async function loadDefaultScene(canvasEngine) {
     const cylP = allCylinders.find((c) => c.id === 'preset-cilindro-p');
 
     const centerX = 540; // Centro exato de 1080
-    const floorY = 1380; // Linha do cho vertical 9:16
+    const floorY = 1380; // Linha do chão vertical 9:16
 
     // 1. Painel Redondo ao Centro
     if (panel) {
@@ -126,7 +178,7 @@ async function loadDefaultScene(canvasEngine) {
         y: floorY - 600
       }, false);
     }
-    // 3. Trio de Cilindros P, M, G  frente no piso
+    // 2. Trio de Cilindros P, M, G à frente no piso
     if (cylG) {
       await canvasEngine.addItem(cylG, {
         x: centerX + 50,

@@ -86,3 +86,228 @@
   display: inline-flex;
 }
 
+
+
+/* =========================================================
+   ARQUITETURA HÍBRIDA (SVG ESTRUTURAL / SVG MODULAR / FOTO)
+   & BARRA DE ENQUADRAMENTO DE CAPA ESTILO FACEBOOK
+========================================================= */
+
+/* Badges de Classificação nos Cards do Catálogo (Mobile & Desktop) */
+.card-thumb-wrap,
+.item-card-preview {
+  position: relative;
+}
+
+.asset-role-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 4;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+}
+
+.badge-structural {
+  background: rgba(16, 185, 129, 0.92);
+  color: #ecfdf5;
+  border: 1px solid rgba(110, 231, 183, 0.5);
+}
+
+.badge-modular {
+  background: rgba(139, 92, 246, 0.92);
+  color: #f5f3ff;
+  border: 1px solid rgba(196, 181, 253, 0.5);
+}
+
+.badge-photo {
+  background: rgba(245, 158, 11, 0.92);
+  color: #fffbeb;
+  border: 1px solid rgba(252, 211, 77, 0.5);
+}
+
+.card-mode-structural {
+  border-color: rgba(16, 185, 129, 0.28) !important;
+}
+
+.card-mode-modular {
+  border-color: rgba(139, 92, 246, 0.28) !important;
+}
+
+.card-mode-photo {
+  border-color: rgba(245, 158, 11, 0.28) !important;
+}
+
+/* Pílula de Identificação no Inspetor Desktop */
+.inspector-role-pill {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.pill-structural {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+}
+
+.pill-modular {
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  color: #c4b5fd;
+}
+
+.pill-photo {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #fcd34d;
+}
+
+/* Banner de Regra Inteligente na Aba Capas */
+.covers-rule-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: var(--radius-sm);
+  font-size: 0.68rem;
+  color: #d1fae5;
+  line-height: 1.35;
+}
+
+/* Painel de Enquadramento de Capa no Inspetor Direito */
+.desktop-cover-framing-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: var(--radius-sm);
+}
+
+.framing-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #bae6fd;
+}
+
+.framing-zoom-tag {
+  font-family: monospace;
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(56, 189, 248, 0.18);
+  color: #38bdf8;
+}
+
+.framing-zoom-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Barra Flutuante Estilo Facebook no Topo do Palco */
+.cover-reposition-bar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 30;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid #38bdf8;
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65);
+}
+
+.reposition-bar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.reposition-bar-hint {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #e0f2fe;
+}
+
+.reposition-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-reposition-bar-ghost {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f8fafc;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.btn-reposition-bar-done {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4);
+}
+
+.reposition-bar-zoom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.68rem;
+  color: #bae6fd;
+  font-weight: 600;
+}
+
+.reposition-bar-zoom input[type="range"] {
+  flex: 1;
+  accent-color: #38bdf8;
+  cursor: pointer;
+}
+
+#stage-cover-zoom-value {
+  min-width: 38px;
+  text-align: right;
+  font-family: monospace;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.btn-reposition-direct {
+  background: rgba(14, 165, 233, 0.2) !important;
+  border: 1px solid rgba(56, 189, 248, 0.5) !important;
+  color: #bae6fd !important;
+}

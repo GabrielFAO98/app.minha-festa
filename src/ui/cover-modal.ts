@@ -1,4 +1,5 @@
 import { getAllCovers, addCustomCover } from '../core/db';
+import { SOLID_STRUCTURAL_COLORS } from '../core/modular-svg-generator';
 import type { CanvasEngine } from '../core/canvas-engine';
 import type { PresetItem } from '../types';
 
@@ -7,6 +8,8 @@ export class CoverModal {
   targetMeta: PresetItem | null;
   modalEl: HTMLElement | null;
   gridEl: HTMLElement | null;
+  solidColorsContainer: HTMLElement | null;
+  repositionBannerEl: HTMLElement | null;
   fileInputEl: HTMLInputElement | null;
   btnUploadTrigger: HTMLElement | null;
   btnRemoveCover: HTMLElement | null;
@@ -17,6 +20,8 @@ export class CoverModal {
     this.targetMeta = null;
     this.modalEl = document.getElementById('cover-modal');
     this.gridEl = document.getElementById('covers-modal-grid');
+    this.solidColorsContainer = document.getElementById('solid-colors-modal-section');
+    this.repositionBannerEl = document.getElementById('cover-reposition-Trigger-box');
     this.fileInputEl = document.getElementById('cover-upload-input') as HTMLInputElement | null;
     this.btnUploadTrigger = document.getElementById('btn-upload-cover-trigger');
     this.btnRemoveCover = document.getElementById('btn-remove-cover');
@@ -44,7 +49,6 @@ export class CoverModal {
       reader.onload = async (event) => {
         const imageUrl = event.target?.result as string;
         if (!imageUrl) return;
-        // Salva nova capa no banco de dados local
         await addCustomCover({
           themeName: 'Minhas Estampas',
           name: file.name.replace(/\.[^/.]+$/, ''),
@@ -52,9 +56,9 @@ export class CoverModal {
           targetType: 'all'
         });
 
-        // Aplica imediatamente na peça
         await this.canvasEngine.applyCoverToSelected(imageUrl);
         this.close();
+        this.canvasEngine.enterCoverRepositionMode();
         this.loadCovers();
       };
       reader.readAsDataURL(file);
@@ -63,6 +67,7 @@ export class CoverModal {
 
     this.btnRemoveCover?.addEventListener('click', async () => {
       await this.canvasEngine.applyCoverToSelected(null);
+      this.canvasEngine.applySolidColorToSelected(null);
       this.close();
     });
   }
@@ -71,15 +76,76 @@ export class CoverModal {
     this.targetMeta = meta;
     const titleEl = document.getElementById('cover-modal-subtitle');
     if (titleEl && meta) {
-      titleEl.textContent = `Aplicar estampa em: ${meta.name}`;
+      titleEl.textContent = `Estrutura SVG: ${meta.name} (Escolha uma Cor Sólida ou Capa)`;
     }
 
+    this.renderSolidColorsSection();
     await this.loadCovers();
     this.modalEl?.classList.add('open');
   }
 
   close(): void {
     this.modalEl?.classList.remove('open');
+  }
+
+  renderSolidColorsSection(): void {
+    if (!this.solidColorsContainer) return;
+    const currentColor = this.targetMeta?.customColor || '#ffffff';
+    const hasCover = Boolean(this.targetMeta?.customCoverUrl);
+
+    const swatchesHtml = SOLID_STRUCTURAL_COLORS.map((c) => {
+      const isSelected = !hasCover && this.targetMeta?.customColor?.toLowerCase() === c.hex.toLowerCase();
+      return `<button type="button" class="solid-color-swatch-btn ${isSelected ? 'active' : ''}" data-hex="${c.hex}" title="${c.name}" style="background-color: ${c.hex};"></button>`;
+    }).join('');
+
+    this.solidColorsContainer.innerHTML = `
+      ${hasCover ? `
+        <div class="cover-reposition-callout">
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <strong style="font-size: 0.8rem; color: #fff;">✋ Capa Aplicada na Estrutura</strong>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">Arraste e dê zoom na capa como no Facebook</span>
+          </div>
+          <button type="button" id="btn-modal-reposition-cover" class="btn-reposition-highlight">
+            ✋ Enquadrar Capa
+          </button>
+        </div>
+      ` : ''}
+      <div class="solid-colors-box">
+        <div class="solid-colors-header">
+          <span>🎨 Pintar Estrutura com Cor Lisa (Sem Capa)</span>
+          <label class="custom-color-inline-picker" title="Escolher qualquer cor">
+            <input type="color" id="structural-free-color-input" value="${currentColor}" />
+            <span>+ Cor Livre</span>
+          </label>
+        </div>
+        <div class="solid-colors-swatches-grid">
+          ${swatchesHtml}
+        </div>
+      </div>
+    `;
+
+    this.solidColorsContainer.querySelector('#btn-modal-reposition-cover')?.addEventListener('click', () => {
+      this.close();
+      this.canvasEngine.enterCoverRepositionMode();
+    });
+
+    this.solidColorsContainer.querySelectorAll('.solid-color-swatch-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const hex = (btn as HTMLElement).dataset.hex;
+        if (hex) {
+          this.canvasEngine.applySolidColorToSelected(hex);
+          this.close();
+        }
+      });
+    });
+
+    const freeColorInput = this.solidColorsContainer.querySelector('#structural-free-color-input') as HTMLInputElement | null;
+    freeColorInput?.addEventListener('input', (e) => {
+      const val = (e.target as HTMLInputElement).value;
+      if (val) {
+        this.canvasEngine.applySolidColorToSelected(val);
+      }
+    });
   }
 
   async loadCovers(): Promise<void> {
@@ -90,6 +156,9 @@ export class CoverModal {
     covers.forEach((cover) => {
       const card = document.createElement('div');
       card.className = 'cover-card';
+      if (this.targetMeta?.customCoverUrl === cover.imageUrl) {
+        card.classList.add('selected');
+      }
       card.innerHTML = `
         <img src="${cover.imageUrl}" alt="${cover.name}" loading="lazy"/>
         <div class="cover-card-label">${cover.name}</div>
@@ -104,4 +173,3 @@ export class CoverModal {
     });
   }
 }
-

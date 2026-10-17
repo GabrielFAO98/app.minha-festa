@@ -57,6 +57,8 @@ export interface PresetItem {
   customCoverUrl?: string | null;
   balloonColors?: string[] | BalloonColors | null;
   instanceId?: string;
+  currentColor?: string;
+  availableColors?: string[];
 }
 
 export type CoverTargetType = 'all' | 'panel_round' | 'panel_arch' | 'cylinder' | 'table' | 'rug' | string;

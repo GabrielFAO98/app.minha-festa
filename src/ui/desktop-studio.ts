@@ -1,3 +1,4 @@
+import { generateMoinhoSVG, svgToDataUrl } from '../core/presets-data';
 // Modo Desktop Studio - Painéis Laterais de Catálogo, Inspetor e Camadas
 import { getItemsByCategory, getAllItems, getAllCovers } from '../core/db';
 import { REALISTIC_ENVIRONMENTS } from '../core/textures-data';
@@ -249,10 +250,23 @@ export class DesktopStudio {
     btnFront?.addEventListener('click', () => this.canvasEngine.bringForward());
     btnBack?.addEventListener('click', () => this.canvasEngine.sendBackward());
 
-    btnCover?.addEventListener('click', () => {
+    btnCover?.addEventListener('click', async () => {
       const node = this.canvasEngine.selectedNode;
       if (!node) return;
       const meta = (node.getAttr('itemMeta') || {}) as PresetItem;
+
+      if (meta.type === 'moinho') {
+        const order = ['marrom', 'branco', 'bege'];
+        const current = meta.currentColor || 'marrom';
+        const nextIdx = (order.indexOf(current) + 1) % order.length;
+        const nextColor = order[nextIdx];
+        const newSvg = generateMoinhoSVG(nextColor as any);
+        const newUrl = svgToDataUrl(newSvg);
+        await this.canvasEngine.changeItemImage(node as Konva.Group, newUrl, nextColor);
+        const updatedMeta = node.getAttr('itemMeta');
+        this.updateInspector(updatedMeta, node);
+        return;
+      }
 
       if (meta.category === 'baloes' || meta.type === 'balloon_arch') {
         this.onOpenBalloonModal(node);
@@ -285,7 +299,12 @@ export class DesktopStudio {
 
     if (btnCover) {
       const isBalloons = meta.category === 'baloes' || meta.type === 'balloon_arch';
-      btnCover.textContent = isBalloons ? '🎨 Cores dos Balões' : '🎨 Vestir Capa';
+      if (meta.type === 'moinho') {
+        const colorLabel = (meta.currentColor || 'marrom').toUpperCase();
+        btnCover.textContent = '🎨 Cor: ' + colorLabel;
+      } else {
+        btnCover.textContent = isBalloons ? '🎨 Cores dos Balões' : '🎨 Vestir Capa';
+      }
     }
   }
 

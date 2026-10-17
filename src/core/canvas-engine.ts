@@ -595,6 +595,25 @@ export class CanvasEngine {
     await this.applyBalloonColorsToNode(this.selectedNode, colors, true);
   }
 
+
+  async changeItemImage(group: Konva.Group, newUrl: string, newColor?: string) {
+    const meta = (group.getAttr('itemMeta') || {}) as any;
+    if (newColor) {
+      meta.currentColor = newColor;
+    }
+    meta.previewUrl = newUrl;
+    group.setAttr('itemMeta', meta);
+
+    const baseImgNode = group.findOne('.base-image') as Konva.Image;
+    if (baseImgNode) {
+      const newImg = await loadImageAsync(newUrl);
+      baseImgNode.image(newImg);
+      this.decorLayer.batchDraw();
+      this.saveSnapshot();
+      this.notifyLayersChange();
+    }
+  }
+
   bringForward() {
     if (!this.selectedNode) return;
     this.selectedNode.moveUp();

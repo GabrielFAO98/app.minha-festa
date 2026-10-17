@@ -1,6 +1,7 @@
 // Barra Flutuante de Ações da Peça no Cenário Mobile
 import type { CanvasEngine } from '../core/canvas-engine';
 import type { PresetItem } from '../types';
+import { generateMoinhoSVG, svgToDataUrl } from '../core/presets-data';
 import type Konva from 'konva';
 
 export class ItemToolbar {
@@ -44,7 +45,22 @@ export class ItemToolbar {
       }
     });
 
-    btnCover?.addEventListener('click', (e) => {
+    btnCover?.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!this.selectedNode || !this.selectedMeta) return;
+
+      if (this.selectedMeta.type === 'moinho') {
+        const order = ['marrom', 'branco', 'bege'];
+        const current = this.selectedMeta.currentColor || 'marrom';
+        const nextIdx = (order.indexOf(current) + 1) % order.length;
+        const nextColor = order[nextIdx];
+        const newSvg = generateMoinhoSVG(nextColor as any);
+        const newUrl = svgToDataUrl(newSvg);
+        await this.canvasEngine.changeItemImage(this.selectedNode as Konva.Group, newUrl, nextColor);
+        const updatedMeta = this.selectedNode.getAttr('itemMeta');
+        this.updateSelection(updatedMeta, this.selectedNode);
+        return;
+      }
       e.stopPropagation();
       if (!this.selectedNode || !this.selectedMeta) return;
 

@@ -3085,6 +3085,203 @@ export const SVG_DISPLAY_TABLE = `<svg xmlns="http://www.w3.org/2000/svg" viewBo
 </svg>`;
 
 // Lista Principal de Presets de Fábrica
+
+export function generateMoinhoSVG(color = 'marrom') {
+  const themes = {
+    marrom: {
+      id: 'mdf_marrom',
+      name: 'MDF Cru / Marrom Natural',
+      bgGradientTop: '#cf9e66',
+      bgGradientMid: '#c5925a',
+      bgGradientBottom: '#b48149',
+      edgeStroke: '#784a22',
+      innerEngrave: '#633b19',
+      bladeGradientTop: '#d7a871',
+      bladeGradientBottom: '#bd8951',
+      footColor: '#aa7841',
+      footEdge: '#6b3f1b',
+      boltHead: '#94a3b8',
+      boltCenter: '#334155',
+      dropShadowOpacity: '0.22'
+    },
+    branco: {
+      id: 'mdf_branco',
+      name: 'MDF Laqueado Branco',
+      bgGradientTop: '#ffffff',
+      bgGradientMid: '#f8fafc',
+      bgGradientBottom: '#f1f5f9',
+      edgeStroke: '#cbd5e1',
+      innerEngrave: '#94a3b8',
+      bladeGradientTop: '#ffffff',
+      bladeGradientBottom: '#f1f5f9',
+      footColor: '#e2e8f0',
+      footEdge: '#cbd5e1',
+      boltHead: '#94a3b8',
+      boltCenter: '#475569',
+      dropShadowOpacity: '0.15'
+    },
+    bege: {
+      id: 'mdf_bege',
+      name: 'MDF Cru Claro / Bege Areia',
+      bgGradientTop: '#f4ece2',
+      bgGradientMid: '#ede2d3',
+      bgGradientBottom: '#decaba',
+      edgeStroke: '#b5a18d',
+      innerEngrave: '#8f7b67',
+      bladeGradientTop: '#f6eee5',
+      bladeGradientBottom: '#e5d4c3',
+      footColor: '#d6c0ae',
+      footEdge: '#a9947f',
+      boltHead: '#a8a29e',
+      boltCenter: '#57534e',
+      dropShadowOpacity: '0.18'
+    }
+  };
+
+  const t = themes[color] || themes.marrom;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 890" width="800" height="890">
+  <defs>
+    <filter id="moinhoFloorShadow_${t.id}" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#090d16" flood-opacity="${t.dropShadowOpacity}"/>
+    </filter>
+    <filter id="bladeCastShadow_${t.id}" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="3" dy="5" stdDeviation="4.5" flood-color="#020617" flood-opacity="0.30"/>
+    </filter>
+    <linearGradient id="towerGrad_${t.id}" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="${t.bgGradientTop}"/>
+      <stop offset="50%" stop-color="${t.bgGradientMid}"/>
+      <stop offset="100%" stop-color="${t.bgGradientBottom}"/>
+    </linearGradient>
+    <linearGradient id="bladeGrad_${t.id}" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${t.bladeGradientTop}"/>
+      <stop offset="100%" stop-color="${t.bladeGradientBottom}"/>
+    </linearGradient>
+    <linearGradient id="footGrad_${t.id}" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="${t.bgGradientTop}"/>
+      <stop offset="100%" stop-color="${t.footColor}"/>
+    </linearGradient>
+  </defs>
+
+  <g filter="url(#moinhoFloorShadow_${t.id})">
+    <!-- 1. CORPO DA TORRE (MDF 6mm) -->
+    <path d="
+      M 205 870
+      L 595 870
+      L 525 430
+      L 505 340
+      L 480 320
+      L 455 285
+      L 400 275
+      L 345 285
+      L 320 320
+      L 295 340
+      L 275 430
+      Z
+    " fill="url(#towerGrad_${t.id})" stroke="${t.edgeStroke}" stroke-width="2.5" stroke-linejoin="round" />
+
+    <path d="
+      M 595 870
+      L 599 868
+      L 529 428
+      L 509 338
+      L 484 318
+      L 459 283
+      L 400 273
+      L 400 275
+      L 455 285
+      L 480 320
+      L 505 340
+      L 525 430
+      Z
+    " fill="${t.footColor}" opacity="0.65" />
+
+    <!-- 2. JANELA SUPERIOR (QUADRICULADA 2x2) -->
+    <g stroke="${t.innerEngrave}" stroke-width="2" fill="none" stroke-linejoin="round">
+      <rect x="355" y="380" width="90" height="90" rx="3" />
+      <rect x="361" y="386" width="78" height="78" rx="2" stroke-width="1.2" opacity="0.8" />
+      <line x1="400" y1="386" x2="400" y2="464" stroke-width="2" />
+      <line x1="361" y1="425" x2="439" y2="425" stroke-width="2" />
+    </g>
+
+    <!-- 3. PORTA DE CELEIRO (COM 'X' DUPLO) -->
+    <g stroke="${t.innerEngrave}" stroke-width="2" fill="none" stroke-linejoin="round">
+      <rect x="315" y="550" width="170" height="320" rx="4" />
+      <line x1="400" y1="550" x2="400" y2="870" stroke-width="2.2" />
+      <line x1="315" y1="845" x2="485" y2="845" stroke-width="1.8" />
+      <line x1="325" y1="565" x2="390" y2="835" stroke-width="2" />
+      <line x1="325" y1="835" x2="390" y2="565" stroke-width="2" />
+      <line x1="410" y1="565" x2="475" y2="835" stroke-width="2" />
+      <line x1="410" y1="835" x2="475" y2="565" stroke-width="2" />
+      <rect x="323" y="560" width="70" height="280" stroke-width="1.2" opacity="0.6" />
+      <rect x="407" y="560" width="70" height="280" stroke-width="1.2" opacity="0.6" />
+    </g>
+
+    <!-- 4. PÉS DE SUPORTE TRIANGULARES DA BASE -->
+    <g>
+      <polygon points="255,870 275,870 268,775 262,775" fill="url(#footGrad_${t.id})" stroke="${t.footEdge}" stroke-width="2" />
+      <line x1="262" y1="775" x2="268" y2="775" stroke="${t.footEdge}" stroke-width="2" />
+    </g>
+    <g>
+      <polygon points="525,870 545,870 538,775 532,775" fill="url(#footGrad_${t.id})" stroke="${t.footEdge}" stroke-width="2" />
+      <line x1="532" y1="775" x2="538" y2="775" stroke="${t.footEdge}" stroke-width="2" />
+    </g>
+
+    <!-- 5. AS 4 PÁS DO MOINHO (COM VAZADOS CNC E EIXO CENTRAL) -->
+    <g filter="url(#bladeCastShadow_${t.id})">
+      <g transform="translate(400, 310) rotate(40)">
+        <g transform="rotate(0)">
+          <rect x="-10" y="-355" width="20" height="355" fill="url(#bladeGrad_${t.id})" stroke="${t.edgeStroke}" stroke-width="2" />
+          <path d="
+            M -60 -355 L 60 -355 L 60 -160 L -60 -160 Z
+            M -50 -345 L -12 -345 L -12 -265 L -50 -265 Z
+            M 12 -345 L 50 -345 L 50 -265 L 12 -265 Z
+            M -50 -250 L -12 -250 L -12 -170 L -50 -170 Z
+            M 12 -250 L 50 -250 L 50 -170 L 12 -170 Z
+          " fill-rule="evenodd" fill="url(#bladeGrad_${t.id})" stroke="${t.edgeStroke}" stroke-width="2" stroke-linejoin="round" />
+        </g>
+        <g transform="rotate(90)">
+          <rect x="-10" y="-355" width="20" height="355" fill="url(#bladeGrad_${t.id})" stroke="${t.edgeStroke}" stroke-width="2" />
+          <path d="
+            M -60 -355 L 60 -355 L 60 -160 L -60 -160 Z
+            M -50 -345 L -12 -345 L -12 -265 L -50 -265 Z
+            M 12 -345 L 50 -345 L 50 -265 L 12 -265 Z
+            M -50 -250 L -12 -250 L -12 -170 L -50 -170 Z
+            M 12 -250 L 50 -250 L 50 -170 L 12 -170 Z
+          " fill-rule="evenodd" fill="url(#bladeGrad_${t.id})" stroke="${t.edgeStroke}" stroke-width="2" stroke-linejoin="round" />
+        </g>
+        <g transform="rotate(180)">
+          <rect x="-10" y="-355" width="20" height="355" fill="url(#bladeGrad_${t.id})" stroke="${t.edgeStroke}" stroke-width="2" />
+          <path d="
+            M -60 -355 L 60 -355 L 60 -160 L -60 -160 Z
+            M -50 -345 L -12 -345 L -12 -265 L -50 -265 Z
+            M 12 -345 L 50 -345 L 50 -265 L 12 -265 Z
+            M -50 -250 L -12 -250 L -12 -170 L -50 -170 Z
+            M 12 -250 L 50 -250 L 50 -170 L 12 -170 Z
+          " fill-rule="evenodd" fill="url(#bladeGrad_${t.id})" stroke="${t.edgeStroke}" stroke-width="2" stroke-linejoin="round" />
+        </g>
+        <g transform="rotate(270)">
+          <rect x="-10" y="-355" width="20" height="355" fill="url(#bladeGrad_${t.id})" stroke="${t.edgeStroke}" stroke-width="2" />
+          <path d="
+            M -60 -355 L 60 -355 L 60 -160 L -60 -160 Z
+            M -50 -345 L -12 -345 L -12 -265 L -50 -265 Z
+            M 12 -345 L 50 -345 L 50 -265 L 12 -265 Z
+            M -50 -250 L -12 -250 L -12 -170 L -50 -170 Z
+            M 12 -250 L 50 -250 L 50 -170 L 12 -170 Z
+          " fill-rule="evenodd" fill="url(#bladeGrad_${t.id})" stroke="${t.edgeStroke}" stroke-width="2" stroke-linejoin="round" />
+        </g>
+      </g>
+
+      <!-- 6. PIVÔ CENTRAL COM PARAFUSO -->
+      <circle cx="400" cy="310" r="24" fill="url(#bladeGrad_${t.id})" stroke="${t.edgeStroke}" stroke-width="2.5" />
+      <circle cx="400" cy="310" r="13" fill="${t.boltHead}" stroke="${t.boltCenter}" stroke-width="1.5" />
+      <circle cx="400" cy="310" r="6" fill="${t.boltCenter}" />
+      <circle cx="398" cy="308" r="2" fill="#ffffff" opacity="0.8" />
+    </g>
+  </g>
+</svg>`;
+}
+
 export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   // 1. PAINÉIS
   {
@@ -3491,6 +3688,49 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     stockQuantity: 1,
     rentalPrice: 45
   },
+  // MOINHO DECORATIVO EM MDF 89cm (Com acabamento Marrom Cru, Branco e Bege)
+  {
+    id: 'preset-moinho-mdf-marrom',
+    name: 'Moinho Fazendinha MDF 89cm - Cru',
+    category: 'displays',
+    type: 'moinho',
+    currentColor: 'marrom',
+    availableColors: ['marrom', 'branco', 'bege'],
+    widthCm: 80,
+    heightCm: 89,
+    previewUrl: svgToDataUrl(generateMoinhoSVG('marrom')),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 50
+  },
+  {
+    id: 'preset-moinho-mdf-branco',
+    name: 'Moinho Fazendinha MDF 89cm - Branco',
+    category: 'displays',
+    type: 'moinho',
+    currentColor: 'branco',
+    availableColors: ['marrom', 'branco', 'bege'],
+    widthCm: 80,
+    heightCm: 89,
+    previewUrl: svgToDataUrl(generateMoinhoSVG('branco')),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 50
+  },
+  {
+    id: 'preset-moinho-mdf-bege',
+    name: 'Moinho Fazendinha MDF 89cm - Bege',
+    category: 'displays',
+    type: 'moinho',
+    currentColor: 'bege',
+    availableColors: ['marrom', 'branco', 'bege'],
+    widthCm: 80,
+    heightCm: 89,
+    previewUrl: svgToDataUrl(generateMoinhoSVG('bege')),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 50
+  },,
   {
     id: 'preset-display-chao',
     name: 'Display MDF Ursinho Teddy com Balão',

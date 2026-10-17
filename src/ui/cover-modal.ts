@@ -76,7 +76,7 @@ export class CoverModal {
     this.targetMeta = meta;
     const titleEl = document.getElementById('cover-modal-subtitle');
     if (titleEl && meta) {
-      titleEl.textContent = `Estrutura SVG: ${meta.name} (Escolha uma Cor Sólida ou Capa)`;
+      titleEl.textContent = `${meta.name} • Escolha uma Cor Sólida ou Capa`;
     }
 
     this.renderSolidColorsSection();

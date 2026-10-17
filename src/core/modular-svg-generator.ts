@@ -622,3 +622,4 @@ export function generateModularSvgDataUrl(item: PresetItem, colors: string[]): s
   </svg>`;
   return svgToDataUrl(svg);
 }
+

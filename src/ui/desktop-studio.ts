@@ -74,17 +74,6 @@ export class DesktopStudio {
     }
   }
 
-  getBadgeHtml(item: PresetItem): string {
-    const mode = getItemCustomizationMode(item);
-    if (mode === 'structural') {
-      return '<span class="asset-role-badge badge-structural">📐 SVG • CAPA/COR</span>';
-    }
-    if (mode === 'modular') {
-      return '<span class="asset-role-badge badge-modular">🎨 SVG • CORES</span>';
-    }
-    return '<span class="asset-role-badge badge-photo">📷 PEÇA REAL</span>';
-  }
-
   // ABA 1: Presets Base
   async renderPresets(container: HTMLElement): Promise<void> {
     const catBar = document.createElement('div');
@@ -121,11 +110,9 @@ export class DesktopStudio {
 
     presetItems.forEach((item) => {
       const card = document.createElement('div');
-      const mode = getItemCustomizationMode(item);
-      card.className = `desktop-item-card card-mode-${mode}`;
+      card.className = 'desktop-item-card';
       card.innerHTML = `
         <div class="card-thumb-wrap">
-          ${this.getBadgeHtml(item)}
           <img src="${item.previewUrl}" alt="${item.name}" loading="lazy" />
         </div>
         <div class="card-title">${item.name}</div>
@@ -175,10 +162,9 @@ export class DesktopStudio {
 
     customItems.forEach((item) => {
       const card = document.createElement('div');
-      card.className = 'desktop-item-card card-mode-photo';
+      card.className = 'desktop-item-card';
       card.innerHTML = `
         <div class="card-thumb-wrap">
-          <span class="asset-role-badge badge-photo">📷 MEU ACERVO</span>
           <img src="${item.previewUrl}" alt="${item.name}" loading="lazy" />
         </div>
         <div class="card-title">${item.name}</div>
@@ -195,14 +181,6 @@ export class DesktopStudio {
 
   // ABA 3: Capas e Estampas
   async renderCovers(container: HTMLElement): Promise<void> {
-    const infoBanner = document.createElement('div');
-    infoBanner.className = 'covers-rule-banner';
-    infoBanner.innerHTML = `
-      <span>📐</span>
-      <span>Capas vestem apenas <strong>Estruturas SVG</strong> (Painéis Lisos, Cilindros, Cubos e Tapetes).</span>
-    `;
-    container.appendChild(infoBanner);
-
     const covers = await getAllCovers();
     const grid = document.createElement('div');
     grid.className = 'desktop-catalog-grid';
@@ -220,12 +198,12 @@ export class DesktopStudio {
       card.addEventListener('click', async () => {
         const node = this.canvasEngine.selectedNode;
         if (!node) {
-          alert('Selecione primeiro uma Estrutura SVG no palco (ex: Painel Redondo, Arco Romano, Cilindro ou Cubo) para vestir a capa.');
+          alert('Selecione primeiro um painel, cilindro, cubo ou tapete no palco para vestir a capa.');
           return;
         }
         const meta = node.getAttr('itemMeta') as PresetItem;
         if (getItemCustomizationMode(meta) !== 'structural') {
-          alert(`A peça "${meta.name}" não utiliza capas de tecido. Apenas itens marcados com [📐 SVG • CAPA/COR] aceitam capas.`);
+          alert(`A peça "${meta.name}" não utiliza capas de tecido.`);
           return;
         }
         await this.canvasEngine.applyCoverToSelected(cover.imageUrl);
@@ -306,7 +284,6 @@ export class DesktopStudio {
     const emptyBox = document.getElementById('desktop-inspector-empty');
     const titleEl = document.getElementById('desktop-inspector-title');
     const sizeEl = document.getElementById('desktop-inspector-size');
-    const roleBadgeEl = document.getElementById('desktop-inspector-role-badge');
     const thumbEl = document.getElementById('desktop-inspector-thumb') as HTMLImageElement | null;
     const btnCover = document.getElementById('btn-desktop-cover');
     const framingPanel = document.getElementById('desktop-cover-framing-panel');
@@ -326,19 +303,6 @@ export class DesktopStudio {
     if (sizeEl) sizeEl.textContent = `${meta.widthCm}cm × ${meta.heightCm}cm`;
     if (thumbEl) thumbEl.src = meta.previewUrl;
 
-    if (roleBadgeEl) {
-      if (mode === 'structural') {
-        roleBadgeEl.className = 'inspector-role-pill pill-structural';
-        roleBadgeEl.textContent = '📐 Estrutura SVG • Aceita Capa ou Pintura';
-      } else if (mode === 'modular') {
-        roleBadgeEl.className = 'inspector-role-pill pill-modular';
-        roleBadgeEl.textContent = '🎨 SVG Autossuficiente • Cores Modulares';
-      } else {
-        roleBadgeEl.className = 'inspector-role-pill pill-photo';
-        roleBadgeEl.textContent = '📷 Peça Fotográfica Real • Sem Capa';
-      }
-    }
-
     if (btnCover) {
       if (meta.type === 'moinho') {
         const colorLabel = (meta.currentColor || 'marrom').toUpperCase();
@@ -346,10 +310,10 @@ export class DesktopStudio {
         btnCover.textContent = `🎨 Cor MDF: ${colorLabel}`;
       } else if (mode === 'structural') {
         btnCover.style.display = 'inline-flex';
-        btnCover.textContent = '🎨 Vestir Capa ou Pintar Cor';
+        btnCover.textContent = '🎨 Capa ou Cor';
       } else if (mode === 'modular') {
         btnCover.style.display = 'inline-flex';
-        btnCover.textContent = '🎨 Personalizar Cores SVG';
+        btnCover.textContent = '🎨 Personalizar Cores';
       } else {
         btnCover.style.display = 'none';
       }
@@ -434,14 +398,11 @@ export class DesktopStudio {
       const isSelected = (this.canvasEngine.selectedNode as any)?.getAttr('itemMeta')?.instanceId === elem.instanceId;
       if (isSelected) row.classList.add('selected');
 
-      const mode = getItemCustomizationMode(elem);
-      const miniBadge = mode === 'structural' ? '📐 SVG' : (mode === 'modular' ? '🎨 SVG' : '📷 Real');
-
       row.innerHTML = `
         <img class="layer-thumb" src="${elem.previewUrl}" alt="" />
         <div class="layer-info">
           <div class="layer-title">${elem.name}</div>
-          <div class="layer-sub">${elem.widthCm}x${elem.heightCm}cm • ${miniBadge}</div>
+          <div class="layer-sub">${elem.widthCm}x${elem.heightCm}cm</div>
         </div>
       `;
 

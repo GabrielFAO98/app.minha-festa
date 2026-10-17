@@ -180,10 +180,6 @@ export class BottomDock {
     if (!this.sheetBody) return;
 
     this.sheetBody.innerHTML = `
-      <div class="covers-rule-banner" style="margin-bottom: 10px;">
-        <span>📐</span>
-        <span>Capas vestem apenas <strong>Estruturas SVG</strong> (Painéis Lisos, Cilindros, Cubos e Tapetes).</span>
-      </div>
       <div style="margin-bottom: 12px;">
         <button id="btn-add-new-cover" class="btn-primary" style="width: 100%; height: 42px;">
           📸 Subir Estampa da Galeria / Pintar Cor
@@ -203,12 +199,12 @@ export class BottomDock {
       card.addEventListener('click', async () => {
         const selected = this.canvasEngine.selectedNode;
         if (!selected) {
-          alert('Toque primeiro em uma Estrutura SVG no palco (ex: Painel Liso, Cilindro ou Cubo) para vestir esta capa.');
+          alert('Toque primeiro em um painel, cilindro, cubo ou tapete no palco para vestir esta capa.');
           return;
         }
         const meta = selected.getAttr('itemMeta') as PresetItem | undefined;
         if (!meta || getItemCustomizationMode(meta) !== 'structural') {
-          alert('Esta peça não aceita capas sublimadas. Capas são exclusivas para Estruturas SVG de base (Painéis Lisos, Cilindros Lisos, Cubos e Tapetes).');
+          alert(`A peça "${meta?.name || 'selecionada'}" não utiliza capas de tecido.`);
           return;
         }
         await this.canvasEngine.applyCoverToSelected(cover.imageUrl);
@@ -318,19 +314,10 @@ export class BottomDock {
   }
 
   createItemCard(item: PresetItem, isCustom: boolean): HTMLElement {
-    const mode = getItemCustomizationMode(item);
-    const badgeHtml =
-      mode === 'structural'
-        ? '<span class="asset-role-badge badge-structural">📐 SVG • CAPA/COR</span>'
-        : mode === 'modular'
-          ? '<span class="asset-role-badge badge-modular">🎨 SVG • CORES</span>'
-          : '<span class="asset-role-badge badge-photo">📷 PEÇA REAL</span>';
-
     const card = document.createElement('div');
-    card.className = `item-card card-mode-${mode}`;
+    card.className = 'item-card';
     card.innerHTML = `
-      <div class="item-card-preview" style="position: relative;">
-        ${badgeHtml}
+      <div class="item-card-preview">
         <img src="${item.previewUrl}" alt="${item.name}" loading="lazy"/>
       </div>
       <div class="item-card-title">${item.name}</div>
@@ -387,14 +374,11 @@ export class BottomDock {
         row.style.background = 'rgba(236, 72, 153, 0.15)';
       }
 
-      const mode = getItemCustomizationMode(elem);
-      const miniBadge = mode === 'structural' ? '📐 SVG' : (mode === 'modular' ? '🎨 SVG' : '📷 Real');
-
       row.innerHTML = `
         <img src="${elem.previewUrl}" style="width: 38px; height: 38px; object-fit: contain; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 2px;" alt="" />
         <div style="flex: 1; min-width: 0;">
           <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${elem.name}</div>
-          <div style="font-size: 0.68rem; color: var(--text-muted);">${elem.widthCm}x${elem.heightCm}cm • ${miniBadge}</div>
+          <div style="font-size: 0.68rem; color: var(--text-muted);">${elem.widthCm}x${elem.heightCm}cm</div>
         </div>
         <div style="display: flex; gap: 6px;">
           <button class="layer-action-btn layer-btn-front" style="width: 34px; height: 34px; border-radius: 6px; background: rgba(255,255,255,0.08); font-size: 0.85rem;" title="Trazer para Frente">⬆️</button>

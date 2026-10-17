@@ -121,8 +121,7 @@ export class ItemToolbar {
     const mode = getItemCustomizationMode(meta);
 
     if (badge && badgeName) {
-      const roleTag = mode === 'structural' ? '[SVG • Capa/Cor]' : (mode === 'modular' ? '[SVG • Cores]' : '[Acervo Real]');
-      badgeName.textContent = `${meta.name} ${roleTag}`;
+      badgeName.textContent = meta.name;
       badge.classList.add('visible');
     }
 

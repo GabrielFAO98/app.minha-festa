@@ -3730,7 +3730,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 50
-  },,
+  },
   {
     id: 'preset-display-chao',
     name: 'Display MDF Ursinho Teddy com Balão',

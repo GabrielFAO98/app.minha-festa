@@ -32,7 +32,7 @@ export async function initDatabase(): Promise<void> {
 
   // Remove presets de fábrica descontinuados para manter o acervo padrão sempre atualizado
   try {
-    const currentPresetIds = new Set(DEFAULT_PRESET_ITEMS.map((item) => item.id));
+    const currentPresetIds = new Set(DEFAULT_PRESET_ITEMS.filter(Boolean).map((item) => item.id));
     const allStoredItems = await db.items.toArray();
     const obsoleteIds = allStoredItems
       .filter((item) => !item.isCustom && !currentPresetIds.has(item.id))
@@ -45,7 +45,7 @@ export async function initDatabase(): Promise<void> {
   }
 
   // Insere/atualiza os presets de fábrica
-  const seededItems = DEFAULT_PRESET_ITEMS.map((item) => ({
+  const seededItems = DEFAULT_PRESET_ITEMS.filter(Boolean).map((item) => ({
     ...item,
     createdAt: item.createdAt || timestamp
   }));

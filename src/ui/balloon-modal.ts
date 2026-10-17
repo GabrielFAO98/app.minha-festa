@@ -24,7 +24,7 @@ export class BalloonModal {
     this.btnApply = document.getElementById('btn-apply-balloon-colors');
 
     this.currentNode = null;
-    this.currentColors = ['#f472b6', '#fbcfe8', '#fbbf24', '#ffffff'];
+    this.currentColors = ['#c97a8e', '#f7dbe1', '#d4af37', '#fdfbf7'];
 
     this.setupEvents();
   }
@@ -48,7 +48,7 @@ export class BalloonModal {
     if (meta.balloonColors && Array.isArray(meta.balloonColors) && meta.balloonColors.length > 0) {
       this.currentColors = [...meta.balloonColors];
     } else {
-      this.currentColors = ['#f472b6', '#fbcfe8', '#fbbf24', '#ffffff'];
+      this.currentColors = ['#c97a8e', '#f7dbe1', '#d4af37', '#fdfbf7'];
     }
 
     this.renderPalettesList();

@@ -132,8 +132,8 @@ async function loadDefaultScene(canvasEngine) {
     // 2. Arco de Bales no Canto Superior Esquerdo
     if (balloons) {
       await canvasEngine.addItem(balloons, {
-        x: centerX - 480,
-        y: floorY - 720
+        x: centerX - 440,
+        y: floorY - 760
       }, false);
     }
 

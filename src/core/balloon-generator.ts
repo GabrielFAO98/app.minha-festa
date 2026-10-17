@@ -1,4 +1,4 @@
-// Gerador Paramétrico de Arco de Balões Desconstruído com Sombreamento 3D de Estúdio
+// Gerador Paramétrico de Arco de Balões Orgânico Desconstruído de Alto Padrão
 import { svgToDataUrl } from './presets-data';
 
 export interface BalloonPalette {
@@ -7,53 +7,50 @@ export interface BalloonPalette {
   colors: string[];
 }
 
-// Paletas Prontas Populares para Festas Brasileiras
+// Paletas Prontas Populares em Festas e Eventos de Luxo
 export const BALLOON_PALETTES: BalloonPalette[] = [
   {
     id: 'rose-gold',
-    name: 'Rose Gold & Pérola',
-    colors: ['#db2777', '#fbcfe8', '#eab308', '#ffffff']
+    name: 'Rose Gold, Blush & Pérola',
+    colors: ['#c97a8e', '#f7dbe1', '#d4af37', '#fdfbf7']
   },
   {
     id: 'safari',
-    name: 'Safari & Floresta',
-    colors: ['#4d7c0f', '#b45309', '#ca8a04', '#fef08a']
+    name: 'Safari & Floresta Chic',
+    colors: ['#4d6b2c', '#85512b', '#c59a3f', '#f7eed7']
   },
   {
     id: 'candy-colors',
-    name: 'Candy Colors Suave',
-    colors: ['#f472b6', '#a855f7', '#38bdf8', '#fef08a']
+    name: 'Candy Colors Pastel',
+    colors: ['#f8b4d9', '#d8b4fe', '#93c5fd', '#fef08a']
   },
   {
     id: 'azul-prata',
-    name: 'Azul Celeste & Prata',
-    colors: ['#1d4ed8', '#60a5fa', '#94a3b8', '#ffffff']
+    name: 'Azul Real, Celeste & Prata',
+    colors: ['#1e40af', '#60a5fa', '#cbd5e1', '#ffffff']
   },
   {
     id: 'dourado-preto',
-    name: 'Dourado Luxo & Preto',
-    colors: ['#ca8a04', '#1e293b', '#fef08a', '#0f172a']
+    name: 'Dourado Glamour & Preto',
+    colors: ['#d4af37', '#1e293b', '#fde047', '#0f172a']
   },
   {
     id: 'boho-terracota',
     name: 'Boho Terracota & Eucalipto',
-    colors: ['#c2410c', '#15803d', '#d97706', '#fef3c7']
+    colors: ['#c2410c', '#2d6a4f', '#d97706', '#fef3c7']
   },
   {
     id: 'cha-revelacao',
-    name: 'Chá Revelação',
-    colors: ['#ec4899', '#0284c7', '#ffffff', '#fde047']
+    name: 'Chá Revelação Baby',
+    colors: ['#f472b6', '#38bdf8', '#ffffff', '#fde047']
   },
   {
     id: 'sereia',
-    name: 'Sereia & Lilás',
-    colors: ['#9333ea', '#06b6d4', '#f472b6', '#e0e7ff']
+    name: 'Sereia, Lilás & Tiffany',
+    colors: ['#9333ea', '#14b8a6', '#f472b6', '#e0e7ff']
   }
 ];
 
-/**
- * Converte cor hex para tons de highlight (iluminação) e shadow (sombra)
- */
 function adjustHex(hex: string, percent: number): string {
   let clean = hex.replace('#', '');
   if (clean.length === 3) {
@@ -74,148 +71,183 @@ function adjustHex(hex: string, percent: number): string {
 }
 
 /**
- * Gera o SVG tridimensional de um arco orgânico desconstruído de balões com oclusão individual
+ * Gera o SVG tridimensional de um arco orgânico desconstruído de balões com esfericidade real e acabamento látex
  * @param colors Array com 2 a 4 cores hexadecimais
  * @returns Data URI do SVG gerado
  */
-export function generateBalloonArchDataUrl(colors: string[] = ['#db2777', '#fbcfe8', '#eab308', '#ffffff']): string {
+export function generateBalloonArchDataUrl(
+  colors: string[] = ['#c97a8e', '#f7dbe1', '#d4af37', '#fdfbf7']
+): string {
   if (!colors || colors.length === 0) {
-    colors = ['#db2777', '#fbcfe8', '#eab308', '#ffffff'];
+    colors = ['#c97a8e', '#f7dbe1', '#d4af37', '#fdfbf7'];
   }
 
-  // Gera gradientes multicamada de látex acetinado/perolado e cromado para cada cor
+  // Gradientes de acabamento látex acetinado / perolado de estúdio fotográfico
   const defsGradients = colors.map((col, idx) => {
-    const specHighlight = adjustHex(col, 62);
-    const midLight = adjustHex(col, 24);
-    const coreShadow = adjustHex(col, -32);
-    const deepShadow = adjustHex(col, -48);
-    const rimLight = adjustHex(col, -12);
+    const spec = adjustHex(col, 55);
+    const midLight = adjustHex(col, 22);
+    const coreShadow = adjustHex(col, -36);
+    const deepShadow = adjustHex(col, -52);
+    const rimLight = adjustHex(col, -14);
 
     return `
-      <radialGradient id="balGrad_${idx}" cx="34%" cy="30%" r="68%" fx="30%" fy="26%">
-        <stop offset="0%" stop-color="${specHighlight}"/>
-        <stop offset="18%" stop-color="${midLight}"/>
-        <stop offset="52%" stop-color="${col}"/>
+      <radialGradient id="balGrad_${idx}" cx="35%" cy="30%" r="68%" fx="32%" fy="27%">
+        <stop offset="0%" stop-color="${spec}"/>
+        <stop offset="20%" stop-color="${midLight}"/>
+        <stop offset="55%" stop-color="${col}"/>
         <stop offset="86%" stop-color="${coreShadow}"/>
-        <stop offset="95%" stop-color="${deepShadow}"/>
+        <stop offset="96%" stop-color="${deepShadow}"/>
         <stop offset="100%" stop-color="${rimLight}"/>
       </radialGradient>
     `;
   }).join('');
 
-  // Camada 1: Balões Traseiros de Base e Preenchimento de Sombra (16" e 12")
+  // 1. CAMADA DE FUNDO (12" e 16" - Fundo denso de sustentação da guirlanda)
   const backLayer = [
-    { cx: 46, cy: 274, r: 30, col: 3 },
-    { cx: 28, cy: 244, r: 28, col: 0 },
-    { cx: 74, cy: 256, r: 26, col: 2 },
-    { cx: 26, cy: 192, r: 32, col: 1 },
-    { cx: 78, cy: 204, r: 28, col: 0 },
-    { cx: 30, cy: 140, r: 34, col: 3 },
-    { cx: 84, cy: 152, r: 29, col: 1 },
-    { cx: 42, cy: 86, r: 35, col: 2 },
-    { cx: 92, cy: 102, r: 31, col: 0 },
-    { cx: 74, cy: 48, r: 36, col: 1 },
-    { cx: 124, cy: 64, r: 32, col: 3 },
-    { cx: 120, cy: 32, r: 34, col: 0 },
-    { cx: 168, cy: 34, r: 33, col: 2 },
-    { cx: 208, cy: 44, r: 28, col: 1 },
-    { cx: 242, cy: 58, r: 24, col: 3 }
+    // Base inferior (solo)
+    { cx: 96, cy: 535, r: 35, col: 0 },
+    { cx: 140, cy: 520, r: 33, col: 1 },
+    { cx: 78, cy: 468, r: 37, col: 2 },
+    { cx: 132, cy: 456, r: 35, col: 3 },
+    // Coluna vertical esquerda
+    { cx: 82, cy: 395, r: 38, col: 0 },
+    { cx: 135, cy: 388, r: 34, col: 1 },
+    { cx: 88, cy: 322, r: 39, col: 2 },
+    { cx: 138, cy: 312, r: 36, col: 3 },
+    // Transição da curva / ombro do painel
+    { cx: 105, cy: 245, r: 40, col: 0 },
+    { cx: 158, cy: 232, r: 37, col: 1 },
+    { cx: 145, cy: 168, r: 40, col: 2 },
+    { cx: 202, cy: 165, r: 36, col: 3 },
+    // Curva superior do topo
+    { cx: 218, cy: 112, r: 38, col: 0 },
+    { cx: 275, cy: 102, r: 39, col: 1 },
+    { cx: 332, cy: 88, r: 38, col: 2 },
+    { cx: 390, cy: 86, r: 37, col: 3 },
+    // Cauda / drapeamento no topo direito
+    { cx: 446, cy: 98, r: 35, col: 0 },
+    { cx: 498, cy: 122, r: 32, col: 1 },
+    { cx: 535, cy: 160, r: 28, col: 2 }
   ];
 
-  // Camada 2: Balões Principais de Volume (11" e 16")
+  // 2. CAMADA PRINCIPAL DE VOLUME (11", 16" e Jumbos de 24" - Corpo orgânico)
   const midLayer = [
-    { cx: 38, cy: 262, r: 29, col: 0 },
-    { cx: 64, cy: 244, r: 24, col: 1 },
-    { cx: 34, cy: 218, r: 27, col: 2 },
-    { cx: 60, cy: 196, r: 32, col: 3 },
-    { cx: 36, cy: 166, r: 29, col: 1 },
-    { cx: 68, cy: 150, r: 33, col: 2 },
-    { cx: 92, cy: 172, r: 21, col: 0 },
-    { cx: 42, cy: 116, r: 31, col: 0 },
-    { cx: 76, cy: 108, r: 35, col: 1 },
-    { cx: 58, cy: 68, r: 33, col: 2 },
-    { cx: 102, cy: 76, r: 30, col: 3 },
-    { cx: 96, cy: 42, r: 32, col: 0 },
-    { cx: 142, cy: 48, r: 35, col: 1 },
-    { cx: 184, cy: 40, r: 30, col: 2 },
-    { cx: 220, cy: 50, r: 25, col: 3 },
-    { cx: 248, cy: 66, r: 19, col: 0 }
+    // Base inferior
+    { cx: 115, cy: 546, r: 36, col: 1 },
+    { cx: 72, cy: 508, r: 32, col: 2 },
+    { cx: 118, cy: 486, r: 42, col: 3 }, // Volume encorpado
+    { cx: 68, cy: 432, r: 35, col: 1 },
+    { cx: 120, cy: 420, r: 40, col: 0 },
+    // Coluna vertical média
+    { cx: 72, cy: 358, r: 37, col: 3 },
+    { cx: 124, cy: 348, r: 44, col: 2 }, // Jumbo intermediário
+    { cx: 76, cy: 282, r: 38, col: 1 },
+    { cx: 130, cy: 270, r: 42, col: 0 },
+    // Ombro principal da curva (ponto focal)
+    { cx: 98, cy: 198, r: 42, col: 2 },
+    { cx: 156, cy: 195, r: 48, col: 1 }, // Jumbo 24" no ombro do painel
+    { cx: 172, cy: 132, r: 40, col: 0 },
+    { cx: 228, cy: 138, r: 42, col: 3 },
+    // Topo em cascata suave
+    { cx: 248, cy: 85, r: 38, col: 2 },
+    { cx: 304, cy: 82, r: 44, col: 0 }, // Jumbo de topo
+    { cx: 360, cy: 78, r: 39, col: 1 },
+    { cx: 416, cy: 84, r: 40, col: 2 },
+    { cx: 468, cy: 104, r: 36, col: 3 },
+    { cx: 512, cy: 138, r: 31, col: 0 },
+    { cx: 545, cy: 182, r: 24, col: 1 }
   ];
 
-  // Camada 3: Clusters Frontais de 9" e 5" (Mini Balões Orgânicos de Acabamento)
+  // 3. CAMADA FRONTAL DE ACABAMENTO: Cachos de Mini Balões (5" e 9")
+  // Clusters orgânicos colocados nos vãos entre os balões maiores
   const frontClusters = [
-    // Cachos inferiores
-    { cx: 52, cy: 268, r: 14, col: 2 },
-    { cx: 48, cy: 236, r: 17, col: 1 },
-    { cx: 24, cy: 234, r: 13, col: 3 },
-    { cx: 76, cy: 224, r: 15, col: 0 },
-    { cx: 74, cy: 184, r: 18, col: 0 },
-    { cx: 46, cy: 182, r: 14, col: 2 },
-    // Cachos centrais na curva
-    { cx: 48, cy: 140, r: 18, col: 3 },
-    { cx: 24, cy: 148, r: 13, col: 0 },
-    { cx: 88, cy: 132, r: 16, col: 2 },
-    { cx: 64, cy: 126, r: 14, col: 1 },
-    { cx: 56, cy: 92, r: 17, col: 3 },
-    { cx: 82, cy: 82, r: 19, col: 1 },
-    { cx: 98, cy: 96, r: 13, col: 2 },
-    // Cachos superiores do arco
-    { cx: 78, cy: 52, r: 16, col: 3 },
-    { cx: 118, cy: 58, r: 20, col: 0 },
-    { cx: 114, cy: 36, r: 14, col: 2 },
-    { cx: 138, cy: 28, r: 16, col: 3 },
-    { cx: 162, cy: 54, r: 19, col: 2 },
-    { cx: 160, cy: 32, r: 13, col: 0 },
-    { cx: 198, cy: 56, r: 17, col: 1 },
-    { cx: 204, cy: 36, r: 12, col: 0 },
-    { cx: 234, cy: 56, r: 14, col: 2 },
-    { cx: 258, cy: 74, r: 11, col: 1 }
+    // Cachos na base (Y = 480 a 550)
+    { cx: 94, cy: 555, r: 16, col: 2 },
+    { cx: 138, cy: 550, r: 18, col: 0 },
+    { cx: 102, cy: 518, r: 19, col: 1 },
+    { cx: 138, cy: 482, r: 17, col: 2 },
+    { cx: 88, cy: 472, r: 15, col: 3 },
+    // Cachos na coluna vertical (Y = 320 a 460)
+    { cx: 98, cy: 428, r: 18, col: 2 },
+    { cx: 128, cy: 402, r: 16, col: 3 },
+    { cx: 68, cy: 392, r: 15, col: 1 },
+    { cx: 95, cy: 362, r: 20, col: 0 },
+    { cx: 132, cy: 342, r: 17, col: 1 },
+    { cx: 82, cy: 318, r: 16, col: 0 },
+    { cx: 106, cy: 295, r: 21, col: 3 },
+    { cx: 142, cy: 290, r: 15, col: 2 },
+    // Cachos no ombro da curva (Y = 160 a 260 - Ponto nobre)
+    { cx: 88, cy: 235, r: 18, col: 1 },
+    { cx: 128, cy: 228, r: 22, col: 3 },
+    { cx: 158, cy: 242, r: 16, col: 0 },
+    { cx: 122, cy: 175, r: 19, col: 2 },
+    { cx: 178, cy: 178, r: 23, col: 1 },
+    { cx: 204, cy: 184, r: 15, col: 0 },
+    { cx: 152, cy: 118, r: 17, col: 3 },
+    { cx: 196, cy: 124, r: 20, col: 2 },
+    // Cachos na travessia do topo (X = 220 a 480)
+    { cx: 252, cy: 122, r: 18, col: 1 },
+    { cx: 284, cy: 114, r: 21, col: 2 },
+    { cx: 326, cy: 106, r: 19, col: 3 },
+    { cx: 372, cy: 102, r: 22, col: 0 },
+    { cx: 412, cy: 112, r: 18, col: 1 },
+    { cx: 448, cy: 126, r: 20, col: 2 },
+    // Cachos na ponta direita (X = 470 a 550)
+    { cx: 486, cy: 142, r: 16, col: 0 },
+    { cx: 522, cy: 162, r: 15, col: 3 },
+    { cx: 546, cy: 198, r: 13, col: 2 }
   ];
 
-  const renderBalloon = (b: { cx: number; cy: number; r: number; col: number }, isBack: boolean) => {
+  const renderBalloon = (
+    b: { cx: number; cy: number; r: number; col: number },
+    filterId: string,
+    showGlow: boolean
+  ) => {
     const gradId = `balGrad_${b.col % colors.length}`;
-    // Leve formato orgânico de gota de látex inflado (rx ligeiramente menor que ry)
-    const rx = b.r * 0.96;
-    const ry = b.r * 1.02;
     const specX = b.cx - b.r * 0.30;
     const specY = b.cy - b.r * 0.32;
-    const specRx = Math.max(3, b.r * 0.34);
-    const specRy = Math.max(2, b.r * 0.22);
-    const dotX = b.cx - b.r * 0.14;
-    const dotY = b.cy - b.r * 0.50;
-    const dotR = Math.max(1, b.r * 0.07);
+    const specR = Math.max(3, b.r * 0.32);
 
     return `
-      <g filter="url(#singleBalOcclusion)" opacity="${isBack ? '0.92' : '1'}">
-        <ellipse cx="${b.cx}" cy="${b.cy}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}" fill="url(#${gradId})" />
-        <ellipse cx="${specX.toFixed(1)}" cy="${specY.toFixed(1)}" rx="${specRx.toFixed(1)}" ry="${specRy.toFixed(1)}" transform="rotate(-28 ${specX.toFixed(1)} ${specY.toFixed(1)})" fill="url(#softWindowHighlight)" />
-        <circle cx="${dotX.toFixed(1)}" cy="${dotY.toFixed(1)}" r="${dotR.toFixed(1)}" fill="#ffffff" opacity="0.55" />
+      <g filter="url(#${filterId})">
+        <circle cx="${b.cx}" cy="${b.cy}" r="${b.r}" fill="url(#${gradId})" />
+        ${showGlow ? `
+          <circle cx="${specX.toFixed(1)}" cy="${specY.toFixed(1)}" r="${specR.toFixed(1)}" fill="#ffffff" opacity="0.28" filter="url(#balSoftGlow)" />
+        ` : ''}
       </g>
     `;
   };
 
-  const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 285 315" width="285" height="315">
+  const svgString = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
   <defs>
-    <!-- Sombra Global do Arco na Parede -->
+    <!-- Sombra Macia Global Projetada na Parede / Painel -->
     <filter id="archWallShadow" x="-15%" y="-15%" width="135%" height="135%">
-      <feDropShadow dx="3" dy="7" stdDeviation="5.5" flood-color="#090d16" flood-opacity="0.28"/>
+      <feDropShadow dx="6" dy="14" stdDeviation="10" flood-color="#020617" flood-opacity="0.25"/>
     </filter>
-    <!-- Oclusão de Ambiente Individual entre cada Balão do Cluster -->
-    <filter id="singleBalOcclusion" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="1.5" dy="2.5" stdDeviation="2.2" flood-color="#020617" flood-opacity="0.26"/>
+    <!-- Oclusão de Contato entre Balões do Corpo Médio -->
+    <filter id="midBalOcclusion" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="4" stdDeviation="3.5" flood-color="#020617" flood-opacity="0.24"/>
     </filter>
-    <!-- Reflexo de Janela Difuso (Elimina aspecto de clipart) -->
-    <radialGradient id="softWindowHighlight" cx="45%" cy="45%" r="50%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.72"/>
-      <stop offset="55%" stop-color="#ffffff" stop-opacity="0.28"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-    </radialGradient>
+    <!-- Oclusão dos Cachos Frontais de 5 polegadas -->
+    <filter id="frontBalOcclusion" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="2" dy="3.5" stdDeviation="2.8" flood-color="#020617" flood-opacity="0.28"/>
+    </filter>
+    <!-- Brilho Difuso Suave de Estúdio (Sem aspecto de plástico duro) -->
+    <filter id="balSoftGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.0"/>
+    </filter>
     ${defsGradients}
   </defs>
   <g filter="url(#archWallShadow)">
-    ${backLayer.map((b) => renderBalloon(b, true)).join('')}
-    ${midLayer.map((b) => renderBalloon(b, false)).join('')}
-    ${frontClusters.map((b) => renderBalloon(b, false)).join('')}
+    <g id="layer-back">
+      ${backLayer.map((b) => renderBalloon(b, 'midBalOcclusion', false)).join('')}
+    </g>
+    <g id="layer-mid">
+      ${midLayer.map((b) => renderBalloon(b, 'midBalOcclusion', true)).join('')}
+    </g>
+    <g id="layer-front">
+      ${frontClusters.map((b) => renderBalloon(b, 'frontBalOcclusion', true)).join('')}
+    </g>
   </g>
 </svg>`;
 

@@ -3309,13 +3309,13 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   // 3. BALÕES
   {
     id: 'preset-arco-baloes',
-    name: 'Arco Desconstruído / Guirlanda 3,00m',
+    name: 'Arco Orgânico / Guirlanda Desconstruída',
     category: 'baloes',
     type: 'balloon_arch',
-    balloonColors: ['#db2777', '#fbcfe8', '#eab308', '#ffffff'],
-    widthCm: 300,
+    balloonColors: ['#c97a8e', '#f7dbe1', '#d4af37', '#fdfbf7'],
+    widthCm: 220,
     heightCm: 220,
-    previewUrl: generateBalloonArchDataUrl(['#db2777', '#fbcfe8', '#eab308', '#ffffff']),
+    previewUrl: generateBalloonArchDataUrl(['#c97a8e', '#f7dbe1', '#d4af37', '#fdfbf7']),
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 120

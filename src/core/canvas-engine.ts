@@ -288,15 +288,7 @@ export class CanvasEngine {
       this.rafId = null;
 
       if (this.draggingNode && this.pendingDragPos) {
-        this.draggingNode._setAttr('x', this.pendingDragPos.x);
-        this.draggingNode._setAttr('y', this.pendingDragPos.y);
-        (this.draggingNode as any)._clearTransform();
-        (this.draggingNode as any)._clearSelfAndDescendantCache('absoluteTransform');
-
-        if (this.transformer && this.transformer.nodes().length > 0) {
-          (this.transformer as any)._resetTransformCache();
-          this.transformer.update();
-        }
+        this.draggingNode.position(this.pendingDragPos);
       }
 
       if (this.pendingCoverRefresh && this.selectedNode) {

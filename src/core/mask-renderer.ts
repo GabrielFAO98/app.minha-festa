@@ -428,6 +428,161 @@ export function createCylinderFloorShadow(width: number, height: number) {
 }
 
 /**
+ * Cria os pés dourados discretos e sombra de contato no piso para painéis estruturais,
+ * permitindo ocultar 100% da baseImage branca quando o painel recebe uma capa ou pintura.
+ */
+export function createPanelSupportBase(type: string, width: number, height: number) {
+  const w = Math.max(1, Math.round(width));
+  const h = Math.max(1, Math.round(height));
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = w;
+  offCanvas.height = h;
+  const ctx = offCanvas.getContext('2d');
+
+  if (ctx) {
+    const drawFootGrad = (xStart: number, xEnd: number) => {
+      const g = ctx.createLinearGradient(xStart, 0, xEnd, 0);
+      g.addColorStop(0.0, '#9a6f0a');
+      g.addColorStop(0.5, '#fef08a');
+      g.addColorStop(1.0, '#b4830e');
+      return g;
+    };
+
+    if (type === 'panel_round') {
+      const sx = w / 300;
+      const sy = h / 380;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
+      ctx.beginPath();
+      ctx.ellipse(96 * sx, 370 * sy, 22 * sx, 3.5 * sy, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(204 * sx, 370 * sy, 22 * sx, 3.5 * sy, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = drawFootGrad(80 * sx, 112 * sx);
+      ctx.fillRect(94 * sx, 275 * sy, 4.5 * sx, 93 * sy);
+      ctx.beginPath();
+      ctx.moveTo(80 * sx, 368 * sy);
+      ctx.lineTo(96.2 * sx, 365 * sy);
+      ctx.lineTo(112 * sx, 368 * sy);
+      ctx.lineTo(110 * sx, 370.5 * sy);
+      ctx.lineTo(82 * sx, 370.5 * sy);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = drawFootGrad(188 * sx, 220 * sx);
+      ctx.fillRect(201.5 * sx, 275 * sy, 4.5 * sx, 93 * sy);
+      ctx.beginPath();
+      ctx.moveTo(188 * sx, 368 * sy);
+      ctx.lineTo(203.8 * sx, 365 * sy);
+      ctx.lineTo(220 * sx, 368 * sy);
+      ctx.lineTo(218 * sx, 370.5 * sy);
+      ctx.lineTo(190 * sx, 370.5 * sy);
+      ctx.closePath();
+      ctx.fill();
+    } else if (type === 'panel_arch') {
+      const sx = w / 200;
+      const sy = h / 380;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
+      ctx.beginPath();
+      ctx.ellipse(100 * sx, 373 * sy, 82 * sx, 4 * sy, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = drawFootGrad(22 * sx, 46 * sx);
+      ctx.beginPath();
+      ctx.moveTo(22 * sx, 367 * sy);
+      ctx.lineTo(46 * sx, 367 * sy);
+      ctx.lineTo(44 * sx, 371.5 * sy);
+      ctx.lineTo(24 * sx, 371.5 * sy);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = drawFootGrad(154 * sx, 178 * sx);
+      ctx.beginPath();
+      ctx.moveTo(154 * sx, 367 * sy);
+      ctx.lineTo(178 * sx, 367 * sy);
+      ctx.lineTo(176 * sx, 371.5 * sy);
+      ctx.lineTo(156 * sx, 371.5 * sy);
+      ctx.closePath();
+      ctx.fill();
+    } else if (type === 'panel_rect') {
+      const sx = w / 300;
+      const sy = h / 260;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
+      ctx.beginPath();
+      ctx.ellipse(55 * sx, 252 * sy, 22 * sx, 3.5 * sy, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(245 * sx, 252 * sy, 22 * sx, 3.5 * sy, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = drawFootGrad(40 * sx, 70 * sx);
+      ctx.fillRect(53 * sx, 226 * sy, 4 * sx, 24 * sy);
+      ctx.beginPath();
+      ctx.moveTo(40 * sx, 250 * sy);
+      ctx.lineTo(55 * sx, 247.5 * sy);
+      ctx.lineTo(70 * sx, 250 * sy);
+      ctx.lineTo(68 * sx, 252.5 * sy);
+      ctx.lineTo(42 * sx, 252.5 * sy);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = drawFootGrad(230 * sx, 260 * sx);
+      ctx.fillRect(243 * sx, 226 * sy, 4 * sx, 24 * sy);
+      ctx.beginPath();
+      ctx.moveTo(230 * sx, 250 * sy);
+      ctx.lineTo(245 * sx, 247.5 * sy);
+      ctx.lineTo(260 * sx, 250 * sy);
+      ctx.lineTo(258 * sx, 252.5 * sy);
+      ctx.lineTo(232 * sx, 252.5 * sy);
+      ctx.closePath();
+      ctx.fill();
+    } else if (type === 'panel_half_moon') {
+      const sx = w / 220;
+      const sy = h / 380;
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
+      ctx.beginPath();
+      ctx.ellipse(110 * sx, 373 * sy, 80 * sx, 4 * sy, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = drawFootGrad(32 * sx, 60 * sx);
+      ctx.fillRect(44 * sx, 350 * sy, 4 * sx, 21 * sy);
+      ctx.beginPath();
+      ctx.moveTo(32 * sx, 371 * sy);
+      ctx.lineTo(46 * sx, 368.5 * sy);
+      ctx.lineTo(60 * sx, 371 * sy);
+      ctx.lineTo(58 * sx, 373 * sy);
+      ctx.lineTo(34 * sx, 373 * sy);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = drawFootGrad(160 * sx, 188 * sx);
+      ctx.fillRect(172 * sx, 350 * sy, 4 * sx, 21 * sy);
+      ctx.beginPath();
+      ctx.moveTo(160 * sx, 371 * sy);
+      ctx.lineTo(174 * sx, 368.5 * sy);
+      ctx.lineTo(188 * sx, 371 * sy);
+      ctx.lineTo(186 * sx, 373 * sy);
+      ctx.lineTo(162 * sx, 373 * sy);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  return new Konva.Image({
+    name: 'panel-support-base',
+    image: offCanvas,
+    width: width,
+    height: height,
+    listening: false
+  });
+}
+
+/**
  * Verifica se uma coordenada local (x, y) está dentro da área visível/opaca do artefato
  */
 export function isPointInsideMask(type: string, x: number, y: number, width: number, height: number) {

@@ -5,7 +5,8 @@ import {
   loadImageAsync,
   isPointInsideMask,
   createShadingOverlay,
-  createCylinderFloorShadow
+  createCylinderFloorShadow,
+  createPanelSupportBase
 } from './mask-renderer';
 import { TEXTURE_WALL_BOISERIE, TEXTURE_FLOOR_WOOD } from './textures-data';
 import { generateBalloonArchDataUrl } from './balloon-generator';
@@ -43,9 +44,14 @@ export class CanvasEngine {
   maxHistory: number;
   isRestoringState: boolean;
 
-  // Modo Enquadrar Capa (Estilo Facebook Cover Reposition)
+  // Modo Enquadrar Capa (Pinça + Arraste Direto)
   isRepositioningCover: boolean;
   private isDraggingCoverInternal: boolean;
+  private isPinchingCover: boolean;
+  private pinchStartDist: number;
+  private pinchStartScale: number;
+  private pinchStartCenterX: number;
+  private pinchStartCenterY: number;
 
   // Motor Direto 1:1 de Arraste (Zero Lag no Mobile)
   private draggingNode: Konva.Group | null;
@@ -101,6 +107,11 @@ export class CanvasEngine {
 
     this.isRepositioningCover = false;
     this.isDraggingCoverInternal = false;
+    this.isPinchingCover = false;
+    this.pinchStartDist = 1;
+    this.pinchStartScale = 1;
+    this.pinchStartCenterX = 0;
+    this.pinchStartCenterY = 0;
 
     this.draggingNode = null;
     this.dragStartClientX = 0;
@@ -294,6 +305,12 @@ export class CanvasEngine {
       if (this.pendingCoverRefresh && this.selectedNode) {
         this.pendingCoverRefresh = false;
         this.refreshCoverPlacementOnNode(this.selectedNode, false);
+        const zoomBadge = document.getElementById('stage-cover-zoom-value');
+        const zoomSlider = document.getElementById('stage-cover-zoom-slider') as HTMLInputElement | null;
+        const meta = this.selectedNode.getAttr('itemMeta') || {};
+        const scaleVal = meta.coverScale || 1;
+        if (zoomBadge) zoomBadge.textContent = `${Math.round(scaleVal * 100)}%`;
+        if (zoomSlider) zoomSlider.value = String(scaleVal);
       }
 
       this.decorLayer?.drawScene();
@@ -307,15 +324,72 @@ export class CanvasEngine {
   setupDirectInteraction() {
     if (!this.stage) return;
 
+    const getTouchDistance = (t1: Touch, t2: Touch) =>
+      Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+    const getTouchCenter = (t1: Touch, t2: Touch) => ({
+      x: (t1.clientX + t2.clientX) * 0.5,
+      y: (t1.clientY + t2.clientY) * 0.5
+    });
+
     const handleDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
       if (!this.stage) return;
       const rawEvt = e.evt;
       const isTouch = rawEvt.type.startsWith('touch');
 
+      const contentEl = this.stage.content || this.stage.container();
+      const rect = contentEl.getBoundingClientRect();
+      this.dragContainerScaleX = (rect.width / (this.stage.width() || 1)) || 1;
+      this.dragContainerScaleY = (rect.height / (this.stage.height() || 1)) || 1;
+
       if (isTouch) {
         this.lastTouchTime = performance.now();
         const touchEvt = rawEvt as TouchEvent;
-        if (touchEvt.touches && touchEvt.touches.length > 1) return;
+
+        // GESTO DE PINÇA COM 2 DEDOS NO MOBILE (ZOOM + PAN DE CAPA)
+        if (touchEvt.touches && touchEvt.touches.length === 2) {
+          if (rawEvt.cancelable) rawEvt.preventDefault();
+
+          const t1 = touchEvt.touches[0];
+          const t2 = touchEvt.touches[1];
+          const center = getTouchCenter(t1, t2);
+
+          // Se nenhuma peça com capa está selecionada ainda, verifica se a pinça começou sobre uma peça com capa
+          if (!this.selectedNode || !(this.selectedNode.getAttr('itemMeta') || {}).customCoverUrl) {
+            const centerStagePos = {
+              x: (center.x - rect.left) / this.dragContainerScaleX,
+              y: (center.y - rect.top) / this.dragContainerScaleY
+            };
+            const candidatesAtPinch = this.findOpaqueItemsAtPoint(centerStagePos);
+            const coverCandidate = candidatesAtPinch.find(
+              (c) => (c.getAttr('itemMeta') || {}).customCoverUrl
+            );
+            if (coverCandidate) {
+              this.selectNode(coverCandidate);
+            }
+          }
+
+          if (this.selectedNode) {
+            const meta = this.selectedNode.getAttr('itemMeta') || {};
+            if (meta.customCoverUrl) {
+              if (!this.isRepositioningCover) {
+                this.enterCoverRepositionMode();
+              }
+              this.draggingNode = null;
+              this.isDraggingCoverInternal = false;
+              this.isPinchingCover = true;
+              this.pinchStartDist = Math.max(12, getTouchDistance(t1, t2));
+              this.pinchStartScale = meta.coverScale || 1;
+              this.pinchStartCenterX = center.x;
+              this.pinchStartCenterY = center.y;
+              this.dragStartCoverOffsetX = meta.coverOffsetX || 0;
+              this.dragStartCoverOffsetY = meta.coverOffsetY || 0;
+            }
+          }
+          return;
+        }
+
+        if (touchEvt.touches && touchEvt.touches.length > 2) return;
       } else {
         // Ignora mousedown sintético disparado pelo navegador mobile após touchstart
         if (performance.now() - this.lastTouchTime < 500) return;
@@ -339,17 +413,12 @@ export class CanvasEngine {
         ? (rawEvt as TouchEvent).touches[0].clientY
         : (rawEvt as MouseEvent).clientY;
 
-      const contentEl = this.stage.content || this.stage.container();
-      const rect = contentEl.getBoundingClientRect();
-      this.dragContainerScaleX = (rect.width / (this.stage.width() || 1)) || 1;
-      this.dragContainerScaleY = (rect.height / (this.stage.height() || 1)) || 1;
-
       const pointerPos = {
         x: (clientX - rect.left) / this.dragContainerScaleX,
         y: (clientY - rect.top) / this.dragContainerScaleY
       };
 
-      // 1. Se estamos no modo de enquadrar capa estilo Facebook
+      // 1. Se estamos no modo de enquadrar capa
       if (this.isRepositioningCover && this.selectedNode) {
         const candidates = this.findOpaqueItemsAtPoint(pointerPos);
         if (candidates.includes(this.selectedNode)) {
@@ -415,7 +484,7 @@ export class CanvasEngine {
     };
 
     const handleMove = (evt: MouseEvent | TouchEvent) => {
-      if (!this.draggingNode && !this.isDraggingCoverInternal) return;
+      if (!this.draggingNode && !this.isDraggingCoverInternal && !this.isPinchingCover) return;
       if (this.transformer && (this.transformer as any).isTransforming && (this.transformer as any).isTransforming()) {
         this.draggingNode = null;
         return;
@@ -425,6 +494,39 @@ export class CanvasEngine {
       if (isTouch) {
         const touchEvt = evt as TouchEvent;
         if (!touchEvt.touches || touchEvt.touches.length === 0) return;
+
+        // PINCH-TO-ZOOM COM 2 DEDOS NA CAPA
+        if (this.isPinchingCover && this.selectedNode && touchEvt.touches.length >= 2) {
+          if (evt.cancelable) evt.preventDefault();
+
+          const t1 = touchEvt.touches[0];
+          const t2 = touchEvt.touches[1];
+          const dist = Math.max(12, getTouchDistance(t1, t2));
+          const center = getTouchCenter(t1, t2);
+
+          const scaleRatio = dist / this.pinchStartDist;
+          const newScale = Math.max(0.4, Math.min(3.5, this.pinchStartScale * scaleRatio));
+
+          const screenDx = center.x - this.pinchStartCenterX;
+          const screenDy = center.y - this.pinchStartCenterY;
+          const layerScale = this.decorLayer?.scaleX() || 1;
+          const virtualDx = screenDx / (layerScale * (this.dragContainerScaleX || 1));
+          const virtualDy = screenDy / (layerScale * (this.dragContainerScaleY || 1));
+
+          const nodeScaleX = Math.abs(this.selectedNode.scaleX() || 1);
+          const nodeScaleY = Math.abs(this.selectedNode.scaleY() || 1);
+          const flipSignX = (this.selectedNode.scaleX() || 1) < 0 ? -1 : 1;
+
+          const meta = this.selectedNode.getAttr('itemMeta') || {};
+          meta.coverScale = newScale;
+          meta.coverOffsetX = this.dragStartCoverOffsetX + (virtualDx / nodeScaleX) * flipSignX;
+          meta.coverOffsetY = this.dragStartCoverOffsetY + (virtualDy / nodeScaleY);
+          this.selectedNode.setAttr('itemMeta', meta);
+
+          this.pendingCoverRefresh = true;
+          this.scheduleFastDraw();
+          return;
+        }
       }
 
       if (evt.cancelable) {
@@ -445,7 +547,7 @@ export class CanvasEngine {
       const virtualDx = screenDx / (layerScale * (this.dragContainerScaleX || 1));
       const virtualDy = screenDy / (layerScale * (this.dragContainerScaleY || 1));
 
-      // Arraste interno de capa estilo Facebook
+      // Arraste interno de capa com 1 dedo / mouse
       if (this.isDraggingCoverInternal && this.selectedNode) {
         const nodeScaleX = Math.abs(this.selectedNode.scaleX() || 1);
         const nodeScaleY = Math.abs(this.selectedNode.scaleY() || 1);
@@ -477,7 +579,31 @@ export class CanvasEngine {
       }
     };
 
-    const handleUp = () => {
+    const handleUp = (evt?: MouseEvent | TouchEvent) => {
+      if (this.isPinchingCover) {
+        const isTouch = evt && evt.type.startsWith('touch');
+        const touchEvt = isTouch ? (evt as TouchEvent) : null;
+
+        // Se soltou 1 dedo e ainda resta 1 dedo na tela, continua o arraste de 1 dedo sem salto
+        if (touchEvt && touchEvt.touches && touchEvt.touches.length === 1 && this.isRepositioningCover && this.selectedNode) {
+          this.isPinchingCover = false;
+          this.isDraggingCoverInternal = true;
+          this.dragStartClientX = touchEvt.touches[0].clientX;
+          this.dragStartClientY = touchEvt.touches[0].clientY;
+          const meta = this.selectedNode.getAttr('itemMeta') || {};
+          this.dragStartCoverOffsetX = meta.coverOffsetX || 0;
+          this.dragStartCoverOffsetY = meta.coverOffsetY || 0;
+          return;
+        }
+
+        this.isPinchingCover = false;
+        this.decorLayer?.batchDraw();
+        if (this.onCoverRepositionChange && this.selectedNode) {
+          this.onCoverRepositionChange(this.isRepositioningCover, this.selectedNode.getAttr('itemMeta'));
+        }
+        return;
+      }
+
       if (this.isDraggingCoverInternal) {
         this.isDraggingCoverInternal = false;
         this.decorLayer?.batchDraw();
@@ -562,6 +688,7 @@ export class CanvasEngine {
     if (!this.isRepositioningCover) return;
     this.isRepositioningCover = false;
     this.isDraggingCoverInternal = false;
+    this.isPinchingCover = false;
 
     if (this.transformer) {
       this.transformer.borderStroke('#ec4899');
@@ -839,6 +966,15 @@ export class CanvasEngine {
     if (itemData.type === 'cylinder' || itemData.type === 'cylinder_fluted') {
       const floorShadow = createCylinderFloorShadow(widthPx, heightPx);
       group.add(floorShadow);
+    } else if (
+      itemData.type === 'panel_round' ||
+      itemData.type === 'panel_arch' ||
+      itemData.type === 'panel_rect' ||
+      itemData.type === 'panel_half_moon'
+    ) {
+      const supportBase = createPanelSupportBase(itemData.type, widthPx, heightPx);
+      supportBase.visible(false);
+      group.add(supportBase);
     }
 
     const imgElement = await loadImageAsync(currentPreviewUrl);
@@ -978,16 +1114,15 @@ export class CanvasEngine {
     }
 
     const baseImage = node.findOne('.base-image');
+    const supportBase = node.findOne('.panel-support-base');
     if (!colorHex) {
       if (baseImage) baseImage.visible(true);
+      if (supportBase) supportBase.visible(false);
       return;
     }
 
-    if (baseImage && (meta.type === 'cylinder' || meta.type === 'cube' || (meta.type && meta.type.startsWith('rug')))) {
-      baseImage.visible(false);
-    } else if (baseImage) {
-      baseImage.visible(true);
-    }
+    if (baseImage) baseImage.visible(false);
+    if (supportBase) supportBase.visible(true);
 
     const w = node.width();
     const h = node.height();
@@ -1030,17 +1165,16 @@ export class CanvasEngine {
     }
 
     const baseImage = node.findOne('.base-image');
+    const supportBase = node.findOne('.panel-support-base');
 
     if (!coverImageUrl) {
       if (baseImage) baseImage.visible(true);
+      if (supportBase) supportBase.visible(false);
       return;
     }
 
-    if (baseImage && (meta.type === 'cylinder' || meta.type === 'cube' || (meta.type && meta.type.startsWith('rug')))) {
-      baseImage.visible(false);
-    } else if (baseImage) {
-      baseImage.visible(true);
-    }
+    if (baseImage) baseImage.visible(false);
+    if (supportBase) supportBase.visible(true);
 
     const w = node.width();
     const h = node.height();

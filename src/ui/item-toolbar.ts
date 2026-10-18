@@ -116,7 +116,11 @@ export class ItemToolbar {
       return;
     }
 
-    this.toolbarEl?.classList.add('active');
+    if (this.canvasEngine.isRepositioningCover) {
+      this.toolbarEl?.classList.remove('active');
+    } else {
+      this.toolbarEl?.classList.add('active');
+    }
 
     const mode = getItemCustomizationMode(meta);
 

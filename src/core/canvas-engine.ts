@@ -30,6 +30,10 @@ export class CanvasEngine {
   transformer: Konva.Transformer | null;
   selectedNode: Konva.Group | null;
 
+  // Botões de Ação nos Cantos Inferiores do Quadro de Seleção
+  btnCornerFlip: Konva.Group | null;
+  btnCornerDuplicate: Konva.Group | null;
+
   VIRTUAL_WIDTH: number;
   VIRTUAL_HEIGHT: number;
   WALL_HEIGHT: number;
@@ -87,6 +91,8 @@ export class CanvasEngine {
     this.uiLayer = null;
     this.transformer = null;
     this.selectedNode = null;
+    this.btnCornerFlip = null;
+    this.btnCornerDuplicate = null;
 
     this.VIRTUAL_WIDTH = 1080;
     this.VIRTUAL_HEIGHT = 1920;
@@ -243,16 +249,16 @@ export class CanvasEngine {
   setupTransformer() {
     if (!this.uiLayer) return;
     this.transformer = new Konva.Transformer({
-      rotateAnchorOffset: 30,
-      enabledAnchors: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
-      anchorSize: 26,
-      anchorCornerRadius: 13,
+      rotateAnchorOffset: 24,
+      enabledAnchors: ['top-left', 'top-right'],
+      anchorSize: 13, // Diminuído pela metade (era 26)
+      anchorCornerRadius: 6.5,
       anchorStroke: '#ec4899',
       anchorFill: '#ffffff',
-      anchorStrokeWidth: 3,
+      anchorStrokeWidth: 2,
       borderStroke: '#ec4899',
-      borderStrokeWidth: 2.5,
-      borderDash: [6, 4],
+      borderStrokeWidth: 2,
+      borderDash: [5, 4],
       keepRatio: true,
       shouldOverdrawWholeArea: false
     });
@@ -264,12 +270,16 @@ export class CanvasEngine {
       backShape.draggable(false);
     }
 
+    this.createCornerActionButtons();
+
     this.transformer.on('transform', () => {
+      this.updateCornerActionButtons();
       this.decorLayer?.drawScene();
       this.uiLayer?.drawScene();
     });
 
     this.transformer.on('transformend', () => {
+      this.updateCornerActionButtons();
       this.decorLayer?.batchDraw();
       this.uiLayer?.draw();
       this.saveSnapshot();
@@ -279,10 +289,213 @@ export class CanvasEngine {
     this.uiLayer.add(this.transformer);
   }
 
+  private createCornerActionButtons() {
+    if (!this.transformer) return;
+
+    const stopEvt = (e: any) => {
+      if (e && e.cancelBubble !== undefined) e.cancelBubble = true;
+    };
+
+    // 1. Botão de Espelhar (Canto Inferior Esquerdo)
+    this.btnCornerFlip = new Konva.Group({
+      name: 'corner-btn-flip',
+      visible: false,
+      listening: true
+    });
+
+    const hitFlip = new Konva.Circle({
+      radius: 18,
+      fill: 'transparent',
+      listening: true
+    });
+
+    const circleFlip = new Konva.Circle({
+      radius: 11,
+      fill: '#0f172a',
+      stroke: '#ec4899',
+      strokeWidth: 2,
+      shadowColor: '#000000',
+      shadowBlur: 5,
+      shadowOpacity: 0.5,
+      shadowOffset: { x: 0, y: 1 },
+      listening: false
+    });
+
+    // Ícone de Espelhar: Dois triângulos opostos com eixo central
+    const iconFlip = new Konva.Shape({
+      sceneFunc: (ctx, shape) => {
+        // Eixo divisor central
+        ctx.beginPath();
+        ctx.moveTo(0, -5.5);
+        ctx.lineTo(0, 5.5);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.1;
+        ctx.stroke();
+
+        // Triângulo esquerdo (apontando para esquerda)
+        ctx.beginPath();
+        ctx.moveTo(-1.4, -4.2);
+        ctx.lineTo(-5.8, 0);
+        ctx.lineTo(-1.4, 4.2);
+        ctx.closePath();
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+
+        // Triângulo direito (apontando para direita)
+        ctx.beginPath();
+        ctx.moveTo(1.4, -4.2);
+        ctx.lineTo(5.8, 0);
+        ctx.lineTo(1.4, 4.2);
+        ctx.closePath();
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+      },
+      listening: false
+    });
+
+    this.btnCornerFlip.add(hitFlip);
+    this.btnCornerFlip.add(circleFlip);
+    this.btnCornerFlip.add(iconFlip);
+
+    this.btnCornerFlip.on('click tap', (e) => {
+      stopEvt(e);
+      this.flipHorizontal();
+    });
+    this.btnCornerFlip.on('mousedown touchstart', stopEvt);
+
+    this.btnCornerFlip.on('mouseenter', () => {
+      if (this.stage?.content) this.stage.content.style.cursor = 'pointer';
+      circleFlip.fill('#1e293b');
+      this.uiLayer?.batchDraw();
+    });
+    this.btnCornerFlip.on('mouseleave', () => {
+      if (this.stage?.content) this.stage.content.style.cursor = '';
+      circleFlip.fill('#0f172a');
+      this.uiLayer?.batchDraw();
+    });
+
+    // 2. Botão de Duplicar (Canto Inferior Direito)
+    this.btnCornerDuplicate = new Konva.Group({
+      name: 'corner-btn-duplicate',
+      visible: false,
+      listening: true
+    });
+
+    const hitDup = new Konva.Circle({
+      radius: 18,
+      fill: 'transparent',
+      listening: true
+    });
+
+    const circleDup = new Konva.Circle({
+      radius: 11,
+      fill: '#0f172a',
+      stroke: '#ec4899',
+      strokeWidth: 2,
+      shadowColor: '#000000',
+      shadowBlur: 5,
+      shadowOpacity: 0.5,
+      shadowOffset: { x: 0, y: 1 },
+      listening: false
+    });
+
+    // Ícone de Duplicar: Dois quadrados sobrepostos
+    const iconDup = new Konva.Shape({
+      sceneFunc: (ctx, shape) => {
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.2;
+
+        // Quadrado traseiro (topo-direita)
+        ctx.beginPath();
+        ctx.strokeRect(-0.8, -5.4, 6.2, 6.2);
+
+        // Quadrado frontal (baixo-esquerda, com fundo escuro que sobrepõe o traseiro)
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-5.4, -0.8, 6.2, 6.2);
+        ctx.strokeRect(-5.4, -0.8, 6.2, 6.2);
+      },
+      listening: false
+    });
+
+    this.btnCornerDuplicate.add(hitDup);
+    this.btnCornerDuplicate.add(circleDup);
+    this.btnCornerDuplicate.add(iconDup);
+
+    this.btnCornerDuplicate.on('click tap', (e) => {
+      stopEvt(e);
+      this.duplicateSelected();
+    });
+    this.btnCornerDuplicate.on('mousedown touchstart', stopEvt);
+
+    this.btnCornerDuplicate.on('mouseenter', () => {
+      if (this.stage?.content) this.stage.content.style.cursor = 'pointer';
+      circleDup.fill('#1e293b');
+      this.uiLayer?.batchDraw();
+    });
+    this.btnCornerDuplicate.on('mouseleave', () => {
+      if (this.stage?.content) this.stage.content.style.cursor = '';
+      circleDup.fill('#0f172a');
+      this.uiLayer?.batchDraw();
+    });
+
+    this.transformer.add(this.btnCornerFlip);
+    this.transformer.add(this.btnCornerDuplicate);
+  }
+
+  updateCornerActionButtons() {
+    if (!this.selectedNode || !this.transformer || this.isRepositioningCover) {
+      if (this.btnCornerFlip) this.btnCornerFlip.visible(false);
+      if (this.btnCornerDuplicate) this.btnCornerDuplicate.visible(false);
+      return;
+    }
+
+    const back = this.transformer.findOne('.back') as Konva.Shape | null;
+    if (!back) {
+      if (this.btnCornerFlip) this.btnCornerFlip.visible(false);
+      if (this.btnCornerDuplicate) this.btnCornerDuplicate.visible(false);
+      return;
+    }
+
+    const w = back.width();
+    const h = back.height();
+
+    // Mantém a orientação dos botões e posiciona nos cantos inferiores
+    const trScaleX = (this.transformer as any).scaleX() || 1;
+    const trScaleY = (this.transformer as any).scaleY() || 1;
+    const signX = trScaleX < 0 ? -1 : 1;
+    const signY = trScaleY < 0 ? -1 : 1;
+
+    if (this.btnCornerFlip) {
+      this.btnCornerFlip.scaleX(signX);
+      this.btnCornerFlip.scaleY(signY);
+      this.btnCornerFlip.position({ x: 0, y: h });
+      this.btnCornerFlip.visible(true);
+    }
+
+    if (this.btnCornerDuplicate) {
+      this.btnCornerDuplicate.scaleX(signX);
+      this.btnCornerDuplicate.scaleY(signY);
+      this.btnCornerDuplicate.position({ x: w, y: h });
+      this.btnCornerDuplicate.visible(true);
+    }
+  }
+
   private isTransformerAnchor(target: Konva.Node | null | undefined): boolean {
     if (!target || !this.transformer) return false;
     const name = target.name ? target.name() : '';
     return target.getParent() === (this.transformer as any) && name.includes('_anchor');
+  }
+
+  private isCornerActionButton(target: Konva.Node | null | undefined): boolean {
+    if (!target) return false;
+    let curr: Konva.Node | null = target;
+    while (curr) {
+      const name = curr.name ? curr.name() : '';
+      if (name.includes('corner-btn-')) return true;
+      if (curr === this.stage) break;
+      curr = curr.getParent();
+    }
+    return false;
   }
 
   /**
@@ -373,7 +586,12 @@ export class CanvasEngine {
         if (mouseEvt.button !== undefined && mouseEvt.button !== 0) return;
       }
 
-      // Se clicou/tocou em uma das 4 âncoras de canto ou rotação do Transformer, deixa o Transformer agir
+      // Se clicou/tocou em um dos botões de ação de canto (Espelhar ou Duplicar), deixa o botão agir
+      if (this.isCornerActionButton(e.target)) {
+        return;
+      }
+
+      // Se clicou/tocou em uma das âncoras de canto ou rotação do Transformer, deixa o Transformer agir
       if (this.isTransformerAnchor(e.target)) {
         return;
       }
@@ -587,6 +805,7 @@ export class CanvasEngine {
         if (this.transformer) {
           (this.transformer as any)._resetTransformCache();
           this.transformer.update();
+          this.updateCornerActionButtons();
         }
         this.decorLayer?.batchDraw();
         this.uiLayer?.draw();
@@ -634,6 +853,8 @@ export class CanvasEngine {
       this.transformer.borderDash([4, 4]);
       this.transformer.enabledAnchors([]);
       this.transformer.rotateEnabled(false);
+      if (this.btnCornerFlip) this.btnCornerFlip.visible(false);
+      if (this.btnCornerDuplicate) this.btnCornerDuplicate.visible(false);
       this.uiLayer?.draw();
     }
     if (this.stage) {
@@ -652,9 +873,10 @@ export class CanvasEngine {
 
     if (this.transformer) {
       this.transformer.borderStroke('#ec4899');
-      this.transformer.borderDash([6, 4]);
-      this.transformer.enabledAnchors(['top-left', 'top-right', 'bottom-left', 'bottom-right']);
+      this.transformer.borderDash([5, 4]);
+      this.transformer.enabledAnchors(['top-left', 'top-right']);
       this.transformer.rotateEnabled(true);
+      this.updateCornerActionButtons();
       this.uiLayer?.draw();
     }
     if (this.stage) {
@@ -979,6 +1201,7 @@ export class CanvasEngine {
     this.selectedNode = node as Konva.Group | null;
 
     this.transformer?.nodes(node ? [node] : []);
+    this.updateCornerActionButtons();
     this.uiLayer?.draw();
 
     if (this.onSelectionChange) {
@@ -995,6 +1218,7 @@ export class CanvasEngine {
     this.selectedNode = null;
     this.wasSelectedByCycleOrLayer = false;
     this.transformer?.nodes([]);
+    this.updateCornerActionButtons();
     this.uiLayer?.draw();
 
     if (this.onSelectionChange) {
@@ -1302,6 +1526,7 @@ export class CanvasEngine {
     if (this.transformer) {
       (this.transformer as any)._resetTransformCache();
       this.transformer.update();
+      this.updateCornerActionButtons();
       this.uiLayer?.draw();
     }
     this.decorLayer.batchDraw();

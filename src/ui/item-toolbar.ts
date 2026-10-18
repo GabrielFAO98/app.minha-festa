@@ -36,8 +36,6 @@ export class ItemToolbar {
     const btnReposition = document.getElementById('btn-action-reposition');
     const btnFront = document.getElementById('btn-action-front');
     const btnBack = document.getElementById('btn-action-back');
-    const btnFlip = document.getElementById('btn-action-flip');
-    const btnDuplicate = document.getElementById('btn-action-duplicate');
 
     btnDelete?.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -88,16 +86,6 @@ export class ItemToolbar {
     btnBack?.addEventListener('click', (e) => {
       e.stopPropagation();
       this.canvasEngine.sendBackward();
-    });
-
-    btnFlip?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.canvasEngine.flipHorizontal();
-    });
-
-    btnDuplicate?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.canvasEngine.duplicateSelected();
     });
   }
 
@@ -151,8 +139,8 @@ export class ItemToolbar {
     if (btnReposition) {
       if (mode === 'structural' && meta.customCoverUrl) {
         btnReposition.style.display = 'inline-flex';
-        btnReposition.innerHTML = '✋ Enquadrar';
-        btnReposition.title = 'Arrastar e Dar Zoom na Capa';
+        btnReposition.innerHTML = '⛶ Enquadrar';
+        btnReposition.title = 'Ajustar Enquadramento da Capa';
       } else {
         btnReposition.style.display = 'none';
       }

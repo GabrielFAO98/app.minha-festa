@@ -326,7 +326,11 @@ body {
 .item-action-btn.btn-delete-direct {
   background: linear-gradient(135deg, #ef4444, #b91c1c);
   color: #ffffff;
-  padding: 0 14px;
+  min-width: 42px;
+  width: 42px;
+  padding: 0;
+  justify-content: center;
+  font-size: 1.05rem;
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
 }
 

@@ -26,24 +26,28 @@ export function createClipFunction(type: string, width: number, height: number) 
 
     return (ctx: any) => {
       ctx.beginPath();
-      ctx.moveTo(18 * scaleX, 345 * scaleY);
+      ctx.moveTo(18 * scaleX, 368 * scaleY);
       ctx.lineTo(18 * scaleX, 100 * scaleY);
       ctx.ellipse(100 * scaleX, 100 * scaleY, 82 * scaleX, 82 * scaleY, 0, Math.PI, 0, false);
-      ctx.lineTo(182 * scaleX, 345 * scaleY);
+      ctx.lineTo(182 * scaleX, 368 * scaleY);
       ctx.closePath();
     };
   }
 
   if (type === 'panel_half_moon') {
-    const scaleX = width / 240;
+    const scaleX = width / 220;
     const scaleY = height / 380;
 
     return (ctx: any) => {
       ctx.beginPath();
-      ctx.moveTo(148 * scaleX, 18 * scaleY);
-      ctx.bezierCurveTo(22 * scaleX, 38 * scaleY, 22 * scaleX, 322 * scaleY, 148 * scaleX, 342 * scaleY);
-      ctx.bezierCurveTo(208 * scaleX, 330 * scaleY, 222 * scaleX, 250 * scaleY, 222 * scaleX, 180 * scaleY);
-      ctx.bezierCurveTo(222 * scaleX, 110 * scaleY, 208 * scaleX, 30 * scaleY, 148 * scaleX, 18 * scaleY);
+      ctx.moveTo(20 * scaleX, 352 * scaleY);
+      ctx.lineTo(20 * scaleX, 150 * scaleY);
+      ctx.bezierCurveTo(
+        20 * scaleX, 35 * scaleY,
+        110 * scaleX, 20 * scaleY,
+        200 * scaleX, 25 * scaleY
+      );
+      ctx.lineTo(200 * scaleX, 352 * scaleY);
       ctx.closePath();
     };
   }
@@ -169,12 +173,12 @@ export function calculateCoverPlacement(
     targetX = nodeWidth * (18 / 200);
     targetY = nodeHeight * (18 / 380);
     targetW = nodeWidth * (164 / 200);
-    targetH = nodeHeight * (327 / 380);
+    targetH = nodeHeight * (350 / 380);
   } else if (type === 'panel_half_moon') {
-    targetX = nodeWidth * (22 / 240);
-    targetY = nodeHeight * (18 / 380);
-    targetW = nodeWidth * (200 / 240);
-    targetH = nodeHeight * (324 / 380);
+    targetX = nodeWidth * (20 / 220);
+    targetY = nodeHeight * (20 / 380);
+    targetW = nodeWidth * (180 / 220);
+    targetH = nodeHeight * (332 / 380);
   } else if (type === 'cylinder' || type === 'cylinder_fluted') {
     targetX = nodeWidth * (14.5 / 160);
     targetY = nodeHeight * (22.5 / 220);
@@ -280,7 +284,7 @@ export function createShadingOverlay(type: string, width: number, height: number
     const rx = 82 * scaleX;
     const xLeft = cx - rx;
     const yTop = 18 * scaleY;
-    const yBottom = 345 * scaleY;
+    const yBottom = 368 * scaleY;
 
     const vertGrad = ctx.createLinearGradient(0, yTop, 0, yBottom);
     vertGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.08)');
@@ -289,6 +293,20 @@ export function createShadingOverlay(type: string, width: number, height: number
 
     ctx.fillStyle = vertGrad;
     ctx.fillRect(xLeft, yTop, rx * 2, yBottom - yTop);
+  } else if (type === 'panel_half_moon') {
+    const scaleX = w / 220;
+    const scaleY = h / 380;
+    const xLeft = 20 * scaleX;
+    const yTop = 20 * scaleY;
+    const yBottom = 352 * scaleY;
+
+    const vertGrad = ctx.createLinearGradient(0, yTop, 0, yBottom);
+    vertGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.08)');
+    vertGrad.addColorStop(0.45, 'rgba(255, 255, 255, 0.0)');
+    vertGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.10)');
+
+    ctx.fillStyle = vertGrad;
+    ctx.fillRect(xLeft, yTop, 180 * scaleX, yBottom - yTop);
   } else if (type === 'rug_oval') {
     const cx = w * 0.5;
     const cy = h * 0.5;
@@ -446,6 +464,18 @@ export function isPointInsideMask(type: string, x: number, y: number, width: num
     const dx = (x - cx) / rx;
     const dy = (y - cy) / ry;
     return (dx * dx + dy * dy) <= 1.0;
+  }
+
+  if (type === 'panel_half_moon') {
+    const scaleX = width / 220;
+    const scaleY = height / 380;
+    return x >= 20 * scaleX && x <= 200 * scaleX && y >= 20 * scaleY && y <= 373 * scaleY;
+  }
+
+  if (type === 'panel_rect') {
+    const scaleX = width / 300;
+    const scaleY = height / 260;
+    return x >= 15 * scaleX && x <= 285 * scaleX && y >= 15 * scaleY && y <= 253 * scaleY;
   }
 
   if (type === 'cylinder' || type === 'cylinder_fluted') {

@@ -71,8 +71,6 @@ export class CanvasEngine {
   private pendingCoverRefresh: boolean;
   private rafId: number | null;
   private lastTouchTime: number;
-  private lastTapTime: number;
-  private lastTapNode: Konva.Group | null;
 
   hitCanvas: HTMLCanvasElement;
   hitCtx: CanvasRenderingContext2D | null;
@@ -130,8 +128,6 @@ export class CanvasEngine {
     this.pendingCoverRefresh = false;
     this.rafId = null;
     this.lastTouchTime = 0;
-    this.lastTapTime = 0;
-    this.lastTapNode = null;
 
     this.hitCanvas = document.createElement('canvas');
     this.hitCanvas.width = 1;
@@ -346,35 +342,15 @@ export class CanvasEngine {
         this.lastTouchTime = performance.now();
         const touchEvt = rawEvt as TouchEvent;
 
-        // GESTO DE PINÇA COM 2 DEDOS NO MOBILE (ZOOM + PAN DE CAPA)
+        // GESTO DE PINÇA COM 2 DEDOS NO MOBILE (SOMENTE QUANDO O MODO ENQUADRAR ESTIVER ATIVO)
         if (touchEvt.touches && touchEvt.touches.length === 2) {
-          if (rawEvt.cancelable) rawEvt.preventDefault();
-
-          const t1 = touchEvt.touches[0];
-          const t2 = touchEvt.touches[1];
-          const center = getTouchCenter(t1, t2);
-
-          // Se nenhuma peça com capa está selecionada ainda, verifica se a pinça começou sobre uma peça com capa
-          if (!this.selectedNode || !(this.selectedNode.getAttr('itemMeta') || {}).customCoverUrl) {
-            const centerStagePos = {
-              x: (center.x - rect.left) / this.dragContainerScaleX,
-              y: (center.y - rect.top) / this.dragContainerScaleY
-            };
-            const candidatesAtPinch = this.findOpaqueItemsAtPoint(centerStagePos);
-            const coverCandidate = candidatesAtPinch.find(
-              (c) => (c.getAttr('itemMeta') || {}).customCoverUrl
-            );
-            if (coverCandidate) {
-              this.selectNode(coverCandidate);
-            }
-          }
-
-          if (this.selectedNode) {
+          if (this.isRepositioningCover && this.selectedNode) {
             const meta = this.selectedNode.getAttr('itemMeta') || {};
             if (meta.customCoverUrl) {
-              if (!this.isRepositioningCover) {
-                this.enterCoverRepositionMode();
-              }
+              if (rawEvt.cancelable) rawEvt.preventDefault();
+              const t1 = touchEvt.touches[0];
+              const t2 = touchEvt.touches[1];
+              const center = getTouchCenter(t1, t2);
               this.draggingNode = null;
               this.isDraggingCoverInternal = false;
               this.isPinchingCover = true;
@@ -418,7 +394,7 @@ export class CanvasEngine {
         y: (clientY - rect.top) / this.dragContainerScaleY
       };
 
-      // 1. Se estamos no modo de enquadrar capa
+      // 1. Se estamos no modo de enquadrar capa (ativado pelo botão)
       if (this.isRepositioningCover && this.selectedNode) {
         const candidates = this.findOpaqueItemsAtPoint(pointerPos);
         if (candidates.includes(this.selectedNode)) {
@@ -441,22 +417,6 @@ export class CanvasEngine {
         this.deselect();
         return;
       }
-
-      // Detecta duplo toque / duplo clique para ativar enquadramento de capa
-      const now = performance.now();
-      const topCandidate = candidates[0];
-      if (now - this.lastTapTime < 320 && this.lastTapNode === topCandidate) {
-        this.lastTapTime = 0;
-        this.lastTapNode = null;
-        const meta = topCandidate.getAttr('itemMeta') || {};
-        if (meta.customCoverUrl) {
-          this.selectNode(topCandidate);
-          this.enterCoverRepositionMode();
-          return;
-        }
-      }
-      this.lastTapTime = now;
-      this.lastTapNode = topCandidate;
 
       // Decide qual peça selecionar/arrastar imediatamente no mesmo gesto
       const keepCurrentSelected =

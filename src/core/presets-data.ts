@@ -3349,6 +3349,18 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     rentalPrice: 15
   },
   {
+    id: 'preset-vaso-garrafinha-4',
+    name: 'Vaso Garrafinha Branca - Arranjo Slim',
+    category: 'acessorios',
+    type: 'generic',
+    widthCm: 15.5,
+    heightCm: 32,
+    previewUrl: '/items/vaso-garrafinha-branco-4.png',
+    isCustom: false,
+    stockQuantity: 4,
+    rentalPrice: 15
+  },
+  {
     id: 'preset-display-mesa',
     name: 'Display de Mesa MDF 25cm',
     category: 'displays',

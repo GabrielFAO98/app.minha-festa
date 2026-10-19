@@ -86,6 +86,7 @@ export class ProjectsModal {
       elements: elements,
       wallTexture: this.canvasEngine.wallTextureUrl,
       floorTexture: this.canvasEngine.floorTextureUrl,
+      bgImageUrl: this.canvasEngine.bgImageUrl || undefined,
       thumbnailUrl: thumb
     });
 
@@ -110,6 +111,7 @@ export class ProjectsModal {
       elements: elements,
       wallTexture: this.canvasEngine.wallTextureUrl,
       floorTexture: this.canvasEngine.floorTextureUrl,
+      bgImageUrl: this.canvasEngine.bgImageUrl || undefined,
       thumbnailUrl: thumb
     });
 
@@ -256,10 +258,14 @@ export class ProjectsModal {
   async loadProject(proj: ProjectData): Promise<void> {
     await this.canvasEngine.loadSceneElements(proj.elements || []);
 
-    const wall = proj.wallTextureUrl || proj.wallTexture;
-    const floor = proj.floorTextureUrl || proj.floorTexture;
-    if (wall || floor) {
-      await this.canvasEngine.setEnvironmentTextures(wall || null, floor || null);
+    if (proj.bgImageUrl) {
+      await this.canvasEngine.setEnvironmentScenario(proj.bgImageUrl);
+    } else {
+      const wall = proj.wallTextureUrl || proj.wallTexture;
+      const floor = proj.floorTextureUrl || proj.floorTexture;
+      if (wall || floor) {
+        await this.canvasEngine.setEnvironmentTextures(wall || null, floor || null);
+      }
     }
 
     this.currentProjectId = proj.id;

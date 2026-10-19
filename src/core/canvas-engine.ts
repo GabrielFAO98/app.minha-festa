@@ -42,6 +42,7 @@ export class CanvasEngine {
 
   wallTextureUrl: string;
   floorTextureUrl: string;
+  bgImageUrl: string | null;
 
   undoStack: string[];
   redoStack: string[];
@@ -103,6 +104,7 @@ export class CanvasEngine {
 
     this.wallTextureUrl = TEXTURE_WALL_BOISERIE;
     this.floorTextureUrl = TEXTURE_FLOOR_WOOD;
+    this.bgImageUrl = '/cenarios/cenario-boiserie-madeira.jpg';
 
     this.undoStack = [];
     this.redoStack = [];
@@ -212,6 +214,28 @@ export class CanvasEngine {
     if (!this.bgLayer) return;
     this.bgLayer.destroyChildren();
 
+    // 1. Cenário Fotográfico Completo (Foto real com parede ~60% e chão ~40%)
+    if (this.bgImageUrl) {
+      try {
+        const bgImg = await loadImageAsync(this.bgImageUrl);
+        const bgNode = new Konva.Image({
+          name: 'bg-element',
+          x: 0,
+          y: 0,
+          width: this.VIRTUAL_WIDTH,
+          height: this.VIRTUAL_HEIGHT,
+          image: bgImg,
+          listening: false
+        });
+        this.bgLayer.add(bgNode);
+        this.bgLayer.batchDraw();
+        return;
+      } catch (err) {
+        console.warn('Falha ao carregar cenário fotográfico, usando texturas modulares:', err);
+      }
+    }
+
+    // 2. Cenário Modular (Parede + Piso separados)
     const wallImg = await loadImageAsync(this.wallTextureUrl);
     const wallNode = new Konva.Image({
       name: 'bg-element',
@@ -239,7 +263,14 @@ export class CanvasEngine {
     this.bgLayer.batchDraw();
   }
 
+  async setEnvironmentScenario(scenarioUrl: string) {
+    this.bgImageUrl = scenarioUrl;
+    await this.renderEnvironment();
+    this.saveSnapshot();
+  }
+
   async setEnvironmentTextures(wallUrl: string | null, floorUrl: string | null) {
+    this.bgImageUrl = null;
     if (wallUrl) this.wallTextureUrl = wallUrl;
     if (floorUrl) this.floorTextureUrl = floorUrl;
     await this.renderEnvironment();
@@ -1689,7 +1720,8 @@ export class CanvasEngine {
     const currentSnapshot = JSON.stringify({
       elements: this.getSceneElements(),
       wallTextureUrl: this.wallTextureUrl,
-      floorTextureUrl: this.floorTextureUrl
+      floorTextureUrl: this.floorTextureUrl,
+      bgImageUrl: this.bgImageUrl
     });
 
     const lastSnapshot = this.undoStack[this.undoStack.length - 1];
@@ -1727,9 +1759,14 @@ export class CanvasEngine {
     this.isRestoringState = true;
     try {
       const data = JSON.parse(jsonString);
-      if (data.wallTextureUrl !== this.wallTextureUrl || data.floorTextureUrl !== this.floorTextureUrl) {
-        this.wallTextureUrl = data.wallTextureUrl;
-        this.floorTextureUrl = data.floorTextureUrl;
+      if (
+        data.wallTextureUrl !== this.wallTextureUrl ||
+        data.floorTextureUrl !== this.floorTextureUrl ||
+        data.bgImageUrl !== this.bgImageUrl
+      ) {
+        this.wallTextureUrl = data.wallTextureUrl || this.wallTextureUrl;
+        this.floorTextureUrl = data.floorTextureUrl || this.floorTextureUrl;
+        this.bgImageUrl = data.bgImageUrl !== undefined ? data.bgImageUrl : this.bgImageUrl;
         await this.renderEnvironment();
       }
       await this.loadSceneElements(data.elements || []);

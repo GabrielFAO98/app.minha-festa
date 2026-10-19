@@ -230,10 +230,10 @@ export class BottomDock {
     let html = `
       <div style="display: flex; flex-direction: column; gap: 14px;">
         <div>
-          <div class="form-label" style="margin-bottom: 8px;">Cenários Completos (Toque na Imagem)</div>
+          <div class="form-label" style="margin-bottom: 8px;">Cenários Fotográficos & Ambientes (Toque na Imagem)</div>
           <div class="scene-visual-grid">
             ${REALISTIC_ENVIRONMENTS.map(env => `
-              <div class="scene-visual-card btn-preset-env" data-wall="${env.wallTexture}" data-floor="${env.floorTexture}">
+              <div class="scene-visual-card btn-preset-env" data-bg="${env.bgImageUrl || ''}" data-wall="${env.wallTexture || ''}" data-floor="${env.floorTexture || ''}">
                 <img src="${env.previewThumb}" alt="${env.name}"/>
                 <div class="scene-visual-overlay">${env.name}</div>
               </div>
@@ -271,9 +271,14 @@ export class BottomDock {
 
     this.sheetBody.querySelectorAll('.btn-preset-env').forEach((card) => {
       card.addEventListener('click', async () => {
-        const wall = (card as HTMLElement).dataset.wall || null;
-        const floor = (card as HTMLElement).dataset.floor || null;
-        await this.canvasEngine.setEnvironmentTextures(wall, floor);
+        const bg = (card as HTMLElement).dataset.bg;
+        if (bg) {
+          await this.canvasEngine.setEnvironmentScenario(bg);
+        } else {
+          const wall = (card as HTMLElement).dataset.wall || null;
+          const floor = (card as HTMLElement).dataset.floor || null;
+          await this.canvasEngine.setEnvironmentTextures(wall, floor);
+        }
       });
     });
 

@@ -103,6 +103,7 @@ export interface ProjectData {
   floorTextureUrl?: string;
   wallTexture?: string;
   floorTexture?: string;
+  bgImageUrl?: string;
   updatedAt: number;
   createdAt?: number;
   thumbnailUrl?: string;

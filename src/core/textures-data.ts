@@ -254,12 +254,64 @@ export const TEXTURE_FLOOR_CONCRETE = svgToDataUrl(`
 </svg>
 `);
 
+export interface RealisticEnvironment {
+  id: string;
+  name: string;
+  category: string;
+  bgImageUrl?: string;
+  wallTexture?: string;
+  floorTexture?: string;
+  previewThumb: string;
+}
+
 // Lista de Cenários Pré-Configurados Prontos
-export const REALISTIC_ENVIRONMENTS = [
+export const REALISTIC_ENVIRONMENTS: RealisticEnvironment[] = [
+  {
+    id: 'foto-boiserie-madeira',
+    name: 'Salão Boiserie & Madeira',
+    category: 'Realista',
+    bgImageUrl: '/cenarios/cenario-boiserie-madeira.jpg',
+    previewThumb: '/cenarios/cenario-boiserie-madeira.jpg'
+  },
+  {
+    id: 'foto-salao-porcelanato',
+    name: 'Salão Moderno Porcelanato',
+    category: 'Realista',
+    bgImageUrl: '/cenarios/cenario-salao-porcelanato.jpg',
+    previewThumb: '/cenarios/cenario-salao-porcelanato.jpg'
+  },
+  {
+    id: 'foto-jardim-gramado',
+    name: 'Jardim Externo & Gramado',
+    category: 'Realista',
+    bgImageUrl: '/cenarios/cenario-jardim-gramado.jpg',
+    previewThumb: '/cenarios/cenario-jardim-gramado.jpg'
+  },
+  {
+    id: 'foto-tijolinho-rustico',
+    name: 'Rústico Chic & Tijolinho',
+    category: 'Realista',
+    bgImageUrl: '/cenarios/cenario-tijolinho-rustico.jpg',
+    previewThumb: '/cenarios/cenario-tijolinho-rustico.jpg'
+  },
+  {
+    id: 'foto-estudio-clean',
+    name: 'Estúdio Clean Escandinavo',
+    category: 'Realista',
+    bgImageUrl: '/cenarios/cenario-estudio-clean.jpg',
+    previewThumb: '/cenarios/cenario-estudio-clean.jpg'
+  },
+  {
+    id: 'foto-cimento-loft',
+    name: 'Loft Cimento Queimado',
+    category: 'Realista',
+    bgImageUrl: '/cenarios/cenario-cimento-loft.jpg',
+    previewThumb: '/cenarios/cenario-cimento-loft.jpg'
+  },
   {
     id: 'boiserie-wood',
-    name: 'Boiserie & Madeira',
-    category: 'Clássico',
+    name: 'Boiserie Vetorial & Madeira',
+    category: 'Ilustrado',
     wallTexture: TEXTURE_WALL_BOISERIE,
     floorTexture: TEXTURE_FLOOR_WOOD,
     previewThumb: TEXTURE_WALL_BOISERIE
@@ -267,7 +319,7 @@ export const REALISTIC_ENVIRONMENTS = [
   {
     id: 'fairy-wood',
     name: 'Cortina Luzes & Madeira',
-    category: 'Festas',
+    category: 'Ilustrado',
     wallTexture: TEXTURE_WALL_FAIRY_LIGHTS,
     floorTexture: TEXTURE_FLOOR_WOOD,
     previewThumb: TEXTURE_WALL_FAIRY_LIGHTS
@@ -275,7 +327,7 @@ export const REALISTIC_ENVIRONMENTS = [
   {
     id: 'greenery-grass',
     name: 'Muro Inglês & Gramado',
-    category: 'Jardim',
+    category: 'Ilustrado',
     wallTexture: TEXTURE_WALL_GREENERY,
     floorTexture: TEXTURE_FLOOR_GRASS,
     previewThumb: TEXTURE_WALL_GREENERY
@@ -283,7 +335,7 @@ export const REALISTIC_ENVIRONMENTS = [
   {
     id: 'brick-marble',
     name: 'Tijolinho & Mármore',
-    category: 'Moderno',
+    category: 'Ilustrado',
     wallTexture: TEXTURE_WALL_BRICK,
     floorTexture: TEXTURE_FLOOR_MARBLE,
     previewThumb: TEXTURE_WALL_BRICK
@@ -291,7 +343,7 @@ export const REALISTIC_ENVIRONMENTS = [
   {
     id: 'slats-grass',
     name: 'Ripado & Gramado',
-    category: 'Rústico',
+    category: 'Ilustrado',
     wallTexture: TEXTURE_WALL_WOOD_SLATS,
     floorTexture: TEXTURE_FLOOR_GRASS,
     previewThumb: TEXTURE_WALL_WOOD_SLATS
@@ -299,7 +351,7 @@ export const REALISTIC_ENVIRONMENTS = [
   {
     id: 'clean-marble',
     name: 'Estúdio Clean',
-    category: 'Minimalista',
+    category: 'Ilustrado',
     wallTexture: TEXTURE_WALL_CLEAN,
     floorTexture: TEXTURE_FLOOR_MARBLE,
     previewThumb: TEXTURE_WALL_CLEAN
@@ -307,7 +359,7 @@ export const REALISTIC_ENVIRONMENTS = [
   {
     id: 'concrete-loft',
     name: 'Cimento Queimado',
-    category: 'Industrial',
+    category: 'Ilustrado',
     wallTexture: TEXTURE_WALL_CONCRETE,
     floorTexture: TEXTURE_FLOOR_CONCRETE,
     previewThumb: TEXTURE_WALL_CONCRETE

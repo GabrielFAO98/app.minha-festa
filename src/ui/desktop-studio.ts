@@ -230,7 +230,11 @@ export class DesktopStudio {
         <div class="card-dimensions">${env.category}</div>
       `;
       card.addEventListener('click', async () => {
-        await this.canvasEngine.setEnvironmentTextures(env.wallTexture, env.floorTexture);
+        if (env.bgImageUrl) {
+          await this.canvasEngine.setEnvironmentScenario(env.bgImageUrl);
+        } else if (env.wallTexture && env.floorTexture) {
+          await this.canvasEngine.setEnvironmentTextures(env.wallTexture, env.floorTexture);
+        }
       });
       grid.appendChild(card);
     });

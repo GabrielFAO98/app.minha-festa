@@ -31,6 +31,7 @@ export class CanvasEngine {
   selectedNode: Konva.Group | null;
 
   // Botões de Ação nos Cantos do Quadro de Seleção e Alça de Arraste
+  btnCornerRotate: Konva.Group | null;
   btnCornerFlip: Konva.Group | null;
   btnCornerDuplicate: Konva.Group | null;
   btnCornerMove: Konva.Group | null;
@@ -71,6 +72,12 @@ export class CanvasEngine {
   private pinchStartScale: number;
   private pinchStartCenterX: number;
   private pinchStartCenterY: number;
+  // Modo Rotação Manual no Botão Superior Esquerdo
+  private isRotatingNode: boolean;
+  private rotateCenterScreenX: number;
+  private rotateCenterScreenY: number;
+  private rotateStartAngle: number;
+  private rotateNodeStartRotation: number;
 
   // Motor Direto 1:1 de Arraste (Zero Lag no Mobile)
   private draggingNode: Konva.Group | null;
@@ -107,6 +114,7 @@ export class CanvasEngine {
     this.uiLayer = null;
     this.transformer = null;
     this.selectedNode = null;
+    this.btnCornerRotate = null;
     this.btnCornerFlip = null;
     this.btnCornerDuplicate = null;
     this.btnCornerMove = null;
@@ -146,6 +154,12 @@ export class CanvasEngine {
     this.pinchStartScale = 1;
     this.pinchStartCenterX = 0;
     this.pinchStartCenterY = 0;
+
+    this.isRotatingNode = false;
+    this.rotateCenterScreenX = 0;
+    this.rotateCenterScreenY = 0;
+    this.rotateStartAngle = 0;
+    this.rotateNodeStartRotation = 0;
 
     this.draggingNode = null;
     this.dragStartClientX = 0;
@@ -243,8 +257,16 @@ export class CanvasEngine {
 
   setZoom(newZoom: number, focusScreenX?: number, focusScreenY?: number) {
     if (!this.stage) return;
-    const clampedZoom = Math.max(0.5, Math.min(4.0, newZoom));
-    if (Math.abs(clampedZoom - this.zoomLevel) < 0.001) return;
+    // Trava estritamente em no mínimo 1.0 (100%), facilitando o retorno ao enquadramento original sem sub-zoom
+    const clampedZoom = Math.max(1.0, Math.min(4.0, newZoom));
+    if (Math.abs(clampedZoom - this.zoomLevel) < 0.001) {
+      if (clampedZoom === 1.0 && (this.panX !== 0 || this.panY !== 0)) {
+        this.panX = 0;
+        this.panY = 0;
+        this.applyViewTransform();
+      }
+      return;
+    }
 
     const containerW = this.stage.width();
     const containerH = this.stage.height();
@@ -259,7 +281,7 @@ export class CanvasEngine {
     const virtualY = (screenFocusY - (this.baseOffsetY + this.panY)) / oldScale;
 
     // Ajusta o pan para que o ponto da tela permaneça no mesmo local sob o novo zoom
-    if (clampedZoom === 1) {
+    if (clampedZoom <= 1.001) {
       this.panX = 0;
       this.panY = 0;
     } else {
@@ -267,7 +289,7 @@ export class CanvasEngine {
       this.panY = screenFocusY - this.baseOffsetY - virtualY * newScale;
     }
 
-    this.zoomLevel = clampedZoom;
+    this.zoomLevel = clampedZoom <= 1.001 ? 1.0 : clampedZoom;
     this.applyViewTransform();
   }
 
@@ -277,7 +299,7 @@ export class CanvasEngine {
   }
 
   zoomOut() {
-    const nextZoom = Math.max(0.5, Math.round((this.zoomLevel - 0.25) * 4) / 4);
+    const nextZoom = Math.max(1.0, Math.round((this.zoomLevel - 0.25) * 4) / 4);
     this.setZoom(nextZoom);
   }
 
@@ -374,21 +396,72 @@ export class CanvasEngine {
 
   setupTransformer() {
     if (!this.uiLayer) return;
+    // Círculos reduzidos em 25% (26px -> 20px, raio 10px)
     this.transformer = new Konva.Transformer({
-      rotateAnchorOffset: 30,
-      enabledAnchors: ['top-left', 'top-right'],
-      anchorSize: 26,
-      anchorCornerRadius: 13,
+      rotateAnchorOffset: 0,
+      enabledAnchors: ['top-right'], // Apenas top-right é âncora nativa de escala do Konva
+      rotateEnabled: false, // Desativa âncora flutuante externa nativa; rotação integrada no canto superior esquerdo
+      anchorSize: 20,
+      anchorCornerRadius: 10,
       anchorStroke: '#ec4899',
-      anchorFill: '#ffffff',
-      anchorStrokeWidth: 2.5,
+      anchorFill: '#0f172a',
+      anchorStrokeWidth: 2,
       borderStroke: '#ec4899',
-      borderStrokeWidth: 2,
+      borderStrokeWidth: 1.8,
       borderDash: [5, 4],
       keepRatio: true,
       shouldOverdrawWholeArea: false,
       anchorStyleFunc: (anchor) => {
         anchor.hitStrokeWidth(16);
+        // Desenha o ícone de seta diagonal de duas pontas (⤢) no botão superior direito
+        if (anchor.hasName('top-right')) {
+          anchor.stroke('#ec4899');
+          anchor.fill('#0f172a');
+          anchor.strokeWidth(2);
+          anchor.cornerRadius(10);
+          anchor.sceneFunc((ctx, shape) => {
+            const w = shape.width();
+            const h = shape.height();
+            const r = typeof shape.cornerRadius() === 'number' ? (shape.cornerRadius() as number) : 10;
+
+            // Fundo circular
+            ctx.beginPath();
+            ctx.arc(w / 2, h / 2, r, 0, Math.PI * 2, false);
+            ctx.closePath();
+            ctx.fillStrokeShape(shape);
+
+            // Seta diagonal com 2 pontas (⤢)
+            ctx.save();
+            ctx.translate(w / 2, h / 2);
+            ctx.strokeStyle = '#ffffff';
+            ctx.fillStyle = '#ffffff';
+            ctx.lineWidth = 1.3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Linha diagonal principal (do canto inferior-esquerdo ao superior-direito)
+            ctx.beginPath();
+            ctx.moveTo(-4.5, 4.5);
+            ctx.lineTo(4.5, -4.5);
+            ctx.stroke();
+
+            // Ponta superior direita (apontando para cima-direita)
+            ctx.beginPath();
+            ctx.moveTo(1.5, -4.5);
+            ctx.lineTo(4.5, -4.5);
+            ctx.lineTo(4.5, -1.5);
+            ctx.stroke();
+
+            // Ponta inferior esquerda (apontando para baixo-esquerda)
+            ctx.beginPath();
+            ctx.moveTo(-1.5, 4.5);
+            ctx.lineTo(-4.5, 4.5);
+            ctx.lineTo(-4.5, 1.5);
+            ctx.stroke();
+
+            ctx.restore();
+          });
+        }
       }
     });
 
@@ -425,7 +498,78 @@ export class CanvasEngine {
       if (e && e.cancelBubble !== undefined) e.cancelBubble = true;
     };
 
-    // 1. Botão de Espelhar (Canto Inferior Esquerdo)
+    // 1. Botão de Rotação (Canto Superior Esquerdo - Círculo reduzido em 25%)
+    this.btnCornerRotate = new Konva.Group({
+      name: 'corner-btn-rotate',
+      visible: false,
+      listening: true
+    });
+
+    const hitRotate = new Konva.Circle({
+      radius: 20,
+      fill: 'transparent',
+      listening: true
+    });
+
+    const circleRotate = new Konva.Circle({
+      radius: 10,
+      fill: '#0f172a',
+      stroke: '#ec4899',
+      strokeWidth: 2,
+      listening: false
+    });
+
+    // Ícone de Rotação: Seta curva girando no sentido horário (⟳)
+    const iconRotate = new Konva.Shape({
+      sceneFunc: (ctx, shape) => {
+        ctx.save();
+        ctx.strokeStyle = '#ffffff';
+        ctx.fillStyle = '#ffffff';
+        ctx.lineWidth = 1.3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Arco circular de rotação (~270 graus)
+        ctx.beginPath();
+        ctx.arc(0, 0, 4.5, -Math.PI * 0.8, Math.PI * 0.35, false);
+        ctx.stroke();
+
+        // Seta tangencial na ponta do arco
+        const endAngle = Math.PI * 0.35;
+        const ex = Math.cos(endAngle) * 4.5;
+        const ey = Math.sin(endAngle) * 4.5;
+        const tanX = -Math.sin(endAngle);
+        const tanY = Math.cos(endAngle);
+        ctx.beginPath();
+        ctx.moveTo(ex + tanX * 3.2, ey + tanY * 3.2);
+        ctx.lineTo(ex - tanY * 2.3, ey + tanX * 2.3);
+        ctx.lineTo(ex + tanY * 1.4, ey - tanX * 1.4);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+      },
+      listening: false
+    });
+
+    this.btnCornerRotate.add(hitRotate);
+    this.btnCornerRotate.add(circleRotate);
+    this.btnCornerRotate.add(iconRotate);
+
+    this.btnCornerRotate.on('mouseenter', () => {
+      if (performance.now() - this.lastTouchTime < 600) return;
+      if (this.stage?.content) this.stage.content.style.cursor = 'crosshair';
+      circleRotate.fill('#1e293b');
+      this.uiLayer?.batchDraw();
+    });
+    this.btnCornerRotate.on('mouseleave', () => {
+      if (performance.now() - this.lastTouchTime < 600) return;
+      if (this.stage?.content) this.stage.content.style.cursor = '';
+      circleRotate.fill('#0f172a');
+      this.uiLayer?.batchDraw();
+    });
+
+    // 2. Botão de Espelhar (Canto Inferior Esquerdo - Círculo reduzido em 25%)
     this.btnCornerFlip = new Konva.Group({
       name: 'corner-btn-flip',
       visible: false,
@@ -433,16 +577,16 @@ export class CanvasEngine {
     });
 
     const hitFlip = new Konva.Circle({
-      radius: 24,
+      radius: 20,
       fill: 'transparent',
       listening: true
     });
 
     const circleFlip = new Konva.Circle({
-      radius: 13,
+      radius: 10,
       fill: '#0f172a',
       stroke: '#ec4899',
-      strokeWidth: 2.5,
+      strokeWidth: 2,
       listening: false
     });
 
@@ -451,26 +595,26 @@ export class CanvasEngine {
       sceneFunc: (ctx, shape) => {
         // Eixo divisor central
         ctx.beginPath();
-        ctx.moveTo(0, -6.5);
-        ctx.lineTo(0, 6.5);
+        ctx.moveTo(0, -5);
+        ctx.lineTo(0, 5);
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.2;
+        ctx.lineWidth = 1.1;
         ctx.stroke();
 
         // Triângulo esquerdo (apontando para esquerda)
         ctx.beginPath();
-        ctx.moveTo(-1.6, -5);
-        ctx.lineTo(-7, 0);
-        ctx.lineTo(-1.6, 5);
+        ctx.moveTo(-1.2, -4);
+        ctx.lineTo(-5.5, 0);
+        ctx.lineTo(-1.2, 4);
         ctx.closePath();
         ctx.fillStyle = '#ffffff';
         ctx.fill();
 
         // Triângulo direito (apontando para direita)
         ctx.beginPath();
-        ctx.moveTo(1.6, -5);
-        ctx.lineTo(7, 0);
-        ctx.lineTo(1.6, 5);
+        ctx.moveTo(1.2, -4);
+        ctx.lineTo(5.5, 0);
+        ctx.lineTo(1.2, 4);
         ctx.closePath();
         ctx.fillStyle = '#ffffff';
         ctx.fill();
@@ -501,7 +645,7 @@ export class CanvasEngine {
       this.uiLayer?.batchDraw();
     });
 
-    // 2. Botão de Duplicar (Canto Inferior Direito)
+    // 3. Botão de Duplicar (Canto Inferior Direito - Círculo reduzido em 25%)
     this.btnCornerDuplicate = new Konva.Group({
       name: 'corner-btn-duplicate',
       visible: false,
@@ -509,16 +653,16 @@ export class CanvasEngine {
     });
 
     const hitDup = new Konva.Circle({
-      radius: 24,
+      radius: 20,
       fill: 'transparent',
       listening: true
     });
 
     const circleDup = new Konva.Circle({
-      radius: 13,
+      radius: 10,
       fill: '#0f172a',
       stroke: '#ec4899',
-      strokeWidth: 2.5,
+      strokeWidth: 2,
       listening: false
     });
 
@@ -526,16 +670,16 @@ export class CanvasEngine {
     const iconDup = new Konva.Shape({
       sceneFunc: (ctx, shape) => {
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.3;
+        ctx.lineWidth = 1.1;
 
         // Quadrado traseiro (topo-direita)
         ctx.beginPath();
-        ctx.strokeRect(-1, -6.5, 7.5, 7.5);
+        ctx.strokeRect(-0.8, -5, 5.8, 5.8);
 
         // Quadrado frontal (baixo-esquerda, com fundo escuro que sobrepõe o traseiro)
         ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-6.5, -1, 7.5, 7.5);
-        ctx.strokeRect(-6.5, -1, 7.5, 7.5);
+        ctx.fillRect(-5, -0.8, 5.8, 5.8);
+        ctx.strokeRect(-5, -0.8, 5.8, 5.8);
       },
       listening: false
     });
@@ -563,10 +707,7 @@ export class CanvasEngine {
       this.uiLayer?.batchDraw();
     });
 
-    this.transformer.add(this.btnCornerFlip);
-    this.transformer.add(this.btnCornerDuplicate);
-
-    // 3. Alça Flutuante de Arraste / Mover (Topo-Centro com Haste de Elevação)
+    // 4. Alça Flutuante de Arraste / Mover (Topo-Centro - Haste e altura reduzidas para y=-26)
     this.btnCornerMove = new Konva.Group({
       name: 'handle-btn-move',
       visible: false,
@@ -575,34 +716,34 @@ export class CanvasEngine {
 
     // Haste de conexão vertical elegante (liga o topo da seleção até a alça)
     const stemMove = new Konva.Line({
-      points: [0, 0, 0, 48],
+      points: [0, 0, 0, 26],
       stroke: '#38bdf8',
-      strokeWidth: 2,
-      dash: [4, 3],
+      strokeWidth: 1.8,
+      dash: [3, 2.5],
       listening: false
     });
 
-    // Área de toque generosa (52px de diâmetro) para facilidade de toque no mobile
+    // Área de toque generosa (40px de diâmetro) para facilidade de toque no mobile
     const hitMove = new Konva.Circle({
       x: 0,
       y: 0,
-      radius: 26,
+      radius: 20,
       fill: 'transparent',
       listening: true
     });
 
-    // Círculo visual com visual navy premium e borda sky blue
+    // Círculo visual reduzido em 25% com visual navy premium e borda sky blue
     const circleMove = new Konva.Circle({
       x: 0,
       y: 0,
-      radius: 14,
+      radius: 10,
       fill: '#0f172a',
       stroke: '#38bdf8',
-      strokeWidth: 2.5,
+      strokeWidth: 2,
       shadowColor: '#000000',
-      shadowBlur: 6,
+      shadowBlur: 5,
       shadowOpacity: 0.35,
-      shadowOffset: { x: 0, y: 2 },
+      shadowOffset: { x: 0, y: 1.5 },
       listening: false
     });
 
@@ -613,45 +754,45 @@ export class CanvasEngine {
       sceneFunc: (ctx, shape) => {
         ctx.strokeStyle = '#ffffff';
         ctx.fillStyle = '#ffffff';
-        ctx.lineWidth = 1.6;
+        ctx.lineWidth = 1.3;
 
         // Cruz
         ctx.beginPath();
-        ctx.moveTo(0, -7.5);
-        ctx.lineTo(0, 7.5);
-        ctx.moveTo(-7.5, 0);
-        ctx.lineTo(7.5, 0);
+        ctx.moveTo(0, -5.5);
+        ctx.lineTo(0, 5.5);
+        ctx.moveTo(-5.5, 0);
+        ctx.lineTo(5.5, 0);
         ctx.stroke();
 
         // Seta Cima
         ctx.beginPath();
-        ctx.moveTo(0, -9);
-        ctx.lineTo(-3, -5.5);
-        ctx.lineTo(3, -5.5);
+        ctx.moveTo(0, -6.8);
+        ctx.lineTo(-2.2, -4.2);
+        ctx.lineTo(2.2, -4.2);
         ctx.closePath();
         ctx.fill();
 
         // Seta Baixo
         ctx.beginPath();
-        ctx.moveTo(0, 9);
-        ctx.lineTo(-3, 5.5);
-        ctx.lineTo(3, 5.5);
+        ctx.moveTo(0, 6.8);
+        ctx.lineTo(-2.2, 4.2);
+        ctx.lineTo(2.2, 4.2);
         ctx.closePath();
         ctx.fill();
 
         // Seta Esquerda
         ctx.beginPath();
-        ctx.moveTo(-9, 0);
-        ctx.lineTo(-5.5, -3);
-        ctx.lineTo(-5.5, 3);
+        ctx.moveTo(-6.8, 0);
+        ctx.lineTo(-4.2, -2.2);
+        ctx.lineTo(-4.2, 2.2);
         ctx.closePath();
         ctx.fill();
 
         // Seta Direita
         ctx.beginPath();
-        ctx.moveTo(9, 0);
-        ctx.lineTo(5.5, -3);
-        ctx.lineTo(5.5, 3);
+        ctx.moveTo(6.8, 0);
+        ctx.lineTo(4.2, -2.2);
+        ctx.lineTo(4.2, 2.2);
         ctx.closePath();
         ctx.fill();
       },
@@ -677,11 +818,15 @@ export class CanvasEngine {
       this.uiLayer?.batchDraw();
     });
 
+    this.transformer.add(this.btnCornerRotate);
+    this.transformer.add(this.btnCornerFlip);
+    this.transformer.add(this.btnCornerDuplicate);
     this.transformer.add(this.btnCornerMove);
   }
 
   updateCornerActionButtons() {
     if (!this.selectedNode || !this.transformer || this.isRepositioningCover) {
+      if (this.btnCornerRotate) this.btnCornerRotate.visible(false);
       if (this.btnCornerFlip) this.btnCornerFlip.visible(false);
       if (this.btnCornerDuplicate) this.btnCornerDuplicate.visible(false);
       if (this.btnCornerMove) this.btnCornerMove.visible(false);
@@ -690,6 +835,7 @@ export class CanvasEngine {
 
     const back = this.transformer.findOne('.back') as Konva.Shape | null;
     if (!back) {
+      if (this.btnCornerRotate) this.btnCornerRotate.visible(false);
       if (this.btnCornerFlip) this.btnCornerFlip.visible(false);
       if (this.btnCornerDuplicate) this.btnCornerDuplicate.visible(false);
       if (this.btnCornerMove) this.btnCornerMove.visible(false);
@@ -698,6 +844,14 @@ export class CanvasEngine {
 
     const w = back.width();
     const h = back.height();
+
+    // Canto superior esquerdo: Rotação (seta girando)
+    if (this.btnCornerRotate) {
+      this.btnCornerRotate.scaleX(1);
+      this.btnCornerRotate.scaleY(1);
+      this.btnCornerRotate.position({ x: 0, y: 0 });
+      this.btnCornerRotate.visible(true);
+    }
 
     // Com getAbsoluteRotation preservado, (0, h) é sempre o canto inferior esquerdo
     // e (w, h) é sempre o canto inferior direito, sem inversão ao espelhar
@@ -715,13 +869,25 @@ export class CanvasEngine {
       this.btnCornerDuplicate.visible(true);
     }
 
-    // Posiciona a alça de mover com visão desobstruída acima do topo-centro
+    // Posiciona a alça de mover acima do topo-centro com altura rebaixada para -26px
     if (this.btnCornerMove) {
       this.btnCornerMove.scaleX(1);
       this.btnCornerMove.scaleY(1);
-      this.btnCornerMove.position({ x: w / 2, y: -48 });
+      this.btnCornerMove.position({ x: w / 2, y: -26 });
       this.btnCornerMove.visible(true);
     }
+  }
+
+  private isRotateHandle(target: Konva.Node | null | undefined): boolean {
+    if (!target) return false;
+    let curr: Konva.Node | null = target;
+    while (curr) {
+      const name = curr.name ? curr.name() : '';
+      if (name === 'corner-btn-rotate') return true;
+      if (curr === this.stage) break;
+      curr = curr.getParent();
+    }
+    return false;
   }
 
   private isMoveHandle(target: Konva.Node | null | undefined): boolean {
@@ -747,7 +913,7 @@ export class CanvasEngine {
     let curr: Konva.Node | null = target;
     while (curr) {
       const name = curr.name ? curr.name() : '';
-      if (name.includes('corner-btn-')) return true;
+      if (name === 'corner-btn-flip' || name === 'corner-btn-duplicate') return true;
       if (curr === this.stage) break;
       curr = curr.getParent();
     }
@@ -881,6 +1047,21 @@ export class CanvasEngine {
         ? (rawEvt as TouchEvent).touches[0].clientY
         : (rawEvt as MouseEvent).clientY;
 
+      // Se clicou/tocou no Botão de Rotação (canto superior esquerdo), inicia a rotação em torno do centro da peça
+      if (this.isRotateHandle(e.target) && this.selectedNode && !this.selectedNode.getAttr('locked')) {
+        this.isRotatingNode = true;
+        const centerLocal = { x: this.selectedNode.width() / 2, y: this.selectedNode.height() / 2 };
+        const centerStage = this.selectedNode.getAbsoluteTransform().point(centerLocal);
+        this.rotateCenterScreenX = rect.left + centerStage.x * this.dragContainerScaleX;
+        this.rotateCenterScreenY = rect.top + centerStage.y * this.dragContainerScaleY;
+
+        const dx = clientX - this.rotateCenterScreenX;
+        const dy = clientY - this.rotateCenterScreenY;
+        this.rotateStartAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
+        this.rotateNodeStartRotation = this.selectedNode.rotation() || 0;
+        return;
+      }
+
       // Se clicou/tocou na Alça de Arraste (Move Handle), inicia o arraste da peça selecionada com visão 100% livre
       if (this.isMoveHandle(e.target) && this.selectedNode && !this.selectedNode.getAttr('locked')) {
         this.draggingNode = this.selectedNode;
@@ -972,7 +1153,7 @@ export class CanvasEngine {
             const center = getTouchCenter(t1, t2);
 
             const scaleRatio = dist / this.pinchStageStartDist;
-            const targetZoom = Math.max(0.5, Math.min(4.0, this.pinchStageStartZoom * scaleRatio));
+            const targetZoom = Math.max(1.0, Math.min(4.0, this.pinchStageStartZoom * scaleRatio));
 
             // Aplica zoom mantendo o centro do toque estável
             const contentEl = this.stage?.content || this.stage?.container();
@@ -1008,9 +1189,62 @@ export class CanvasEngine {
         return;
       }
 
-      if (!this.draggingNode && !this.isDraggingCoverInternal && !this.isPinchingCover) return;
+      if (!this.draggingNode && !this.isDraggingCoverInternal && !this.isPinchingCover && !this.isRotatingNode) return;
       if (this.transformer && (this.transformer as any).isTransforming && (this.transformer as any).isTransforming()) {
         this.draggingNode = null;
+        return;
+      }
+
+      // ROTAÇÃO DIRETA PELO BOTÃO SUPERIOR ESQUERDO
+      if (this.isRotatingNode && this.selectedNode) {
+        if (evt.cancelable) evt.preventDefault();
+
+        const clientX = isTouch
+          ? (evt as TouchEvent).touches[0].clientX
+          : (evt as MouseEvent).clientX;
+        const clientY = isTouch
+          ? (evt as TouchEvent).touches[0].clientY
+          : (evt as MouseEvent).clientY;
+
+        const dx = clientX - this.rotateCenterScreenX;
+        const dy = clientY - this.rotateCenterScreenY;
+        const currentAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
+        const deltaAngle = currentAngle - this.rotateStartAngle;
+
+        let newAngle = this.rotateNodeStartRotation + deltaAngle;
+        let normalizedAngle = ((newAngle % 360) + 360) % 360;
+
+        // Snapping suave a cada 45 graus (0, 45, 90, 135, 180, etc.) com tolerância de 4 graus
+        const snaps = [0, 45, 90, 135, 180, 225, 270, 315, 360];
+        for (const snap of snaps) {
+          if (Math.abs(normalizedAngle - snap) < 4) {
+            newAngle = newAngle + ((snap === 360 ? 0 : snap) - normalizedAngle);
+            break;
+          }
+        }
+
+        const centerParent = this.selectedNode.getTransform().point({
+          x: this.selectedNode.width() / 2,
+          y: this.selectedNode.height() / 2
+        });
+
+        this.selectedNode.rotation(newAngle);
+
+        const newCenterParent = this.selectedNode.getTransform().point({
+          x: this.selectedNode.width() / 2,
+          y: this.selectedNode.height() / 2
+        });
+
+        this.selectedNode.x(this.selectedNode.x() + (centerParent.x - newCenterParent.x));
+        this.selectedNode.y(this.selectedNode.y() + (centerParent.y - newCenterParent.y));
+
+        if (this.transformer) {
+          (this.transformer as any)._resetTransformCache();
+          this.transformer.update();
+        }
+        this.updateCornerActionButtons();
+        this.decorLayer?.drawScene();
+        this.uiLayer?.drawScene();
         return;
       }
 
@@ -1110,6 +1344,20 @@ export class CanvasEngine {
     };
 
     const handleUp = (evt?: MouseEvent | TouchEvent) => {
+      if (this.isRotatingNode) {
+        this.isRotatingNode = false;
+        if (this.transformer) {
+          (this.transformer as any)._resetTransformCache();
+          this.transformer.update();
+        }
+        this.updateCornerActionButtons();
+        this.decorLayer?.batchDraw();
+        this.uiLayer?.draw();
+        this.saveSnapshot();
+        this.notifyLayersChange();
+        return;
+      }
+
       if (this.isPinchingStage) {
         this.isPinchingStage = false;
         return;
@@ -1661,6 +1909,7 @@ export class CanvasEngine {
     if (this.isRepositioningCover) {
       this.exitCoverRepositionMode(false);
     }
+    this.isRotatingNode = false;
     this.draggingNode = null;
     this.selectedNode = null;
     this.wasSelectedByCycleOrLayer = false;

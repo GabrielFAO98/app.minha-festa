@@ -45,67 +45,92 @@ body {
   }
 }
 
-/* Header Superior Compacto & Alinhado */
+/* Header Superior Moderno & Compacto */
 .app-header {
   height: 52px;
   min-height: 52px;
-  background-color: rgba(30, 41, 59, 0.95);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-subtle);
+  background-color: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
   z-index: 30;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  min-width: 0;
 }
 
 .app-brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  min-width: 0;
+  user-select: none;
 }
 
 .brand-icon {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 2px 8px rgba(236, 72, 153, 0.25);
 }
 
 .brand-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.brand-name {
   font-size: 0.88rem;
   font-weight: 700;
   color: var(--text-main);
-  line-height: 1.1;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .brand-subtitle {
-  font-size: 0.62rem;
+  font-size: 0.65rem;
   color: var(--text-muted);
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+@media (min-width: 900px) {
+  .brand-subtitle {
+    max-width: 260px;
+  }
 }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .btn-header {
   height: 36px;
-  padding: 0 11px;
+  padding: 0 12px;
   border-radius: var(--radius-md);
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -113,6 +138,8 @@ body {
   gap: 6px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   transition: all var(--transition-fast);
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .btn-header-ghost {
@@ -122,19 +149,21 @@ body {
 
 .btn-header-ghost:hover {
   background-color: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.18);
   color: #fff;
+  transform: translateY(-1px);
 }
 
 .btn-header-ghost:active {
-  transform: scale(0.96);
-  background-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(0);
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
 .btn-header-save-success {
-  background: rgba(34, 197, 94, 0.2) !important;
+  background: rgba(34, 197, 94, 0.18) !important;
   color: #4ade80 !important;
-  border: 1px solid rgba(34, 197, 94, 0.5) !important;
+  border-color: rgba(34, 197, 94, 0.45) !important;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.25);
 }
 
 .btn-header:disabled {
@@ -145,17 +174,48 @@ body {
 
 .btn-header-primary {
   background: linear-gradient(135deg, var(--primary), #e11d48);
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   color: #fff;
-  box-shadow: 0 2px 8px var(--primary-glow);
+  font-weight: 700;
+  box-shadow: 0 2px 10px var(--primary-glow);
 }
 
 .btn-header-primary:hover {
   filter: brightness(1.1);
+  box-shadow: 0 4px 14px var(--primary-glow);
+  transform: translateY(-1px);
 }
 
 .btn-header-primary:active {
-  transform: scale(0.96);
+  transform: translateY(0);
+}
+
+/* Otimizacao Mobile-First: em telas compactas, botoes secundarios viram icon-buttons */
+@media (max-width: 640px) {
+  .app-header {
+    padding: 0 10px;
+  }
+
+  .header-actions {
+    gap: 5px;
+  }
+
+  .header-actions .btn-header-ghost {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: var(--radius-md);
+  }
+
+  .header-actions .btn-header-ghost .header-btn-label {
+    display: none;
+  }
+
+  .btn-header-primary {
+    height: 36px;
+    padding: 0 10px;
+    font-size: 0.76rem;
+  }
 }
 
 /* Responsividade Mobile do Header */

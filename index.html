@@ -16,22 +16,49 @@
     <header class="app-header">
       <div class="header-left">
         <div class="app-brand">
-          <div class="brand-icon">🎉</div>
+          <div class="brand-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <ellipse cx="12" cy="10" rx="7" ry="8" fill="url(#balloonGrad)"/>
+              <path d="M10.5 18L12 19.5L13.5 18H10.5Z" fill="#ec4899"/>
+              <path d="M12 19.5V23" stroke="rgba(255,255,255,0.7)" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M9 7C9.5 5.5 11 4.5 12.5 4.5" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M19 3L19.5 4.5L21 5L19.5 5.5L19 7L18.5 5.5L17 5L18.5 4.5L19 3Z" fill="#fbbf24"/>
+              <defs>
+                <linearGradient id="balloonGrad" x1="5" y1="2" x2="19" y2="18" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#f43f5e"/>
+                  <stop offset="1" stop-color="#a855f7"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
           <div class="brand-title">
-            <span>Minha Festa</span>
+            <span class="brand-name">Minha Festa</span>
             <span class="brand-subtitle" id="project-title-display">Novo Cenário</span>
           </div>
         </div>
       </div>
       <div class="header-actions">
         <button id="btn-header-save" class="btn-header btn-header-ghost" title="Salvar Cenário (Ctrl+S)">
-          💾 <span>Salvar</span>
+          <svg class="header-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          <span class="header-btn-label">Salvar</span>
         </button>
         <button id="btn-header-projects" class="btn-header btn-header-ghost" title="Meus Projetos">
-          📁 <span>Projetos</span>
+          <svg class="header-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span class="header-btn-label">Projetos</span>
         </button>
-        <button id="btn-header-export" class="btn-header btn-header-primary" title="Exportar e WhatsApp">
-          ✨ <span>Exportar</span>
+        <button id="btn-header-export" class="btn-header btn-header-primary" title="Exportar e Compartilhar">
+          <svg class="header-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Exportar</span>
         </button>
       </div>
     </header>

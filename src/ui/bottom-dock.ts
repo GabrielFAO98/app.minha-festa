@@ -90,9 +90,9 @@ export class BottomDock {
     this.activeTab = null;
   }
 
-  // ABA 1: Peças Base (Presets)
+  // ABA 1: Peças Base (Elementos)
   async renderPresetsTab(): Promise<void> {
-    if (this.sheetTitle) this.sheetTitle.innerHTML = '✨ Peças Base (Presets)';
+    if (this.sheetTitle) this.sheetTitle.innerHTML = '🧩 Elementos';
     if (this.categoriesBar) this.categoriesBar.style.display = 'flex';
     this.renderCategoryPills();
 
@@ -339,7 +339,7 @@ export class BottomDock {
 
   // ABA 5: Camadas no Palco (Mobile)
   renderLayersTab(): void {
-    if (this.sheetTitle) this.sheetTitle.innerHTML = '📑 Camadas no Cenário';
+    if (this.sheetTitle) this.sheetTitle.innerHTML = '📚 Camadas no Cenário';
     if (this.categoriesBar) this.categoriesBar.style.display = 'none';
     if (!this.sheetBody) return;
 
@@ -349,7 +349,7 @@ export class BottomDock {
         <div style="text-align: center; padding: 32px 16px; color: var(--text-muted); font-size: 0.82rem;">
           <div style="font-size: 2rem; margin-bottom: 8px;">🎯</div>
           <div>Nenhuma peça no cenário ainda.</div>
-          <div style="font-size: 0.72rem; margin-top: 4px;">Adicione peças da aba Presets ou Meu Acervo!</div>
+          <div style="font-size: 0.72rem; margin-top: 4px;">Adicione peças da aba Elementos ou Meu Acervo!</div>
         </div>
       `;
       return;

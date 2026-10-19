@@ -29,7 +29,20 @@
 }
 
 .dock-tab-btn .tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
   font-size: 1.25rem;
+  line-height: 1;
+}
+
+.dock-tab-btn .tab-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  stroke-width: 2.2;
 }
 
 .dock-tab-btn.active {
@@ -37,7 +50,7 @@
 }
 
 .dock-tab-btn.active .tab-icon {
-  transform: translateY(-2px) scale(1.1);
+  transform: translateY(-2px) scale(1.08);
 }
 
 /* Gaveta Deslizante (Totalmente oculta quando fechada) */

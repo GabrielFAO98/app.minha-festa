@@ -72,7 +72,6 @@ export function getItemCustomizationMode(item: PresetItem | null | undefined): S
   if (
     type === 'moinho' ||
     type === 'display' ||
-    id === 'preset-vaso-flores' ||
     id === 'preset-bolo-fake' ||
     id.startsWith('preset-moinho') ||
     id.startsWith('preset-display') ||
@@ -98,8 +97,6 @@ export function getItemCustomizationMode(item: PresetItem | null | undefined): S
     id === 'preset-comoda-bombe' ||
     id === 'preset-boleira' ||
     id === 'preset-bandeja-baixa' ||
-    id === 'preset-bandeja' ||
-    id === 'preset-torre-doces-3-andares' ||
     id === 'preset-caixa-presente-luxo'
   ) {
     return 'modular';
@@ -553,31 +550,6 @@ export function generateModularSvgDataUrl(item: PresetItem, colors: string[]): s
   const mainDark = adjustColorBrightness(c1, -0.25);
   const accLight = adjustColorBrightness(c2, 0.30);
   const accDark = adjustColorBrightness(c2, -0.25);
-
-  if (id === 'preset-torre-doces-3-andares') {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 200" width="160" height="200">
-      <defs>
-        <linearGradient id="twPlateMod" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="${mainDark}"/>
-          <stop offset="45%" stop-color="${mainLight}"/>
-          <stop offset="100%" stop-color="${mainDark}"/>
-        </linearGradient>
-        <linearGradient id="twGoldMod" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="${accDark}"/>
-          <stop offset="50%" stop-color="${accLight}"/>
-          <stop offset="100%" stop-color="${accDark}"/>
-        </linearGradient>
-      </defs>
-      <ellipse cx="80" cy="186" rx="48" ry="6" fill="#0f172a" opacity="0.22"/>
-      <rect x="77" y="28" width="6" height="152" fill="url(#twGoldMod)"/>
-      <circle cx="80" cy="22" r="8" fill="none" stroke="url(#twGoldMod)" stroke-width="3.5"/>
-      <ellipse cx="80" cy="182" rx="34" ry="7" fill="url(#twGoldMod)"/>
-      <ellipse cx="80" cy="148" rx="64" ry="12" fill="url(#twPlateMod)" stroke="url(#twGoldMod)" stroke-width="2"/>
-      <ellipse cx="80" cy="100" rx="50" ry="10" fill="url(#twPlateMod)" stroke="url(#twGoldMod)" stroke-width="2"/>
-      <ellipse cx="80" cy="56" rx="36" ry="8" fill="url(#twPlateMod)" stroke="url(#twGoldMod)" stroke-width="2"/>
-    </svg>`;
-    return svgToDataUrl(svg);
-  }
 
   if (id === 'preset-bandeja-baixa') {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" width="160" height="80">

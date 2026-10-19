@@ -3289,30 +3289,6 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     rentalPrice: 10
   },
   {
-    id: 'preset-bandeja',
-    name: 'Bandeja de Doces Alta 25x15cm',
-    category: 'acessorios',
-    type: 'generic',
-    widthCm: 25,
-    heightCm: 15,
-    previewUrl: svgToDataUrl(SVG_TRAY_RECT),
-    isCustom: false,
-    stockQuantity: 4,
-    rentalPrice: 12
-  },
-  {
-    id: 'preset-vaso-flores',
-    name: 'Vaso de Mesa com Arranjo Floral 15x35cm',
-    category: 'acessorios',
-    type: 'generic',
-    widthCm: 15,
-    heightCm: 35,
-    previewUrl: svgToDataUrl(SVG_VASE_FLOWERS),
-    isCustom: false,
-    stockQuantity: 2,
-    rentalPrice: 18
-  },
-  {
     id: 'preset-vaso-garrafinha-1',
     name: 'Vaso Garrafinha Branca - Arranjo Redondo',
     category: 'acessorios',
@@ -3499,18 +3475,6 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     isCustom: false,
     stockQuantity: 2,
     rentalPrice: 25
-  },
-  {
-    id: 'preset-torre-doces-3-andares',
-    name: 'Torre de Doces 3 Andares em Porcelana',
-    category: 'acessorios',
-    type: 'generic',
-    widthCm: 35,
-    heightCm: 45,
-    previewUrl: svgToDataUrl(SVG_SWEET_TOWER_3TIER),
-    isCustom: false,
-    stockQuantity: 2,
-    rentalPrice: 20
   },
   ];
 

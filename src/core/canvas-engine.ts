@@ -842,30 +842,32 @@ export class CanvasEngine {
       return;
     }
 
-    const w = back.width();
-    const h = back.height();
+    const bx = back.x();
+    const by = back.y();
+    const bw = back.width();
+    const bh = back.height();
 
     // Canto superior esquerdo: Rotação (seta girando)
     if (this.btnCornerRotate) {
       this.btnCornerRotate.scaleX(1);
       this.btnCornerRotate.scaleY(1);
-      this.btnCornerRotate.position({ x: 0, y: 0 });
+      this.btnCornerRotate.position({ x: bx, y: by });
       this.btnCornerRotate.visible(true);
     }
 
-    // Com getAbsoluteRotation preservado, (0, h) é sempre o canto inferior esquerdo
-    // e (w, h) é sempre o canto inferior direito, sem inversão ao espelhar
+    // Canto inferior esquerdo: Espelhar
     if (this.btnCornerFlip) {
       this.btnCornerFlip.scaleX(1);
       this.btnCornerFlip.scaleY(1);
-      this.btnCornerFlip.position({ x: 0, y: h });
+      this.btnCornerFlip.position({ x: bx, y: by + bh });
       this.btnCornerFlip.visible(true);
     }
 
+    // Canto inferior direito: Duplicar
     if (this.btnCornerDuplicate) {
       this.btnCornerDuplicate.scaleX(1);
       this.btnCornerDuplicate.scaleY(1);
-      this.btnCornerDuplicate.position({ x: w, y: h });
+      this.btnCornerDuplicate.position({ x: bx + bw, y: by + bh });
       this.btnCornerDuplicate.visible(true);
     }
 
@@ -873,7 +875,7 @@ export class CanvasEngine {
     if (this.btnCornerMove) {
       this.btnCornerMove.scaleX(1);
       this.btnCornerMove.scaleY(1);
-      this.btnCornerMove.position({ x: w / 2, y: -26 });
+      this.btnCornerMove.position({ x: bx + bw / 2, y: by - 26 });
       this.btnCornerMove.visible(true);
     }
   }
@@ -1504,8 +1506,8 @@ export class CanvasEngine {
     if (this.transformer) {
       this.transformer.borderStroke('#ec4899');
       this.transformer.borderDash([5, 4]);
-      this.transformer.enabledAnchors(['top-left', 'top-right']);
-      this.transformer.rotateEnabled(true);
+      this.transformer.enabledAnchors(['top-right']);
+      this.transformer.rotateEnabled(false);
       this.updateCornerActionButtons();
       this.uiLayer?.draw();
     }
@@ -1887,10 +1889,17 @@ export class CanvasEngine {
     if (this.transformer && node) {
       const w = (typeof (node as any).width === 'function' ? (node as any).width() : 100) * Math.abs(node.scaleX() || 1);
       const h = (typeof (node as any).height === 'function' ? (node as any).height() : 100) * Math.abs(node.scaleY() || 1);
-      const isSmall = w < 140 || h < 140;
 
-      // Para peças pequenas, adiciona padding para que as âncoras e botões não sufoquem a peça
-      this.transformer.padding(isSmall ? 10 : 2);
+      // Para peças muito baixas ou pequenas (ex: bandejas 20x5cm), adiciona padding de 16px
+      // para garantir que os botões fiquem bem distribuídos sem colidir verticalmente
+      let pad = 2;
+      if (h < 55 || w < 90) {
+        pad = 16;
+      } else if (h < 140 || w < 140) {
+        pad = 8;
+      }
+
+      this.transformer.padding(pad);
       this.transformer.nodes([node]);
     } else {
       this.transformer?.nodes([]);

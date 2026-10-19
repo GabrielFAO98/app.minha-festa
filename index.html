@@ -24,13 +24,6 @@
         </div>
       </div>
       <div class="header-actions">
-        <!-- Controles de Histórico: Desfazer / Refazer -->
-        <button id="btn-header-undo" class="btn-header btn-header-ghost" title="Desfazer (Ctrl+Z)" disabled>
-          ↩️
-        </button>
-        <button id="btn-header-redo" class="btn-header btn-header-ghost" title="Refazer (Ctrl+Y)" disabled>
-          ↪️
-        </button>
         <button id="btn-header-save" class="btn-header btn-header-ghost" title="Salvar Cenário (Ctrl+S)">
           💾 <span>Salvar</span>
         </button>
@@ -62,12 +55,7 @@
       <!-- ÁREA CENTRAL: PALCO VERTICAL 9:16 -->
       <main class="stage-main-area">
         <div class="stage-viewport-box">
-          <div id="selection-badge" class="selection-badge">
-            <span>✨</span>
-            <span id="selection-badge-name">Peça</span>
-          </div>
-
-          <!-- CONTROLE FLUTUANTE DE ZOOM DO PROJETO -->
+          <!-- CONTROLE FLUTUANTE DE ZOOM DO PROJETO (LADO ESQUERDO) -->
           <div id="stage-zoom-controls" class="stage-zoom-controls">
             <button id="btn-zoom-out" class="btn-zoom-ctrl" title="Diminuir Zoom" aria-label="Diminuir Zoom">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -81,6 +69,22 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+
+          <!-- CONTROLE FLUTUANTE DE HISTÓRICO: DESFAZER / REFAZER (LADO DIREITO NO MESMO NÍVEL) -->
+          <div id="stage-history-controls" class="stage-history-controls">
+            <button id="btn-header-undo" class="btn-history-ctrl" title="Desfazer (Ctrl+Z)" aria-label="Desfazer" disabled>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7v6h6"></path>
+                <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+              </svg>
+            </button>
+            <button id="btn-header-redo" class="btn-history-ctrl" title="Refazer (Ctrl+Y)" aria-label="Refazer" disabled>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 7v6h-6"></path>
+                <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"></path>
               </svg>
             </button>
           </div>

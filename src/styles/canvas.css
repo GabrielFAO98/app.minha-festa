@@ -64,26 +64,55 @@
   margin: 0 2px;
 }
 
-/* Indicador de Item Selecionado */
-.selection-badge {
+/* Controle Flutuante de Histórico: Desfazer / Refazer (Lado Direito no mesmo nível do Zoom) */
+.stage-history-controls {
   position: absolute;
   top: 14px;
   right: 14px;
-  z-index: 10;
-  padding: 5px 12px;
-  background: rgba(30, 41, 59, 0.85);
-  border: 1px solid var(--border-focus);
-  border-radius: var(--radius-full);
-  font-size: 0.72rem;
-  color: #fdf2f8;
-  font-weight: 600;
-  display: none;
+  z-index: 15;
+  display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-full);
+  padding: 3px 5px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  user-select: none;
+  -webkit-user-select: none;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
 }
 
-.selection-badge.visible {
+.btn-history-ctrl {
+  height: 28px;
+  width: 28px;
+  border-radius: var(--radius-full);
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-main, #f8fafc);
+  cursor: pointer;
+  padding: 0;
+  transition: all var(--transition-fast);
+}
+
+.btn-history-ctrl:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+  color: #38bdf8;
+}
+
+.btn-history-ctrl:active:not(:disabled) {
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.btn-history-ctrl:disabled {
+  opacity: 0.28;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* Controle Flutuante de Zoom do Projeto */

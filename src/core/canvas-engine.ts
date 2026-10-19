@@ -304,7 +304,7 @@ export class CanvasEngine {
     });
 
     const hitFlip = new Konva.Circle({
-      radius: 18,
+      radius: 20,
       fill: 'transparent',
       listening: true
     });
@@ -314,10 +314,6 @@ export class CanvasEngine {
       fill: '#0f172a',
       stroke: '#ec4899',
       strokeWidth: 2,
-      shadowColor: '#000000',
-      shadowBlur: 5,
-      shadowOpacity: 0.5,
-      shadowOffset: { x: 0, y: 1 },
       listening: false
     });
 
@@ -364,11 +360,13 @@ export class CanvasEngine {
     this.btnCornerFlip.on('mousedown touchstart', stopEvt);
 
     this.btnCornerFlip.on('mouseenter', () => {
+      if (performance.now() - this.lastTouchTime < 600) return;
       if (this.stage?.content) this.stage.content.style.cursor = 'pointer';
       circleFlip.fill('#1e293b');
       this.uiLayer?.batchDraw();
     });
     this.btnCornerFlip.on('mouseleave', () => {
+      if (performance.now() - this.lastTouchTime < 600) return;
       if (this.stage?.content) this.stage.content.style.cursor = '';
       circleFlip.fill('#0f172a');
       this.uiLayer?.batchDraw();
@@ -382,7 +380,7 @@ export class CanvasEngine {
     });
 
     const hitDup = new Konva.Circle({
-      radius: 18,
+      radius: 20,
       fill: 'transparent',
       listening: true
     });
@@ -392,10 +390,6 @@ export class CanvasEngine {
       fill: '#0f172a',
       stroke: '#ec4899',
       strokeWidth: 2,
-      shadowColor: '#000000',
-      shadowBlur: 5,
-      shadowOpacity: 0.5,
-      shadowOffset: { x: 0, y: 1 },
       listening: false
     });
 
@@ -428,11 +422,13 @@ export class CanvasEngine {
     this.btnCornerDuplicate.on('mousedown touchstart', stopEvt);
 
     this.btnCornerDuplicate.on('mouseenter', () => {
+      if (performance.now() - this.lastTouchTime < 600) return;
       if (this.stage?.content) this.stage.content.style.cursor = 'pointer';
       circleDup.fill('#1e293b');
       this.uiLayer?.batchDraw();
     });
     this.btnCornerDuplicate.on('mouseleave', () => {
+      if (performance.now() - this.lastTouchTime < 600) return;
       if (this.stage?.content) this.stage.content.style.cursor = '';
       circleDup.fill('#0f172a');
       this.uiLayer?.batchDraw();
@@ -459,22 +455,18 @@ export class CanvasEngine {
     const w = back.width();
     const h = back.height();
 
-    // Mantém a orientação dos botões e posiciona nos cantos inferiores
-    const trScaleX = (this.transformer as any).scaleX() || 1;
-    const trScaleY = (this.transformer as any).scaleY() || 1;
-    const signX = trScaleX < 0 ? -1 : 1;
-    const signY = trScaleY < 0 ? -1 : 1;
-
+    // Com getAbsoluteRotation preservado, (0, h) é sempre o canto inferior esquerdo
+    // e (w, h) é sempre o canto inferior direito, sem inversão ao espelhar
     if (this.btnCornerFlip) {
-      this.btnCornerFlip.scaleX(signX);
-      this.btnCornerFlip.scaleY(signY);
+      this.btnCornerFlip.scaleX(1);
+      this.btnCornerFlip.scaleY(1);
       this.btnCornerFlip.position({ x: 0, y: h });
       this.btnCornerFlip.visible(true);
     }
 
     if (this.btnCornerDuplicate) {
-      this.btnCornerDuplicate.scaleX(signX);
-      this.btnCornerDuplicate.scaleY(signY);
+      this.btnCornerDuplicate.scaleX(1);
+      this.btnCornerDuplicate.scaleY(1);
       this.btnCornerDuplicate.position({ x: w, y: h });
       this.btnCornerDuplicate.visible(true);
     }
@@ -523,7 +515,9 @@ export class CanvasEngine {
       }
 
       this.decorLayer?.drawScene();
-      this.uiLayer?.drawScene();
+      if (!this.draggingNode) {
+        this.uiLayer?.drawScene();
+      }
     });
   }
 
@@ -744,6 +738,12 @@ export class CanvasEngine {
         if (!this.hasMovedDuringDrag) {
           if (Math.abs(screenDx) < 2 && Math.abs(screenDy) < 2) return;
           this.hasMovedDuringDrag = true;
+          // Otimização Zero-Lag Mobile: oculta transformer e botões durante o arraste e desativa listening
+          if (this.transformer) this.transformer.visible(false);
+          if (this.btnCornerFlip) this.btnCornerFlip.visible(false);
+          if (this.btnCornerDuplicate) this.btnCornerDuplicate.visible(false);
+          if (this.uiLayer) this.uiLayer.listening(false);
+          this.uiLayer?.drawScene();
         }
 
         const w = this.draggingNode.width() * Math.abs(this.draggingNode.scaleX() || 1);
@@ -803,15 +803,28 @@ export class CanvasEngine {
           node.position(finalPos);
         }
         if (this.transformer) {
+          this.transformer.visible(true);
           (this.transformer as any)._resetTransformCache();
           this.transformer.update();
-          this.updateCornerActionButtons();
         }
+        if (this.uiLayer) {
+          this.uiLayer.listening(true);
+        }
+        this.updateCornerActionButtons();
         this.decorLayer?.batchDraw();
         this.uiLayer?.draw();
         this.saveSnapshot();
         this.notifyLayersChange();
       } else {
+        if (this.transformer) {
+          this.transformer.visible(true);
+        }
+        if (this.uiLayer) {
+          this.uiLayer.listening(true);
+        }
+        this.updateCornerActionButtons();
+        this.uiLayer?.draw();
+
         // Toque rápido sem arrastar: se havia mais de 1 peça sobreposta, alterna para a peça de baixo
         if (this.wasAlreadySelectedOnDown && this.dragCandidatesOnDown.length > 1 && this.selectedNode) {
           const currentIndex = this.dragCandidatesOnDown.indexOf(this.selectedNode);
@@ -1123,6 +1136,11 @@ export class CanvasEngine {
       return selfRect;
     };
 
+    // Impede que o Transformer do Konva inverta a orientação (rot=180°) ao espelhar horizontalmente (scaleX: -1)
+    (group as any).getAbsoluteRotation = function () {
+      return this.rotation() || 0;
+    };
+
     const svgRole = getItemCustomizationMode(itemData);
 
     group.setAttr('itemMeta', {
@@ -1196,6 +1214,13 @@ export class CanvasEngine {
   selectNode(node: Konva.Group | Konva.Node | null) {
     if (this.isRepositioningCover && this.selectedNode !== node) {
       this.exitCoverRepositionMode(false);
+    }
+
+    if (node && !(node as any).__patchedRotation) {
+      (node as any).__patchedRotation = true;
+      (node as any).getAbsoluteRotation = function () {
+        return this.rotation() || 0;
+      };
     }
 
     this.selectedNode = node as Konva.Group | null;

@@ -35,19 +35,19 @@ export function createClipFunction(type: string, width: number, height: number) 
   }
 
   if (type === 'panel_half_moon') {
-    const scaleX = width / 220;
+    const scaleX = width / 200;
     const scaleY = height / 380;
 
     return (ctx: any) => {
       ctx.beginPath();
-      ctx.moveTo(20 * scaleX, 352 * scaleY);
-      ctx.lineTo(20 * scaleX, 150 * scaleY);
+      ctx.moveTo(18 * scaleX, 368 * scaleY);
+      ctx.lineTo(18 * scaleX, 130 * scaleY);
       ctx.bezierCurveTo(
-        20 * scaleX, 35 * scaleY,
-        110 * scaleX, 20 * scaleY,
-        200 * scaleX, 25 * scaleY
+        18 * scaleX, 35 * scaleY,
+        95 * scaleX, 18 * scaleY,
+        182 * scaleX, 22 * scaleY
       );
-      ctx.lineTo(200 * scaleX, 352 * scaleY);
+      ctx.lineTo(182 * scaleX, 368 * scaleY);
       ctx.closePath();
     };
   }
@@ -127,12 +127,12 @@ export function createClipFunction(type: string, width: number, height: number) 
   }
 
   if (type === 'panel_rect') {
-    const scaleX = width / 300;
-    const scaleY = height / 260;
+    const scaleX = width / 200;
+    const scaleY = height / 380;
 
     return (ctx: any) => {
       ctx.beginPath();
-      ctx.rect(15 * scaleX, 15 * scaleY, 270 * scaleX, 215 * scaleY);
+      ctx.rect(18 * scaleX, 18 * scaleY, 164 * scaleX, 350 * scaleY);
       ctx.closePath();
     };
   }
@@ -169,16 +169,11 @@ export function calculateCoverPlacement(
     targetH = diameter;
     targetX = (nodeWidth - diameter) / 2;
     targetY = nodeHeight * (150 / 380) - diameter / 2;
-  } else if (type === 'panel_arch') {
+  } else if (type === 'panel_arch' || type === 'panel_rect' || type === 'panel_half_moon') {
     targetX = nodeWidth * (18 / 200);
     targetY = nodeHeight * (18 / 380);
     targetW = nodeWidth * (164 / 200);
     targetH = nodeHeight * (350 / 380);
-  } else if (type === 'panel_half_moon') {
-    targetX = nodeWidth * (20 / 220);
-    targetY = nodeHeight * (20 / 380);
-    targetW = nodeWidth * (180 / 220);
-    targetH = nodeHeight * (332 / 380);
   } else if (type === 'cylinder' || type === 'cylinder_fluted') {
     targetX = nodeWidth * (14.5 / 160);
     targetY = nodeHeight * (22.5 / 220);
@@ -189,11 +184,6 @@ export function calculateCoverPlacement(
     targetY = nodeHeight * (18 / 235);
     targetW = nodeWidth * (130 / 160);
     targetH = nodeHeight * (207 / 235);
-  } else if (type === 'panel_rect') {
-    targetX = nodeWidth * (15 / 300);
-    targetY = nodeHeight * (15 / 260);
-    targetW = nodeWidth * (270 / 300);
-    targetH = nodeHeight * (215 / 260);
   }
 
   const baseScale = Math.max(targetW / (imgWidth || 1), targetH / (imgHeight || 1));
@@ -294,11 +284,11 @@ export function createShadingOverlay(type: string, width: number, height: number
     ctx.fillStyle = vertGrad;
     ctx.fillRect(xLeft, yTop, rx * 2, yBottom - yTop);
   } else if (type === 'panel_half_moon') {
-    const scaleX = w / 220;
+    const scaleX = w / 200;
     const scaleY = h / 380;
-    const xLeft = 20 * scaleX;
-    const yTop = 20 * scaleY;
-    const yBottom = 352 * scaleY;
+    const xLeft = 18 * scaleX;
+    const yTop = 18 * scaleY;
+    const yBottom = 368 * scaleY;
 
     const vertGrad = ctx.createLinearGradient(0, yTop, 0, yBottom);
     vertGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.08)');
@@ -306,7 +296,7 @@ export function createShadingOverlay(type: string, width: number, height: number
     vertGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.10)');
 
     ctx.fillStyle = vertGrad;
-    ctx.fillRect(xLeft, yTop, 180 * scaleX, yBottom - yTop);
+    ctx.fillRect(xLeft, yTop, 164 * scaleX, yBottom - yTop);
   } else if (type === 'rug_oval') {
     const cx = w * 0.5;
     const cy = h * 0.5;
@@ -353,12 +343,12 @@ export function createShadingOverlay(type: string, width: number, height: number
     ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
     ctx.fill();
   } else if (type === 'panel_rect') {
-    const scaleX = w / 300;
-    const scaleY = h / 260;
-    const x = 15 * scaleX;
-    const y = 15 * scaleY;
-    const rectW = 270 * scaleX;
-    const rectH = 215 * scaleY;
+    const scaleX = w / 200;
+    const scaleY = h / 380;
+    const x = 18 * scaleX;
+    const y = 18 * scaleY;
+    const rectW = 164 * scaleX;
+    const rectH = 350 * scaleY;
 
     const vertGrad = ctx.createLinearGradient(0, y, 0, y + rectH);
     vertGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.08)');
@@ -481,7 +471,7 @@ export function createPanelSupportBase(type: string, width: number, height: numb
       ctx.lineTo(190 * sx, 370.5 * sy);
       ctx.closePath();
       ctx.fill();
-    } else if (type === 'panel_arch') {
+    } else if (type === 'panel_arch' || type === 'panel_rect' || type === 'panel_half_moon') {
       const sx = w / 200;
       const sy = h / 380;
 
@@ -505,69 +495,6 @@ export function createPanelSupportBase(type: string, width: number, height: numb
       ctx.lineTo(178 * sx, 367 * sy);
       ctx.lineTo(176 * sx, 371.5 * sy);
       ctx.lineTo(156 * sx, 371.5 * sy);
-      ctx.closePath();
-      ctx.fill();
-    } else if (type === 'panel_rect') {
-      const sx = w / 300;
-      const sy = h / 260;
-
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
-      ctx.beginPath();
-      ctx.ellipse(55 * sx, 252 * sy, 22 * sx, 3.5 * sy, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.ellipse(245 * sx, 252 * sy, 22 * sx, 3.5 * sy, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = drawFootGrad(40 * sx, 70 * sx);
-      ctx.fillRect(53 * sx, 226 * sy, 4 * sx, 24 * sy);
-      ctx.beginPath();
-      ctx.moveTo(40 * sx, 250 * sy);
-      ctx.lineTo(55 * sx, 247.5 * sy);
-      ctx.lineTo(70 * sx, 250 * sy);
-      ctx.lineTo(68 * sx, 252.5 * sy);
-      ctx.lineTo(42 * sx, 252.5 * sy);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.fillStyle = drawFootGrad(230 * sx, 260 * sx);
-      ctx.fillRect(243 * sx, 226 * sy, 4 * sx, 24 * sy);
-      ctx.beginPath();
-      ctx.moveTo(230 * sx, 250 * sy);
-      ctx.lineTo(245 * sx, 247.5 * sy);
-      ctx.lineTo(260 * sx, 250 * sy);
-      ctx.lineTo(258 * sx, 252.5 * sy);
-      ctx.lineTo(232 * sx, 252.5 * sy);
-      ctx.closePath();
-      ctx.fill();
-    } else if (type === 'panel_half_moon') {
-      const sx = w / 220;
-      const sy = h / 380;
-
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
-      ctx.beginPath();
-      ctx.ellipse(110 * sx, 373 * sy, 80 * sx, 4 * sy, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = drawFootGrad(32 * sx, 60 * sx);
-      ctx.fillRect(44 * sx, 350 * sy, 4 * sx, 21 * sy);
-      ctx.beginPath();
-      ctx.moveTo(32 * sx, 371 * sy);
-      ctx.lineTo(46 * sx, 368.5 * sy);
-      ctx.lineTo(60 * sx, 371 * sy);
-      ctx.lineTo(58 * sx, 373 * sy);
-      ctx.lineTo(34 * sx, 373 * sy);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.fillStyle = drawFootGrad(160 * sx, 188 * sx);
-      ctx.fillRect(172 * sx, 350 * sy, 4 * sx, 21 * sy);
-      ctx.beginPath();
-      ctx.moveTo(160 * sx, 371 * sy);
-      ctx.lineTo(174 * sx, 368.5 * sy);
-      ctx.lineTo(188 * sx, 371 * sy);
-      ctx.lineTo(186 * sx, 373 * sy);
-      ctx.lineTo(162 * sx, 373 * sy);
       ctx.closePath();
       ctx.fill();
     }
@@ -622,15 +549,15 @@ export function isPointInsideMask(type: string, x: number, y: number, width: num
   }
 
   if (type === 'panel_half_moon') {
-    const scaleX = width / 220;
+    const scaleX = width / 200;
     const scaleY = height / 380;
-    return x >= 20 * scaleX && x <= 200 * scaleX && y >= 20 * scaleY && y <= 373 * scaleY;
+    return x >= 18 * scaleX && x <= 182 * scaleX && y >= 18 * scaleY && y <= 373 * scaleY;
   }
 
   if (type === 'panel_rect') {
-    const scaleX = width / 300;
-    const scaleY = height / 260;
-    return x >= 15 * scaleX && x <= 285 * scaleX && y >= 15 * scaleY && y <= 253 * scaleY;
+    const scaleX = width / 200;
+    const scaleY = height / 380;
+    return x >= 18 * scaleX && x <= 182 * scaleX && y >= 18 * scaleY && y <= 373 * scaleY;
   }
 
   if (type === 'cylinder' || type === 'cylinder_fluted') {

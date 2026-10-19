@@ -317,14 +317,6 @@ export const REALISTIC_ENVIRONMENTS: RealisticEnvironment[] = [
     previewThumb: TEXTURE_WALL_BOISERIE
   },
   {
-    id: 'fairy-wood',
-    name: 'Cortina Luzes & Madeira',
-    category: 'Ilustrado',
-    wallTexture: TEXTURE_WALL_FAIRY_LIGHTS,
-    floorTexture: TEXTURE_FLOOR_WOOD,
-    previewThumb: TEXTURE_WALL_FAIRY_LIGHTS
-  },
-  {
     id: 'greenery-grass',
     name: 'Muro Inglês & Gramado',
     category: 'Ilustrado',
@@ -368,7 +360,6 @@ export const REALISTIC_ENVIRONMENTS: RealisticEnvironment[] = [
 
 export const WALL_OPTIONS = [
   { id: 'wall-boiserie', name: 'Boiserie Branca', texture: TEXTURE_WALL_BOISERIE },
-  { id: 'wall-fairy', name: 'Cortina Luzinhas', texture: TEXTURE_WALL_FAIRY_LIGHTS },
   { id: 'wall-greenery', name: 'Muro Inglês Verde', texture: TEXTURE_WALL_GREENERY },
   { id: 'wall-brick', name: 'Tijolinho Branco', texture: TEXTURE_WALL_BRICK },
   { id: 'wall-slats', name: 'Painel Ripado', texture: TEXTURE_WALL_WOOD_SLATS },

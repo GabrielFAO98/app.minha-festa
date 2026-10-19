@@ -1867,10 +1867,10 @@ export const SVG_VASE_FLOWERS = `<svg xmlns="http://www.w3.org/2000/svg" viewBox
   </g>
 </svg>`;
 
-// 17. Painel Retangular 2,00m x 1,50m
-export const SVG_PANEL_RECT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 260" width="300" height="260">
+// 17. Painel Retangular 1,00m x 2,00m (Medidas Unificadas)
+export const SVG_PANEL_RECT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 380" width="200" height="380">
   <defs>
-    <linearGradient id="rectFabricGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="rectFabricStudio" x1="15%" y1="10%" x2="85%" y2="95%">
       <stop offset="0%" stop-color="#ffffff"/>
       <stop offset="55%" stop-color="#f8fafc"/>
       <stop offset="100%" stop-color="#e2e8f0"/>
@@ -1880,27 +1880,23 @@ export const SVG_PANEL_RECT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="
       <stop offset="50%" stop-color="#fef08a"/>
       <stop offset="100%" stop-color="#b4830e"/>
     </linearGradient>
-    <filter id="rectDropShadow" x="-15%" y="-15%" width="130%" height="130%">
+    <filter id="rectDropShadow" x="-18%" y="-10%" width="136%" height="125%">
       <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.18"/>
     </filter>
-    <filter id="rectFootBlur" x="-30%" y="-30%" width="160%" height="160%">
+    <filter id="rectFloorBlur" x="-30%" y="-30%" width="160%" height="160%">
       <feGaussianBlur stdDeviation="3"/>
     </filter>
   </defs>
 
-  <!-- Sombras Discretas no Piso -->
-  <ellipse cx="55" cy="252" rx="22" ry="3.5" fill="#0f172a" opacity="0.20" filter="url(#rectFootBlur)"/>
-  <ellipse cx="245" cy="252" rx="22" ry="3.5" fill="#0f172a" opacity="0.20" filter="url(#rectFootBlur)"/>
+  <!-- Sombra de Contato no Piso -->
+  <ellipse cx="100" cy="373" rx="82" ry="4" fill="#0f172a" opacity="0.20" filter="url(#rectFloorBlur)"/>
 
-  <!-- Pés Dourados Discretos -->
-  <rect x="53" y="226" width="4" height="24" rx="1.5" fill="url(#rectGoldFoot)"/>
-  <path d="M 40 250 L 55 247.5 L 70 250 L 68 252.5 L 42 252.5 Z" fill="url(#rectGoldFoot)"/>
+  <!-- Pés Dourados Discretos na Base -->
+  <path d="M 22 367 L 46 367 L 44 371.5 L 24 371.5 Z" fill="url(#rectGoldFoot)"/>
+  <path d="M 154 367 L 178 367 L 176 371.5 L 156 371.5 Z" fill="url(#rectGoldFoot)"/>
 
-  <rect x="243" y="226" width="4" height="24" rx="1.5" fill="url(#rectGoldFoot)"/>
-  <path d="M 230 250 L 245 247.5 L 260 250 L 258 252.5 L 232 252.5 Z" fill="url(#rectGoldFoot)"/>
-
-  <!-- Painel Retangular Sem Bordas (Exatamente 15,15 270x215) -->
-  <rect x="15" y="15" width="270" height="215" fill="url(#rectFabricGrad)" stroke="none" filter="url(#rectDropShadow)"/>
+  <!-- Face Frontal do Painel Retangular Sem Bordas (x=18, y=18, w=164, h=350, yBottom=368) -->
+  <rect x="18" y="18" width="164" height="350" rx="4" fill="url(#rectFabricStudio)" stroke="none" filter="url(#rectDropShadow)"/>
 </svg>`;
 
 // 18. Painel Ripado 1,00m x 2,20m
@@ -2010,8 +2006,8 @@ export const SVG_PANEL_SLAT_100x220 = `<svg xmlns="http://www.w3.org/2000/svg" v
   </g>
 </svg>`;
 
-// 19. Painel Meia-lua / Assimétrico 1,20m x 2,00m
-export const SVG_PANEL_HALF_MOON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 380" width="220" height="380">
+// 19. Painel Meia-lua / Assimétrico 1,00m x 2,00m (Medidas Unificadas)
+export const SVG_PANEL_HALF_MOON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 380" width="200" height="380">
   <defs>
     <linearGradient id="halfMoonFabric" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#ffffff"/>
@@ -2026,19 +2022,20 @@ export const SVG_PANEL_HALF_MOON = `<svg xmlns="http://www.w3.org/2000/svg" view
     <filter id="hmShadow" x="-18%" y="-10%" width="136%" height="125%">
       <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.18"/>
     </filter>
+    <filter id="hmFloorBlur" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
   </defs>
 
   <!-- Sombra no Piso -->
-  <ellipse cx="110" cy="373" rx="80" ry="4" fill="#0f172a" opacity="0.20"/>
+  <ellipse cx="100" cy="373" rx="82" ry="4" fill="#0f172a" opacity="0.20" filter="url(#hmFloorBlur)"/>
 
   <!-- Pés Dourados Discretos -->
-  <rect x="44" y="350" width="4" height="21" rx="1.5" fill="url(#hmGoldFoot)"/>
-  <path d="M 32 371 L 46 368.5 L 60 371 L 58 373 L 34 373 Z" fill="url(#hmGoldFoot)"/>
-  <rect x="172" y="350" width="4" height="21" rx="1.5" fill="url(#hmGoldFoot)"/>
-  <path d="M 160 371 L 174 368.5 L 188 371 L 186 373 L 162 373 Z" fill="url(#hmGoldFoot)"/>
+  <path d="M 22 367 L 46 367 L 44 371.5 L 24 371.5 Z" fill="url(#hmGoldFoot)"/>
+  <path d="M 154 367 L 178 367 L 176 371.5 L 156 371.5 Z" fill="url(#hmGoldFoot)"/>
 
-  <!-- Face Principal Assimétrica Sem Bordas (yBottom=352) -->
-  <path d="M 20 352 L 20 150 C 20 35, 110 20, 200 25 L 200 352 Z" fill="url(#halfMoonFabric)" stroke="none" filter="url(#hmShadow)"/>
+  <!-- Face Principal Assimétrica Meia-lua Sem Bordas (yBottom=368, w=164, h=350) -->
+  <path d="M 18 368 L 18 130 C 18 35, 95 18, 182 22 L 182 368 Z" fill="url(#halfMoonFabric)" stroke="none" filter="url(#hmShadow)"/>
 </svg>`;
 
 // 20. Shimmer Wall (Paetê Dourado) 30x30cm (Placa Modular)
@@ -3065,15 +3062,15 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-painel-retangular',
-    name: 'Painel Retangular 2,00x1,50m',
+    name: 'Painel Retangular 1,00x2,00m',
     category: 'paineis',
     type: 'panel_rect',
-    widthCm: 200,
-    heightCm: 150,
+    widthCm: 100,
+    heightCm: 200,
     previewUrl: svgToDataUrl(SVG_PANEL_RECT),
     isCustom: false,
     stockQuantity: 1,
-    rentalPrice: 65
+    rentalPrice: 55
   },
   {
     id: 'preset-painel-ripado',
@@ -3090,15 +3087,15 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-painel-meia-lua',
-    name: 'Painel Meia-lua / Assimétrico 1,20x2,00m',
+    name: 'Painel Meia-lua / Assimétrico 1,00x2,00m',
     category: 'paineis',
     type: 'panel_half_moon',
-    widthCm: 120,
+    widthCm: 100,
     heightCm: 200,
     previewUrl: svgToDataUrl(SVG_PANEL_HALF_MOON),
     isCustom: false,
     stockQuantity: 1,
-    rentalPrice: 60
+    rentalPrice: 55
   },
   {
     id: 'preset-shimmer-wall',

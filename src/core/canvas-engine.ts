@@ -30,9 +30,10 @@ export class CanvasEngine {
   transformer: Konva.Transformer | null;
   selectedNode: Konva.Group | null;
 
-  // Botões de Ação nos Cantos Inferiores do Quadro de Seleção
+  // Botões de Ação nos Cantos do Quadro de Seleção e Alça de Arraste
   btnCornerFlip: Konva.Group | null;
   btnCornerDuplicate: Konva.Group | null;
+  btnCornerMove: Konva.Group | null;
 
   VIRTUAL_WIDTH: number;
   VIRTUAL_HEIGHT: number;
@@ -48,6 +49,19 @@ export class CanvasEngine {
   redoStack: string[];
   maxHistory: number;
   isRestoringState: boolean;
+
+  // Modo Zoom e Pan do Palco
+  zoomLevel: number;
+  panX: number;
+  panY: number;
+  baseScale: number;
+  baseOffsetX: number;
+  baseOffsetY: number;
+  private isPinchingStage: boolean;
+  private pinchStageStartDist: number;
+  private pinchStageStartZoom: number;
+  private pinchStageStartCenter: { x: number; y: number };
+  private pinchStageStartPan: { x: number; y: number };
 
   // Modo Enquadrar Capa (Pinça + Arraste Direto)
   isRepositioningCover: boolean;
@@ -84,6 +98,7 @@ export class CanvasEngine {
   onLayersChange: ((elements: SceneElement[]) => void) | null;
   onHistoryChange: ((canUndo: boolean, canRedo: boolean) => void) | null;
   onCoverRepositionChange: ((isActive: boolean, meta: PresetItem | null) => void) | null;
+  onZoomChange: ((zoomPercent: number) => void) | null;
 
   constructor() {
     this.stage = null;
@@ -94,11 +109,12 @@ export class CanvasEngine {
     this.selectedNode = null;
     this.btnCornerFlip = null;
     this.btnCornerDuplicate = null;
+    this.btnCornerMove = null;
 
     this.VIRTUAL_WIDTH = 1080;
     this.VIRTUAL_HEIGHT = 1920;
-    this.WALL_HEIGHT = 1380;
-    this.FLOOR_HEIGHT = 540;
+    this.WALL_HEIGHT = 1147; // Alinhado exatamente à divisa parede/chão do cenário padrão boiserie e madeira
+    this.FLOOR_HEIGHT = 773;
 
     this.pxPerCm = this.VIRTUAL_WIDTH / 280;
 
@@ -110,6 +126,18 @@ export class CanvasEngine {
     this.redoStack = [];
     this.maxHistory = 35;
     this.isRestoringState = false;
+
+    this.zoomLevel = 1;
+    this.panX = 0;
+    this.panY = 0;
+    this.baseScale = 1;
+    this.baseOffsetX = 0;
+    this.baseOffsetY = 0;
+    this.isPinchingStage = false;
+    this.pinchStageStartDist = 1;
+    this.pinchStageStartZoom = 1;
+    this.pinchStageStartCenter = { x: 0, y: 0 };
+    this.pinchStageStartPan = { x: 0, y: 0 };
 
     this.isRepositioningCover = false;
     this.isDraggingCoverInternal = false;
@@ -146,6 +174,7 @@ export class CanvasEngine {
     this.onLayersChange = null;
     this.onHistoryChange = null;
     this.onCoverRepositionChange = null;
+    this.onZoomChange = null;
   }
 
   init(container: HTMLElement | null) {
@@ -186,17 +215,83 @@ export class CanvasEngine {
     const containerW = this.stage.width();
     const containerH = this.stage.height();
 
-    const scale = Math.min(containerW / this.VIRTUAL_WIDTH, containerH / this.VIRTUAL_HEIGHT);
-    const offsetX = (containerW - this.VIRTUAL_WIDTH * scale) / 2;
-    const offsetY = (containerH - this.VIRTUAL_HEIGHT * scale) / 2;
+    this.baseScale = Math.min(containerW / this.VIRTUAL_WIDTH, containerH / this.VIRTUAL_HEIGHT);
+    this.baseOffsetX = (containerW - this.VIRTUAL_WIDTH * this.baseScale) / 2;
+    this.baseOffsetY = (containerH - this.VIRTUAL_HEIGHT * this.baseScale) / 2;
+
+    this.applyViewTransform();
+  }
+
+  applyViewTransform() {
+    if (!this.stage) return;
+    const finalScale = this.baseScale * this.zoomLevel;
+    const finalPosX = this.baseOffsetX + this.panX;
+    const finalPosY = this.baseOffsetY + this.panY;
 
     [this.bgLayer, this.decorLayer, this.uiLayer].forEach((layer) => {
       if (layer) {
-        layer.scale({ x: scale, y: scale });
-        layer.position({ x: offsetX, y: offsetY });
+        layer.scale({ x: finalScale, y: finalScale });
+        layer.position({ x: finalPosX, y: finalPosY });
         layer.batchDraw();
       }
     });
+
+    if (this.onZoomChange) {
+      this.onZoomChange(Math.round(this.zoomLevel * 100));
+    }
+  }
+
+  setZoom(newZoom: number, focusScreenX?: number, focusScreenY?: number) {
+    if (!this.stage) return;
+    const clampedZoom = Math.max(0.5, Math.min(4.0, newZoom));
+    if (Math.abs(clampedZoom - this.zoomLevel) < 0.001) return;
+
+    const containerW = this.stage.width();
+    const containerH = this.stage.height();
+    const screenFocusX = focusScreenX !== undefined ? focusScreenX : containerW / 2;
+    const screenFocusY = focusScreenY !== undefined ? focusScreenY : containerH / 2;
+
+    const oldScale = this.baseScale * this.zoomLevel;
+    const newScale = this.baseScale * clampedZoom;
+
+    // Converte o ponto da tela em coordenadas do palco virtual antes do zoom
+    const virtualX = (screenFocusX - (this.baseOffsetX + this.panX)) / oldScale;
+    const virtualY = (screenFocusY - (this.baseOffsetY + this.panY)) / oldScale;
+
+    // Ajusta o pan para que o ponto da tela permaneça no mesmo local sob o novo zoom
+    if (clampedZoom === 1) {
+      this.panX = 0;
+      this.panY = 0;
+    } else {
+      this.panX = screenFocusX - this.baseOffsetX - virtualX * newScale;
+      this.panY = screenFocusY - this.baseOffsetY - virtualY * newScale;
+    }
+
+    this.zoomLevel = clampedZoom;
+    this.applyViewTransform();
+  }
+
+  zoomIn() {
+    const nextZoom = Math.min(4.0, Math.round((this.zoomLevel + 0.25) * 4) / 4);
+    this.setZoom(nextZoom);
+  }
+
+  zoomOut() {
+    const nextZoom = Math.max(0.5, Math.round((this.zoomLevel - 0.25) * 4) / 4);
+    this.setZoom(nextZoom);
+  }
+
+  resetZoom() {
+    this.zoomLevel = 1;
+    this.panX = 0;
+    this.panY = 0;
+    this.applyViewTransform();
+  }
+
+  panBy(screenDx: number, screenDy: number) {
+    this.panX += screenDx;
+    this.panY += screenDy;
+    this.applyViewTransform();
   }
 
   handleResize(container: HTMLElement | null) {
@@ -470,12 +565,126 @@ export class CanvasEngine {
 
     this.transformer.add(this.btnCornerFlip);
     this.transformer.add(this.btnCornerDuplicate);
+
+    // 3. Alça Flutuante de Arraste / Mover (Topo-Centro com Haste de Elevação)
+    this.btnCornerMove = new Konva.Group({
+      name: 'handle-btn-move',
+      visible: false,
+      listening: true
+    });
+
+    // Haste de conexão vertical elegante (liga o topo da seleção até a alça)
+    const stemMove = new Konva.Line({
+      points: [0, 0, 0, 48],
+      stroke: '#38bdf8',
+      strokeWidth: 2,
+      dash: [4, 3],
+      listening: false
+    });
+
+    // Área de toque generosa (52px de diâmetro) para facilidade de toque no mobile
+    const hitMove = new Konva.Circle({
+      x: 0,
+      y: 0,
+      radius: 26,
+      fill: 'transparent',
+      listening: true
+    });
+
+    // Círculo visual com visual navy premium e borda sky blue
+    const circleMove = new Konva.Circle({
+      x: 0,
+      y: 0,
+      radius: 14,
+      fill: '#0f172a',
+      stroke: '#38bdf8',
+      strokeWidth: 2.5,
+      shadowColor: '#000000',
+      shadowBlur: 6,
+      shadowOpacity: 0.35,
+      shadowOffset: { x: 0, y: 2 },
+      listening: false
+    });
+
+    // Ícone de 4 setas direcionais em cruz (✥)
+    const iconMove = new Konva.Shape({
+      x: 0,
+      y: 0,
+      sceneFunc: (ctx, shape) => {
+        ctx.strokeStyle = '#ffffff';
+        ctx.fillStyle = '#ffffff';
+        ctx.lineWidth = 1.6;
+
+        // Cruz
+        ctx.beginPath();
+        ctx.moveTo(0, -7.5);
+        ctx.lineTo(0, 7.5);
+        ctx.moveTo(-7.5, 0);
+        ctx.lineTo(7.5, 0);
+        ctx.stroke();
+
+        // Seta Cima
+        ctx.beginPath();
+        ctx.moveTo(0, -9);
+        ctx.lineTo(-3, -5.5);
+        ctx.lineTo(3, -5.5);
+        ctx.closePath();
+        ctx.fill();
+
+        // Seta Baixo
+        ctx.beginPath();
+        ctx.moveTo(0, 9);
+        ctx.lineTo(-3, 5.5);
+        ctx.lineTo(3, 5.5);
+        ctx.closePath();
+        ctx.fill();
+
+        // Seta Esquerda
+        ctx.beginPath();
+        ctx.moveTo(-9, 0);
+        ctx.lineTo(-5.5, -3);
+        ctx.lineTo(-5.5, 3);
+        ctx.closePath();
+        ctx.fill();
+
+        // Seta Direita
+        ctx.beginPath();
+        ctx.moveTo(9, 0);
+        ctx.lineTo(5.5, -3);
+        ctx.lineTo(5.5, 3);
+        ctx.closePath();
+        ctx.fill();
+      },
+      listening: false
+    });
+
+    this.btnCornerMove.add(stemMove);
+    this.btnCornerMove.add(hitMove);
+    this.btnCornerMove.add(circleMove);
+    this.btnCornerMove.add(iconMove);
+
+    this.btnCornerMove.on('mouseenter', () => {
+      if (performance.now() - this.lastTouchTime < 600) return;
+      if (this.stage?.content) this.stage.content.style.cursor = 'grab';
+      circleMove.fill('#0284c7');
+      this.uiLayer?.batchDraw();
+    });
+
+    this.btnCornerMove.on('mouseleave', () => {
+      if (performance.now() - this.lastTouchTime < 600) return;
+      if (this.stage?.content) this.stage.content.style.cursor = '';
+      circleMove.fill('#0f172a');
+      this.uiLayer?.batchDraw();
+    });
+
+    this.transformer.add(this.btnCornerMove);
   }
 
   updateCornerActionButtons() {
     if (!this.selectedNode || !this.transformer || this.isRepositioningCover) {
       if (this.btnCornerFlip) this.btnCornerFlip.visible(false);
       if (this.btnCornerDuplicate) this.btnCornerDuplicate.visible(false);
+      if (this.btnCornerMove) this.btnCornerMove.visible(false);
       return;
     }
 
@@ -483,6 +692,7 @@ export class CanvasEngine {
     if (!back) {
       if (this.btnCornerFlip) this.btnCornerFlip.visible(false);
       if (this.btnCornerDuplicate) this.btnCornerDuplicate.visible(false);
+      if (this.btnCornerMove) this.btnCornerMove.visible(false);
       return;
     }
 
@@ -504,6 +714,26 @@ export class CanvasEngine {
       this.btnCornerDuplicate.position({ x: w, y: h });
       this.btnCornerDuplicate.visible(true);
     }
+
+    // Posiciona a alça de mover com visão desobstruída acima do topo-centro
+    if (this.btnCornerMove) {
+      this.btnCornerMove.scaleX(1);
+      this.btnCornerMove.scaleY(1);
+      this.btnCornerMove.position({ x: w / 2, y: -48 });
+      this.btnCornerMove.visible(true);
+    }
+  }
+
+  private isMoveHandle(target: Konva.Node | null | undefined): boolean {
+    if (!target) return false;
+    let curr: Konva.Node | null = target;
+    while (curr) {
+      const name = curr.name ? curr.name() : '';
+      if (name === 'handle-btn-move' || name.includes('btn-move')) return true;
+      if (curr === this.stage) break;
+      curr = curr.getParent();
+    }
+    return false;
   }
 
   private isTransformerAnchor(target: Konva.Node | null | undefined): boolean {
@@ -583,8 +813,9 @@ export class CanvasEngine {
         this.lastTouchTime = performance.now();
         const touchEvt = rawEvt as TouchEvent;
 
-        // GESTO DE PINÇA COM 2 DEDOS NO MOBILE (SOMENTE QUANDO O MODO ENQUADRAR ESTIVER ATIVO)
+        // GESTO COM 2 DEDOS NO MOBILE
         if (touchEvt.touches && touchEvt.touches.length === 2) {
+          // 1. Gesto de Pinça na Capa (quando em modo Enquadrar Capa ativo)
           if (this.isRepositioningCover && this.selectedNode) {
             const meta = this.selectedNode.getAttr('itemMeta') || {};
             if (meta.customCoverUrl) {
@@ -601,8 +832,23 @@ export class CanvasEngine {
               this.pinchStartCenterY = center.y;
               this.dragStartCoverOffsetX = meta.coverOffsetX || 0;
               this.dragStartCoverOffsetY = meta.coverOffsetY || 0;
+              return;
             }
           }
+
+          // 2. Gesto de Pinça e Pan do Palco Inteiro
+          if (rawEvt.cancelable) rawEvt.preventDefault();
+          const t1 = touchEvt.touches[0];
+          const t2 = touchEvt.touches[1];
+          const center = getTouchCenter(t1, t2);
+          this.draggingNode = null;
+          this.isDraggingCoverInternal = false;
+          this.isPinchingCover = false;
+          this.isPinchingStage = true;
+          this.pinchStageStartDist = Math.max(12, getTouchDistance(t1, t2));
+          this.pinchStageStartZoom = this.zoomLevel;
+          this.pinchStageStartCenter = { x: center.x, y: center.y };
+          this.pinchStageStartPan = { x: this.panX, y: this.panY };
           return;
         }
 
@@ -635,6 +881,19 @@ export class CanvasEngine {
         ? (rawEvt as TouchEvent).touches[0].clientY
         : (rawEvt as MouseEvent).clientY;
 
+      // Se clicou/tocou na Alça de Arraste (Move Handle), inicia o arraste da peça selecionada com visão 100% livre
+      if (this.isMoveHandle(e.target) && this.selectedNode && !this.selectedNode.getAttr('locked')) {
+        this.draggingNode = this.selectedNode;
+        this.dragStartClientX = clientX;
+        this.dragStartClientY = clientY;
+        this.dragStartNodeX = this.selectedNode.x();
+        this.dragStartNodeY = this.selectedNode.y();
+        this.hasMovedDuringDrag = false;
+        this.dragCandidatesOnDown = [this.selectedNode];
+        this.pendingDragPos = null;
+        return;
+      }
+
       const pointerPos = {
         x: (clientX - rect.left) / this.dragContainerScaleX,
         y: (clientY - rect.top) / this.dragContainerScaleY
@@ -661,6 +920,14 @@ export class CanvasEngine {
 
       if (candidates.length === 0) {
         this.deselect();
+        // Se o palco está com zoom (> 1), permite arrastar (pan) clicando no fundo vazio
+        if (this.zoomLevel > 1) {
+          this.dragStartClientX = clientX;
+          this.dragStartClientY = clientY;
+          this.pinchStageStartPan = { x: this.panX, y: this.panY };
+          this.isPinchingStage = true;
+          this.pinchStageStartDist = 0; // Marca como pan de 1 ponteiro
+        }
         return;
       }
 
@@ -690,13 +957,63 @@ export class CanvasEngine {
     };
 
     const handleMove = (evt: MouseEvent | TouchEvent) => {
+      const isTouch = evt.type.startsWith('touch');
+
+      // 1. PINCH-TO-ZOOM / PAN DO PALCO INTEIRO
+      if (this.isPinchingStage) {
+        if (evt.cancelable) evt.preventDefault();
+
+        if (isTouch) {
+          const touchEvt = evt as TouchEvent;
+          if (touchEvt.touches.length >= 2) {
+            const t1 = touchEvt.touches[0];
+            const t2 = touchEvt.touches[1];
+            const dist = Math.max(12, getTouchDistance(t1, t2));
+            const center = getTouchCenter(t1, t2);
+
+            const scaleRatio = dist / this.pinchStageStartDist;
+            const targetZoom = Math.max(0.5, Math.min(4.0, this.pinchStageStartZoom * scaleRatio));
+
+            // Aplica zoom mantendo o centro do toque estável
+            const contentEl = this.stage?.content || this.stage?.container();
+            const rect = contentEl ? contentEl.getBoundingClientRect() : { left: 0, top: 0 };
+            const focusScreenX = (center.x - rect.left) / this.dragContainerScaleX;
+            const focusScreenY = (center.y - rect.top) / this.dragContainerScaleY;
+
+            this.setZoom(targetZoom, focusScreenX, focusScreenY);
+
+            // Adiciona translação do gesto com 2 dedos
+            const panDx = (center.x - this.pinchStageStartCenter.x) / this.dragContainerScaleX;
+            const panDy = (center.y - this.pinchStageStartCenter.y) / this.dragContainerScaleY;
+            this.panX += panDx * 0.15;
+            this.panY += panDy * 0.15;
+            this.applyViewTransform();
+            return;
+          }
+        }
+
+        // Pan com 1 ponteiro (mouse ou 1 dedo em fundo vazio quando zoom > 1)
+        const clientX = isTouch
+          ? (evt as TouchEvent).touches[0].clientX
+          : (evt as MouseEvent).clientX;
+        const clientY = isTouch
+          ? (evt as TouchEvent).touches[0].clientY
+          : (evt as MouseEvent).clientY;
+
+        const screenDx = (clientX - this.dragStartClientX) / this.dragContainerScaleX;
+        const screenDy = (clientY - this.dragStartClientY) / this.dragContainerScaleY;
+        this.panX = this.pinchStageStartPan.x + screenDx;
+        this.panY = this.pinchStageStartPan.y + screenDy;
+        this.applyViewTransform();
+        return;
+      }
+
       if (!this.draggingNode && !this.isDraggingCoverInternal && !this.isPinchingCover) return;
       if (this.transformer && (this.transformer as any).isTransforming && (this.transformer as any).isTransforming()) {
         this.draggingNode = null;
         return;
       }
 
-      const isTouch = evt.type.startsWith('touch');
       if (isTouch) {
         const touchEvt = evt as TouchEvent;
         if (!touchEvt.touches || touchEvt.touches.length === 0) return;
@@ -776,6 +1093,7 @@ export class CanvasEngine {
           if (this.transformer) this.transformer.visible(false);
           if (this.btnCornerFlip) this.btnCornerFlip.visible(false);
           if (this.btnCornerDuplicate) this.btnCornerDuplicate.visible(false);
+          if (this.btnCornerMove) this.btnCornerMove.visible(false);
           if (this.uiLayer) this.uiLayer.listening(false);
           this.uiLayer?.drawScene();
         }
@@ -792,6 +1110,11 @@ export class CanvasEngine {
     };
 
     const handleUp = (evt?: MouseEvent | TouchEvent) => {
+      if (this.isPinchingStage) {
+        this.isPinchingStage = false;
+        return;
+      }
+
       if (this.isPinchingCover) {
         const isTouch = evt && evt.type.startsWith('touch');
         const touchEvt = isTouch ? (evt as TouchEvent) : null;
@@ -876,15 +1199,26 @@ export class CanvasEngine {
     window.addEventListener('touchend', handleUp);
     window.addEventListener('touchcancel', handleUp);
 
-    // Zoom da capa com roda do mouse quando em Modo Enquadrar Capa
+    // Zoom com a roda do mouse (seja no palco inteiro ou na capa quando em Modo Enquadrar)
     this.stage.on('wheel', (e) => {
-      if (!this.isRepositioningCover || !this.selectedNode) return;
       e.evt.preventDefault();
-      const meta = this.selectedNode.getAttr('itemMeta') || {};
-      if (!meta.customCoverUrl) return;
-      const currentScale = meta.coverScale || 1;
-      const delta = e.evt.deltaY < 0 ? 0.08 : -0.08;
-      this.setCoverScale(currentScale + delta, false);
+      if (this.isRepositioningCover && this.selectedNode) {
+        const meta = this.selectedNode.getAttr('itemMeta') || {};
+        if (meta.customCoverUrl) {
+          const currentScale = meta.coverScale || 1;
+          const delta = e.evt.deltaY < 0 ? 0.08 : -0.08;
+          this.setCoverScale(currentScale + delta, false);
+          return;
+        }
+      }
+
+      // Zoom do palco inteiro com roda do mouse focado na posição do cursor
+      const contentEl = this.stage?.content || this.stage?.container();
+      const rect = contentEl ? contentEl.getBoundingClientRect() : { left: 0, top: 0 };
+      const mouseX = (e.evt.clientX - rect.left) / (this.dragContainerScaleX || 1);
+      const mouseY = (e.evt.clientY - rect.top) / (this.dragContainerScaleY || 1);
+      const zoomFactor = e.evt.deltaY < 0 ? 1.15 : 0.87;
+      this.setZoom(this.zoomLevel * zoomFactor, mouseX, mouseY);
     });
   }
 
@@ -902,6 +1236,7 @@ export class CanvasEngine {
       this.transformer.rotateEnabled(false);
       if (this.btnCornerFlip) this.btnCornerFlip.visible(false);
       if (this.btnCornerDuplicate) this.btnCornerDuplicate.visible(false);
+      if (this.btnCornerMove) this.btnCornerMove.visible(false);
       this.uiLayer?.draw();
     }
     if (this.stage) {
@@ -1018,15 +1353,21 @@ export class CanvasEngine {
     }
   }
 
-  isPointOpaqueInGroup(group: Konva.Group, stagePoint: { x: number; y: number }): boolean {
+  isPointOpaqueInGroup(group: Konva.Group, stagePoint: { x: number; y: number }, tolerance: number = 0): boolean {
     const transform = group.getAbsoluteTransform().copy().invert();
     const localPt = transform.point(stagePoint);
 
     const w = group.width();
     const h = group.height();
 
-    if (localPt.x < 0 || localPt.x > w || localPt.y < 0 || localPt.y > h) {
+    // Se estiver fora dos limites mesmo com a tolerância de toque expandida
+    if (localPt.x < -tolerance || localPt.x > w + tolerance || localPt.y < -tolerance || localPt.y > h + tolerance) {
       return false;
+    }
+
+    // Se o ponto está na margem de tolerância externa expandida, já considera acerto para facilitar peças pequenas
+    if (tolerance > 0 && (localPt.x < 0 || localPt.x > w || localPt.y < 0 || localPt.y > h)) {
+      return true;
     }
 
     const meta = group.getAttr('itemMeta') || {};
@@ -1052,7 +1393,7 @@ export class CanvasEngine {
     if (alphaGrid && gridSize) {
       const gx = Math.min(gridSize - 1, Math.max(0, Math.floor((localPt.x / w) * gridSize)));
       const gy = Math.min(gridSize - 1, Math.max(0, Math.floor((localPt.y / h) * gridSize)));
-      return alphaGrid[gy * gridSize + gx] > 20;
+      return alphaGrid[gy * gridSize + gx] > 20 || tolerance > 0;
     }
 
     const imgW = imgEl.naturalWidth || imgEl.width || 0;
@@ -1063,14 +1404,14 @@ export class CanvasEngine {
     const natY = Math.floor((localPt.y / h) * imgH);
 
     if (natX < 0 || natX >= imgW || natY < 0 || natY >= imgH) {
-      return false;
+      return tolerance > 0;
     }
 
     try {
       this.hitCtx.clearRect(0, 0, 1, 1);
       this.hitCtx.drawImage(imgEl, natX, natY, 1, 1, 0, 0, 1, 1);
       const alpha = this.hitCtx.getImageData(0, 0, 1, 1).data[3];
-      return alpha > 25;
+      return alpha > 25 || tolerance > 0;
     } catch {
       return true;
     }
@@ -1078,16 +1419,52 @@ export class CanvasEngine {
 
   findOpaqueItemsAtPoint(stagePoint: { x: number; y: number }): Konva.Group[] {
     const children = this.decorLayer.getChildren();
-    const matches: Konva.Group[] = [];
+    const directMatches: Konva.Group[] = [];
+    const proximityMatches: Konva.Group[] = [];
+
+    // Tolerância em pixels virtuais para facilitar o toque de dedos no mobile (~38px virtual = ~13px na tela do celular)
+    const TOUCH_TOLERANCE = 38;
 
     for (let i = children.length - 1; i >= 0; i--) {
       const child = children[i] as Konva.Group;
-      if (child.name() === 'decor-item' && this.isPointOpaqueInGroup(child, stagePoint)) {
-        matches.push(child);
+      if (child.name() !== 'decor-item') continue;
+
+      // 1. Testa acerto direto (dentro da forma opaca da peça)
+      if (this.isPointOpaqueInGroup(child, stagePoint, 0)) {
+        directMatches.push(child);
+      } else {
+        // 2. Se for item pequeno (largura/altura < 160px ou área < 35000), testa com tolerância expandida
+        const w = child.width() * Math.abs(child.scaleX() || 1);
+        const h = child.height() * Math.abs(child.scaleY() || 1);
+        const isSmallItem = w < 160 || h < 160 || (w * h < 35000);
+
+        if (isSmallItem && this.isPointOpaqueInGroup(child, stagePoint, TOUCH_TOLERANCE)) {
+          proximityMatches.push(child);
+        }
       }
     }
 
-    return matches;
+    // Combina candidatos: quem acertou direto vem antes dos acertos por proximidade
+    let candidates = [...directMatches, ...proximityMatches];
+
+    // PRIORIDADE INTELIGENTE:
+    // Se temos mais de uma peça sob o toque (ex: bandeja/vaso em cima de uma mesa ou painel grande),
+    // prioriza a peça menor para que o usuário nunca selecione a mesa de fundo por engano!
+    if (candidates.length > 1) {
+      candidates.sort((a, b) => {
+        const areaA = (a.width() * Math.abs(a.scaleX() || 1)) * (a.height() * Math.abs(a.scaleY() || 1));
+        const areaB = (b.width() * Math.abs(b.scaleX() || 1)) * (b.height() * Math.abs(b.scaleY() || 1));
+
+        // Se uma peça for significativamente menor que a outra (relação > 2x de diferença)
+        if (areaA < areaB * 0.5) return -1; // A é bem menor, prioriza
+        if (areaB < areaA * 0.5) return 1;  // B é bem menor, prioriza
+
+        // Se forem de tamanhos similares, preserva a ordem visual z-index (topo primeiro)
+        return 0;
+      });
+    }
+
+    return candidates;
   }
 
   setupKeyboardShortcuts() {
@@ -1259,7 +1636,18 @@ export class CanvasEngine {
 
     this.selectedNode = node as Konva.Group | null;
 
-    this.transformer?.nodes(node ? [node] : []);
+    if (this.transformer && node) {
+      const w = (typeof (node as any).width === 'function' ? (node as any).width() : 100) * Math.abs(node.scaleX() || 1);
+      const h = (typeof (node as any).height === 'function' ? (node as any).height() : 100) * Math.abs(node.scaleY() || 1);
+      const isSmall = w < 140 || h < 140;
+
+      // Para peças pequenas, adiciona padding para que as âncoras e botões não sufoquem a peça
+      this.transformer.padding(isSmall ? 10 : 2);
+      this.transformer.nodes([node]);
+    } else {
+      this.transformer?.nodes([]);
+    }
+
     this.updateCornerActionButtons();
     this.uiLayer?.draw();
 
@@ -1276,7 +1664,10 @@ export class CanvasEngine {
     this.draggingNode = null;
     this.selectedNode = null;
     this.wasSelectedByCycleOrLayer = false;
-    this.transformer?.nodes([]);
+    if (this.transformer) {
+      this.transformer.padding(2);
+      this.transformer.nodes([]);
+    }
     this.updateCornerActionButtons();
     this.uiLayer?.draw();
 
@@ -1635,13 +2026,24 @@ export class CanvasEngine {
     this.deselect();
     if (!this.stage) return '';
 
+    // Salva o zoom/pan atual do usuário
+    const prevZoom = this.zoomLevel;
+    const prevPanX = this.panX;
+    const prevPanY = this.panY;
+
+    // Reseta temporariamente para o enquadramento completo 100%
+    this.zoomLevel = 1;
+    this.panX = 0;
+    this.panY = 0;
+    this.applyViewTransform();
+
     const containerW = this.stage.width();
     const containerH = this.stage.height();
     const scale = Math.min(containerW / this.VIRTUAL_WIDTH, containerH / this.VIRTUAL_HEIGHT);
     const offsetX = (containerW - this.VIRTUAL_WIDTH * scale) / 2;
     const offsetY = (containerH - this.VIRTUAL_HEIGHT * scale) / 2;
 
-    return this.stage.toDataURL({
+    const dataUrl = this.stage.toDataURL({
       x: offsetX,
       y: offsetY,
       width: this.VIRTUAL_WIDTH * scale,
@@ -1649,6 +2051,16 @@ export class CanvasEngine {
       pixelRatio: Math.max(1, 1 / scale),
       mimeType: 'image/png'
     }) || '';
+
+    // Restaura o zoom e pan que o usuário estava usando
+    if (prevZoom !== 1 || prevPanX !== 0 || prevPanY !== 0) {
+      this.zoomLevel = prevZoom;
+      this.panX = prevPanX;
+      this.panY = prevPanY;
+      this.applyViewTransform();
+    }
+
+    return dataUrl;
   }
 
   getSceneNodes() {

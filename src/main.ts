@@ -153,7 +153,34 @@ async function bootstrap() {
     exportModal.open();
   });
 
-  // 8. Carrega Cenário Inicial e Salva Estado Base de Histórico
+  // 8. Controles de Zoom do Projeto (+, -, 100%)
+  const btnZoomIn = document.getElementById('btn-zoom-in');
+  const btnZoomOut = document.getElementById('btn-zoom-out');
+  const btnZoomReset = document.getElementById('btn-zoom-reset');
+  const stageZoomPercent = document.getElementById('stage-zoom-percent');
+
+  btnZoomIn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    canvasEngine.zoomIn();
+  });
+
+  btnZoomOut?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    canvasEngine.zoomOut();
+  });
+
+  btnZoomReset?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    canvasEngine.resetZoom();
+  });
+
+  canvasEngine.onZoomChange = (percent) => {
+    if (stageZoomPercent) {
+      stageZoomPercent.textContent = `${percent}%`;
+    }
+  };
+
+  // 9. Carrega Cenário Inicial e Salva Estado Base de Histórico
   await loadDefaultScene(canvasEngine);
   canvasEngine.saveSnapshot();
 }
@@ -169,34 +196,34 @@ async function loadDefaultScene(canvasEngine: CanvasEngine) {
     const cylP = allCylinders.find((c) => c.id === 'preset-cilindro-p');
 
     const centerX = 540; // Centro exato de 1080
-    const floorY = 1380; // Linha do chão vertical 9:16
+    const floorY = canvasEngine.WALL_HEIGHT; // Linha do chão padrão vertical 9:16 (1147)
 
     // 1. Painel Redondo ao Centro
     if (panel) {
       await canvasEngine.addItem(panel, {
         x: centerX - 290,
-        y: floorY - 600
+        y: floorY - 570
       }, false);
     }
     // 2. Trio de Cilindros P, M, G à frente no piso
     if (cylG) {
       await canvasEngine.addItem(cylG, {
         x: centerX + 50,
-        y: floorY - 320
+        y: floorY - 268
       }, false);
     }
 
     if (cylM) {
       await canvasEngine.addItem(cylM, {
         x: centerX - 140,
-        y: floorY - 240
+        y: floorY - 151
       }, false);
     }
 
     if (cylP) {
       await canvasEngine.addItem(cylP, {
         x: centerX - 300,
-        y: floorY - 180
+        y: floorY - 63
       }, false);
     }
 

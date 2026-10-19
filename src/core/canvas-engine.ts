@@ -249,18 +249,21 @@ export class CanvasEngine {
   setupTransformer() {
     if (!this.uiLayer) return;
     this.transformer = new Konva.Transformer({
-      rotateAnchorOffset: 24,
+      rotateAnchorOffset: 30,
       enabledAnchors: ['top-left', 'top-right'],
-      anchorSize: 13, // Diminuído pela metade (era 26)
-      anchorCornerRadius: 6.5,
+      anchorSize: 26,
+      anchorCornerRadius: 13,
       anchorStroke: '#ec4899',
       anchorFill: '#ffffff',
-      anchorStrokeWidth: 2,
+      anchorStrokeWidth: 2.5,
       borderStroke: '#ec4899',
       borderStrokeWidth: 2,
       borderDash: [5, 4],
       keepRatio: true,
-      shouldOverdrawWholeArea: false
+      shouldOverdrawWholeArea: false,
+      anchorStyleFunc: (anchor) => {
+        anchor.hitStrokeWidth(16);
+      }
     });
 
     // Desativa o interceptador '.back' interno do Transformer que causava conflito de drag no mobile
@@ -304,16 +307,16 @@ export class CanvasEngine {
     });
 
     const hitFlip = new Konva.Circle({
-      radius: 20,
+      radius: 24,
       fill: 'transparent',
       listening: true
     });
 
     const circleFlip = new Konva.Circle({
-      radius: 11,
+      radius: 13,
       fill: '#0f172a',
       stroke: '#ec4899',
-      strokeWidth: 2,
+      strokeWidth: 2.5,
       listening: false
     });
 
@@ -322,26 +325,26 @@ export class CanvasEngine {
       sceneFunc: (ctx, shape) => {
         // Eixo divisor central
         ctx.beginPath();
-        ctx.moveTo(0, -5.5);
-        ctx.lineTo(0, 5.5);
+        ctx.moveTo(0, -6.5);
+        ctx.lineTo(0, 6.5);
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.1;
+        ctx.lineWidth = 1.2;
         ctx.stroke();
 
         // Triângulo esquerdo (apontando para esquerda)
         ctx.beginPath();
-        ctx.moveTo(-1.4, -4.2);
-        ctx.lineTo(-5.8, 0);
-        ctx.lineTo(-1.4, 4.2);
+        ctx.moveTo(-1.6, -5);
+        ctx.lineTo(-7, 0);
+        ctx.lineTo(-1.6, 5);
         ctx.closePath();
         ctx.fillStyle = '#ffffff';
         ctx.fill();
 
         // Triângulo direito (apontando para direita)
         ctx.beginPath();
-        ctx.moveTo(1.4, -4.2);
-        ctx.lineTo(5.8, 0);
-        ctx.lineTo(1.4, 4.2);
+        ctx.moveTo(1.6, -5);
+        ctx.lineTo(7, 0);
+        ctx.lineTo(1.6, 5);
         ctx.closePath();
         ctx.fillStyle = '#ffffff';
         ctx.fill();
@@ -380,16 +383,16 @@ export class CanvasEngine {
     });
 
     const hitDup = new Konva.Circle({
-      radius: 20,
+      radius: 24,
       fill: 'transparent',
       listening: true
     });
 
     const circleDup = new Konva.Circle({
-      radius: 11,
+      radius: 13,
       fill: '#0f172a',
       stroke: '#ec4899',
-      strokeWidth: 2,
+      strokeWidth: 2.5,
       listening: false
     });
 
@@ -397,16 +400,16 @@ export class CanvasEngine {
     const iconDup = new Konva.Shape({
       sceneFunc: (ctx, shape) => {
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.2;
+        ctx.lineWidth = 1.3;
 
         // Quadrado traseiro (topo-direita)
         ctx.beginPath();
-        ctx.strokeRect(-0.8, -5.4, 6.2, 6.2);
+        ctx.strokeRect(-1, -6.5, 7.5, 7.5);
 
         // Quadrado frontal (baixo-esquerda, com fundo escuro que sobrepõe o traseiro)
         ctx.fillStyle = '#0f172a';
-        ctx.fillRect(-5.4, -0.8, 6.2, 6.2);
-        ctx.strokeRect(-5.4, -0.8, 6.2, 6.2);
+        ctx.fillRect(-6.5, -1, 7.5, 7.5);
+        ctx.strokeRect(-6.5, -1, 7.5, 7.5);
       },
       listening: false
     });

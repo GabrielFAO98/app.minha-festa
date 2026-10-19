@@ -5,6 +5,7 @@ import { REALISTIC_ENVIRONMENTS } from '../core/textures-data';
 import type { CanvasEngine } from '../core/canvas-engine';
 import type { PresetItem, SceneElement } from '../types';
 import type Konva from 'konva';
+import { CANVA_LAYER_ICONS, setupLayersDragAndDrop } from './layers-drag-drop';
 
 export class DesktopStudio {
   canvasEngine: CanvasEngine;
@@ -246,16 +247,16 @@ export class DesktopStudio {
   initInspectorListeners(): void {
     const btnDel = document.getElementById('btn-desktop-delete');
     const btnCover = document.getElementById('btn-desktop-cover');
-    const btnDup = document.getElementById('btn-desktop-duplicate');
-    const btnFlip = document.getElementById('btn-desktop-flip');
     const btnFront = document.getElementById('btn-desktop-front');
     const btnBack = document.getElementById('btn-desktop-back');
+    const btnToFront = document.getElementById('btn-desktop-to-front');
+    const btnToBack = document.getElementById('btn-desktop-to-back');
 
     btnDel?.addEventListener('click', () => this.canvasEngine.deleteSelected());
-    btnDup?.addEventListener('click', () => this.canvasEngine.duplicateSelected());
-    btnFlip?.addEventListener('click', () => this.canvasEngine.flipHorizontal());
     btnFront?.addEventListener('click', () => this.canvasEngine.bringForward());
     btnBack?.addEventListener('click', () => this.canvasEngine.sendBackward());
+    btnToFront?.addEventListener('click', () => this.canvasEngine.bringToFront());
+    btnToBack?.addEventListener('click', () => this.canvasEngine.sendToBack());
 
     btnCover?.addEventListener('click', async () => {
       const node = this.canvasEngine.selectedNode;
@@ -379,6 +380,13 @@ export class DesktopStudio {
     }
   }
 
+  // Helper para buscar o Konva.Group no decorLayer pelo instanceId
+  getNodeByInstanceId(instanceId: string): Konva.Group | null {
+    const nodes = this.canvasEngine.getSceneNodes();
+    const found = nodes.find((n) => (n as any).getAttr('itemMeta')?.instanceId === instanceId);
+    return (found as Konva.Group) || null;
+  }
+
   // LISTA DE CAMADAS (LAYERS)
   renderLayersList(elements: (SceneElement | PresetItem)[]): void {
     const listEl = document.getElementById('desktop-layers-list');
@@ -398,27 +406,63 @@ export class DesktopStudio {
     reversed.forEach((elem) => {
       const row = document.createElement('div');
       row.className = 'layer-row-item';
+      row.dataset.instanceId = elem.instanceId;
 
       const isSelected = (this.canvasEngine.selectedNode as any)?.getAttr('itemMeta')?.instanceId === elem.instanceId;
       if (isSelected) row.classList.add('selected');
 
       row.innerHTML = `
+        <div class="layer-drag-handle" title="Arraste para reordenar a camada">${CANVA_LAYER_ICONS.grip}</div>
         <img class="layer-thumb" src="${elem.previewUrl}" alt="" />
         <div class="layer-info">
           <div class="layer-title">${elem.name}</div>
           <div class="layer-sub">${elem.widthCm}x${elem.heightCm}cm</div>
         </div>
+        <div class="layer-item-actions">
+          <button class="layer-mini-btn layer-btn-to-front" title="Trazer para o topo">${CANVA_LAYER_ICONS.toFront}</button>
+          <button class="layer-mini-btn layer-btn-front" title="Trazer para frente">${CANVA_LAYER_ICONS.front}</button>
+          <button class="layer-mini-btn layer-btn-back" title="Enviar para trás">${CANVA_LAYER_ICONS.back}</button>
+          <button class="layer-mini-btn layer-btn-to-back" title="Enviar para o fundo">${CANVA_LAYER_ICONS.toBack}</button>
+        </div>
       `;
 
-      row.addEventListener('click', () => {
-        const nodes = this.canvasEngine.getSceneNodes();
-        const targetNode = nodes.find((n) => (n as any).getAttr('itemMeta')?.instanceId === elem.instanceId);
+      row.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('.layer-mini-btn, .layer-drag-handle')) return;
+        const targetNode = this.getNodeByInstanceId(elem.instanceId);
         if (targetNode) {
           this.canvasEngine.selectNode(targetNode);
         }
       });
 
+      row.querySelector('.layer-btn-to-front')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetNode = this.getNodeByInstanceId(elem.instanceId);
+        if (targetNode) this.canvasEngine.bringToFront(targetNode);
+      });
+
+      row.querySelector('.layer-btn-front')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetNode = this.getNodeByInstanceId(elem.instanceId);
+        if (targetNode) this.canvasEngine.bringForward(targetNode);
+      });
+
+      row.querySelector('.layer-btn-back')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetNode = this.getNodeByInstanceId(elem.instanceId);
+        if (targetNode) this.canvasEngine.sendBackward(targetNode);
+      });
+
+      row.querySelector('.layer-btn-to-back')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetNode = this.getNodeByInstanceId(elem.instanceId);
+        if (targetNode) this.canvasEngine.sendToBack(targetNode);
+      });
+
       listEl.appendChild(row);
+    });
+
+    setupLayersDragAndDrop(listEl, (newOrder) => {
+      this.canvasEngine.reorderLayers(newOrder);
     });
   }
 }

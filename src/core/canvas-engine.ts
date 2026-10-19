@@ -1694,27 +1694,15 @@ export class CanvasEngine {
       }
     }
 
-    // Combina candidatos: quem acertou direto vem antes dos acertos por proximidade
-    let candidates = [...directMatches, ...proximityMatches];
-
-    // PRIORIDADE INTELIGENTE:
-    // Se temos mais de uma peça sob o toque (ex: bandeja/vaso em cima de uma mesa ou painel grande),
-    // prioriza a peça menor para que o usuário nunca selecione a mesa de fundo por engano!
-    if (candidates.length > 1) {
-      candidates.sort((a, b) => {
-        const areaA = (a.width() * Math.abs(a.scaleX() || 1)) * (a.height() * Math.abs(a.scaleY() || 1));
-        const areaB = (b.width() * Math.abs(b.scaleX() || 1)) * (b.height() * Math.abs(b.scaleY() || 1));
-
-        // Se uma peça for significativamente menor que a outra (relação > 2x de diferença)
-        if (areaA < areaB * 0.5) return -1; // A é bem menor, prioriza
-        if (areaB < areaA * 0.5) return 1;  // B é bem menor, prioriza
-
-        // Se forem de tamanhos similares, preserva a ordem visual z-index (topo primeiro)
-        return 0;
-      });
+    // Prioridade estrita à peça visível mais à frente (maior zIndex no topo visual).
+    // directMatches já está naturalmente ordenado da camada mais à frente para a mais ao fundo
+    // pois o loop acima percorre children de length - 1 até 0.
+    // Proximidade só é consultada se o toque não tiver atingido diretamente nenhuma forma opaca.
+    if (directMatches.length > 0) {
+      return directMatches;
     }
 
-    return candidates;
+    return proximityMatches;
   }
 
   setupKeyboardShortcuts() {
@@ -2189,33 +2177,62 @@ export class CanvasEngine {
     }
   }
 
-  bringForward() {
-    if (!this.selectedNode) return;
-    this.selectedNode.moveUp();
+  bringForward(targetNode?: Konva.Group | null) {
+    const node = targetNode || this.selectedNode;
+    if (!node) return;
+    node.moveUp();
     this.decorLayer.batchDraw();
     this.saveSnapshot();
     this.notifyLayersChange();
   }
 
-  sendBackward() {
-    if (!this.selectedNode) return;
-    this.selectedNode.moveDown();
+  sendBackward(targetNode?: Konva.Group | null) {
+    const node = targetNode || this.selectedNode;
+    if (!node) return;
+    node.moveDown();
     this.decorLayer.batchDraw();
     this.saveSnapshot();
     this.notifyLayersChange();
   }
 
-  bringToFront() {
-    if (!this.selectedNode) return;
-    this.selectedNode.moveToTop();
+  bringToFront(targetNode?: Konva.Group | null) {
+    const node = targetNode || this.selectedNode;
+    if (!node) return;
+    node.moveToTop();
     this.decorLayer.batchDraw();
     this.saveSnapshot();
     this.notifyLayersChange();
   }
 
-  sendToBack() {
-    if (!this.selectedNode) return;
-    this.selectedNode.moveToBottom();
+  sendToBack(targetNode?: Konva.Group | null) {
+    const node = targetNode || this.selectedNode;
+    if (!node) return;
+    node.moveToBottom();
+    this.decorLayer.batchDraw();
+    this.saveSnapshot();
+    this.notifyLayersChange();
+  }
+
+  reorderLayers(instanceIdsFromTopToBottom: string[]) {
+    // No decorLayer: children[0] é o fundo (menor zIndex), children[length-1] é o topo (maior zIndex).
+    // instanceIdsFromTopToBottom vem na ordem visual do usuário (topo primeiro, fundo por último).
+    // Portanto invertemos para [fundo, ..., topo] e atribuímos o zIndex crescente:
+    const fromBottomToTop = [...instanceIdsFromTopToBottom].reverse();
+    const children = this.decorLayer.getChildren();
+    const nodeMap = new Map<string, Konva.Group>();
+
+    children.forEach((c) => {
+      const id = c.getAttr('itemMeta')?.instanceId;
+      if (id) nodeMap.set(id, c as Konva.Group);
+    });
+
+    fromBottomToTop.forEach((id, zIndex) => {
+      const node = nodeMap.get(id);
+      if (node) {
+        node.zIndex(zIndex);
+      }
+    });
+
     this.decorLayer.batchDraw();
     this.saveSnapshot();
     this.notifyLayersChange();

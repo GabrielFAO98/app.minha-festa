@@ -119,6 +119,9 @@ async function bootstrap() {
 
   canvasEngine.onLayersChange = (elements) => {
     desktopStudio?.renderLayersList(elements);
+    if (bottomDock?.activeTab === 'layers') {
+      bottomDock.renderLayersTab();
+    }
   };
 
   // 7. Header Actions, Salvar e Histórico (Desfazer / Refazer)

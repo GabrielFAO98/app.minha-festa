@@ -36,6 +36,8 @@ export class ItemToolbar {
     const btnReposition = document.getElementById('btn-action-reposition');
     const btnFront = document.getElementById('btn-action-front');
     const btnBack = document.getElementById('btn-action-back');
+    const btnToFront = document.getElementById('btn-action-to-front');
+    const btnToBack = document.getElementById('btn-action-to-back');
 
     btnDelete?.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -78,6 +80,11 @@ export class ItemToolbar {
       }
     });
 
+    btnToFront?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.canvasEngine.bringToFront();
+    });
+
     btnFront?.addEventListener('click', (e) => {
       e.stopPropagation();
       this.canvasEngine.bringForward();
@@ -86,6 +93,11 @@ export class ItemToolbar {
     btnBack?.addEventListener('click', (e) => {
       e.stopPropagation();
       this.canvasEngine.sendBackward();
+    });
+
+    btnToBack?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.canvasEngine.sendToBack();
     });
   }
 

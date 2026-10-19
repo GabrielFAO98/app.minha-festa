@@ -3,6 +3,7 @@ import { getItemCustomizationMode } from '../core/modular-svg-generator';
 import { REALISTIC_ENVIRONMENTS, WALL_OPTIONS, FLOOR_OPTIONS } from '../core/textures-data';
 import type { CanvasEngine } from '../core/canvas-engine';
 import type { PresetItem, ItemCategory } from '../types';
+import { CANVA_LAYER_ICONS, setupLayersDragAndDrop } from './layers-drag-drop';
 
 export class BottomDock {
   canvasEngine: CanvasEngine;
@@ -357,6 +358,7 @@ export class BottomDock {
 
     const reversed = [...elements].reverse();
     const container = document.createElement('div');
+    container.className = 'layers-mobile-container';
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
     container.style.gap = '8px';
@@ -364,41 +366,47 @@ export class BottomDock {
     reversed.forEach((elem) => {
       const row = document.createElement('div');
       row.className = 'layer-row-item';
-      row.style.display = 'flex';
-      row.style.alignItems = 'center';
-      row.style.gap = '10px';
-      row.style.padding = '8px 12px';
-      row.style.background = 'rgba(255, 255, 255, 0.04)';
-      row.style.border = '1px solid var(--border-subtle)';
-      row.style.borderRadius = 'var(--radius-md)';
-      row.style.cursor = 'pointer';
+      row.dataset.instanceId = elem.instanceId;
 
       const isSelected = (this.canvasEngine.selectedNode as any)?.getAttr('itemMeta')?.instanceId === elem.instanceId;
       if (isSelected) {
-        row.style.borderColor = 'var(--primary)';
-        row.style.background = 'rgba(236, 72, 153, 0.15)';
+        row.classList.add('selected');
       }
 
       row.innerHTML = `
-        <img src="${elem.previewUrl}" style="width: 38px; height: 38px; object-fit: contain; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 2px;" alt="" />
-        <div style="flex: 1; min-width: 0;">
-          <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${elem.name}</div>
-          <div style="font-size: 0.68rem; color: var(--text-muted);">${elem.widthCm}x${elem.heightCm}cm</div>
+        <div class="layer-drag-handle" title="Arraste para reordenar a camada">${CANVA_LAYER_ICONS.grip}</div>
+        <img class="layer-thumb" src="${elem.previewUrl}" alt="" />
+        <div class="layer-info">
+          <div class="layer-title">${elem.name}</div>
+          <div class="layer-sub">${elem.widthCm}x${elem.heightCm}cm</div>
         </div>
-        <div style="display: flex; gap: 6px;">
-          <button class="layer-action-btn layer-btn-front" style="width: 34px; height: 34px; border-radius: 6px; background: rgba(255,255,255,0.08); font-size: 0.85rem;" title="Trazer para Frente">⬆️</button>
-          <button class="layer-action-btn layer-btn-back" style="width: 34px; height: 34px; border-radius: 6px; background: rgba(255,255,255,0.08); font-size: 0.85rem;" title="Enviar para Trás">⬇️</button>
+        <div class="layer-item-actions">
+          <button class="layer-mini-btn layer-btn-to-front" title="Trazer para o topo">${CANVA_LAYER_ICONS.toFront}</button>
+          <button class="layer-mini-btn layer-btn-front" title="Trazer para frente">${CANVA_LAYER_ICONS.front}</button>
+          <button class="layer-mini-btn layer-btn-back" title="Enviar para trás">${CANVA_LAYER_ICONS.back}</button>
+          <button class="layer-mini-btn layer-btn-to-back" title="Enviar para o fundo">${CANVA_LAYER_ICONS.toBack}</button>
         </div>
       `;
 
       row.addEventListener('click', (e) => {
-        if ((e.target as HTMLElement).closest('.layer-action-btn')) return;
+        if ((e.target as HTMLElement).closest('.layer-mini-btn, .layer-drag-handle')) return;
         const targetNode = this.canvasEngine.decorLayer.getChildren().find(
           (c) => c.getAttr('itemMeta')?.instanceId === elem.instanceId
         );
         if (targetNode) {
           this.canvasEngine.selectNode(targetNode);
-          this.closeSheet();
+          this.renderLayersTab();
+        }
+      });
+
+      row.querySelector('.layer-btn-to-front')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetNode = this.canvasEngine.decorLayer.getChildren().find(
+          (c) => c.getAttr('itemMeta')?.instanceId === elem.instanceId
+        );
+        if (targetNode) {
+          this.canvasEngine.bringToFront(targetNode as any);
+          this.renderLayersTab();
         }
       });
 
@@ -408,8 +416,7 @@ export class BottomDock {
           (c) => c.getAttr('itemMeta')?.instanceId === elem.instanceId
         );
         if (targetNode) {
-          this.canvasEngine.selectNode(targetNode);
-          this.canvasEngine.bringForward();
+          this.canvasEngine.bringForward(targetNode as any);
           this.renderLayersTab();
         }
       });
@@ -420,8 +427,18 @@ export class BottomDock {
           (c) => c.getAttr('itemMeta')?.instanceId === elem.instanceId
         );
         if (targetNode) {
-          this.canvasEngine.selectNode(targetNode);
-          this.canvasEngine.sendBackward();
+          this.canvasEngine.sendBackward(targetNode as any);
+          this.renderLayersTab();
+        }
+      });
+
+      row.querySelector('.layer-btn-to-back')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const targetNode = this.canvasEngine.decorLayer.getChildren().find(
+          (c) => c.getAttr('itemMeta')?.instanceId === elem.instanceId
+        );
+        if (targetNode) {
+          this.canvasEngine.sendToBack(targetNode as any);
           this.renderLayersTab();
         }
       });
@@ -431,5 +448,10 @@ export class BottomDock {
 
     this.sheetBody.innerHTML = '';
     this.sheetBody.appendChild(container);
+
+    setupLayersDragAndDrop(container, (newOrder) => {
+      this.canvasEngine.reorderLayers(newOrder);
+      this.renderLayersTab();
+    });
   }
 }

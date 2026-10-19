@@ -7,6 +7,7 @@ export class ExportModal {
   previewImgEl: HTMLImageElement | null;
   checklistContainer: HTMLElement | null;
   totalItemsBadge: HTMLElement | null;
+  btnShareImage: HTMLElement | null;
   btnDownload: HTMLElement | null;
   btnWhatsApp: HTMLElement | null;
   btnClose: HTMLElement | null;
@@ -21,6 +22,7 @@ export class ExportModal {
     this.previewImgEl = document.getElementById('export-preview-img') as HTMLImageElement | null;
     this.checklistContainer = document.getElementById('export-checklist-items');
     this.totalItemsBadge = document.getElementById('export-total-badge');
+    this.btnShareImage = document.getElementById('btn-share-image');
     this.btnDownload = document.getElementById('btn-download-image');
     this.btnWhatsApp = document.getElementById('btn-share-whatsapp');
     this.btnClose = document.getElementById('btn-close-export-modal');
@@ -39,22 +41,64 @@ export class ExportModal {
       if (e.target === this.modalEl) this.close();
     });
 
+    this.btnShareImage?.addEventListener('click', async () => {
+      await this.handleShareImage();
+    });
+
     this.btnDownload?.addEventListener('click', () => {
       if (!this.currentDataUrl) return;
-      const title = document.getElementById('project-title-display')?.textContent || 'decoracao-festa';
-      const safeFilename = `${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}.png`;
+      const title = document.getElementById('project-title-display')?.textContent?.trim() || 'decoracao-festa';
+      const safeFilename = `${title.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'decoracao'}.png`;
       downloadImage(this.currentDataUrl, safeFilename);
     });
 
     this.btnWhatsApp?.addEventListener('click', () => {
       if (!this.currentRomaneio) return;
-      const title = document.getElementById('project-title-display')?.textContent || 'Decoração Pegue-Monte';
+      const title = document.getElementById('project-title-display')?.textContent?.trim() || 'Decoração Pegue-Monte';
       const clientName = this.clientNameInput?.value.trim() || '';
       const clientPhone = this.clientPhoneInput?.value.trim() || '';
 
       const message = formatWhatsAppMessage(title, this.currentRomaneio, clientName);
       shareViaWhatsApp(clientPhone, message);
     });
+  }
+
+  async handleShareImage(): Promise<void> {
+    if (!this.currentDataUrl) return;
+    const title = document.getElementById('project-title-display')?.textContent?.trim() || 'Decoração Minha Festa';
+    const safeFilename = `${title.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'decoracao'}.png`;
+
+    try {
+      const res = await fetch(this.currentDataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], safeFilename, { type: 'image/png' });
+
+      // Web Share API nativo (WhatsApp, Stories, AirDrop, etc. no Celular)
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: title,
+          text: `Decoração: ${title}`
+        });
+        return;
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
+    }
+
+    // Fallback Área de Transferência (Desktop colar direto no WhatsApp Web com Ctrl+V)
+    try {
+      const res = await fetch(this.currentDataUrl);
+      const blob = await res.blob();
+      if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        alert('Foto copiada para a área de transferência! Você já pode colar (Ctrl+V) no WhatsApp ou redes sociais.');
+        return;
+      }
+    } catch {}
+
+    // Fallback Download direto
+    downloadImage(this.currentDataUrl, safeFilename);
   }
 
   open(): void {

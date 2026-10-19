@@ -1597,10 +1597,22 @@ export class CanvasEngine {
     this.saveSnapshot();
   }
 
-  exportHDImage() {
+  exportHDImage(): string {
     this.deselect();
-    return this.stage?.toDataURL({
-      pixelRatio: 1.5,
+    if (!this.stage) return '';
+
+    const containerW = this.stage.width();
+    const containerH = this.stage.height();
+    const scale = Math.min(containerW / this.VIRTUAL_WIDTH, containerH / this.VIRTUAL_HEIGHT);
+    const offsetX = (containerW - this.VIRTUAL_WIDTH * scale) / 2;
+    const offsetY = (containerH - this.VIRTUAL_HEIGHT * scale) / 2;
+
+    return this.stage.toDataURL({
+      x: offsetX,
+      y: offsetY,
+      width: this.VIRTUAL_WIDTH * scale,
+      height: this.VIRTUAL_HEIGHT * scale,
+      pixelRatio: Math.max(1, 1 / scale),
       mimeType: 'image/png'
     }) || '';
   }

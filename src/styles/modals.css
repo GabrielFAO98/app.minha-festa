@@ -233,6 +233,136 @@
   background-color: rgba(255, 255, 255, 0.15);
 }
 
+/* Card de Prévia de Exportação 9:16 */
+.export-preview-card {
+  width: 100%;
+  background: radial-gradient(circle at center, rgba(30, 41, 59, 0.75), rgba(15, 23, 42, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: 14px 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.export-preview-frame {
+  position: relative;
+  max-height: 250px;
+  height: 250px;
+  aspect-ratio: 9 / 16;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.16);
+  background: #0b0f17;
+}
+
+.export-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.export-preview-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(236, 72, 153, 0.6);
+  color: #f472b6;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+}
+
+/* Grade de Botões de Ação da Foto */
+.export-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.btn-export-share {
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, #ec4899, #db2777);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border: none;
+  box-shadow: 0 4px 14px rgba(236, 72, 153, 0.35);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-export-share:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(236, 72, 153, 0.45);
+}
+
+.btn-export-share:active {
+  transform: scale(0.97);
+}
+
+.btn-export-download {
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-export-download:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.btn-export-download:active {
+  transform: scale(0.97);
+}
+
+.btn-whatsapp-export {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #25D366, #128C7E);
+  box-shadow: 0 4px 16px rgba(37, 211, 102, 0.35);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.btn-whatsapp-export:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.45);
+}
+
 /* Romaneio / Checklist */
 .checklist-card {
   background-color: rgba(15, 23, 42, 0.6);

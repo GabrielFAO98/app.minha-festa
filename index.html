@@ -324,14 +324,24 @@
         <div class="modal-title">✨ Exportar Cenário (9:16)</div>
         <button id="btn-close-export-modal" class="modal-close-btn">✕</button>
       </div>
-      <div class="modal-body">
-        <div style="width: 100%; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-subtle); background: #000; box-shadow: var(--shadow-sm);">
-          <img id="export-preview-img" style="width: 100%; height: auto; display: block;" alt="Prévia da Decoração" />
+      <div class="modal-body export-modal-body">
+        <div class="export-preview-card">
+          <div class="export-preview-frame">
+            <img id="export-preview-img" class="export-preview-img" alt="Prévia da Decoração (9:16)" />
+            <div class="export-preview-badge">9:16 HD</div>
+          </div>
         </div>
 
-        <button id="btn-download-image" class="btn-secondary" style="width: 100%;">
-          📸 Baixar Foto da Decoração (PNG HD)
-        </button>
+        <div class="export-actions-grid">
+          <button type="button" id="btn-share-image" class="btn-export-share" title="Compartilhar ou Copiar Imagem">
+            <span>📤</span>
+            <span>Compartilhar Imagem</span>
+          </button>
+          <button type="button" id="btn-download-image" class="btn-export-download" title="Salvar Foto no Dispositivo (PNG HD)">
+            <span>💾</span>
+            <span>Salvar Imagem HD</span>
+          </button>
+        </div>
 
         <div class="checklist-card">
           <div class="checklist-title">
@@ -350,8 +360,9 @@
           <input type="tel" id="export-client-phone" class="form-input" placeholder="Ex: 16999998888" />
         </div>
 
-        <button id="btn-share-whatsapp" class="btn-whatsapp">
-          💬 Enviar Romaneio no WhatsApp
+        <button type="button" id="btn-share-whatsapp" class="btn-whatsapp btn-whatsapp-export">
+          <span>💬</span>
+          <span>Enviar Romaneio no WhatsApp</span>
         </button>
       </div>
     </div>

@@ -1,26 +1,22 @@
-// Icones canonicos inspirados no Canva para manipulacao de camadas
-export const CANVA_LAYER_ICONS = {
-  front: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <polygon points="12 11 20 15 12 19 4 15"></polygon>
-    <line x1="12" y1="17" x2="12" y2="4"></line>
-    <polyline points="7.5 8 12 3.5 16.5 8"></polyline>
+// Icones direcionais limpos para manipulacao de camadas (Frente, Tras, Topo, Fundo)
+export const LAYER_ACTION_ICONS = {
+  front: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="12" y1="19" x2="12" y2="5"></line>
+    <polyline points="5 12 12 5 19 12"></polyline>
   </svg>`,
-  back: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <polygon points="12 7 20 11 12 15 4 11"></polygon>
-    <line x1="12" y1="5" x2="12" y2="18"></line>
-    <polyline points="7.5 14 12 18.5 16.5 14"></polyline>
+  back: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19"></line>
+    <polyline points="19 12 12 19 5 12"></polyline>
   </svg>`,
-  toFront: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <polygon points="12 10 20 14 12 18 4 14"></polygon>
-    <polyline points="4 18 12 22 20 18"></polyline>
-    <line x1="12" y1="20" x2="12" y2="3"></line>
-    <polyline points="7.5 7 12 2.5 16.5 7"></polyline>
+  toFront: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="4" y1="4" x2="20" y2="4"></line>
+    <line x1="12" y1="20" x2="12" y2="8"></line>
+    <polyline points="5 14 12 7 19 14"></polyline>
   </svg>`,
-  toBack: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <polygon points="12 6 20 10 12 14 4 10"></polygon>
-    <polyline points="4 14 12 18 20 14"></polyline>
-    <line x1="12" y1="4" x2="12" y2="21"></line>
-    <polyline points="7.5 17 12 21.5 16.5 17"></polyline>
+  toBack: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="4" y1="20" x2="20" y2="20"></line>
+    <line x1="12" y1="4" x2="12" y2="16"></line>
+    <polyline points="19 10 12 17 5 10"></polyline>
   </svg>`,
   grip: `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
     <circle cx="9" cy="6" r="1.8"/>
@@ -31,6 +27,8 @@ export const CANVA_LAYER_ICONS = {
     <circle cx="15" cy="18" r="1.8"/>
   </svg>`
 };
+
+export const CANVA_LAYER_ICONS = LAYER_ACTION_ICONS;
 
 /**
  * Ativa ordenacao fluida por Drag and Drop na lista de camadas (funciona em Desktop e Mobile).
@@ -177,3 +175,4 @@ export function setupLayersDragAndDrop(
     touchTarget.addEventListener('touchcancel', handleTouchEnd);
   });
 }
+

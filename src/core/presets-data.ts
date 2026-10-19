@@ -3313,6 +3313,42 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     rentalPrice: 18
   },
   {
+    id: 'preset-vaso-garrafinha-1',
+    name: 'Vaso Garrafinha Branca - Arranjo Redondo',
+    category: 'acessorios',
+    type: 'generic',
+    widthCm: 30,
+    heightCm: 25,
+    previewUrl: '/items/vaso-garrafinha-branco-1.png',
+    isCustom: false,
+    stockQuantity: 4,
+    rentalPrice: 15
+  },
+  {
+    id: 'preset-vaso-garrafinha-2',
+    name: 'Vaso Garrafinha Branca - Arranjo Alto',
+    category: 'acessorios',
+    type: 'generic',
+    widthCm: 25.5,
+    heightCm: 30,
+    previewUrl: '/items/vaso-garrafinha-branco-2.png',
+    isCustom: false,
+    stockQuantity: 4,
+    rentalPrice: 15
+  },
+  {
+    id: 'preset-vaso-garrafinha-3',
+    name: 'Vaso Garrafinha Branca - Arranjo Delicado',
+    category: 'acessorios',
+    type: 'generic',
+    widthCm: 21,
+    heightCm: 32,
+    previewUrl: '/items/vaso-garrafinha-branco-3.png',
+    isCustom: false,
+    stockQuantity: 4,
+    rentalPrice: 15
+  },
+  {
     id: 'preset-display-mesa',
     name: 'Display de Mesa MDF 25cm',
     category: 'displays',

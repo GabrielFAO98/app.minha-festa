@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "add-covers": "node scripts/process-covers.js"
   },
   "dependencies": {
     "dexie": "^4.0.11",

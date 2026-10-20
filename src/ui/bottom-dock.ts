@@ -1,6 +1,7 @@
-import { getItemsByCategory, getAllItems, getAllCovers } from '../core/db';
+import { getAllItems, getAllCovers } from '../core/db';
 import { getItemCustomizationMode } from '../core/modular-svg-generator';
 import { REALISTIC_ENVIRONMENTS, WALL_OPTIONS, FLOOR_OPTIONS } from '../core/textures-data';
+import { DEFAULT_PRESET_ITEMS } from '../core/presets-data';
 import type { CanvasEngine } from '../core/canvas-engine';
 import type { PresetItem, ItemCategory } from '../types';
 import { CANVA_LAYER_ICONS, setupLayersDragAndDrop } from './layers-drag-drop';
@@ -19,6 +20,8 @@ export class BottomDock {
   handleBar: HTMLElement | null;
   closeBtn: HTMLElement | null;
   tabButtons: NodeListOf<Element>;
+  private cachedCustomItems: PresetItem[] | null = null;
+  private renderedPillsTab: 'presets' | 'my-items' | null = null;
 
   constructor(
     canvasEngine: CanvasEngine,
@@ -65,6 +68,10 @@ export class BottomDock {
     });
   }
 
+  invalidateCustomItemsCache(): void {
+    this.cachedCustomItems = null;
+  }
+
   async openTab(tabName: string): Promise<void> {
     this.activeTab = tabName;
 
@@ -81,7 +88,7 @@ export class BottomDock {
     this.sheetEl?.classList.add('open');
 
     if (tabName === 'presets') {
-      await this.renderPresetsTab();
+      this.renderPresetsTab();
     } else if (tabName === 'my-items') {
       await this.renderMyItemsTab();
     } else if (tabName === 'covers') {
@@ -105,19 +112,33 @@ export class BottomDock {
     }
   }
 
-  // ABA 1: Peças Base (Elementos)
-  async renderPresetsTab(): Promise<void> {
+  // ABA 1: Peças Base (Elementos) - Resposta Instantânea 0ms (In-Memory)
+  renderPresetsTab(): void {
     if (this.sheetTitle) this.sheetTitle.textContent = 'Elementos';
     if (this.categoriesBar) this.categoriesBar.style.display = 'flex';
     this.renderCategoryPills('presets');
 
-    const items = await getItemsByCategory(this.currentCategory);
-    const presetItems = items.filter((i) => !i.isCustom);
+    let presetItems = DEFAULT_PRESET_ITEMS;
+    if (this.currentCategory !== 'todos') {
+      presetItems = DEFAULT_PRESET_ITEMS.filter((i) => i.category === this.currentCategory);
+    }
     this.renderPresetsGrid(presetItems);
   }
 
   renderCategoryPills(tab: 'presets' | 'my-items'): void {
     if (!this.categoriesBar) return;
+    const currentSelected = tab === 'presets' ? this.currentCategory : this.myItemsCategory;
+
+    // Se as pílulas para esta aba já estão montadas no DOM, apenas atualiza a classe active instantaneamente
+    if (this.renderedPillsTab === tab && this.categoriesBar.children.length > 0) {
+      const buttons = this.categoriesBar.querySelectorAll<HTMLButtonElement>('.pill-btn');
+      buttons.forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.catId === currentSelected);
+      });
+      return;
+    }
+
+    this.renderedPillsTab = tab;
     const categories: { id: ItemCategory | string; label: string }[] = [
       { id: 'todos', label: 'Todos' },
       { id: 'paineis', label: 'Painéis' },
@@ -128,31 +149,34 @@ export class BottomDock {
       { id: 'acessorios', label: 'Acessórios' }
     ];
 
-    const currentSelected = tab === 'presets' ? this.currentCategory : this.myItemsCategory;
-
-    this.categoriesBar.innerHTML = '';
+    const fragment = document.createDocumentFragment();
     categories.forEach((cat) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = `pill-btn ${currentSelected === cat.id ? 'active' : ''}`;
+      btn.dataset.catId = cat.id;
       btn.textContent = cat.label;
-      btn.addEventListener('click', async () => {
+      btn.addEventListener('click', () => {
         if (tab === 'presets') {
+          if (this.currentCategory === cat.id) return;
           this.currentCategory = cat.id;
-          await this.renderPresetsTab();
+          this.renderCategoryPills('presets');
+          this.renderPresetsTab();
         } else {
+          if (this.myItemsCategory === cat.id) return;
           this.myItemsCategory = cat.id;
-          await this.renderMyItemsTab();
+          this.renderCategoryPills('my-items');
+          this.renderMyItemsTab();
         }
       });
-      this.categoriesBar?.appendChild(btn);
+      fragment.appendChild(btn);
     });
+
+    this.categoriesBar.replaceChildren(fragment);
   }
 
   renderPresetsGrid(items: PresetItem[]): void {
     if (!this.sheetBody) return;
-    this.sheetBody.innerHTML = '<div class="items-grid" id="sheet-items-grid"></div>';
-    const grid = document.getElementById('sheet-items-grid');
 
     if (items.length === 0) {
       this.sheetBody.innerHTML = `
@@ -167,12 +191,17 @@ export class BottomDock {
       return;
     }
 
+    const grid = document.createElement('div');
+    grid.className = 'items-grid';
+    grid.id = 'sheet-items-grid';
+
+    const fragment = document.createDocumentFragment();
     items.forEach((item) => {
       const card = document.createElement('div');
       card.className = 'element-card';
       card.title = item.name;
       card.innerHTML = `
-        <img src="${item.previewUrl}" alt="${item.name}" loading="lazy"/>
+        <img src="${item.previewUrl}" alt="${item.name}" loading="lazy" decoding="async"/>
         <div class="element-card-overlay">${item.name}</div>
       `;
 
@@ -181,19 +210,25 @@ export class BottomDock {
         this.closeSheet();
       });
 
-      grid?.appendChild(card);
+      fragment.appendChild(card);
     });
+
+    grid.appendChild(fragment);
+    this.sheetBody.replaceChildren(grid);
   }
 
-  // ABA 2: Meu Acervo Pessoal
-  async renderMyItemsTab(): Promise<void> {
+  // ABA 2: Meu Acervo Pessoal (Com Cache em Memória para troca de categoria instantânea)
+  async renderMyItemsTab(forceReload = false): Promise<void> {
     if (this.sheetTitle) this.sheetTitle.textContent = 'Meu Acervo';
     if (this.categoriesBar) this.categoriesBar.style.display = 'flex';
     this.renderCategoryPills('my-items');
 
-    const all = await getAllItems();
-    let customItems = all.filter((i) => i.isCustom);
+    if (forceReload || !this.cachedCustomItems) {
+      const all = await getAllItems();
+      this.cachedCustomItems = all.filter((i) => i.isCustom);
+    }
 
+    let customItems = this.cachedCustomItems;
     if (this.myItemsCategory !== 'todos') {
       customItems = customItems.filter((i) => i.category === this.myItemsCategory);
     }
@@ -246,14 +281,20 @@ export class BottomDock {
       `;
       this.sheetBody.innerHTML = html;
     } else {
-      this.sheetBody.innerHTML = html + '<div class="items-grid" id="custom-items-grid"></div>';
-      const grid = document.getElementById('custom-items-grid');
-      if (grid) {
-        customItems.forEach((item) => {
-          const card = this.createMyItemCard(item);
-          grid.appendChild(card);
-        });
-      }
+      const grid = document.createElement('div');
+      grid.className = 'items-grid';
+      grid.id = 'custom-items-grid';
+      const fragment = document.createDocumentFragment();
+      customItems.forEach((item) => {
+        const card = this.createMyItemCard(item);
+        fragment.appendChild(card);
+      });
+      grid.appendChild(fragment);
+
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = html;
+      wrapper.appendChild(grid);
+      this.sheetBody.replaceChildren(wrapper);
     }
 
     document.getElementById('btn-add-inventory-item')?.addEventListener('click', () => {
@@ -273,7 +314,7 @@ export class BottomDock {
 
     card.innerHTML = `
       <div class="my-item-card-preview">
-        <img src="${item.previewUrl}" alt="${item.name}" loading="lazy"/>
+        <img src="${item.previewUrl}" alt="${item.name}" loading="lazy" decoding="async"/>
       </div>
       <div class="my-item-card-title">${item.name}</div>
       <div class="my-item-card-meta">
@@ -357,29 +398,33 @@ export class BottomDock {
 
     if (customCovers.length > 0) {
       const myGrid = document.getElementById('sheet-my-covers-grid');
+      const frag = document.createDocumentFragment();
       customCovers.forEach((cover) => {
         const card = document.createElement('div');
         card.className = 'cover-card';
         card.innerHTML = `
-          <img src="${cover.imageUrl}" alt="${cover.name}" loading="lazy"/>
+          <img src="${cover.imageUrl}" alt="${cover.name}" loading="lazy" decoding="async"/>
           <div class="cover-card-label">${cover.name}</div>
         `;
         attachCoverClick(card, cover.imageUrl);
-        myGrid?.appendChild(card);
+        frag.appendChild(card);
       });
+      myGrid?.appendChild(frag);
     }
 
     const factoryGrid = document.getElementById('sheet-factory-covers-grid');
+    const factoryFrag = document.createDocumentFragment();
     factoryCovers.forEach((cover) => {
       const card = document.createElement('div');
       card.className = 'cover-card';
       card.innerHTML = `
-        <img src="${cover.imageUrl}" alt="${cover.name}" loading="lazy"/>
+        <img src="${cover.imageUrl}" alt="${cover.name}" loading="lazy" decoding="async"/>
         <div class="cover-card-label">${cover.name}</div>
       `;
       attachCoverClick(card, cover.imageUrl);
-      factoryGrid?.appendChild(card);
+      factoryFrag.appendChild(card);
     });
+    factoryGrid?.appendChild(factoryFrag);
 
     document.getElementById('btn-add-new-cover')?.addEventListener('click', () => {
       if (this.onOpenCoverModal) {

@@ -30,8 +30,11 @@ async function bootstrap() {
   const inventoryModal = new InventoryModal(
     async (newItem) => {
       await canvasEngine.addItem(newItem);
-      if (bottomDock && bottomDock.activeTab === 'my-items') {
-        bottomDock.renderMyItemsTab();
+      if (bottomDock) {
+        bottomDock.invalidateCustomItemsCache();
+        if (bottomDock.activeTab === 'my-items') {
+          await bottomDock.renderMyItemsTab(true);
+        }
       }
       if (desktopStudio) {
         desktopStudio.renderCatalogContent();
@@ -39,8 +42,11 @@ async function bootstrap() {
     },
     async (updatedItem) => {
       await canvasEngine.updateItemMeta(updatedItem);
-      if (bottomDock && bottomDock.activeTab === 'my-items') {
-        bottomDock.renderMyItemsTab();
+      if (bottomDock) {
+        bottomDock.invalidateCustomItemsCache();
+        if (bottomDock.activeTab === 'my-items') {
+          await bottomDock.renderMyItemsTab(true);
+        }
       }
       if (desktopStudio) {
         desktopStudio.renderCatalogContent();

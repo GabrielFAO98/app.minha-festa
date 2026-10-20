@@ -156,14 +156,16 @@
   font-size: 0.72rem;
   font-weight: 600;
   border: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   flex-shrink: 0;
   transition: all var(--transition-fast);
 }
 
 .pill-btn.active {
-  background-color: var(--primary);
+  background: linear-gradient(135deg, #c5a059, #b08c47);
   color: #fff;
-  border-color: var(--primary);
+  border-color: #b08c47;
+  font-weight: 700;
   box-shadow: 0 2px 8px var(--primary-glow);
 }
 
@@ -192,6 +194,7 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
   transition: all var(--transition-fast);
   cursor: pointer;
   position: relative;
@@ -213,7 +216,8 @@
   align-items: center;
   justify-content: center;
   margin-bottom: 6px;
-  background: var(--bg-surface-elevated);
+  background: radial-gradient(circle at center, #ffffff 30%, #f4f5f7 100%);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 4px;
   overflow: hidden;
@@ -302,7 +306,7 @@
   left: 0;
   right: 0;
   padding: 6px;
-  background: linear-gradient(0deg, rgba(15, 23, 42, 0.95), transparent);
+  background: linear-gradient(0deg, rgba(24, 24, 27, 0.85) 0%, transparent 100%);
   font-size: 0.68rem;
   font-weight: 700;
   color: #fff;

@@ -1499,7 +1499,7 @@ export class CanvasEngine {
     this.isRepositioningCover = true;
     this.draggingNode = null;
     if (this.transformer) {
-      this.transformer.borderStroke('#38bdf8');
+      this.transformer.borderStroke('#dfba73');
       this.transformer.borderDash([4, 4]);
       this.transformer.enabledAnchors([]);
       this.transformer.rotateEnabled(false);

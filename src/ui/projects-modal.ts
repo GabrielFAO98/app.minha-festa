@@ -17,6 +17,7 @@ export class ProjectsModal {
   btnClose: HTMLElement | null;
   titleDisplay: HTMLElement | null;
   btnHeaderSave: HTMLElement | null;
+  onProjectLoaded?: (() => void) | null;
 
   constructor(canvasEngine: CanvasEngine) {
     this.canvasEngine = canvasEngine;
@@ -148,6 +149,7 @@ export class ProjectsModal {
     }
 
     this.close();
+    this.onProjectLoaded?.();
   }
 
   // Feedback visual discreto e elegante de "Salvo!"
@@ -289,5 +291,6 @@ export class ProjectsModal {
 
     this.canvasEngine.saveSnapshot();
     this.close();
+    this.onProjectLoaded?.();
   }
 }

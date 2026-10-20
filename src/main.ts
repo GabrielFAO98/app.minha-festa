@@ -8,8 +8,11 @@ import { InventoryModal } from './ui/inventory-modal';
 import { ExportModal } from './ui/export-modal';
 import { ProjectsModal } from './ui/projects-modal';
 import { DesktopStudio } from './ui/desktop-studio';
+import { HomeScreen } from './ui/home-screen';
 
 async function bootstrap() {
+  const splashStartTime = Date.now();
+
   // 1. Inicializar Banco Local IndexedDB (Dexie)
   await initDatabase();
 
@@ -203,6 +206,24 @@ async function bootstrap() {
   // 9. Carrega Cenário Inicial e Salva Estado Base de Histórico
   await loadDefaultScene(canvasEngine);
   canvasEngine.saveSnapshot();
+
+  // 10. Menu Inicial (Home Screen) & Controlador de Splash Screen
+  const homeScreen = new HomeScreen({
+    onNewScene: () => {
+      canvasEngine.fitToView();
+    },
+    onOpenProjects: () => {
+      projectsModal.open();
+    }
+  });
+
+  projectsModal.onProjectLoaded = () => {
+    homeScreen.hide();
+    canvasEngine.fitToView();
+  };
+
+  // 11. Desativa a Splash Screen suavemente (tempo mínimo elegante de 650ms)
+  HomeScreen.dismissSplashScreen(650, splashStartTime);
 }
 
 async function loadDefaultScene(canvasEngine: CanvasEngine) {

@@ -229,7 +229,9 @@ export class CanvasEngine {
     const containerW = this.stage.width();
     const containerH = this.stage.height();
 
-    this.baseScale = Math.min(containerW / this.VIRTUAL_WIDTH, containerH / this.VIRTUAL_HEIGHT);
+    // Em telas mobile verticais, cover preenche 100% da viewport eliminando qualquer gap ou barra preta
+    // No desktop studio 9:16, width e height mantêm a proporção exata, resultando na mesma escala
+    this.baseScale = Math.max(containerW / this.VIRTUAL_WIDTH, containerH / this.VIRTUAL_HEIGHT);
     this.baseOffsetX = (containerW - this.VIRTUAL_WIDTH * this.baseScale) / 2;
     this.baseOffsetY = (containerH - this.VIRTUAL_HEIGHT * this.baseScale) / 2;
 
@@ -2329,18 +2331,16 @@ export class CanvasEngine {
     this.panY = 0;
     this.applyViewTransform();
 
-    const containerW = this.stage.width();
-    const containerH = this.stage.height();
-    const scale = Math.min(containerW / this.VIRTUAL_WIDTH, containerH / this.VIRTUAL_HEIGHT);
-    const offsetX = (containerW - this.VIRTUAL_WIDTH * scale) / 2;
-    const offsetY = (containerH - this.VIRTUAL_HEIGHT * scale) / 2;
+    const exportScale = this.baseScale;
+    const exportX = this.baseOffsetX;
+    const exportY = this.baseOffsetY;
 
     const dataUrl = this.stage.toDataURL({
-      x: offsetX,
-      y: offsetY,
-      width: this.VIRTUAL_WIDTH * scale,
-      height: this.VIRTUAL_HEIGHT * scale,
-      pixelRatio: Math.max(1, 1 / scale),
+      x: exportX,
+      y: exportY,
+      width: this.VIRTUAL_WIDTH * exportScale,
+      height: this.VIRTUAL_HEIGHT * exportScale,
+      pixelRatio: Math.max(1, 1 / exportScale),
       mimeType: 'image/png'
     }) || '';
 

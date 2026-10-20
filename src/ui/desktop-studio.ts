@@ -137,9 +137,9 @@ export class DesktopStudio {
     const addHeader = document.createElement('div');
     addHeader.style.padding = '8px 12px';
     addHeader.innerHTML = `
-      <button class="btn-primary" style="width: 100%; font-size: 0.82rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px;" id="btn-desktop-add-inventory">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Cadastrar Nova Peça no Acervo
+      <button class="btn-primary" style="width: 100%; height: 42px; font-size: 0.84rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px;" id="btn-desktop-add-inventory">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Cadastrar Nova Peça com Foto
       </button>
     `;
     container.appendChild(addHeader);
@@ -153,17 +153,21 @@ export class DesktopStudio {
 
     if (customItems.length === 0) {
       const empty = document.createElement('div');
-      empty.className = 'empty-catalog-box';
+      empty.className = 'empty-state my-items-empty';
+      empty.style.margin = '8px 12px 16px';
       empty.innerHTML = `
-        <div style="margin-bottom: 8px; color: var(--text-muted); opacity: 0.7;">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-            <line x1="12" y1="22.08" x2="12" y2="12"/>
+        <div class="empty-state-icon-badge">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
           </svg>
         </div>
-        <div>Nenhuma peça cadastrada ainda.</div>
-        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Tire fotos das suas mesas e peças reais em WebP/PNG!</div>
+        <div class="empty-state-title">
+          Seu acervo ainda está vazio
+        </div>
+        <div class="empty-state-text">
+          Fotografe suas peças reais de decoração para compor cenários exclusivos e orçamentos automáticos!
+        </div>
       `;
       container.appendChild(empty);
       return;
@@ -176,12 +180,15 @@ export class DesktopStudio {
     customItems.forEach((item) => {
       const card = document.createElement('div');
       card.className = 'desktop-item-card';
+      const priceText = item.rentalPrice && item.rentalPrice > 0
+        ? ` • R$ ${Number(item.rentalPrice).toFixed(2).replace('.', ',')}`
+        : '';
       card.innerHTML = `
         <div class="card-thumb-wrap">
           <img src="${item.previewUrl}" alt="${item.name}" loading="lazy" decoding="async"/>
         </div>
         <div class="card-title">${item.name}</div>
-        <div class="card-dimensions">${item.widthCm}x${item.heightCm}cm • R$ ${item.rentalPrice || 0}</div>
+        <div class="card-dimensions">${item.widthCm}x${item.heightCm}cm${priceText}</div>
       `;
       card.addEventListener('click', async () => {
         await this.canvasEngine.addItem(item);

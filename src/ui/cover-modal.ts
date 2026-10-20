@@ -51,6 +51,8 @@ export class CoverModal {
   currentLightness = 56;
   currentHex = '#c5a059';
   activeSubtab: 'colors' | 'covers' = 'colors';
+  private curatedPalettesRendered = false;
+  private factoryCoversRendered = false;
 
   constructor(canvasEngine: CanvasEngine) {
     this.canvasEngine = canvasEngine;
@@ -88,6 +90,12 @@ export class CoverModal {
     this.factoryCoversGrid = document.getElementById('factory-covers-grid');
 
     this.setupEvents();
+
+    // Pré-renderiza paletas curadas estáticas em segundo plano
+    setTimeout(() => {
+      this.renderCuratedPalettes();
+      this.loadCovers().catch(() => {});
+    }, 100);
   }
 
   setupEvents(): void {
@@ -203,6 +211,10 @@ export class CoverModal {
 
   async open(meta: PresetItem | null): Promise<void> {
     this.targetMeta = meta;
+
+    // 1. Abre o modal imediatamente no compositor (0ms)
+    this.modalEl?.classList.add('open');
+
     const subtitleEl = document.getElementById('cover-modal-subtitle');
     if (subtitleEl && meta) {
       subtitleEl.textContent = `${meta.name} • Escolha uma Cor Sólida ou Capa`;
@@ -215,17 +227,15 @@ export class CoverModal {
     const initialHex = meta?.customColor || '#c5a059';
     this.setColorHex(initialHex);
 
-    // Renderiza seções da aba Cores
+    // Renderiza seções da aba Cores de forma instantânea (cacheado)
     this.renderSceneActiveColors();
     this.renderCuratedPalettes();
-
-    // Carrega capas para a aba Estampas
-    await this.loadCovers();
 
     // Abre na aba de capas se o item já tiver capa, senão abre na de cores
     this.switchSubtab(hasCover ? 'covers' : 'colors');
 
-    this.modalEl?.classList.add('open');
+    // Carrega/sincroniza capas assincronamente sem travar o frame de abertura
+    this.loadCovers().catch(() => {});
   }
 
   close(): void {
@@ -380,8 +390,19 @@ export class CoverModal {
 
   renderCuratedPalettes(): void {
     if (!this.curatedPalettesContainer) return;
+
+    if (this.curatedPalettesRendered) {
+      const activeHex = this.targetMeta?.customColor?.toLowerCase() || '';
+      this.curatedPalettesContainer.querySelectorAll<HTMLButtonElement>('.solid-color-swatch-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.hex?.toLowerCase() === activeHex);
+      });
+      return;
+    }
+
+    this.curatedPalettesRendered = true;
     this.curatedPalettesContainer.innerHTML = '';
 
+    const fragment = document.createDocumentFragment();
     PARTY_PALETTE_GROUPS.forEach((group) => {
       const groupEl = document.createElement('div');
       groupEl.className = 'curated-palette-group';
@@ -410,8 +431,10 @@ export class CoverModal {
         });
       });
 
-      this.curatedPalettesContainer?.appendChild(groupEl);
+      fragment.appendChild(groupEl);
     });
+
+    this.curatedPalettesContainer.appendChild(fragment);
   }
 
   renderExtractedPalette(colors: string[]): void {
@@ -463,34 +486,46 @@ export class CoverModal {
           </div>
         `;
       } else {
+        const frag = document.createDocumentFragment();
         customCovers.forEach((cover) => {
           const card = this.createMyCoverCard(cover);
-          this.myCoversGrid?.appendChild(card);
+          frag.appendChild(card);
         });
+        this.myCoversGrid.appendChild(frag);
       }
     }
 
-    // 2. Capas do Catálogo Padrão de Fábrica
+    // 2. Capas do Catálogo Padrão de Fábrica (Cacheado no DOM)
     if (this.factoryCoversGrid) {
-      this.factoryCoversGrid.innerHTML = '';
-      factoryCovers.forEach((cover) => {
-        const card = document.createElement('div');
-        card.className = 'cover-card';
-        if (this.targetMeta?.customCoverUrl === cover.imageUrl) {
-          card.classList.add('selected');
-        }
-        card.innerHTML = `
-          <img src="${cover.imageUrl}" alt="${cover.name}" loading="lazy"/>
-          <div class="cover-card-label">${cover.name}</div>
-        `;
-
-        card.addEventListener('click', async () => {
-          await this.canvasEngine.applyCoverToSelected(cover.imageUrl);
-          this.close();
+      if (this.factoryCoversRendered) {
+        this.factoryCoversGrid.querySelectorAll<HTMLElement>('.cover-card').forEach((card) => {
+          card.classList.toggle('selected', card.dataset.coverUrl === this.targetMeta?.customCoverUrl);
         });
+      } else {
+        this.factoryCoversRendered = true;
+        this.factoryCoversGrid.innerHTML = '';
+        const frag = document.createDocumentFragment();
+        factoryCovers.forEach((cover) => {
+          const card = document.createElement('div');
+          card.className = 'cover-card';
+          card.dataset.coverUrl = cover.imageUrl;
+          if (this.targetMeta?.customCoverUrl === cover.imageUrl) {
+            card.classList.add('selected');
+          }
+          card.innerHTML = `
+            <img src="${cover.imageUrl}" alt="${cover.name}" loading="lazy" decoding="async"/>
+            <div class="cover-card-label">${cover.name}</div>
+          `;
 
-        this.factoryCoversGrid?.appendChild(card);
-      });
+          card.addEventListener('click', async () => {
+            await this.canvasEngine.applyCoverToSelected(cover.imageUrl);
+            this.close();
+          });
+
+          frag.appendChild(card);
+        });
+        this.factoryCoversGrid.appendChild(frag);
+      }
     }
   }
 

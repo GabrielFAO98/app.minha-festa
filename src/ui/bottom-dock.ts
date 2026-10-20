@@ -20,6 +20,19 @@ export class BottomDock {
   handleBar: HTMLElement | null;
   closeBtn: HTMLElement | null;
   tabButtons: NodeListOf<Element>;
+
+  // Painéis cacheados no DOM para alternância instantânea (0ms)
+  private panePresets: HTMLElement | null = null;
+  private paneMyItems: HTMLElement | null = null;
+  private paneCovers: HTMLElement | null = null;
+  private paneEnvironment: HTMLElement | null = null;
+  private paneLayers: HTMLElement | null = null;
+
+  private presetsRendered = false;
+  private myItemsRendered = false;
+  private renderedMyItemsCategory: string | null = null;
+  private coversRendered = false;
+  private envRendered = false;
   private cachedCustomItems: PresetItem[] | null = null;
   private renderedPillsTab: 'presets' | 'my-items' | null = null;
 
@@ -66,10 +79,71 @@ export class BottomDock {
         this.closeSheet();
       }
     });
+
+    // Pré-monta os painéis e pré-renderiza abas em segundo plano
+    // para que qualquer toque do usuário no celular abra em 0ms
+    setTimeout(async () => {
+      this.initPanes();
+      this.renderPresetsTab();
+      try {
+        await this.renderMyItemsTab();
+        await this.renderCoversTab();
+        this.renderEnvironmentTab();
+      } catch (err) {
+        // Silencia detalhes durante bootstrap
+      }
+    }, 80);
+  }
+
+  private initPanes(): void {
+    if (!this.sheetBody || this.panePresets) return;
+
+    this.panePresets = document.createElement('div');
+    this.panePresets.className = 'sheet-tab-pane';
+    this.panePresets.id = 'pane-presets';
+
+    this.paneMyItems = document.createElement('div');
+    this.paneMyItems.className = 'sheet-tab-pane';
+    this.paneMyItems.id = 'pane-my-items';
+    this.paneMyItems.style.display = 'none';
+
+    this.paneCovers = document.createElement('div');
+    this.paneCovers.className = 'sheet-tab-pane';
+    this.paneCovers.id = 'pane-covers';
+    this.paneCovers.style.display = 'none';
+
+    this.paneEnvironment = document.createElement('div');
+    this.paneEnvironment.className = 'sheet-tab-pane';
+    this.paneEnvironment.id = 'pane-environment';
+    this.paneEnvironment.style.display = 'none';
+
+    this.paneLayers = document.createElement('div');
+    this.paneLayers.className = 'sheet-tab-pane';
+    this.paneLayers.id = 'pane-layers';
+    this.paneLayers.style.display = 'none';
+
+    this.sheetBody.replaceChildren(
+      this.panePresets,
+      this.paneMyItems,
+      this.paneCovers,
+      this.paneEnvironment,
+      this.paneLayers
+    );
+  }
+
+  private showPane(tabName: string): void {
+    this.initPanes();
+    if (this.panePresets) this.panePresets.style.display = tabName === 'presets' ? 'block' : 'none';
+    if (this.paneMyItems) this.paneMyItems.style.display = tabName === 'my-items' ? 'block' : 'none';
+    if (this.paneCovers) this.paneCovers.style.display = tabName === 'covers' ? 'block' : 'none';
+    if (this.paneEnvironment) this.paneEnvironment.style.display = tabName === 'environment' ? 'block' : 'none';
+    if (this.paneLayers) this.paneLayers.style.display = tabName === 'layers' ? 'block' : 'none';
   }
 
   invalidateCustomItemsCache(): void {
     this.cachedCustomItems = null;
+    this.coversRendered = false;
+    this.myItemsRendered = false;
   }
 
   async openTab(tabName: string): Promise<void> {
@@ -79,14 +153,19 @@ export class BottomDock {
       btn.classList.toggle('active', (btn as HTMLElement).dataset.tab === tabName);
     });
 
-    // Oculta a barra flutuante de ações da peça para não competir com o menu da gaveta
+    // Oculta a barra flutuante de ações da peça para não competir com a gaveta
     const floatingToolbar = document.getElementById('item-actions-floating');
     if (floatingToolbar) {
       floatingToolbar.classList.remove('active');
     }
 
+    // 1. Abre a gaveta imediatamente no compositor de hardware (0ms)
     this.sheetEl?.classList.add('open');
 
+    // 2. Alterna para o painel em memória (0ms)
+    this.showPane(tabName);
+
+    // 3. Popula / sincroniza dados do painel ativo
     if (tabName === 'presets') {
       this.renderPresetsTab();
     } else if (tabName === 'my-items') {
@@ -112,17 +191,57 @@ export class BottomDock {
     }
   }
 
-  // ABA 1: Peças Base (Elementos) - Resposta Instantânea 0ms (In-Memory)
+  // ABA 1: Peças Base (Elementos) - Resposta Instantânea 0ms (In-Memory com Filtro O(1))
   renderPresetsTab(): void {
     if (this.sheetTitle) this.sheetTitle.textContent = 'Elementos';
     if (this.categoriesBar) this.categoriesBar.style.display = 'flex';
     this.renderCategoryPills('presets');
 
-    let presetItems = DEFAULT_PRESET_ITEMS;
-    if (this.currentCategory !== 'todos') {
-      presetItems = DEFAULT_PRESET_ITEMS.filter((i) => i.category === this.currentCategory);
+    if (!this.presetsRendered && this.panePresets) {
+      this.buildPresetsGrid();
+      this.presetsRendered = true;
     }
-    this.renderPresetsGrid(presetItems);
+
+    this.filterPresetsGrid();
+  }
+
+  private buildPresetsGrid(): void {
+    if (!this.panePresets) return;
+    const grid = document.createElement('div');
+    grid.className = 'items-grid';
+    grid.id = 'sheet-items-grid';
+
+    const fragment = document.createDocumentFragment();
+    DEFAULT_PRESET_ITEMS.forEach((item) => {
+      const card = document.createElement('div');
+      card.className = 'element-card';
+      card.dataset.category = item.category;
+      card.title = item.name;
+      card.innerHTML = `
+        <img src="${item.previewUrl}" alt="${item.name}" loading="lazy" decoding="async"/>
+        <div class="element-card-overlay">${item.name}</div>
+      `;
+
+      card.addEventListener('click', async () => {
+        await this.canvasEngine.addItem(item);
+        this.closeSheet();
+      });
+
+      fragment.appendChild(card);
+    });
+
+    grid.appendChild(fragment);
+    this.panePresets.replaceChildren(grid);
+  }
+
+  private filterPresetsGrid(): void {
+    if (!this.panePresets) return;
+    const cards = this.panePresets.querySelectorAll<HTMLElement>('.element-card');
+    cards.forEach((card) => {
+      const cat = card.dataset.category;
+      const match = this.currentCategory === 'todos' || cat === this.currentCategory;
+      card.style.display = match ? '' : 'none';
+    });
   }
 
   renderCategoryPills(tab: 'presets' | 'my-items'): void {
@@ -161,7 +280,7 @@ export class BottomDock {
           if (this.currentCategory === cat.id) return;
           this.currentCategory = cat.id;
           this.renderCategoryPills('presets');
-          this.renderPresetsTab();
+          this.filterPresetsGrid();
         } else {
           if (this.myItemsCategory === cat.id) return;
           this.myItemsCategory = cat.id;
@@ -175,53 +294,18 @@ export class BottomDock {
     this.categoriesBar.replaceChildren(fragment);
   }
 
-  renderPresetsGrid(items: PresetItem[]): void {
-    if (!this.sheetBody) return;
-
-    if (items.length === 0) {
-      this.sheetBody.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon-badge">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          </div>
-          <div class="empty-state-title">Nenhum item nesta categoria</div>
-          <div class="empty-state-text">Tente selecionar outra categoria ou buscar na aba "Todos".</div>
-        </div>
-      `;
-      return;
-    }
-
-    const grid = document.createElement('div');
-    grid.className = 'items-grid';
-    grid.id = 'sheet-items-grid';
-
-    const fragment = document.createDocumentFragment();
-    items.forEach((item) => {
-      const card = document.createElement('div');
-      card.className = 'element-card';
-      card.title = item.name;
-      card.innerHTML = `
-        <img src="${item.previewUrl}" alt="${item.name}" loading="lazy" decoding="async"/>
-        <div class="element-card-overlay">${item.name}</div>
-      `;
-
-      card.addEventListener('click', async () => {
-        await this.canvasEngine.addItem(item);
-        this.closeSheet();
-      });
-
-      fragment.appendChild(card);
-    });
-
-    grid.appendChild(fragment);
-    this.sheetBody.replaceChildren(grid);
-  }
-
-  // ABA 2: Meu Acervo Pessoal (Com Cache em Memória para troca de categoria instantânea)
+  // ABA 2: Meu Acervo Pessoal (Com Cache em Memória)
   async renderMyItemsTab(forceReload = false): Promise<void> {
     if (this.sheetTitle) this.sheetTitle.textContent = 'Meu Acervo';
     if (this.categoriesBar) this.categoriesBar.style.display = 'flex';
     this.renderCategoryPills('my-items');
+    if (!this.paneMyItems) return;
+
+    if (!forceReload && this.myItemsRendered && this.renderedMyItemsCategory === this.myItemsCategory && this.paneMyItems.children.length > 0) {
+      return;
+    }
+    this.myItemsRendered = true;
+    this.renderedMyItemsCategory = this.myItemsCategory;
 
     if (forceReload || !this.cachedCustomItems) {
       const all = await getAllItems();
@@ -242,10 +326,8 @@ export class BottomDock {
       </div>
     `;
 
-    if (!this.sheetBody) return;
-
     if (customItems.length === 0) {
-      html += `
+      this.paneMyItems.innerHTML = html + `
         <div class="empty-state my-items-empty">
           <div class="empty-state-icon-badge">
             <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -263,7 +345,6 @@ export class BottomDock {
           </div>
         </div>
       `;
-      this.sheetBody.innerHTML = html;
     } else {
       const grid = document.createElement('div');
       grid.className = 'items-grid';
@@ -278,10 +359,10 @@ export class BottomDock {
       const wrapper = document.createElement('div');
       wrapper.innerHTML = html;
       wrapper.appendChild(grid);
-      this.sheetBody.replaceChildren(wrapper);
+      this.paneMyItems.replaceChildren(wrapper);
     }
 
-    document.getElementById('btn-add-inventory-item')?.addEventListener('click', () => {
+    this.paneMyItems.querySelector('#btn-add-inventory-item')?.addEventListener('click', () => {
       if (this.onOpenInventoryModal) {
         this.onOpenInventoryModal();
       }
@@ -332,18 +413,20 @@ export class BottomDock {
     return card;
   }
 
-  // ABA 3: Catálogo de Capas e Estampas
-  async renderCoversTab(): Promise<void> {
+  // ABA 3: Catálogo de Capas e Estampas (Cacheado)
+  async renderCoversTab(forceReload = false): Promise<void> {
     if (this.sheetTitle) this.sheetTitle.textContent = 'Temas e Capas Disponíveis';
     if (this.categoriesBar) this.categoriesBar.style.display = 'none';
+    if (!this.paneCovers) return;
+
+    if (!forceReload && this.coversRendered) return;
+    this.coversRendered = true;
 
     const allCovers = await getAllCovers();
     const customCovers = allCovers.filter((c) => c.isCustom).reverse();
     const factoryCovers = allCovers.filter((c) => !c.isCustom);
 
-    if (!this.sheetBody) return;
-
-    this.sheetBody.innerHTML = `
+    this.paneCovers.innerHTML = `
       <div style="margin-bottom: 12px;">
         <button id="btn-add-new-cover" class="btn-primary" style="width: 100%; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -380,7 +463,7 @@ export class BottomDock {
     };
 
     if (customCovers.length > 0) {
-      const myGrid = document.getElementById('sheet-my-covers-grid');
+      const myGrid = this.paneCovers.querySelector('#sheet-my-covers-grid');
       const frag = document.createDocumentFragment();
       customCovers.forEach((cover) => {
         const card = document.createElement('div');
@@ -395,7 +478,7 @@ export class BottomDock {
       myGrid?.appendChild(frag);
     }
 
-    const factoryGrid = document.getElementById('sheet-factory-covers-grid');
+    const factoryGrid = this.paneCovers.querySelector('#sheet-factory-covers-grid');
     const factoryFrag = document.createDocumentFragment();
     factoryCovers.forEach((cover) => {
       const card = document.createElement('div');
@@ -409,7 +492,7 @@ export class BottomDock {
     });
     factoryGrid?.appendChild(factoryFrag);
 
-    document.getElementById('btn-add-new-cover')?.addEventListener('click', () => {
+    this.paneCovers.querySelector('#btn-add-new-cover')?.addEventListener('click', () => {
       if (this.onOpenCoverModal) {
         const meta = this.canvasEngine.selectedNode?.getAttr('itemMeta') || null;
         this.onOpenCoverModal(meta);
@@ -417,11 +500,14 @@ export class BottomDock {
     });
   }
 
-  // ABA 4: Cenários Realistas COM ESCOLHA POR IMAGEM
+  // ABA 4: Cenários Realistas COM ESCOLHA POR IMAGEM (Cacheado)
   renderEnvironmentTab(): void {
     if (this.sheetTitle) this.sheetTitle.textContent = 'Escolha do Cenário';
     if (this.categoriesBar) this.categoriesBar.style.display = 'none';
-    if (!this.sheetBody) return;
+    if (!this.paneEnvironment) return;
+
+    if (this.envRendered) return;
+    this.envRendered = true;
 
     let html = `
       <div style="display: flex; flex-direction: column; gap: 14px;">
@@ -430,7 +516,7 @@ export class BottomDock {
           <div class="scene-visual-grid">
             ${REALISTIC_ENVIRONMENTS.map(env => `
               <div class="scene-visual-card btn-preset-env" data-bg="${env.bgImageUrl || ''}" data-wall="${env.wallTexture || ''}" data-floor="${env.floorTexture || ''}">
-                <img src="${env.previewThumb}" alt="${env.name}"/>
+                <img src="${env.previewThumb}" alt="${env.name}" loading="lazy" decoding="async"/>
                 <div class="scene-visual-overlay">${env.name}</div>
               </div>
             `).join('')}
@@ -442,7 +528,7 @@ export class BottomDock {
           <div class="scene-visual-grid">
             ${WALL_OPTIONS.map(w => `
               <div class="scene-visual-card btn-custom-wall" data-wall="${w.texture}">
-                <img src="${w.texture}" alt="${w.name}"/>
+                <img src="${w.texture}" alt="${w.name}" loading="lazy" decoding="async"/>
                 <div class="scene-visual-overlay">${w.name}</div>
               </div>
             `).join('')}
@@ -454,7 +540,7 @@ export class BottomDock {
           <div class="scene-visual-grid">
             ${FLOOR_OPTIONS.map(f => `
               <div class="scene-visual-card btn-custom-floor" data-floor="${f.texture}">
-                <img src="${f.texture}" alt="${f.name}"/>
+                <img src="${f.texture}" alt="${f.name}" loading="lazy" decoding="async"/>
                 <div class="scene-visual-overlay">${f.name}</div>
               </div>
             `).join('')}
@@ -463,9 +549,9 @@ export class BottomDock {
       </div>
     `;
 
-    this.sheetBody.innerHTML = html;
+    this.paneEnvironment.innerHTML = html;
 
-    this.sheetBody.querySelectorAll('.btn-preset-env').forEach((card) => {
+    this.paneEnvironment.querySelectorAll('.btn-preset-env').forEach((card) => {
       card.addEventListener('click', async () => {
         const bg = (card as HTMLElement).dataset.bg;
         if (bg) {
@@ -478,14 +564,14 @@ export class BottomDock {
       });
     });
 
-    this.sheetBody.querySelectorAll('.btn-custom-wall').forEach((card) => {
+    this.paneEnvironment.querySelectorAll('.btn-custom-wall').forEach((card) => {
       card.addEventListener('click', async () => {
         const wall = (card as HTMLElement).dataset.wall || null;
         await this.canvasEngine.setEnvironmentTextures(wall, null);
       });
     });
 
-    this.sheetBody.querySelectorAll('.btn-custom-floor').forEach((card) => {
+    this.paneEnvironment.querySelectorAll('.btn-custom-floor').forEach((card) => {
       card.addEventListener('click', async () => {
         const floor = (card as HTMLElement).dataset.floor || null;
         await this.canvasEngine.setEnvironmentTextures(null, floor);
@@ -497,11 +583,11 @@ export class BottomDock {
   renderLayersTab(): void {
     if (this.sheetTitle) this.sheetTitle.textContent = 'Camadas no Cenário';
     if (this.categoriesBar) this.categoriesBar.style.display = 'none';
-    if (!this.sheetBody) return;
+    if (!this.paneLayers) return;
 
     const elements = this.canvasEngine.getSceneElements();
     if (!elements || elements.length === 0) {
-      this.sheetBody.innerHTML = `
+      this.paneLayers.innerHTML = `
         <div style="text-align: center; padding: 32px 16px; color: var(--text-muted); font-size: 0.82rem;">
           <div style="margin-bottom: 8px; color: var(--text-muted); opacity: 0.6;">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -536,7 +622,7 @@ export class BottomDock {
 
       row.innerHTML = `
         <div class="layer-drag-handle" title="Arraste para reordenar a camada">${CANVA_LAYER_ICONS.grip}</div>
-        <img class="layer-thumb" src="${elem.previewUrl}" alt="" />
+        <img class="layer-thumb" src="${elem.previewUrl}" alt="" loading="lazy" decoding="async"/>
         <div class="layer-info">
           <div class="layer-title">${elem.name}</div>
           <div class="layer-sub">${elem.widthCm}x${elem.heightCm}cm</div>
@@ -607,8 +693,7 @@ export class BottomDock {
       container.appendChild(row);
     });
 
-    this.sheetBody.innerHTML = '';
-    this.sheetBody.appendChild(container);
+    this.paneLayers.replaceChildren(container);
 
     setupLayersDragAndDrop(container, (newOrder) => {
       this.canvasEngine.reorderLayers(newOrder);

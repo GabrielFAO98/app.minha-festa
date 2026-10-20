@@ -244,28 +244,28 @@ async function loadDefaultScene(canvasEngine: CanvasEngine) {
       await canvasEngine.addItem(panel, {
         x: centerX - 290,
         y: floorY - 570
-      }, false);
+      }, false, false);
     }
     // 2. Trio de Cilindros P, M, G à frente no piso
     if (cylG) {
       await canvasEngine.addItem(cylG, {
         x: centerX + 50,
         y: floorY - 268
-      }, false);
+      }, false, false);
     }
 
     if (cylM) {
       await canvasEngine.addItem(cylM, {
         x: centerX - 140,
         y: floorY - 151
-      }, false);
+      }, false, false);
     }
 
     if (cylP) {
       await canvasEngine.addItem(cylP, {
         x: centerX - 300,
         y: floorY - 63
-      }, false);
+      }, false, false);
     }
 
     canvasEngine.deselect();

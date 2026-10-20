@@ -1773,7 +1773,7 @@ export class CanvasEngine {
   // ========================================================
   // ADIÇÃO E MANIPULAÇÃO DE ITENS NO PALCO
   // ========================================================
-  async addItem(itemData: PresetItem, position: { x: number; y: number } | null = null, saveHistory: boolean = true) {
+  async addItem(itemData: PresetItem, position: { x: number; y: number } | null = null, saveHistory: boolean = true, selectAfterAdd: boolean = true) {
     if (this.isRepositioningCover) {
       this.exitCoverRepositionMode(false);
     }
@@ -1876,7 +1876,9 @@ export class CanvasEngine {
     }
     this.decorLayer.batchDraw();
 
-    this.selectNode(group);
+    if (selectAfterAdd) {
+      this.selectNode(group);
+    }
     this.notifyLayersChange();
 
     if (saveHistory) {
@@ -2442,12 +2444,12 @@ export class CanvasEngine {
     return items;
   }
 
-  async loadSceneElements(elements: SceneElement[]) {
+  async loadSceneElements(elements: SceneElement[], targetSelectedInstanceId: string | null = null) {
     this.deselect();
     this.decorLayer.destroyChildren();
 
     for (const elem of elements) {
-      const node = await this.addItem(elem, { x: elem.x, y: elem.y }, false);
+      const node = await this.addItem(elem, { x: elem.x, y: elem.y }, false, false);
       if (node) {
         node.scaleX(elem.scaleX || 1);
         node.scaleY(elem.scaleY || 1);
@@ -2458,6 +2460,24 @@ export class CanvasEngine {
       }
     }
 
+    if (targetSelectedInstanceId) {
+      const targetNode = this.decorLayer.getChildren().find((c) => {
+        const meta = c.getAttr('itemMeta');
+        return (
+          (meta?.instanceId && meta.instanceId === targetSelectedInstanceId) ||
+          c.id() === targetSelectedInstanceId ||
+          (meta?.id && meta.id === targetSelectedInstanceId)
+        );
+      });
+      if (targetNode) {
+        this.selectNode(targetNode as Konva.Group);
+      } else {
+        this.deselect();
+      }
+    } else {
+      this.deselect();
+    }
+
     this.decorLayer.batchDraw();
     this.notifyLayersChange();
   }
@@ -2465,8 +2485,12 @@ export class CanvasEngine {
   saveSnapshot() {
     if (this.isRestoringState) return;
 
+    const selectedMeta = this.selectedNode?.getAttr('itemMeta');
+    const selectedInstanceId = selectedMeta?.instanceId || this.selectedNode?.id() || null;
+
     const currentSnapshot = JSON.stringify({
       elements: this.getSceneElements(),
+      selectedInstanceId,
       wallTextureUrl: this.wallTextureUrl,
       floorTextureUrl: this.floorTextureUrl,
       bgImageUrl: this.bgImageUrl
@@ -2487,11 +2511,14 @@ export class CanvasEngine {
   async undo() {
     if (!this.canUndo()) return;
 
+    // Preserva o ID do elemento atualmente selecionado antes de desfazer
+    const currentlySelectedId = this.selectedNode?.getAttr('itemMeta')?.instanceId || this.selectedNode?.id() || null;
+
     const currentState = this.undoStack.pop()!;
     this.redoStack.push(currentState);
 
     const previousState = this.undoStack[this.undoStack.length - 1];
-    await this.restoreSnapshot(previousState);
+    await this.restoreSnapshot(previousState, currentlySelectedId);
   }
 
   async redo() {
@@ -2503,7 +2530,7 @@ export class CanvasEngine {
     await this.restoreSnapshot(nextState);
   }
 
-  async restoreSnapshot(jsonString: string) {
+  async restoreSnapshot(jsonString: string, preferredSelectionId: string | null = null) {
     this.isRestoringState = true;
     try {
       const data = JSON.parse(jsonString);
@@ -2517,7 +2544,25 @@ export class CanvasEngine {
         this.bgImageUrl = data.bgImageUrl !== undefined ? data.bgImageUrl : this.bgImageUrl;
         await this.renderEnvironment();
       }
-      await this.loadSceneElements(data.elements || []);
+
+      const elements: SceneElement[] = data.elements || [];
+      let targetId: string | null = null;
+
+      // 1. Se o elemento que o usuário estava editando ainda existe no estado restaurado, mantém a seleção nele!
+      if (
+        preferredSelectionId &&
+        elements.some((e) => e.instanceId === preferredSelectionId || (e as any).id === preferredSelectionId)
+      ) {
+        targetId = preferredSelectionId;
+      } else if (
+        data.selectedInstanceId &&
+        elements.some((e) => e.instanceId === data.selectedInstanceId || (e as any).id === data.selectedInstanceId)
+      ) {
+        // 2. Senão, restaura o elemento que estava selecionado no snapshot restaurado
+        targetId = data.selectedInstanceId;
+      }
+
+      await this.loadSceneElements(elements, targetId);
     } finally {
       this.isRestoringState = false;
       this.notifyHistoryChange();

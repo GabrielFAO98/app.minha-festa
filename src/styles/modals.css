@@ -2,9 +2,7 @@
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background-color: rgba(0, 0, 0, 0.55);
   z-index: 120;
   display: flex;
   align-items: flex-end;
@@ -286,8 +284,7 @@
   position: absolute;
   top: 8px;
   right: 8px;
-  background: var(--bg-surface-glass);
-  backdrop-filter: blur(8px);
+  background: var(--bg-surface);
   border: 1px solid var(--primary);
   color: var(--primary);
   font-size: 0.68rem;

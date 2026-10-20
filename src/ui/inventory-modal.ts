@@ -1,4 +1,5 @@
 import { addCustomItem, updateCustomItem } from '../core/db';
+import { optimizeUserUploadedImage } from '../core/image-optimizer';
 import type { PresetItem } from '../types';
 
 export class InventoryModal {
@@ -47,14 +48,13 @@ export class InventoryModal {
       this.fileInputEl?.click();
     });
 
-    this.fileInputEl?.addEventListener('change', (e) => {
+    this.fileInputEl?.addEventListener('change', async (e) => {
       const target = e.target as HTMLInputElement | null;
       const file = target?.files?.[0];
       if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        this.currentImageData = (event.target?.result as string) || null;
+      try {
+        this.currentImageData = await optimizeUserUploadedImage(file, 1200);
         if (this.previewImgEl && this.currentImageData) {
           this.previewImgEl.src = this.currentImageData;
           this.previewImgEl.style.display = 'block';
@@ -62,8 +62,9 @@ export class InventoryModal {
         if (this.uploadPlaceholder) {
           this.uploadPlaceholder.style.display = 'none';
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('Falha ao processar foto:', err);
+      }
     });
 
     this.formEl?.addEventListener('submit', async (e) => {

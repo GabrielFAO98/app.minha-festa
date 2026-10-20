@@ -1,6 +1,6 @@
-import { generateMoinhoSVG } from '../core/presets-data';
+import { generateMoinhoSVG, DEFAULT_PRESET_ITEMS } from '../core/presets-data';
 import { getItemCustomizationMode } from '../core/modular-svg-generator';
-import { getItemsByCategory, getAllItems, getAllCovers } from '../core/db';
+import { getAllItems, getAllCovers } from '../core/db';
 import { REALISTIC_ENVIRONMENTS } from '../core/textures-data';
 import type { CanvasEngine } from '../core/canvas-engine';
 import type { PresetItem, SceneElement } from '../types';
@@ -103,18 +103,21 @@ export class DesktopStudio {
 
     container.appendChild(catBar);
 
-    const items = await getItemsByCategory(this.currentPresetCategory);
-    const presetItems = items.filter((i) => !i.isCustom);
+    let presetItems = DEFAULT_PRESET_ITEMS;
+    if (this.currentPresetCategory !== 'todos') {
+      presetItems = DEFAULT_PRESET_ITEMS.filter((i) => i.category === this.currentPresetCategory);
+    }
 
     const grid = document.createElement('div');
     grid.className = 'desktop-catalog-grid';
+    const frag = document.createDocumentFragment();
 
     presetItems.forEach((item) => {
       const card = document.createElement('div');
       card.className = 'desktop-item-card';
       card.innerHTML = `
         <div class="card-thumb-wrap">
-          <img src="${item.previewUrl}" alt="${item.name}" loading="lazy" />
+          <img src="${item.previewUrl}" alt="${item.name}" loading="lazy" decoding="async"/>
         </div>
         <div class="card-title">${item.name}</div>
         <div class="card-dimensions">${item.widthCm}x${item.heightCm}cm</div>
@@ -122,9 +125,10 @@ export class DesktopStudio {
       card.addEventListener('click', async () => {
         await this.canvasEngine.addItem(item);
       });
-      grid.appendChild(card);
+      frag.appendChild(card);
     });
 
+    grid.appendChild(frag);
     container.appendChild(grid);
   }
 
@@ -167,13 +171,14 @@ export class DesktopStudio {
 
     const grid = document.createElement('div');
     grid.className = 'desktop-catalog-grid';
+    const myFrag = document.createDocumentFragment();
 
     customItems.forEach((item) => {
       const card = document.createElement('div');
       card.className = 'desktop-item-card';
       card.innerHTML = `
         <div class="card-thumb-wrap">
-          <img src="${item.previewUrl}" alt="${item.name}" loading="lazy" />
+          <img src="${item.previewUrl}" alt="${item.name}" loading="lazy" decoding="async"/>
         </div>
         <div class="card-title">${item.name}</div>
         <div class="card-dimensions">${item.widthCm}x${item.heightCm}cm • R$ ${item.rentalPrice || 0}</div>
@@ -181,9 +186,10 @@ export class DesktopStudio {
       card.addEventListener('click', async () => {
         await this.canvasEngine.addItem(item);
       });
-      grid.appendChild(card);
+      myFrag.appendChild(card);
     });
 
+    grid.appendChild(myFrag);
     container.appendChild(grid);
   }
 
@@ -192,13 +198,14 @@ export class DesktopStudio {
     const covers = await getAllCovers();
     const grid = document.createElement('div');
     grid.className = 'desktop-catalog-grid';
+    const coversFrag = document.createDocumentFragment();
 
     covers.forEach((cover) => {
       const card = document.createElement('div');
       card.className = 'desktop-item-card';
       card.innerHTML = `
         <div class="card-thumb-wrap">
-          <img src="${cover.imageUrl}" alt="${cover.name}" loading="lazy" />
+          <img src="${cover.imageUrl}" alt="${cover.name}" loading="lazy" decoding="async"/>
         </div>
         <div class="card-title">${cover.name}</div>
         <div class="card-dimensions">${cover.themeName}</div>
@@ -216,8 +223,10 @@ export class DesktopStudio {
         }
         await this.canvasEngine.applyCoverToSelected(cover.imageUrl);
       });
-      grid.appendChild(card);
+      coversFrag.appendChild(card);
     });
+
+    grid.appendChild(coversFrag);
 
     container.appendChild(grid);
   }

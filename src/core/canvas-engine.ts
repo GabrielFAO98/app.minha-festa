@@ -219,8 +219,13 @@ export class CanvasEngine {
     this.renderEnvironment();
     this.fitToView();
 
+    let resizeRaf: number | null = null;
     window.addEventListener('resize', () => {
-      this.handleResize(container);
+      if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
+      resizeRaf = requestAnimationFrame(() => {
+        resizeRaf = null;
+        this.handleResize(container);
+      });
     });
   }
 
@@ -478,8 +483,8 @@ export class CanvasEngine {
 
     this.transformer.on('transform', () => {
       this.updateCornerActionButtons();
-      this.decorLayer?.drawScene();
-      this.uiLayer?.drawScene();
+      this.decorLayer?.batchDraw();
+      this.uiLayer?.batchDraw();
     });
 
     this.transformer.on('transformend', () => {
@@ -1266,8 +1271,8 @@ export class CanvasEngine {
           this.transformer.update();
         }
         this.updateCornerActionButtons();
-        this.decorLayer?.drawScene();
-        this.uiLayer?.drawScene();
+        this.decorLayer?.batchDraw();
+        this.uiLayer?.batchDraw();
         return;
       }
 

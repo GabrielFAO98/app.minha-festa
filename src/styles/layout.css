@@ -45,13 +45,11 @@ body {
   }
 }
 
-/* Header Superior Moderno & Compacto */
+/* Header Superior Moderno e Compacto */
 .app-header {
   height: 52px;
   min-height: 52px;
-  background-color: var(--bg-surface-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background-color: var(--bg-surface);
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
@@ -309,9 +307,7 @@ body {
   transform: translateX(-50%) translateY(20px);
   z-index: 45;
   max-width: calc(100vw - 16px);
-  background-color: var(--bg-surface-glass);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-full);
   padding: 6px 8px;

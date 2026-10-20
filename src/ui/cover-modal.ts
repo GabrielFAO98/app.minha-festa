@@ -1,4 +1,5 @@
 import { getAllCovers, addCustomCover, deleteCustomCover, type CoverItemRecord } from '../core/db';
+import { optimizeUserUploadedImage } from '../core/image-optimizer';
 import {
   PARTY_PALETTE_GROUPS,
   extractColorsFromImage,
@@ -158,11 +159,8 @@ export class CoverModal {
       const file = target?.files?.[0];
       if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const imageUrl = event.target?.result as string;
-        if (!imageUrl) return;
-
+      try {
+        const imageUrl = await optimizeUserUploadedImage(file, 1400);
         const newCover = await addCustomCover({
           themeName: 'Minhas Estampas',
           name: file.name.replace(/\.[^/.]+$/, ''),
@@ -173,8 +171,9 @@ export class CoverModal {
         await this.canvasEngine.applyCoverToSelected(newCover.imageUrl);
         this.close();
         this.canvasEngine.enterCoverRepositionMode();
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('Falha ao processar estampa:', err);
+      }
       if (this.fileInputEl) this.fileInputEl.value = '';
     });
 

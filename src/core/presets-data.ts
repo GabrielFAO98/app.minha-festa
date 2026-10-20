@@ -3546,5 +3546,33 @@ export const DEFAULT_THEME_COVERS: ThemeCover[] = [
     name: 'Aniversário Balões 3D e Confetes',
     targetType: 'all',
     imageUrl: '/covers/aniversario.jpg'
+  },
+  {
+    id: 'cover-tronco-madeira',
+    themeName: 'Rústico e Natureza',
+    name: 'Tronco Rústico de Madeira',
+    targetType: 'all',
+    imageUrl: '/covers/tronco-madeira.webp'
+  },
+  {
+    id: 'cover-arco-iris-candy-brilho',
+    themeName: 'Arco-íris Candy',
+    name: 'Arco-íris Candy Degradê',
+    targetType: 'all',
+    imageUrl: '/covers/arco-iris-candy-brilho.webp'
+  },
+  {
+    id: 'cover-arco-iris-candy-nuvens',
+    themeName: 'Arco-íris Candy',
+    name: 'Arco-íris Candy e Nuvens',
+    targetType: 'all',
+    imageUrl: '/covers/arco-iris-candy-nuvens.webp'
+  },
+  {
+    id: 'cover-arco-iris-candy-estrelas',
+    themeName: 'Arco-íris Candy',
+    name: 'Arco-íris Candy e Estrelas Douradas',
+    targetType: 'all',
+    imageUrl: '/covers/arco-iris-candy-estrelas.webp'
   }
 ];

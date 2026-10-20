@@ -403,10 +403,10 @@ export class CanvasEngine {
       rotateEnabled: false, // Desativa âncora flutuante externa nativa; rotação integrada no canto superior esquerdo
       anchorSize: 20,
       anchorCornerRadius: 10,
-      anchorStroke: '#ec4899',
-      anchorFill: '#0f172a',
+      anchorStroke: '#c5a059',
+      anchorFill: '#ffffff',
       anchorStrokeWidth: 2,
-      borderStroke: '#ec4899',
+      borderStroke: '#c5a059',
       borderStrokeWidth: 1.8,
       borderDash: [5, 4],
       keepRatio: true,
@@ -415,8 +415,8 @@ export class CanvasEngine {
         anchor.hitStrokeWidth(16);
         // Desenha o ícone de seta diagonal de duas pontas (⤢) no botão superior direito
         if (anchor.hasName('top-right')) {
-          anchor.stroke('#ec4899');
-          anchor.fill('#0f172a');
+          anchor.stroke('#c5a059');
+          anchor.fill('#ffffff');
           anchor.strokeWidth(2);
           anchor.cornerRadius(10);
           anchor.sceneFunc((ctx, shape) => {
@@ -433,8 +433,8 @@ export class CanvasEngine {
             // Seta diagonal com 2 pontas (⤢)
             ctx.save();
             ctx.translate(w / 2, h / 2);
-            ctx.strokeStyle = '#ffffff';
-            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#c5a059';
+            ctx.fillStyle = '#c5a059';
             ctx.lineWidth = 1.3;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
@@ -523,8 +523,8 @@ export class CanvasEngine {
 
     const circleRotate = new Konva.Circle({
       radius: 10,
-      fill: '#0f172a',
-      stroke: '#ec4899',
+      fill: '#ffffff',
+      stroke: '#c5a059',
       strokeWidth: 2,
       listening: false
     });
@@ -533,8 +533,8 @@ export class CanvasEngine {
     const iconRotate = new Konva.Shape({
       sceneFunc: (ctx, shape) => {
         ctx.save();
-        ctx.strokeStyle = '#ffffff';
-        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#c5a059';
+        ctx.fillStyle = '#c5a059';
         ctx.lineWidth = 1.3;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
@@ -569,13 +569,13 @@ export class CanvasEngine {
     this.btnCornerRotate.on('mouseenter', () => {
       if (performance.now() - this.lastTouchTime < 600) return;
       if (this.stage?.content) this.stage.content.style.cursor = 'crosshair';
-      circleRotate.fill('#1e293b');
+      circleRotate.fill('#fbf8f1');
       this.uiLayer?.batchDraw();
     });
     this.btnCornerRotate.on('mouseleave', () => {
       if (performance.now() - this.lastTouchTime < 600) return;
       if (this.stage?.content) this.stage.content.style.cursor = '';
-      circleRotate.fill('#0f172a');
+      circleRotate.fill('#ffffff');
       this.uiLayer?.batchDraw();
     });
 
@@ -594,8 +594,8 @@ export class CanvasEngine {
 
     const circleFlip = new Konva.Circle({
       radius: 10,
-      fill: '#0f172a',
-      stroke: '#ec4899',
+      fill: '#ffffff',
+      stroke: '#c5a059',
       strokeWidth: 2,
       listening: false
     });
@@ -607,7 +607,7 @@ export class CanvasEngine {
         ctx.beginPath();
         ctx.moveTo(0, -5);
         ctx.lineTo(0, 5);
-        ctx.strokeStyle = '#ffffff';
+        ctx.strokeStyle = '#c5a059';
         ctx.lineWidth = 1.1;
         ctx.stroke();
 
@@ -617,7 +617,7 @@ export class CanvasEngine {
         ctx.lineTo(-5.5, 0);
         ctx.lineTo(-1.2, 4);
         ctx.closePath();
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#c5a059';
         ctx.fill();
 
         // Triângulo direito (apontando para direita)
@@ -626,7 +626,7 @@ export class CanvasEngine {
         ctx.lineTo(5.5, 0);
         ctx.lineTo(1.2, 4);
         ctx.closePath();
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#c5a059';
         ctx.fill();
       },
       listening: false
@@ -645,13 +645,13 @@ export class CanvasEngine {
     this.btnCornerFlip.on('mouseenter', () => {
       if (performance.now() - this.lastTouchTime < 600) return;
       if (this.stage?.content) this.stage.content.style.cursor = 'pointer';
-      circleFlip.fill('#1e293b');
+      circleFlip.fill('#fbf8f1');
       this.uiLayer?.batchDraw();
     });
     this.btnCornerFlip.on('mouseleave', () => {
       if (performance.now() - this.lastTouchTime < 600) return;
       if (this.stage?.content) this.stage.content.style.cursor = '';
-      circleFlip.fill('#0f172a');
+      circleFlip.fill('#ffffff');
       this.uiLayer?.batchDraw();
     });
 
@@ -670,8 +670,8 @@ export class CanvasEngine {
 
     const circleDup = new Konva.Circle({
       radius: 10,
-      fill: '#0f172a',
-      stroke: '#ec4899',
+      fill: '#ffffff',
+      stroke: '#c5a059',
       strokeWidth: 2,
       listening: false
     });
@@ -679,15 +679,15 @@ export class CanvasEngine {
     // Ícone de Duplicar: Dois quadrados sobrepostos
     const iconDup = new Konva.Shape({
       sceneFunc: (ctx, shape) => {
-        ctx.strokeStyle = '#ffffff';
+        ctx.strokeStyle = '#c5a059';
         ctx.lineWidth = 1.1;
 
         // Quadrado traseiro (topo-direita)
         ctx.beginPath();
         ctx.strokeRect(-0.8, -5, 5.8, 5.8);
 
-        // Quadrado frontal (baixo-esquerda, com fundo escuro que sobrepõe o traseiro)
-        ctx.fillStyle = '#0f172a';
+        // Quadrado frontal (baixo-esquerda, com fundo que sobrepõe o traseiro)
+        ctx.fillStyle = '#ffffff';
         ctx.fillRect(-5, -0.8, 5.8, 5.8);
         ctx.strokeRect(-5, -0.8, 5.8, 5.8);
       },
@@ -707,13 +707,13 @@ export class CanvasEngine {
     this.btnCornerDuplicate.on('mouseenter', () => {
       if (performance.now() - this.lastTouchTime < 600) return;
       if (this.stage?.content) this.stage.content.style.cursor = 'pointer';
-      circleDup.fill('#1e293b');
+      circleDup.fill('#fbf8f1');
       this.uiLayer?.batchDraw();
     });
     this.btnCornerDuplicate.on('mouseleave', () => {
       if (performance.now() - this.lastTouchTime < 600) return;
       if (this.stage?.content) this.stage.content.style.cursor = '';
-      circleDup.fill('#0f172a');
+      circleDup.fill('#ffffff');
       this.uiLayer?.batchDraw();
     });
 
@@ -727,7 +727,7 @@ export class CanvasEngine {
     // Haste de conexão vertical elegante (liga o topo da seleção até a alça)
     const stemMove = new Konva.Line({
       points: [0, 0, 0, 26],
-      stroke: '#38bdf8',
+      stroke: '#c5a059',
       strokeWidth: 1.8,
       dash: [3, 2.5],
       listening: false
@@ -742,17 +742,17 @@ export class CanvasEngine {
       listening: true
     });
 
-    // Círculo visual reduzido em 25% com visual navy premium e borda sky blue
+    // Círculo visual reduzido em 25% com visual ouro nobre
     const circleMove = new Konva.Circle({
       x: 0,
       y: 0,
       radius: 10,
-      fill: '#0f172a',
-      stroke: '#38bdf8',
+      fill: '#ffffff',
+      stroke: '#c5a059',
       strokeWidth: 2,
-      shadowColor: '#000000',
+      shadowColor: 'rgba(0, 0, 0, 0.15)',
       shadowBlur: 5,
-      shadowOpacity: 0.35,
+      shadowOpacity: 0.25,
       shadowOffset: { x: 0, y: 1.5 },
       listening: false
     });
@@ -762,7 +762,7 @@ export class CanvasEngine {
       x: 0,
       y: 0,
       sceneFunc: (ctx, shape) => {
-        ctx.strokeStyle = '#ffffff';
+        ctx.strokeStyle = '#c5a059';
         ctx.fillStyle = '#ffffff';
         ctx.lineWidth = 1.3;
 
@@ -817,14 +817,14 @@ export class CanvasEngine {
     this.btnCornerMove.on('mouseenter', () => {
       if (performance.now() - this.lastTouchTime < 600) return;
       if (this.stage?.content) this.stage.content.style.cursor = 'grab';
-      circleMove.fill('#0284c7');
+      circleMove.fill('#fbf8f1');
       this.uiLayer?.batchDraw();
     });
 
     this.btnCornerMove.on('mouseleave', () => {
       if (performance.now() - this.lastTouchTime < 600) return;
       if (this.stage?.content) this.stage.content.style.cursor = '';
-      circleMove.fill('#0f172a');
+      circleMove.fill('#ffffff');
       this.uiLayer?.batchDraw();
     });
 
@@ -1523,7 +1523,7 @@ export class CanvasEngine {
     this.isPinchingCover = false;
 
     if (this.transformer) {
-      this.transformer.borderStroke('#ec4899');
+      this.transformer.borderStroke('#c5a059');
       this.transformer.borderDash([5, 4]);
       this.transformer.enabledAnchors(['top-right']);
       this.transformer.rotateEnabled(false);

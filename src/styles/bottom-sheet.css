@@ -61,15 +61,15 @@
   right: 0;
   height: 64dvh;
   max-height: 72dvh;
-  background-color: rgba(30, 41, 59, 0.98);
+  background-color: var(--bg-surface);
   backdrop-filter: blur(20px);
   border-top-left-radius: var(--radius-lg);
   border-top-right-radius: var(--radius-lg);
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-top: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   z-index: 40;
-  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.08);
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
@@ -121,14 +121,14 @@
   width: 30px;
   height: 30px;
   border-radius: var(--radius-full);
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--bg-surface-elevated);
   color: var(--text-muted);
   font-size: 1.1rem;
 }
 
 .sheet-close-btn:active {
-  background-color: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  background-color: var(--border-subtle);
+  color: var(--text-main);
 }
 
 .category-pills {
@@ -139,7 +139,7 @@
   overflow-x: auto;
   white-space: nowrap;
   scrollbar-width: none;
-  background-color: rgba(15, 23, 42, 0.4);
+  background-color: var(--bg-surface-elevated);
   -webkit-overflow-scrolling: touch;
 }
 
@@ -151,11 +151,11 @@
   height: 32px;
   padding: 0 12px;
   border-radius: var(--radius-full);
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: var(--bg-surface);
   color: var(--text-muted);
   font-size: 0.72rem;
   font-weight: 600;
-  border: 1px solid transparent;
+  border: 1px solid var(--border-subtle);
   flex-shrink: 0;
   transition: all var(--transition-fast);
 }
@@ -163,6 +163,7 @@
 .pill-btn.active {
   background-color: var(--primary);
   color: #fff;
+  border-color: var(--primary);
   box-shadow: 0 2px 8px var(--primary-glow);
 }
 
@@ -183,7 +184,7 @@
 }
 
 .item-card {
-  background-color: rgba(15, 23, 42, 0.6);
+  background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 8px 6px;
@@ -212,7 +213,7 @@
   align-items: center;
   justify-content: center;
   margin-bottom: 6px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-surface-elevated);
   border-radius: var(--radius-sm);
   padding: 4px;
   overflow: hidden;
@@ -254,7 +255,8 @@
   left: 5px;
   padding: 2px 6px;
   border-radius: var(--radius-sm);
-  background-color: rgba(15, 23, 42, 0.85);
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
   font-size: 0.6rem;
   font-weight: 600;
   color: var(--text-muted);
@@ -276,7 +278,7 @@
   position: relative;
   cursor: pointer;
   transition: all var(--transition-fast);
-  background-color: #000;
+  background-color: var(--bg-surface-elevated);
   width: 100%;
   min-width: 0;
 }

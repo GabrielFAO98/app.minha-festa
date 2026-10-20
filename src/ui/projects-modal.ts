@@ -215,7 +215,7 @@ export class ProjectsModal {
       const isCurrentActive = proj.id === this.currentProjectId;
       if (isCurrentActive) {
         card.style.borderColor = 'var(--primary)';
-        card.style.background = 'rgba(236, 72, 153, 0.1)';
+        card.style.background = 'var(--primary-light)';
       }
 
       const dateStr = new Date(proj.updatedAt).toLocaleDateString('pt-BR', {

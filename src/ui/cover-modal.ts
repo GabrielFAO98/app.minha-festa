@@ -47,10 +47,10 @@ export class CoverModal {
   btnClose: HTMLElement | null;
 
   // Estado Interno
-  currentHue = 330;
-  currentSaturation = 75;
-  currentLightness = 85;
-  currentHex = '#fbcfe8';
+  currentHue = 41;
+  currentSaturation = 50;
+  currentLightness = 56;
+  currentHex = '#c5a059';
   activeSubtab: 'colors' | 'covers' = 'colors';
 
   constructor(canvasEngine: CanvasEngine) {
@@ -222,7 +222,7 @@ export class CoverModal {
     this.renderCallout(hasCover);
 
     // Inicializa a cor atual
-    const initialHex = meta?.customColor || '#fbcfe8';
+    const initialHex = meta?.customColor || '#c5a059';
     this.setColorHex(initialHex);
 
     // Renderiza seções da aba Cores
@@ -450,7 +450,7 @@ export class CoverModal {
 
     this.extractedPaletteRow.style.display = 'flex';
     this.extractedPaletteRow.innerHTML = `
-      <div style="font-size: 0.72rem; font-weight: 700; color: #fbcfe8;">Cores Extraídas da Imagem:</div>
+      <div style="font-size: 0.72rem; font-weight: 700; color: var(--primary);">Cores Extraídas da Imagem:</div>
       <div class="extracted-swatches-list">
         ${colors
           .map(

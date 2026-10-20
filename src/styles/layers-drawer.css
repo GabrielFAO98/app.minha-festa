@@ -6,13 +6,13 @@
   bottom: var(--bottom-bar-height);
   width: 320px;
   max-width: 85vw;
-  background-color: rgba(30, 41, 59, 0.98);
+  background-color: var(--bg-surface);
   backdrop-filter: blur(20px);
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  border-left: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   z-index: 33;
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.4);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.1);
   transform: translateX(110%);
   transition: transform var(--transition-smooth);
 }
@@ -41,7 +41,8 @@
 .layers-count-badge {
   padding: 2px 8px;
   border-radius: var(--radius-full);
-  background-color: rgba(236, 72, 153, 0.15);
+  background-color: var(--primary-light);
+  border: 1px solid var(--border-subtle);
   color: var(--primary);
   font-size: 0.72rem;
   font-weight: 600;
@@ -62,7 +63,7 @@
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  background-color: rgba(15, 23, 42, 0.5);
+  background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
@@ -70,19 +71,19 @@
 }
 
 .layer-item-row:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--bg-surface-elevated);
 }
 
 .layer-item-row.active {
   border-color: var(--primary);
-  background-color: rgba(236, 72, 153, 0.12);
+  background-color: var(--primary-light);
 }
 
 .layer-item-thumb {
   width: 40px;
   height: 40px;
   border-radius: var(--radius-sm);
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: var(--bg-surface-elevated);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -125,25 +126,27 @@
   width: 28px;
   height: 28px;
   border-radius: var(--radius-sm);
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
   color: var(--text-muted);
   font-size: 0.75rem;
   transition: all var(--transition-fast);
 }
 
 .layer-btn:hover, .layer-btn:active {
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: var(--primary-light);
+  border-color: var(--primary);
   color: var(--text-main);
 }
 
 .layer-btn.btn-lock.locked {
   color: #f59e0b;
-  background-color: rgba(245, 158, 11, 0.2);
+  background-color: rgba(245, 158, 11, 0.15);
 }
 
 .layer-btn.btn-del:active {
-  background-color: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
 }
 
 /* Controles de Câmera e Navegação no Palco (Zoom & Pan) */
@@ -161,7 +164,7 @@
   width: 36px;
   height: 36px;
   border-radius: var(--radius-md);
-  background-color: rgba(15, 23, 42, 0.85);
+  background-color: var(--bg-surface-glass);
   backdrop-filter: blur(8px);
   border: 1px solid var(--border-subtle);
   color: var(--text-main);
@@ -172,7 +175,7 @@
 
 .camera-btn:active {
   transform: scale(0.92);
-  background-color: rgba(236, 72, 153, 0.2);
+  background-color: var(--primary-light);
   border-color: var(--primary);
 }
 

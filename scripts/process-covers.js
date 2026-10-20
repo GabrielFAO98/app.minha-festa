@@ -23,12 +23,13 @@ function slugify(text) {
     .replace(/^-+|-+$/g, '');
 }
 
-// Parse args simples: --theme="Nome" --names="Nome1,Nome2"
+// Parse args: --theme="Nome" --names="Nome1,Nome2" --files="15.png,16.png"
 function parseArgs() {
   const args = process.argv.slice(2);
   const result = {
     theme: '',
-    names: []
+    names: [],
+    files: []
   };
 
   for (const arg of args) {
@@ -37,6 +38,9 @@ function parseArgs() {
     } else if (arg.startsWith('--names=')) {
       const namesStr = arg.replace('--names=', '').replace(/^["']|["']$/g, '').trim();
       result.names = namesStr.split(',').map((n) => n.trim());
+    } else if (arg.startsWith('--files=')) {
+      const filesStr = arg.replace('--files=', '').replace(/^["']|["']$/g, '').trim();
+      result.files = filesStr.split(',').map((f) => f.trim());
     }
   }
   return result;
@@ -53,16 +57,20 @@ async function main() {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   }
 
-  const { theme, names } = parseArgs();
+  const { theme, names, files: targetFiles } = parseArgs();
   const defaultTheme = theme || 'Novas Estampas';
 
-  const files = fs
+  let files = fs
     .readdirSync(INBOX_DIR)
     .filter((f) => {
       const ext = path.extname(f).toLowerCase();
       return ['.png', '.jpg', '.jpeg', '.webp'].includes(ext) && !f.startsWith('.');
     })
     .sort();
+
+  if (targetFiles.length > 0) {
+    files = files.filter((f) => targetFiles.includes(f));
+  }
 
   if (files.length === 0) {
     console.log('\nNenhuma imagem encontrada em covers_inbox/ para processar.');
@@ -82,7 +90,10 @@ async function main() {
 
     // Define nome amigável da estampa
     const coverName = names[i] || (theme ? `${theme} ${i + 1}` : parsedName);
-    const slug = slugify(theme ? `${theme}-${coverName}` : coverName);
+    const combinedName = theme && coverName.toLowerCase().startsWith(theme.toLowerCase())
+      ? coverName
+      : (theme ? `${theme} ${coverName}` : coverName);
+    const slug = slugify(combinedName);
     const id = `cover-${slug}`;
     const outputFilename = `${slug}.webp`;
     const outputPath = path.join(OUTPUT_DIR, outputFilename);

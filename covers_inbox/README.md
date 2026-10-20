@@ -19,3 +19,4 @@ O script cuida automaticamente de:
 2. Otimizar e comprimir em WebP de alta qualidade (redução de até 90% do tamanho).
 3. Cadastrar as capas no catálogo do estúdio (`DEFAULT_THEME_COVERS`).
 4. Mover as originais para a pasta `_processados/`.
+

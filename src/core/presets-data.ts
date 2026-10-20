@@ -3574,5 +3574,40 @@ export const DEFAULT_THEME_COVERS: ThemeCover[] = [
     name: 'Arco-íris Candy e Estrelas Douradas',
     targetType: 'all',
     imageUrl: '/covers/arco-iris-candy-estrelas.webp'
+  },
+  {
+    id: 'cover-safari-baby-tigre-e-elefante',
+    themeName: 'Safari Baby',
+    name: 'Safari Baby Tigre e Elefante',
+    targetType: 'all',
+    imageUrl: '/covers/safari-baby-tigre-e-elefante.webp'
+  },
+  {
+    id: 'cover-safari-baby-girafa-e-zebra',
+    themeName: 'Safari Baby',
+    name: 'Safari Baby Girafa e Zebra',
+    targetType: 'all',
+    imageUrl: '/covers/safari-baby-girafa-e-zebra.webp'
+  },
+  {
+    id: 'cover-safari-baby-tronco-madeira',
+    themeName: 'Safari Baby',
+    name: 'Safari Baby Tronco Amadeirado',
+    targetType: 'all',
+    imageUrl: '/covers/safari-baby-tronco-madeira.webp'
+  },
+  {
+    id: 'cover-bob-esponja',
+    themeName: 'Bob Esponja',
+    name: 'Bob Esponja',
+    targetType: 'all',
+    imageUrl: '/covers/bob-esponja.webp'
+  },
+  {
+    id: 'cover-bob-esponja-patrick-estrela',
+    themeName: 'Bob Esponja',
+    name: 'Patrick Estrela',
+    targetType: 'all',
+    imageUrl: '/covers/bob-esponja-patrick-estrela.webp'
   }
 ];

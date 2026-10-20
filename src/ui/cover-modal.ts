@@ -26,24 +26,22 @@ export class CoverModal {
   sliderHue: HTMLInputElement | null;
   sliderLightness: HTMLInputElement | null;
   hexTextInput: HTMLInputElement | null;
-  btnEyedropper: HTMLElement | null;
   btnApplyCustomColor: HTMLElement | null;
 
-  // Paletas & Extração
+  // Paletas e Extração
   sceneColorsContainer: HTMLElement | null;
   curatedPalettesContainer: HTMLElement | null;
   btnTriggerPhotoExtract: HTMLElement | null;
   photoPaletteInput: HTMLInputElement | null;
   extractedPaletteRow: HTMLElement | null;
 
-  // Capas & Uploads
+  // Capas e Uploads
   calloutPlaceholder: HTMLElement | null;
   fileInputEl: HTMLInputElement | null;
   btnUploadTrigger: HTMLElement | null;
   btnRemoveCover: HTMLElement | null;
   myCoversGrid: HTMLElement | null;
   factoryCoversGrid: HTMLElement | null;
-  customCoversCountBadge: HTMLElement | null;
   btnClose: HTMLElement | null;
 
   // Estado Interno
@@ -71,7 +69,6 @@ export class CoverModal {
     this.sliderHue = document.getElementById('slider-hue') as HTMLInputElement | null;
     this.sliderLightness = document.getElementById('slider-lightness') as HTMLInputElement | null;
     this.hexTextInput = document.getElementById('color-hex-text-input') as HTMLInputElement | null;
-    this.btnEyedropper = document.getElementById('btn-eyedropper');
     this.btnApplyCustomColor = document.getElementById('btn-apply-custom-color');
 
     // Paletas
@@ -88,7 +85,6 @@ export class CoverModal {
     this.btnRemoveCover = document.getElementById('btn-remove-cover');
     this.myCoversGrid = document.getElementById('my-covers-grid');
     this.factoryCoversGrid = document.getElementById('factory-covers-grid');
-    this.customCoversCountBadge = document.getElementById('custom-covers-count');
 
     this.setupEvents();
   }
@@ -124,11 +120,6 @@ export class CoverModal {
       if (/^[0-9A-Fa-f]{6}$/.test(val)) {
         this.setColorHex(`#${val}`);
       }
-    });
-
-    // Botão Conta-Gotas (EyeDropper)
-    this.btnEyedropper?.addEventListener('click', async () => {
-      await this.activateEyeDropper();
     });
 
     // Aplicar Cor Livre na Peça
@@ -305,23 +296,6 @@ export class CoverModal {
     }
   }
 
-  async activateEyeDropper(): Promise<void> {
-    if ('EyeDropper' in window) {
-      try {
-        const eyeDropper = new (window as any).EyeDropper();
-        const result = await eyeDropper.open();
-        if (result && result.sRGBHex) {
-          this.setColorHex(result.sRGBHex);
-          this.applySolidColor(result.sRGBHex);
-        }
-      } catch (err) {
-        // Usuário cancelou ou pressionou ESC
-      }
-    } else {
-      alert('O conta-gotas direto de tela está disponível nos navegadores Chrome, Edge e Opera.');
-    }
-  }
-
   applySolidColor(hex: string): void {
     this.saveRecentColor(hex);
     this.canvasEngine.applySolidColorToSelected(hex);
@@ -329,7 +303,7 @@ export class CoverModal {
   }
 
   // ========================================================
-  // CORES DO CENÁRIO & PALETAS
+  // CORES DO CENÁRIO E PALETAS
   // ========================================================
   renderSceneActiveColors(): void {
     if (!this.sceneColorsContainer) return;
@@ -473,18 +447,14 @@ export class CoverModal {
   }
 
   // ========================================================
-  // ABA DE ESTAMPAS & REUTILIZAÇÃO DE IMAGENS
+  // ABA DE ESTAMPAS E REUTILIZAÇÃO DE IMAGENS
   // ========================================================
   async loadCovers(): Promise<void> {
     const allCovers = await getAllCovers();
     const customCovers = allCovers.filter((c) => c.isCustom).reverse();
     const factoryCovers = allCovers.filter((c) => !c.isCustom);
 
-    if (this.customCoversCountBadge) {
-      this.customCoversCountBadge.textContent = String(customCovers.length);
-    }
-
-    // 1. Minhas Imagens & Uploads Recentes
+    // 1. Minhas Imagens e Uploads Recentes
     if (this.myCoversGrid) {
       this.myCoversGrid.innerHTML = '';
       if (customCovers.length === 0) {

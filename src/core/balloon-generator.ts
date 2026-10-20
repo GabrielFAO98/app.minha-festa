@@ -10,12 +10,12 @@ export interface BalloonPalette {
 export const BALLOON_PALETTES: BalloonPalette[] = [
   {
     id: 'rose-gold',
-    name: 'Rose Gold, Blush & Pérola',
+    name: 'Rose Gold, Blush e Pérola',
     colors: ['#c97a8e', '#f7dbe1', '#d4af37', '#fdfbf7']
   },
   {
     id: 'safari',
-    name: 'Safari & Floresta Chic',
+    name: 'Safari e Floresta Chic',
     colors: ['#4d6b2c', '#85512b', '#c59a3f', '#f7eed7']
   },
   {
@@ -25,17 +25,17 @@ export const BALLOON_PALETTES: BalloonPalette[] = [
   },
   {
     id: 'azul-prata',
-    name: 'Azul Real, Celeste & Prata',
+    name: 'Azul Real, Celeste e Prata',
     colors: ['#1e40af', '#60a5fa', '#cbd5e1', '#ffffff']
   },
   {
     id: 'dourado-preto',
-    name: 'Dourado Glamour & Preto',
+    name: 'Dourado Glamour e Preto',
     colors: ['#d4af37', '#1e293b', '#fde047', '#0f172a']
   },
   {
     id: 'boho-terracota',
-    name: 'Boho Terracota & Eucalipto',
+    name: 'Boho Terracota e Eucalipto',
     colors: ['#c2410c', '#2d6a4f', '#d97706', '#fef3c7']
   },
   {
@@ -45,7 +45,7 @@ export const BALLOON_PALETTES: BalloonPalette[] = [
   },
   {
     id: 'sereia',
-    name: 'Sereia, Lilás & Tiffany',
+    name: 'Sereia, Lilás e Tiffany',
     colors: ['#9333ea', '#14b8a6', '#f472b6', '#e0e7ff']
   }
 ];

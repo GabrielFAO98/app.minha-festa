@@ -3487,21 +3487,21 @@ export const DEFAULT_THEME_COVERS: ThemeCover[] = [
   {
     id: 'cover-dinossauros',
     themeName: 'Dinossauros',
-    name: 'Dinossauros & Floresta Jurássica',
+    name: 'Dinossauros e Floresta Jurássica',
     targetType: 'all',
     imageUrl: '/covers/dinossauros.jpg'
   },
   {
     id: 'cover-safari',
-    themeName: 'Animais & Safári',
-    name: 'Safári Baby & Animais da Savana',
+    themeName: 'Animais e Safári',
+    name: 'Safári Baby e Animais da Savana',
     targetType: 'all',
     imageUrl: '/covers/safari.jpg'
   },
   {
     id: 'cover-fundo-do-mar',
     themeName: 'Fundo do Mar',
-    name: 'Fundo do Mar & Oceano Encantado',
+    name: 'Fundo do Mar e Oceano Encantado',
     targetType: 'all',
     imageUrl: '/covers/fundo-do-mar.jpg'
   },
@@ -3529,21 +3529,21 @@ export const DEFAULT_THEME_COVERS: ThemeCover[] = [
   {
     id: 'cover-espaco',
     themeName: 'Espaço',
-    name: 'Galáxia & Espaço Cósmico',
+    name: 'Galáxia e Espaço Cósmico',
     targetType: 'all',
     imageUrl: '/covers/espaco.jpg'
   },
   {
     id: 'cover-batizado',
     themeName: 'Batizado',
-    name: 'Batizado Celestial & Paz',
+    name: 'Batizado Celestial e Paz',
     targetType: 'all',
     imageUrl: '/covers/batizado.jpg'
   },
   {
     id: 'cover-aniversario',
     themeName: 'Aniversário',
-    name: 'Aniversário Balões 3D & Confetes',
+    name: 'Aniversário Balões 3D e Confetes',
     targetType: 'all',
     imageUrl: '/covers/aniversario.jpg'
   }

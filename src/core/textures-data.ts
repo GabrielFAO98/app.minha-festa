@@ -268,7 +268,7 @@ export interface RealisticEnvironment {
 export const REALISTIC_ENVIRONMENTS: RealisticEnvironment[] = [
   {
     id: 'foto-boiserie-madeira',
-    name: 'Salão Boiserie & Madeira',
+    name: 'Salão Boiserie e Madeira',
     category: 'Realista',
     bgImageUrl: '/cenarios/cenario-boiserie-madeira.jpg',
     previewThumb: '/cenarios/cenario-boiserie-madeira.jpg'
@@ -282,14 +282,14 @@ export const REALISTIC_ENVIRONMENTS: RealisticEnvironment[] = [
   },
   {
     id: 'foto-jardim-gramado',
-    name: 'Jardim Externo & Gramado',
+    name: 'Jardim Externo e Gramado',
     category: 'Realista',
     bgImageUrl: '/cenarios/cenario-jardim-gramado.jpg',
     previewThumb: '/cenarios/cenario-jardim-gramado.jpg'
   },
   {
     id: 'foto-tijolinho-rustico',
-    name: 'Rústico Chic & Tijolinho',
+    name: 'Rústico Chic e Tijolinho',
     category: 'Realista',
     bgImageUrl: '/cenarios/cenario-tijolinho-rustico.jpg',
     previewThumb: '/cenarios/cenario-tijolinho-rustico.jpg'
@@ -310,7 +310,7 @@ export const REALISTIC_ENVIRONMENTS: RealisticEnvironment[] = [
   },
   {
     id: 'boiserie-wood',
-    name: 'Boiserie Vetorial & Madeira',
+    name: 'Boiserie Vetorial e Madeira',
     category: 'Ilustrado',
     wallTexture: TEXTURE_WALL_BOISERIE,
     floorTexture: TEXTURE_FLOOR_WOOD,
@@ -318,7 +318,7 @@ export const REALISTIC_ENVIRONMENTS: RealisticEnvironment[] = [
   },
   {
     id: 'greenery-grass',
-    name: 'Muro Inglês & Gramado',
+    name: 'Muro Inglês e Gramado',
     category: 'Ilustrado',
     wallTexture: TEXTURE_WALL_GREENERY,
     floorTexture: TEXTURE_FLOOR_GRASS,
@@ -326,7 +326,7 @@ export const REALISTIC_ENVIRONMENTS: RealisticEnvironment[] = [
   },
   {
     id: 'brick-marble',
-    name: 'Tijolinho & Mármore',
+    name: 'Tijolinho e Mármore',
     category: 'Ilustrado',
     wallTexture: TEXTURE_WALL_BRICK,
     floorTexture: TEXTURE_FLOOR_MARBLE,
@@ -334,7 +334,7 @@ export const REALISTIC_ENVIRONMENTS: RealisticEnvironment[] = [
   },
   {
     id: 'slats-grass',
-    name: 'Ripado & Gramado',
+    name: 'Ripado e Gramado',
     category: 'Ilustrado',
     wallTexture: TEXTURE_WALL_WOOD_SLATS,
     floorTexture: TEXTURE_FLOOR_GRASS,

@@ -150,11 +150,11 @@ export function getModularConfigForItem(item: PresetItem): ModularItemConfig {
         { name: 'Freijó Natural', colors: ['#d97706', '#1c0a00'] },
         { name: 'Pinus Claro Nórdico', colors: ['#e6c280', '#5c4018'] },
         { name: 'Branco Provençal', colors: ['#f8fafc', '#94a3b8'] },
-        { name: 'Rosa Candy & Branco', colors: ['#f9a8d4', '#831843'] },
+        { name: 'Rosa Candy e Branco', colors: ['#f9a8d4', '#831843'] },
         { name: 'Azul Bebê Sereno', colors: ['#7dd3fc', '#0c4a6e'] },
         { name: 'Verde Sálvia Boho', colors: ['#86efac', '#14532d'] },
         { name: 'Nogueira Tabaco', colors: ['#78350f', '#090401'] },
-        { name: 'Preto & Dourado Luxo', colors: ['#1e293b', '#ca8a04'] }
+        { name: 'Preto e Dourado Luxo', colors: ['#1e293b', '#ca8a04'] }
       ]
     };
   }
@@ -192,7 +192,7 @@ export function getModularConfigForItem(item: PresetItem): ModularItemConfig {
         { name: 'Verde Sálvia', colors: ['#86efac', '#dcfce7'] },
         { name: 'Azul Serenity', colors: ['#7dd3fc', '#e0f2fe'] },
         { name: 'Terracota Boho', colors: ['#c2410c', '#fed7aa'] },
-        { name: 'Preto & Dourado', colors: ['#1e293b', '#eab308'] }
+        { name: 'Preto e Dourado', colors: ['#1e293b', '#eab308'] }
       ]
     };
   }
@@ -204,14 +204,14 @@ export function getModularConfigForItem(item: PresetItem): ModularItemConfig {
       slotLabels: ['Tampo / Corpo Principal', 'Pés / Detalhes'],
       defaultColors: id === 'preset-comoda-bombe' ? ['#f8fafc', '#eab308'] : ['#d97706', '#f8fafc'],
       palettes: [
-        { name: 'Branco & Dourado', colors: ['#f8fafc', '#eab308'] },
-        { name: 'Madeira Pinus & Branco', colors: ['#d97706', '#f8fafc'] },
+        { name: 'Branco e Dourado', colors: ['#f8fafc', '#eab308'] },
+        { name: 'Madeira Pinus e Branco', colors: ['#d97706', '#f8fafc'] },
         { name: 'Todo Madeira Rústica', colors: ['#b45309', '#78350f'] },
         { name: 'Todo Branco Provençal', colors: ['#ffffff', '#cbd5e1'] },
-        { name: 'Rosa Pastel & Dourado', colors: ['#fbcfe8', '#eab308'] },
-        { name: 'Azul Bebê & Branco', colors: ['#bae6fd', '#ffffff'] },
-        { name: 'Verde Sálvia & Madeira', colors: ['#bbf7d0', '#b45309'] },
-        { name: 'Preto & Madeira', colors: ['#1e293b', '#d97706'] }
+        { name: 'Rosa Pastel e Dourado', colors: ['#fbcfe8', '#eab308'] },
+        { name: 'Azul Bebê e Branco', colors: ['#bae6fd', '#ffffff'] },
+        { name: 'Verde Sálvia e Madeira', colors: ['#bbf7d0', '#b45309'] },
+        { name: 'Preto e Madeira', colors: ['#1e293b', '#d97706'] }
       ]
     };
   }
@@ -223,14 +223,14 @@ export function getModularConfigForItem(item: PresetItem): ModularItemConfig {
     slotLabels: ['Cor Principal', 'Acabamento / Detalhe'],
     defaultColors: ['#ffffff', '#eab308'],
     palettes: [
-      { name: 'Branco & Dourado', colors: ['#ffffff', '#eab308'] },
+      { name: 'Branco e Dourado', colors: ['#ffffff', '#eab308'] },
       { name: 'Dourado Real', colors: ['#eab308', '#fef08a'] },
-      { name: 'Rosa Porcelana & Ouro', colors: ['#fbcfe8', '#eab308'] },
-      { name: 'Azul Candy & Prata', colors: ['#bae6fd', '#94a3b8'] },
-      { name: 'Verde Menta & Ouro', colors: ['#bbf7d0', '#eab308'] },
+      { name: 'Rosa Porcelana e Ouro', colors: ['#fbcfe8', '#eab308'] },
+      { name: 'Azul Candy e Prata', colors: ['#bae6fd', '#94a3b8'] },
+      { name: 'Verde Menta e Ouro', colors: ['#bbf7d0', '#eab308'] },
       { name: 'Lilás Lavanda', colors: ['#e9d5ff', '#a855f7'] },
-      { name: 'Vermelho Luxo & Ouro', colors: ['#dc2626', '#eab308'] },
-      { name: 'Preto & Dourado', colors: ['#1e293b', '#eab308'] }
+      { name: 'Vermelho Luxo e Ouro', colors: ['#dc2626', '#eab308'] },
+      { name: 'Preto e Dourado', colors: ['#1e293b', '#eab308'] }
     ]
   };
 }

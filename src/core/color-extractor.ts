@@ -9,7 +9,7 @@ export interface CuratedPaletteGroup {
 export const PARTY_PALETTE_GROUPS: CuratedPaletteGroup[] = [
   {
     id: 'candy',
-    name: 'Tons Pastéis & Candy',
+    name: 'Tons Pastéis e Candy',
     colors: [
       { name: 'Rosa Bebê', hex: '#fbcfe8' },
       { name: 'Azul Serenity', hex: '#bae6fd' },
@@ -21,7 +21,7 @@ export const PARTY_PALETTE_GROUPS: CuratedPaletteGroup[] = [
   },
   {
     id: 'boho',
-    name: 'Boho & Terrosos',
+    name: 'Boho e Terrosos',
     colors: [
       { name: 'Terracota Quente', hex: '#c2410c' },
       { name: 'Nude / Palha', hex: '#e6ccb2' },
@@ -33,7 +33,7 @@ export const PARTY_PALETTE_GROUPS: CuratedPaletteGroup[] = [
   },
   {
     id: 'safari',
-    name: 'Safari & Cores Vivas',
+    name: 'Safari e Cores Vivas',
     colors: [
       { name: 'Verde Esmeralda', hex: '#15803d' },
       { name: 'Verde Folhagem', hex: '#166534' },
@@ -45,7 +45,7 @@ export const PARTY_PALETTE_GROUPS: CuratedPaletteGroup[] = [
   },
   {
     id: 'luxo',
-    name: 'Luxo & Neutros Clássicos',
+    name: 'Luxo e Neutros Clássicos',
     colors: [
       { name: 'Branco Neve', hex: '#ffffff' },
       { name: 'Off-White Puro', hex: '#f8fafc' },

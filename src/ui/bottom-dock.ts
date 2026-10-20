@@ -261,22 +261,6 @@ export class BottomDock {
               ? 'Fotografe suas peças reais de decoração para compor cenários exclusivos e orçamentos automáticos!'
               : 'Nenhuma peça cadastrada nesta categoria. Toque no botão acima para adicionar!'}
           </div>
-          ${this.myItemsCategory === 'todos' ? `
-            <div class="empty-state-features">
-              <div class="empty-feature-item">
-                <span class="empty-feature-icon">✨</span>
-                <span>Remoção inteligente de fundo</span>
-              </div>
-              <div class="empty-feature-item">
-                <span class="empty-feature-icon">📐</span>
-                <span>Dimensões e proporções reais em cm</span>
-              </div>
-              <div class="empty-feature-item">
-                <span class="empty-feature-icon">🎨</span>
-                <span>Compatível com tecidos e estampas</span>
-              </div>
-            </div>
-          ` : ''}
         </div>
       `;
       this.sheetBody.innerHTML = html;
@@ -368,8 +352,7 @@ export class BottomDock {
       </div>
       ${customCovers.length > 0 ? `
         <div class="covers-section-heading" style="margin-top: 10px; margin-bottom: 8px;">
-          <span>Estampas e minhas imagens</span>
-          <span class="covers-count-badge">${customCovers.length}</span>
+          <span>Estampas e Imagens</span>
         </div>
         <div class="covers-grid" id="sheet-my-covers-grid" style="margin-bottom: 16px;"></div>
       ` : ''}
@@ -443,7 +426,7 @@ export class BottomDock {
     let html = `
       <div style="display: flex; flex-direction: column; gap: 14px;">
         <div>
-          <div class="form-label" style="margin-bottom: 8px;">Cenários Fotográficos & Ambientes (Toque na Imagem)</div>
+          <div class="form-label" style="margin-bottom: 8px;">Cenários Fotográficos e Ambientes (Toque na Imagem)</div>
           <div class="scene-visual-grid">
             ${REALISTIC_ENVIRONMENTS.map(env => `
               <div class="scene-visual-card btn-preset-env" data-bg="${env.bgImageUrl || ''}" data-wall="${env.wallTexture || ''}" data-floor="${env.floorTexture || ''}">

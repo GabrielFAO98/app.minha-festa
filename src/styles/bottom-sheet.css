@@ -11,7 +11,7 @@
   align-items: center;
   justify-content: space-around;
   padding: 0 4px;
-  z-index: 35;
+  z-index: 75;
 }
 
 .dock-tab-btn {
@@ -56,7 +56,7 @@
 /* Gaveta Deslizante (Totalmente oculta quando fechada) */
 .bottom-sheet {
   position: absolute;
-  bottom: 56px;
+  bottom: 54px;
   left: 0;
   right: 0;
   height: 64dvh;
@@ -68,7 +68,7 @@
   border-top: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
-  z-index: 40;
+  z-index: 70;
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.08);
   visibility: hidden;
   opacity: 0;
@@ -133,31 +133,26 @@
 
 .category-pills {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  overflow-x: auto;
-  white-space: nowrap;
-  scrollbar-width: none;
   background-color: var(--bg-surface-elevated);
-  -webkit-overflow-scrolling: touch;
-}
-
-.category-pills::-webkit-scrollbar {
-  display: none;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .pill-btn {
-  height: 32px;
-  padding: 0 12px;
+  height: 28px;
+  padding: 0 10px;
   border-radius: var(--radius-full);
   background-color: var(--bg-surface);
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: 0.70rem;
   font-weight: 600;
   border: 1px solid var(--border-subtle);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   flex-shrink: 0;
+  cursor: pointer;
   transition: all var(--transition-fast);
 }
 
@@ -177,12 +172,163 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* Grid de Itens em 2 Colunas no Mobile (minmax 0 garante que nunca estoure a tela) */
+/* Grid de Itens em 2 Colunas no Mobile */
 .items-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   width: 100%;
+}
+
+/* Card Elemento (Menu Elementos: Retângulo Único com Imagem e Legenda Sobreposta) */
+.element-card {
+  position: relative;
+  aspect-ratio: 1 / 1.08;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border-subtle);
+  background: radial-gradient(circle at center, #ffffff 40%, #f6f7f9 100%);
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 8px 24px 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  transition: all var(--transition-fast);
+  width: 100%;
+  min-width: 0;
+}
+
+.element-card:active {
+  transform: scale(0.96);
+  border-color: var(--border-focus);
+}
+
+.element-card img,
+.element-card svg {
+  max-width: 90%;
+  max-height: 82%;
+  object-fit: contain;
+  transition: transform var(--transition-fast);
+}
+
+.element-card-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px 6px 5px 6px;
+  background: linear-gradient(0deg, rgba(20, 20, 22, 0.88) 0%, rgba(20, 20, 22, 0.55) 75%, transparent 100%);
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+  line-height: 1.2;
+  white-space: normal;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Card Meu Acervo (Com Medidas, Preço e Botão de Editar) */
+.my-item-card {
+  background-color: var(--bg-surface);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 8px 8px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  width: 100%;
+  min-width: 0;
+}
+
+.my-item-card:active {
+  border-color: var(--border-focus);
+}
+
+.my-item-card-preview {
+  width: 100%;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+  background: radial-gradient(circle at center, #ffffff 40%, #f6f7f9 100%);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  overflow: hidden;
+}
+
+.my-item-card-preview img {
+  max-height: 64px;
+  max-width: 90%;
+  object-fit: contain;
+}
+
+.my-item-card-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-main);
+  width: 100%;
+  white-space: normal;
+  line-height: 1.25;
+  margin-bottom: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.my-item-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  width: 100%;
+  margin-bottom: 3px;
+}
+
+.my-item-card-price {
+  font-size: 0.70rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+
+.btn-card-edit {
+  width: 100%;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  font-size: 0.68rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-card-edit:hover,
+.btn-card-edit:active {
+  background-color: var(--primary-light);
+  border-color: var(--border-focus);
+  color: var(--primary);
 }
 
 .item-card {

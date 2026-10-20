@@ -118,6 +118,31 @@ export async function addCustomItem(itemData: Partial<PresetItem>): Promise<Pres
   return newItem;
 }
 
+export async function updateCustomItem(id: string, itemData: Partial<PresetItem>): Promise<PresetItem | null> {
+  const item = await db.items.get(id);
+  if (!item || !item.isCustom) return null;
+
+  const updated: PresetItem = {
+    ...item,
+    name: itemData.name !== undefined ? itemData.name : item.name,
+    category: itemData.category !== undefined ? itemData.category : item.category,
+    type: itemData.type !== undefined ? itemData.type : item.type,
+    widthCm: itemData.widthCm !== undefined ? Number(itemData.widthCm) : item.widthCm,
+    heightCm: itemData.heightCm !== undefined ? Number(itemData.heightCm) : item.heightCm,
+    previewUrl: itemData.previewUrl !== undefined ? itemData.previewUrl : item.previewUrl,
+    stockQuantity: itemData.stockQuantity !== undefined ? Number(itemData.stockQuantity) : item.stockQuantity,
+    rentalPrice: itemData.rentalPrice !== undefined ? Number(itemData.rentalPrice) : item.rentalPrice,
+    notes: itemData.notes !== undefined ? itemData.notes : item.notes
+  };
+
+  await db.items.put(updated);
+  return updated;
+}
+
+export async function getCustomItem(id: string): Promise<PresetItem | undefined> {
+  return await db.items.get(id);
+}
+
 export async function deleteCustomItem(id: string): Promise<boolean> {
   const item = await db.items.get(id);
   if (item && item.isCustom) {

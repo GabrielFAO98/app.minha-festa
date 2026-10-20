@@ -490,7 +490,7 @@ export class CoverModal {
       if (customCovers.length === 0) {
         this.myCoversGrid.innerHTML = `
           <div style="grid-column: 1 / -1; padding: 18px 12px; text-align: center; color: var(--text-muted); font-size: 0.76rem; border: 1px dashed var(--border-subtle); border-radius: var(--radius-md);">
-            Nenhuma estampa cadastrada ainda. Toque em <strong>"Subir Nova Estampa / Foto"</strong> para importar fotos de temas ou convites!
+            Nenhuma estampa cadastrada ainda. Toque em <strong>"Subir nova estampa"</strong> para importar suas estampas e fotos!
           </div>
         `;
       } else {

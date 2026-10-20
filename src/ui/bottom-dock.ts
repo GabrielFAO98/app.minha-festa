@@ -7,10 +7,11 @@ import { CANVA_LAYER_ICONS, setupLayersDragAndDrop } from './layers-drag-drop';
 
 export class BottomDock {
   canvasEngine: CanvasEngine;
-  onOpenInventoryModal: () => void;
+  onOpenInventoryModal: (itemToEdit?: PresetItem) => void;
   onOpenCoverModal: (meta: PresetItem | null) => void;
   activeTab: string | null;
   currentCategory: string;
+  myItemsCategory: string;
   sheetEl: HTMLElement | null;
   sheetBody: HTMLElement | null;
   sheetTitle: HTMLElement | null;
@@ -21,7 +22,7 @@ export class BottomDock {
 
   constructor(
     canvasEngine: CanvasEngine,
-    onOpenInventoryModal: () => void,
+    onOpenInventoryModal: (itemToEdit?: PresetItem) => void,
     onOpenCoverModal: (meta: PresetItem | null) => void
   ) {
     this.canvasEngine = canvasEngine;
@@ -30,6 +31,7 @@ export class BottomDock {
 
     this.activeTab = null;
     this.currentCategory = 'todos';
+    this.myItemsCategory = 'todos';
 
     this.sheetEl = document.getElementById('bottom-sheet');
     this.sheetBody = document.getElementById('sheet-body-content');
@@ -70,6 +72,12 @@ export class BottomDock {
       btn.classList.toggle('active', (btn as HTMLElement).dataset.tab === tabName);
     });
 
+    // Oculta a barra flutuante de ações da peça para não competir com o menu da gaveta
+    const floatingToolbar = document.getElementById('item-actions-floating');
+    if (floatingToolbar) {
+      floatingToolbar.classList.remove('active');
+    }
+
     this.sheetEl?.classList.add('open');
 
     if (tabName === 'presets') {
@@ -89,20 +97,26 @@ export class BottomDock {
     this.sheetEl?.classList.remove('open');
     this.tabButtons.forEach((btn) => btn.classList.remove('active'));
     this.activeTab = null;
+
+    // Se houver uma peça selecionada no palco, restaura a barra flutuante de ações
+    if (this.canvasEngine.selectedNode && this.canvasEngine.onSelectionChange) {
+      const meta = this.canvasEngine.selectedNode.getAttr('itemMeta') || null;
+      this.canvasEngine.onSelectionChange(meta, this.canvasEngine.selectedNode);
+    }
   }
 
   // ABA 1: Peças Base (Elementos)
   async renderPresetsTab(): Promise<void> {
     if (this.sheetTitle) this.sheetTitle.textContent = 'Elementos';
     if (this.categoriesBar) this.categoriesBar.style.display = 'flex';
-    this.renderCategoryPills();
+    this.renderCategoryPills('presets');
 
     const items = await getItemsByCategory(this.currentCategory);
     const presetItems = items.filter((i) => !i.isCustom);
-    this.renderItemsGrid(presetItems, false);
+    this.renderPresetsGrid(presetItems);
   }
 
-  renderCategoryPills(): void {
+  renderCategoryPills(tab: 'presets' | 'my-items'): void {
     if (!this.categoriesBar) return;
     const categories: { id: ItemCategory | string; label: string }[] = [
       { id: 'todos', label: 'Todos' },
@@ -114,26 +128,74 @@ export class BottomDock {
       { id: 'acessorios', label: 'Acessórios' }
     ];
 
+    const currentSelected = tab === 'presets' ? this.currentCategory : this.myItemsCategory;
+
     this.categoriesBar.innerHTML = '';
     categories.forEach((cat) => {
       const btn = document.createElement('button');
-      btn.className = `pill-btn ${this.currentCategory === cat.id ? 'active' : ''}`;
+      btn.type = 'button';
+      btn.className = `pill-btn ${currentSelected === cat.id ? 'active' : ''}`;
       btn.textContent = cat.label;
       btn.addEventListener('click', async () => {
-        this.currentCategory = cat.id;
-        this.renderPresetsTab();
+        if (tab === 'presets') {
+          this.currentCategory = cat.id;
+          await this.renderPresetsTab();
+        } else {
+          this.myItemsCategory = cat.id;
+          await this.renderMyItemsTab();
+        }
       });
       this.categoriesBar?.appendChild(btn);
+    });
+  }
+
+  renderPresetsGrid(items: PresetItem[]): void {
+    if (!this.sheetBody) return;
+    this.sheetBody.innerHTML = '<div class="items-grid" id="sheet-items-grid"></div>';
+    const grid = document.getElementById('sheet-items-grid');
+
+    if (items.length === 0) {
+      this.sheetBody.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon" style="color: var(--text-muted);">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <div class="empty-state-text">Nenhum item nesta categoria.</div>
+        </div>
+      `;
+      return;
+    }
+
+    items.forEach((item) => {
+      const card = document.createElement('div');
+      card.className = 'element-card';
+      card.title = item.name;
+      card.innerHTML = `
+        <img src="${item.previewUrl}" alt="${item.name}" loading="lazy"/>
+        <div class="element-card-overlay">${item.name}</div>
+      `;
+
+      card.addEventListener('click', async () => {
+        await this.canvasEngine.addItem(item);
+        this.closeSheet();
+      });
+
+      grid?.appendChild(card);
     });
   }
 
   // ABA 2: Meu Acervo Pessoal
   async renderMyItemsTab(): Promise<void> {
     if (this.sheetTitle) this.sheetTitle.textContent = 'Meu Acervo';
-    if (this.categoriesBar) this.categoriesBar.style.display = 'none';
+    if (this.categoriesBar) this.categoriesBar.style.display = 'flex';
+    this.renderCategoryPills('my-items');
 
     const all = await getAllItems();
-    const customItems = all.filter((i) => i.isCustom);
+    let customItems = all.filter((i) => i.isCustom);
+
+    if (this.myItemsCategory !== 'todos') {
+      customItems = customItems.filter((i) => i.category === this.myItemsCategory);
+    }
 
     let html = `
       <div style="margin-bottom: 12px;">
@@ -155,7 +217,7 @@ export class BottomDock {
               <circle cx="12" cy="13" r="4"/>
             </svg>
           </div>
-          <div class="empty-state-text">Você ainda não tem peças cadastradas. Toque no botão acima para fotografar suas peças reais!</div>
+          <div class="empty-state-text">${this.myItemsCategory === 'todos' ? 'Você ainda não tem peças cadastradas. Toque no botão acima para fotografar suas peças reais!' : 'Nenhuma peça nesta categoria.'}</div>
         </div>
       `;
       this.sheetBody.innerHTML = html;
@@ -164,7 +226,7 @@ export class BottomDock {
       const grid = document.getElementById('custom-items-grid');
       if (grid) {
         customItems.forEach((item) => {
-          const card = this.createItemCard(item, true);
+          const card = this.createMyItemCard(item);
           grid.appendChild(card);
         });
       }
@@ -177,7 +239,51 @@ export class BottomDock {
     });
   }
 
-  // ABA 3: Catálogo de Capas & Estampas
+  createMyItemCard(item: PresetItem): HTMLElement {
+    const card = document.createElement('div');
+    card.className = 'my-item-card';
+
+    const priceText = item.rentalPrice && item.rentalPrice > 0
+      ? `R$ ${Number(item.rentalPrice).toFixed(2).replace('.', ',')}`
+      : '';
+
+    card.innerHTML = `
+      <div class="my-item-card-preview">
+        <img src="${item.previewUrl}" alt="${item.name}" loading="lazy"/>
+      </div>
+      <div class="my-item-card-title">${item.name}</div>
+      <div class="my-item-card-meta">
+        <span>${item.widthCm}x${item.heightCm} cm</span>
+        <span>•</span>
+        <span>Qtd: ${item.stockQuantity || 1}</span>
+      </div>
+      ${priceText ? `<div class="my-item-card-price">${priceText}</div>` : ''}
+      <button type="button" class="btn-card-edit" data-edit-id="${item.id}">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9"/>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+        <span>Editar</span>
+      </button>
+    `;
+
+    card.addEventListener('click', async (e) => {
+      if ((e.target as HTMLElement).closest('.btn-card-edit')) return;
+      await this.canvasEngine.addItem(item);
+      this.closeSheet();
+    });
+
+    card.querySelector('.btn-card-edit')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (this.onOpenInventoryModal) {
+        this.onOpenInventoryModal(item);
+      }
+    });
+
+    return card;
+  }
+
+  // ABA 3: Catálogo de Capas e Estampas
   async renderCoversTab(): Promise<void> {
     if (this.sheetTitle) this.sheetTitle.textContent = 'Temas e Capas Disponíveis';
     if (this.categoriesBar) this.categoriesBar.style.display = 'none';
@@ -192,12 +298,12 @@ export class BottomDock {
       <div style="margin-bottom: 12px;">
         <button id="btn-add-new-cover" class="btn-primary" style="width: 100%; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Subir Estampa da Galeria / Pintar Cor
+          Subir nova estampa
         </button>
       </div>
       ${customCovers.length > 0 ? `
         <div class="covers-section-heading" style="margin-top: 10px; margin-bottom: 8px;">
-          <span>Minhas Imagens & Estampas Recentes</span>
+          <span>Estampas e minhas imagens</span>
           <span class="covers-count-badge">${customCovers.length}</span>
         </div>
         <div class="covers-grid" id="sheet-my-covers-grid" style="margin-bottom: 16px;"></div>
@@ -333,48 +439,6 @@ export class BottomDock {
         await this.canvasEngine.setEnvironmentTextures(null, floor);
       });
     });
-  }
-
-  renderItemsGrid(items: PresetItem[], isCustom: boolean): void {
-    if (!this.sheetBody) return;
-    this.sheetBody.innerHTML = '<div class="items-grid" id="sheet-items-grid"></div>';
-    const grid = document.getElementById('sheet-items-grid');
-
-    if (items.length === 0) {
-      this.sheetBody.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon" style="color: var(--text-muted);">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          </div>
-          <div class="empty-state-text">Nenhum item nesta categoria.</div>
-        </div>
-      `;
-      return;
-    }
-
-    items.forEach((item) => {
-      const card = this.createItemCard(item, isCustom);
-      grid?.appendChild(card);
-    });
-  }
-
-  createItemCard(item: PresetItem, isCustom: boolean): HTMLElement {
-    const card = document.createElement('div');
-    card.className = 'item-card';
-    card.innerHTML = `
-      <div class="item-card-preview">
-        <img src="${item.previewUrl}" alt="${item.name}" loading="lazy"/>
-      </div>
-      <div class="item-card-title">${item.name}</div>
-      <div class="item-card-dimensions">${item.widthCm} x ${item.heightCm} cm</div>
-      ${isCustom ? `<div class="item-card-badge">Qtd: ${item.stockQuantity}</div>` : ''}
-    `;
-
-    card.addEventListener('click', async () => {
-      await this.canvasEngine.addItem(item);
-    });
-
-    return card;
   }
 
   // ABA 5: Camadas no Palco (Mobile)

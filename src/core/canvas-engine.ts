@@ -2298,6 +2298,45 @@ export class CanvasEngine {
     await this.addItem({ ...meta, instanceId: undefined }, newPos, true);
   }
 
+  async updateItemMeta(updatedItem: PresetItem) {
+    const nodes = this.decorLayer.getChildren((node) => {
+      const meta = node.getAttr('itemMeta');
+      return meta && meta.id === updatedItem.id;
+    });
+
+    for (const node of nodes) {
+      const currentMeta = node.getAttr('itemMeta') || {};
+      const newMeta = {
+        ...currentMeta,
+        name: updatedItem.name,
+        category: updatedItem.category,
+        rentalPrice: updatedItem.rentalPrice,
+        stockQuantity: updatedItem.stockQuantity,
+        widthCm: updatedItem.widthCm,
+        heightCm: updatedItem.heightCm
+      };
+      node.setAttr('itemMeta', newMeta);
+
+      if (updatedItem.previewUrl && updatedItem.previewUrl !== currentMeta.previewUrl) {
+        newMeta.previewUrl = updatedItem.previewUrl;
+        const baseImg = (node as Konva.Group).findOne ? ((node as Konva.Group).findOne('.base-image') as Konva.Image | null) : null;
+        if (baseImg) {
+          try {
+            const imgElement = await loadImageAsync(updatedItem.previewUrl);
+            baseImg.image(imgElement);
+          } catch (e) {
+            console.error('Erro ao atualizar imagem do item no palco:', e);
+          }
+        }
+      }
+    }
+    this.decorLayer.batchDraw();
+    this.notifyLayersChange();
+    if (this.selectedNode && this.onSelectionChange) {
+      this.onSelectionChange(this.selectedNode.getAttr('itemMeta'), this.selectedNode);
+    }
+  }
+
   deleteSelected() {
     if (!this.selectedNode) return;
     const node = this.selectedNode;

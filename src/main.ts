@@ -27,15 +27,26 @@ async function bootstrap() {
   let bottomDock: BottomDock | null = null;
   let desktopStudio: DesktopStudio | null = null;
 
-  const inventoryModal = new InventoryModal(async (newItem) => {
-    await canvasEngine.addItem(newItem);
-    if (bottomDock && bottomDock.activeTab === 'my-items') {
-      bottomDock.renderMyItemsTab();
+  const inventoryModal = new InventoryModal(
+    async (newItem) => {
+      await canvasEngine.addItem(newItem);
+      if (bottomDock && bottomDock.activeTab === 'my-items') {
+        bottomDock.renderMyItemsTab();
+      }
+      if (desktopStudio) {
+        desktopStudio.renderCatalogContent();
+      }
+    },
+    async (updatedItem) => {
+      await canvasEngine.updateItemMeta(updatedItem);
+      if (bottomDock && bottomDock.activeTab === 'my-items') {
+        bottomDock.renderMyItemsTab();
+      }
+      if (desktopStudio) {
+        desktopStudio.renderCatalogContent();
+      }
     }
-    if (desktopStudio) {
-      desktopStudio.renderCatalogContent();
-    }
-  });
+  );
 
   // 4. Barra de Ações Mobile da Peça
   const itemToolbar = new ItemToolbar(
@@ -47,7 +58,7 @@ async function bootstrap() {
   // 5. Barra Inferior Mobile (Dock)
   bottomDock = new BottomDock(
     canvasEngine,
-    () => inventoryModal.open(),
+    (item) => inventoryModal.open(item),
     (meta) => coverModal.open(meta)
   );
 

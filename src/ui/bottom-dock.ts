@@ -182,7 +182,9 @@ export class BottomDock {
     if (this.sheetTitle) this.sheetTitle.textContent = 'Temas e Capas Disponíveis';
     if (this.categoriesBar) this.categoriesBar.style.display = 'none';
 
-    const covers = await getAllCovers();
+    const allCovers = await getAllCovers();
+    const customCovers = allCovers.filter((c) => c.isCustom).reverse();
+    const factoryCovers = allCovers.filter((c) => !c.isCustom);
 
     if (!this.sheetBody) return;
 
@@ -193,17 +195,20 @@ export class BottomDock {
           Subir Estampa da Galeria / Pintar Cor
         </button>
       </div>
-      <div class="covers-grid" id="sheet-covers-grid"></div>
+      ${customCovers.length > 0 ? `
+        <div class="covers-section-heading" style="margin-top: 10px; margin-bottom: 8px;">
+          <span>Minhas Imagens & Estampas Recentes</span>
+          <span class="covers-count-badge">${customCovers.length}</span>
+        </div>
+        <div class="covers-grid" id="sheet-my-covers-grid" style="margin-bottom: 16px;"></div>
+      ` : ''}
+      <div class="covers-section-heading" style="margin-top: 10px; margin-bottom: 8px;">
+        <span>Capas do Catálogo Padrão</span>
+      </div>
+      <div class="covers-grid" id="sheet-factory-covers-grid"></div>
     `;
 
-    const grid = document.getElementById('sheet-covers-grid');
-    covers.forEach((cover) => {
-      const card = document.createElement('div');
-      card.className = 'cover-card';
-      card.innerHTML = `
-        <img src="${cover.imageUrl}" alt="${cover.name}" loading="lazy"/>
-        <div class="cover-card-label">${cover.name}</div>
-      `;
+    const attachCoverClick = (card: HTMLElement, coverUrl: string) => {
       card.addEventListener('click', async () => {
         const selected = this.canvasEngine.selectedNode;
         if (!selected) {
@@ -215,10 +220,35 @@ export class BottomDock {
           alert(`A peça "${meta?.name || 'selecionada'}" não utiliza capas de tecido.`);
           return;
         }
-        await this.canvasEngine.applyCoverToSelected(cover.imageUrl);
+        await this.canvasEngine.applyCoverToSelected(coverUrl);
         this.closeSheet();
       });
-      grid?.appendChild(card);
+    };
+
+    if (customCovers.length > 0) {
+      const myGrid = document.getElementById('sheet-my-covers-grid');
+      customCovers.forEach((cover) => {
+        const card = document.createElement('div');
+        card.className = 'cover-card';
+        card.innerHTML = `
+          <img src="${cover.imageUrl}" alt="${cover.name}" loading="lazy"/>
+          <div class="cover-card-label">${cover.name}</div>
+        `;
+        attachCoverClick(card, cover.imageUrl);
+        myGrid?.appendChild(card);
+      });
+    }
+
+    const factoryGrid = document.getElementById('sheet-factory-covers-grid');
+    factoryCovers.forEach((cover) => {
+      const card = document.createElement('div');
+      card.className = 'cover-card';
+      card.innerHTML = `
+        <img src="${cover.imageUrl}" alt="${cover.name}" loading="lazy"/>
+        <div class="cover-card-label">${cover.name}</div>
+      `;
+      attachCoverClick(card, cover.imageUrl);
+      factoryGrid?.appendChild(card);
     });
 
     document.getElementById('btn-add-new-cover')?.addEventListener('click', () => {

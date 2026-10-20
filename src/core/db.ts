@@ -135,7 +135,7 @@ export async function getAllCovers(): Promise<CoverItemRecord[]> {
 export async function addCustomCover(coverData: Partial<CoverItemRecord>): Promise<CoverItemRecord> {
   const newCover: CoverItemRecord = {
     id: 'cover-' + Date.now(),
-    themeName: coverData.themeName || 'Personalizado',
+    themeName: coverData.themeName || 'Minhas Estampas',
     name: coverData.name || 'Nova Capa',
     targetType: coverData.targetType || 'all',
     imageUrl: coverData.imageUrl || '',
@@ -144,6 +144,15 @@ export async function addCustomCover(coverData: Partial<CoverItemRecord>): Promi
   };
   await db.covers.add(newCover);
   return newCover;
+}
+
+export async function deleteCustomCover(id: string): Promise<boolean> {
+  const cover = await db.covers.get(id);
+  if (cover && cover.isCustom) {
+    await db.covers.delete(id);
+    return true;
+  }
+  return false;
 }
 
 // Métodos para Projetos / Cenários

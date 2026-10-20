@@ -169,7 +169,7 @@ async function bootstrap() {
   });
 
   btnHeaderProjects?.addEventListener('click', () => {
-    projectsModal.open();
+    projectsModal.openProjectsScreen(true);
   });
 
   btnHeaderExport?.addEventListener('click', () => {
@@ -213,7 +213,7 @@ async function bootstrap() {
       canvasEngine.fitToView();
     },
     onOpenProjects: () => {
-      projectsModal.open();
+      projectsModal.openProjectsScreen(false);
     }
   });
 

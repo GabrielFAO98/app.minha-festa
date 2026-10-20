@@ -1,7 +1,7 @@
 {
-  "name": "Minha Festa — Estúdio Pegue-Monte",
+  "name": "Minha Festa",
   "short_name": "Minha Festa",
-  "description": "Monte decorações pegue-monte com cilindros, mesas e painéis em escala real no celular.",
+  "description": "Monte decorações com cilindros, mesas e painéis em escala real no celular.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",

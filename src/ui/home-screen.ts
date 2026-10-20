@@ -60,6 +60,8 @@ export class HomeScreen {
 
   show(): void {
     if (!this.homeEl) return;
+    const projScreen = document.getElementById('projects-screen');
+    projScreen?.classList.add('hidden');
     this.isVisible = true;
     this.homeEl.classList.remove('hidden');
   }

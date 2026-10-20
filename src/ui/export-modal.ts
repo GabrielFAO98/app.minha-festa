@@ -54,7 +54,7 @@ export class ExportModal {
 
     this.btnWhatsApp?.addEventListener('click', () => {
       if (!this.currentRomaneio) return;
-      const title = document.getElementById('project-title-display')?.textContent?.trim() || 'Decoração Pegue-Monte';
+      const title = document.getElementById('project-title-display')?.textContent?.trim() || 'Minha Decoração';
       const clientName = this.clientNameInput?.value.trim() || '';
       const clientPhone = this.clientPhoneInput?.value.trim() || '';
 

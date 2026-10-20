@@ -53,7 +53,7 @@ export function formatWhatsAppMessage(projectTitle, romaneio, clientName = '') {
   if (clientName) {
     text += `*Cliente:* ${clientName}\n`;
   }
-  text += `*Cenário:* ${projectTitle || 'Decoração Pegue-Monte'}\n\n`;
+  text += `*Cenário:* ${projectTitle || 'Minha Decoração'}\n\n`;
   text += `*LISTA DE ITENS UTILIZADOS (ROMANEIO):*\n`;
 
   romaneio.checklist.forEach((item) => {

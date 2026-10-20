@@ -191,10 +191,28 @@ body {
   transform: translateY(0);
 }
 
-/* Otimizacao Mobile-First: em telas compactas, botoes secundarios viram icon-buttons */
+/* Responsividade Mobile-First do Header */
 @media (max-width: 640px) {
   .app-header {
+    height: 52px;
     padding: 0 10px;
+  }
+
+  .header-left {
+    gap: 8px;
+  }
+
+  .brand-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .brand-title span:first-child {
+    font-size: 0.85rem;
+  }
+
+  .brand-subtitle {
+    display: none;
   }
 
   .header-actions {
@@ -204,8 +222,9 @@ body {
   .header-actions .btn-header-ghost {
     width: 36px;
     height: 36px;
+    min-width: 36px;
     padding: 0;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
   }
 
   .header-actions .btn-header-ghost .header-btn-label {
@@ -215,40 +234,7 @@ body {
   .btn-header-primary {
     height: 36px;
     padding: 0 10px;
-    font-size: 0.76rem;
-  }
-}
-
-/* Responsividade Mobile do Header */
-@media (max-width: 640px) {
-  .app-header {
-    height: 50px;
-    padding: 0 10px;
-  }
-  .brand-title span:first-child {
-    font-size: 0.85rem;
-  }
-  .brand-subtitle {
-    display: none;
-  }
-  .header-actions {
-    gap: 4px;
-  }
-  .btn-header {
-    height: 34px;
-    padding: 0 8px;
-    min-width: 34px;
-    font-size: 0.72rem;
-  }
-  .btn-header span {
-    display: none;
-  }
-  .btn-header-primary {
-    padding: 0 10px;
-  }
-  .btn-header-primary span {
-    display: inline;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
 }
 

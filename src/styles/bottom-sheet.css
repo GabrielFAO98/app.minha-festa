@@ -461,3 +461,92 @@
   text-overflow: ellipsis;
   text-align: center;
 }
+
+
+/* Estado Vazio de Alto Padrão (Calacatta Gold & Ouro 18k) */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 26px 18px 22px;
+  margin: 10px 0 16px;
+  border-radius: var(--radius-lg, 16px);
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.05) 0%, rgba(255, 255, 255, 0.9) 100%);
+  border: 1.5px dashed rgba(212, 175, 55, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  animation: fadeInEmpty 0.25s ease;
+}
+
+@keyframes fadeInEmpty {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.empty-state-icon-badge {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.18) 0%, rgba(212, 175, 55, 0.06) 100%);
+  border: 1.5px solid rgba(212, 175, 55, 0.4);
+  color: var(--primary, #b8860b);
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.8);
+  margin-bottom: 12px;
+}
+
+.empty-state-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main, #1e293b);
+  margin-bottom: 5px;
+  letter-spacing: -0.01em;
+}
+
+.empty-state-text {
+  font-size: 0.8rem;
+  color: var(--text-muted, #64748b);
+  line-height: 1.45;
+  max-width: 290px;
+  margin: 0 auto;
+}
+
+.empty-state-features {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+  max-width: 290px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.empty-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: var(--text-main, #334155);
+  text-align: left;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 6px 12px;
+  border-radius: var(--radius-md, 10px);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.empty-feature-icon {
+  font-size: 0.82rem;
+  line-height: 1;
+}

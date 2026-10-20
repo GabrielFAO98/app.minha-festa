@@ -157,10 +157,11 @@ export class BottomDock {
     if (items.length === 0) {
       this.sheetBody.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state-icon" style="color: var(--text-muted);">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <div class="empty-state-icon-badge">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </div>
-          <div class="empty-state-text">Nenhum item nesta categoria.</div>
+          <div class="empty-state-title">Nenhum item nesta categoria</div>
+          <div class="empty-state-text">Tente selecionar outra categoria ou buscar na aba "Todos".</div>
         </div>
       `;
       return;
@@ -210,14 +211,37 @@ export class BottomDock {
 
     if (customItems.length === 0) {
       html += `
-        <div class="empty-state">
-          <div class="empty-state-icon" style="color: var(--text-muted);">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <div class="empty-state my-items-empty">
+          <div class="empty-state-icon-badge">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
               <circle cx="12" cy="13" r="4"/>
             </svg>
           </div>
-          <div class="empty-state-text">${this.myItemsCategory === 'todos' ? 'Você ainda não tem peças cadastradas. Toque no botão acima para fotografar suas peças reais!' : 'Nenhuma peça nesta categoria.'}</div>
+          <div class="empty-state-title">
+            ${this.myItemsCategory === 'todos' ? 'Seu acervo ainda está vazio' : 'Nenhuma peça nesta categoria'}
+          </div>
+          <div class="empty-state-text">
+            ${this.myItemsCategory === 'todos'
+              ? 'Fotografe suas peças reais de decoração para compor cenários exclusivos e orçamentos automáticos!'
+              : 'Nenhuma peça cadastrada nesta categoria. Toque no botão acima para adicionar!'}
+          </div>
+          ${this.myItemsCategory === 'todos' ? `
+            <div class="empty-state-features">
+              <div class="empty-feature-item">
+                <span class="empty-feature-icon">✨</span>
+                <span>Remoção inteligente de fundo</span>
+              </div>
+              <div class="empty-feature-item">
+                <span class="empty-feature-icon">📐</span>
+                <span>Dimensões e proporções reais em cm</span>
+              </div>
+              <div class="empty-feature-item">
+                <span class="empty-feature-icon">🎨</span>
+                <span>Compatível com tecidos e estampas</span>
+              </div>
+            </div>
+          ` : ''}
         </div>
       `;
       this.sheetBody.innerHTML = html;

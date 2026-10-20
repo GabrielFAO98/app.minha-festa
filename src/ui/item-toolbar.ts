@@ -129,19 +129,22 @@ export class ItemToolbar {
       badge.classList.add('visible');
     }
 
+    const paletteSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"/></svg>`;
+    const cropSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
+
     if (btnCover) {
       if (meta.type === 'moinho') {
         const colorLabel = (meta.currentColor || 'marrom').toUpperCase();
         btnCover.style.display = 'inline-flex';
-        btnCover.innerHTML = `🎨 ${colorLabel}`;
+        btnCover.innerHTML = `${paletteSvg} ${colorLabel}`;
         btnCover.title = 'Alternar Acabamento do Moinho';
       } else if (mode === 'structural') {
         btnCover.style.display = 'inline-flex';
-        btnCover.innerHTML = '🎨 Capa / Cor';
+        btnCover.innerHTML = `${paletteSvg} Capa / Cor`;
         btnCover.title = 'Vestir Capa ou Pintar Estrutura';
       } else if (mode === 'modular') {
         btnCover.style.display = 'inline-flex';
-        btnCover.innerHTML = '🎨 Cores';
+        btnCover.innerHTML = `${paletteSvg} Cores`;
         btnCover.title = 'Personalizar Cores dos Elementos SVG';
       } else {
         btnCover.style.display = 'none';
@@ -151,7 +154,7 @@ export class ItemToolbar {
     if (btnReposition) {
       if (mode === 'structural' && meta.customCoverUrl) {
         btnReposition.style.display = 'inline-flex';
-        btnReposition.innerHTML = '⛶ Enquadrar';
+        btnReposition.innerHTML = `${cropSvg} Enquadrar`;
         btnReposition.title = 'Ajustar Enquadramento da Capa';
       } else {
         btnReposition.style.display = 'none';

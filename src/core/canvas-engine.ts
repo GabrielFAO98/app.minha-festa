@@ -757,7 +757,7 @@ export class CanvasEngine {
       listening: false
     });
 
-    // Ícone de 4 setas direcionais em cruz (✥)
+    // Ícone de 4 setas direcionais em cruz
     const iconMove = new Konva.Shape({
       x: 0,
       y: 0,

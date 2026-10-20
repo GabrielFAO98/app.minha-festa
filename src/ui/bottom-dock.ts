@@ -93,7 +93,7 @@ export class BottomDock {
 
   // ABA 1: Peças Base (Elementos)
   async renderPresetsTab(): Promise<void> {
-    if (this.sheetTitle) this.sheetTitle.innerHTML = '🧩 Elementos';
+    if (this.sheetTitle) this.sheetTitle.textContent = 'Elementos';
     if (this.categoriesBar) this.categoriesBar.style.display = 'flex';
     this.renderCategoryPills();
 
@@ -129,7 +129,7 @@ export class BottomDock {
 
   // ABA 2: Meu Acervo Pessoal
   async renderMyItemsTab(): Promise<void> {
-    if (this.sheetTitle) this.sheetTitle.innerHTML = '📦 Meu Acervo Próprio';
+    if (this.sheetTitle) this.sheetTitle.textContent = 'Meu Acervo';
     if (this.categoriesBar) this.categoriesBar.style.display = 'none';
 
     const all = await getAllItems();
@@ -137,8 +137,9 @@ export class BottomDock {
 
     let html = `
       <div style="margin-bottom: 12px;">
-        <button id="btn-add-inventory-item" class="btn-primary" style="width: 100%; height: 42px;">
-          ➕ Cadastrar Nova Peça com Foto
+        <button id="btn-add-inventory-item" class="btn-primary" style="width: 100%; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Cadastrar Nova Peça com Foto
         </button>
       </div>
     `;
@@ -148,7 +149,12 @@ export class BottomDock {
     if (customItems.length === 0) {
       html += `
         <div class="empty-state">
-          <div class="empty-state-icon">📸</div>
+          <div class="empty-state-icon" style="color: var(--text-muted);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+          </div>
           <div class="empty-state-text">Você ainda não tem peças cadastradas. Toque no botão acima para fotografar suas peças reais!</div>
         </div>
       `;
@@ -173,7 +179,7 @@ export class BottomDock {
 
   // ABA 3: Catálogo de Capas & Estampas
   async renderCoversTab(): Promise<void> {
-    if (this.sheetTitle) this.sheetTitle.innerHTML = '🎨 Temas & Capas Disponíveis';
+    if (this.sheetTitle) this.sheetTitle.textContent = 'Temas e Capas Disponíveis';
     if (this.categoriesBar) this.categoriesBar.style.display = 'none';
 
     const covers = await getAllCovers();
@@ -182,8 +188,9 @@ export class BottomDock {
 
     this.sheetBody.innerHTML = `
       <div style="margin-bottom: 12px;">
-        <button id="btn-add-new-cover" class="btn-primary" style="width: 100%; height: 42px;">
-          📸 Subir Estampa da Galeria / Pintar Cor
+        <button id="btn-add-new-cover" class="btn-primary" style="width: 100%; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Subir Estampa da Galeria / Pintar Cor
         </button>
       </div>
       <div class="covers-grid" id="sheet-covers-grid"></div>
@@ -224,7 +231,7 @@ export class BottomDock {
 
   // ABA 4: Cenários Realistas COM ESCOLHA POR IMAGEM
   renderEnvironmentTab(): void {
-    if (this.sheetTitle) this.sheetTitle.innerHTML = '🏠 Escolha do Cenário (Por Imagem)';
+    if (this.sheetTitle) this.sheetTitle.textContent = 'Escolha do Cenário';
     if (this.categoriesBar) this.categoriesBar.style.display = 'none';
     if (!this.sheetBody) return;
 
@@ -306,7 +313,9 @@ export class BottomDock {
     if (items.length === 0) {
       this.sheetBody.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state-icon">🔍</div>
+          <div class="empty-state-icon" style="color: var(--text-muted);">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
           <div class="empty-state-text">Nenhum item nesta categoria.</div>
         </div>
       `;
@@ -340,7 +349,7 @@ export class BottomDock {
 
   // ABA 5: Camadas no Palco (Mobile)
   renderLayersTab(): void {
-    if (this.sheetTitle) this.sheetTitle.innerHTML = '📚 Camadas no Cenário';
+    if (this.sheetTitle) this.sheetTitle.textContent = 'Camadas no Cenário';
     if (this.categoriesBar) this.categoriesBar.style.display = 'none';
     if (!this.sheetBody) return;
 
@@ -348,7 +357,13 @@ export class BottomDock {
     if (!elements || elements.length === 0) {
       this.sheetBody.innerHTML = `
         <div style="text-align: center; padding: 32px 16px; color: var(--text-muted); font-size: 0.82rem;">
-          <div style="font-size: 2rem; margin-bottom: 8px;">🎯</div>
+          <div style="margin-bottom: 8px; color: var(--text-muted); opacity: 0.6;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+              <polyline points="2 17 12 22 22 17"/>
+              <polyline points="2 12 12 17 22 12"/>
+            </svg>
+          </div>
           <div>Nenhuma peça no cenário ainda.</div>
           <div style="font-size: 0.72rem; margin-top: 4px;">Adicione peças da aba Elementos ou Meu Acervo!</div>
         </div>

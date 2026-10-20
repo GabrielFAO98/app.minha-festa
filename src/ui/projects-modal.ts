@@ -195,7 +195,11 @@ export class ProjectsModal {
     if (projects.length === 0) {
       this.projectsListEl.innerHTML = `
         <div class="empty-state" style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">
-          <div style="font-size: 1.8rem; margin-bottom: 6px;">📁</div>
+          <div style="margin-bottom: 8px; opacity: 0.6;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
           <div>Nenhum cenário salvo ainda no dispositivo.</div>
         </div>
       `;

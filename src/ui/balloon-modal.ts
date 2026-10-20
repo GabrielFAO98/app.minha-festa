@@ -56,7 +56,7 @@ export class BalloonModal {
 
     if (mode === 'modular') {
       const config = getModularConfigForItem(meta);
-      if (this.modalTitleEl) this.modalTitleEl.textContent = `🎨 ${config.title}`;
+      if (this.modalTitleEl) this.modalTitleEl.textContent = config.title;
       if (this.modalSubtitleEl) this.modalSubtitleEl.textContent = config.subtitle;
       this.currentSlotLabels = config.slotLabels;
 
@@ -68,7 +68,7 @@ export class BalloonModal {
 
       this.renderPalettesList(config.palettes);
     } else {
-      if (this.modalTitleEl) this.modalTitleEl.textContent = '🎈 Personalizar Cores';
+      if (this.modalTitleEl) this.modalTitleEl.textContent = 'Personalizar Cores';
       if (this.modalSubtitleEl) this.modalSubtitleEl.textContent = 'Escolha uma paleta de cores ou personalize cada tom';
       this.currentSlotLabels = ['Cor 1', 'Cor 2', 'Cor 3', 'Cor 4'];
 

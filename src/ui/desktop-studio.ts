@@ -133,8 +133,9 @@ export class DesktopStudio {
     const addHeader = document.createElement('div');
     addHeader.style.padding = '8px 12px';
     addHeader.innerHTML = `
-      <button class="btn-primary" style="width: 100%; font-size: 0.82rem;" id="btn-desktop-add-inventory">
-        ➕ Cadastrar Nova Peça no Acervo
+      <button class="btn-primary" style="width: 100%; font-size: 0.82rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px;" id="btn-desktop-add-inventory">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Cadastrar Nova Peça no Acervo
       </button>
     `;
     container.appendChild(addHeader);
@@ -150,7 +151,13 @@ export class DesktopStudio {
       const empty = document.createElement('div');
       empty.className = 'empty-catalog-box';
       empty.innerHTML = `
-        <div style="font-size: 1.8rem; margin-bottom: 6px;">📦</div>
+        <div style="margin-bottom: 8px; color: var(--text-muted); opacity: 0.7;">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+          </svg>
+        </div>
         <div>Nenhuma peça cadastrada ainda.</div>
         <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Tire fotos das suas mesas e peças reais em WebP/PNG!</div>
       `;
@@ -308,17 +315,22 @@ export class DesktopStudio {
     if (sizeEl) sizeEl.textContent = `${meta.widthCm}cm × ${meta.heightCm}cm`;
     if (thumbEl) thumbEl.src = meta.previewUrl;
 
+    const paletteSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"/></svg>`;
+
     if (btnCover) {
+      btnCover.style.alignItems = 'center';
+      btnCover.style.justifyContent = 'center';
+      btnCover.style.gap = '6px';
       if (meta.type === 'moinho') {
         const colorLabel = (meta.currentColor || 'marrom').toUpperCase();
         btnCover.style.display = 'inline-flex';
-        btnCover.textContent = `🎨 Cor MDF: ${colorLabel}`;
+        btnCover.innerHTML = `${paletteSvg} Cor MDF: ${colorLabel}`;
       } else if (mode === 'structural') {
         btnCover.style.display = 'inline-flex';
-        btnCover.textContent = '🎨 Capa ou Cor';
+        btnCover.innerHTML = `${paletteSvg} Capa ou Cor`;
       } else if (mode === 'modular') {
         btnCover.style.display = 'inline-flex';
-        btnCover.textContent = '🎨 Personalizar Cores';
+        btnCover.innerHTML = `${paletteSvg} Personalizar Cores`;
       } else {
         btnCover.style.display = 'none';
       }
@@ -331,19 +343,24 @@ export class DesktopStudio {
         const scaleVal = meta.coverScale || 1;
         framingPanel.innerHTML = `
           <div class="framing-panel-header">
-            <span>✋ Enquadramento da Capa</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+              Enquadramento da Capa
+            </span>
             <span class="framing-zoom-tag">${Math.round(scaleVal * 100)}%</span>
           </div>
           <div class="framing-zoom-row">
-            <span style="font-size: 0.72rem; color: var(--text-muted);">🔍</span>
+            <span style="display: inline-flex; align-items: center; color: var(--text-muted);">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </span>
             <input type="range" id="inspector-cover-zoom-slider" min="0.4" max="3.0" step="0.02" value="${scaleVal}" style="flex: 1; accent-color: var(--primary);" />
           </div>
           <div style="display: flex; gap: 6px;">
-            <button type="button" id="btn-inspector-toggle-reposition" class="btn-inspector-action ${isRepositioning ? 'btn-inspector-highlight' : ''}" style="flex: 1;">
-              ${isRepositioning ? '✓ Concluir Arrasto' : '✋ Arrastar Capa'}
+            <button type="button" id="btn-inspector-toggle-reposition" class="btn-inspector-action ${isRepositioning ? 'btn-inspector-highlight' : ''}" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+              ${isRepositioning ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Concluir Arrasto' : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg> Arrastar Capa'}
             </button>
-            <button type="button" id="btn-inspector-reset-cover" class="btn-inspector-action" title="Centralizar Capa">
-              ↺ Resetar
+            <button type="button" id="btn-inspector-reset-cover" class="btn-inspector-action" title="Centralizar Capa" style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> Resetar
             </button>
           </div>
         `;

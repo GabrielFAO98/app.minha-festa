@@ -49,22 +49,22 @@ export function generateRomaneio(elements) {
  * @returns {string} Mensagem pronta com emojis
  */
 export function formatWhatsAppMessage(projectTitle, romaneio, clientName = '') {
-  let text = `🎉 *PROJETO DE DECORAÇÃO — MINHA FESTA*\n`;
+  let text = `*PROJETO DE DECORAÇÃO: MINHA FESTA*\n`;
   if (clientName) {
-    text += `👤 *Cliente:* ${clientName}\n`;
+    text += `*Cliente:* ${clientName}\n`;
   }
-  text += `🎈 *Cenário:* ${projectTitle || 'Decoração Pegue-Monte'}\n\n`;
-  text += `📋 *LISTA DE ITENS UTILIZADOS (ROMANEIO):*\n`;
+  text += `*Cenário:* ${projectTitle || 'Decoração Pegue-Monte'}\n\n`;
+  text += `*LISTA DE ITENS UTILIZADOS (ROMANEIO):*\n`;
 
   romaneio.checklist.forEach((item) => {
-    text += `▪️ *${item.quantity}x* ${item.name} (${item.widthCm}x${item.heightCm}cm)\n`;
+    text += `• *${item.quantity}x* ${item.name} (${item.widthCm}x${item.heightCm}cm)\n`;
   });
 
   if (romaneio.coversCount > 0) {
-    text += `\n🎨 *Capas & Estampas Inclusas:* ${romaneio.coversCount} peça(s) personalizada(s)\n`;
+    text += `\n*Capas e Estampas Inclusas:* ${romaneio.coversCount} peça(s) personalizada(s)\n`;
   }
 
-  text += `\n✨ _Simulação visual gerada no Minha Festa App._`;
+  text += `\n_Simulação visual gerada no Minha Festa App._`;
   return text;
 }
 

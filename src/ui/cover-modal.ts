@@ -102,17 +102,24 @@ export class CoverModal {
       ${hasCover ? `
         <div class="cover-reposition-callout">
           <div style="display: flex; flex-direction: column; gap: 2px;">
-            <strong style="font-size: 0.8rem; color: #fff;">✋ Capa Aplicada na Estrutura</strong>
+            <strong style="font-size: 0.8rem; color: #fff; display: inline-flex; align-items: center; gap: 6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+              Capa Aplicada na Estrutura
+            </strong>
             <span style="font-size: 0.7rem; color: var(--text-muted);">Arraste e dê zoom na capa como no Facebook</span>
           </div>
-          <button type="button" id="btn-modal-reposition-cover" class="btn-reposition-highlight">
-            ✋ Enquadrar Capa
+          <button type="button" id="btn-modal-reposition-cover" class="btn-reposition-highlight" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+            Enquadrar Capa
           </button>
         </div>
       ` : ''}
       <div class="solid-colors-box">
         <div class="solid-colors-header">
-          <span>🎨 Pintar Estrutura com Cor Lisa (Sem Capa)</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"/></svg>
+            Pintar Estrutura com Cor Lisa (Sem Capa)
+          </span>
           <label class="custom-color-inline-picker" title="Escolher qualquer cor">
             <input type="color" id="structural-free-color-input" value="${currentColor}" />
             <span>+ Cor Livre</span>

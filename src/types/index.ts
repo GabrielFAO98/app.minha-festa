@@ -22,6 +22,9 @@ export type ItemType =
   | 'cube'
   | 'table'
   | 'table_organic'
+  | 'table_organic_bean'
+  | 'table_organic_bean_m'
+  | 'table_organic_bean_g'
   | 'table_drop'
   | 'table_side'
   | 'dresser_bombe'
@@ -63,6 +66,7 @@ export interface PresetItem {
   createdAt?: number;
   customCoverUrl?: string | null;
   customColor?: string | null;
+  tabletopColor?: string | null;
   coverOffsetX?: number;
   coverOffsetY?: number;
   coverScale?: number;

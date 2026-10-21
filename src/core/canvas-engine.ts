@@ -6,8 +6,10 @@ import {
   isPointInsideMask,
   createShadingOverlay,
   createCylinderFloorShadow,
-  createPanelSupportBase
+  createPanelSupportBase,
+  createOrganicBeanTabletopNodeAsync
 } from './mask-renderer';
+import { generateOrganicBeanTableSVG, generateOrganicBeanTabletopOnlySVG, svgToDataUrl } from './presets-data';
 import { TEXTURE_WALL_BOISERIE, TEXTURE_FLOOR_WOOD } from './textures-data';
 import { generateBalloonArchDataUrl } from './balloon-generator';
 import { getItemCustomizationMode, generateModularSvgDataUrl } from './modular-svg-generator';
@@ -1789,9 +1791,65 @@ export class CanvasEngine {
     const heightPx = Math.max(70, (itemData.heightCm || 60) * this.pxPerCm);
 
     const isRug = (itemData.category === 'tapetes' || (itemData.type && itemData.type.startsWith('rug')));
-    const defaultPosY = isRug ? (this.WALL_HEIGHT + 20) : (this.WALL_HEIGHT + 80 - heightPx + (Math.random() * 30 - 15));
-    const posX = position ? position.x : (this.VIRTUAL_WIDTH / 2 - widthPx / 2 + (isRug ? 0 : (Math.random() * 40 - 20)));
-    const posY = position ? position.y : defaultPosY;
+
+    let posX = 0;
+    let posY = 0;
+
+    if (position) {
+      posX = position.x;
+      posY = position.y;
+    } else if (this.stage && (this.zoomLevel > 1.05 || Math.abs(this.panX) > 15 || Math.abs(this.panY) > 15)) {
+      // Quando há zoom ou pan ativo no palco, insere o item exatamente dentro da tela visível do usuário
+      const currentScale = this.baseScale * this.zoomLevel;
+      const stageW = this.stage.width();
+      let visibleH = this.stage.height();
+
+      // Desconta altura do bottom-sheet mobile se estiver aberto
+      const bottomSheet = typeof document !== 'undefined' ? document.getElementById('bottom-sheet') : null;
+      if (bottomSheet && bottomSheet.classList.contains('open')) {
+        const sheetRect = bottomSheet.getBoundingClientRect();
+        const stageContainer = this.stage.container();
+        if (stageContainer) {
+          const stageRect = stageContainer.getBoundingClientRect();
+          if (sheetRect.top < stageRect.bottom && sheetRect.top > stageRect.top) {
+            visibleH = Math.max(100, sheetRect.top - stageRect.top);
+          }
+        }
+      }
+
+      const screenCenterX = stageW / 2;
+      const screenCenterY = visibleH / 2;
+
+      // Coordenadas virtuais correspondentes ao centro da viewport atual
+      const virtualCenterX = (screenCenterX - (this.baseOffsetX + this.panX)) / currentScale;
+      const virtualCenterY = (screenCenterY - (this.baseOffsetY + this.panY)) / currentScale;
+
+      // Limites visíveis da janela atual em coordenadas virtuais
+      const viewLeft = (0 - (this.baseOffsetX + this.panX)) / currentScale;
+      const viewRight = (stageW - (this.baseOffsetX + this.panX)) / currentScale;
+      const viewTop = (0 - (this.baseOffsetY + this.panY)) / currentScale;
+      const viewBottom = (visibleH - (this.baseOffsetY + this.panY)) / currentScale;
+
+      // Leve jitter (-15px a +15px) para não empilhar múltiplos itens perfeitamente no mesmo pixel
+      let targetX = virtualCenterX - widthPx / 2 + (Math.random() * 30 - 15);
+      let targetY = virtualCenterY - heightPx / 2 + (Math.random() * 30 - 15);
+
+      // Garante que o item fique dentro da viewport visível
+      if (widthPx < (viewRight - viewLeft)) {
+        targetX = Math.max(viewLeft + 15, Math.min(viewRight - widthPx - 15, targetX));
+      }
+      if (heightPx < (viewBottom - viewTop)) {
+        targetY = Math.max(viewTop + 15, Math.min(viewBottom - heightPx - 15, targetY));
+      }
+
+      posX = targetX;
+      posY = targetY;
+    } else {
+      // Visão geral padrão (sem zoom): insere centralizado na linha de contato do piso/parede
+      const defaultPosY = isRug ? (this.WALL_HEIGHT + 20) : (this.WALL_HEIGHT + 80 - heightPx + (Math.random() * 30 - 15));
+      posX = this.VIRTUAL_WIDTH / 2 - widthPx / 2 + (isRug ? 0 : (Math.random() * 40 - 20));
+      posY = defaultPosY;
+    }
 
     const group = new Konva.Group({
       x: posX,
@@ -1868,6 +1926,17 @@ export class CanvasEngine {
       listening: false
     });
     group.add(baseImage);
+
+    if (itemData.type.startsWith('table_organic_bean')) {
+      const tabletopOverlay = await createOrganicBeanTabletopNodeAsync(
+        widthPx,
+        heightPx,
+        itemData.tabletopColor || '#FAF8F5',
+        itemData.type
+      );
+      tabletopOverlay.visible(!!(itemData.customCoverUrl || itemData.customColor));
+      group.add(tabletopOverlay);
+    }
 
     if (svgRole === 'structural') {
       if (itemData.customCoverUrl) {
@@ -2026,11 +2095,23 @@ export class CanvasEngine {
       existingCoverGroup.destroy();
     }
 
-    const baseImage = node.findOne('.base-image');
+    const baseImage = node.findOne('.base-image') as Konva.Image | null;
     const supportBase = node.findOne('.panel-support-base');
+    const tabletopOverlay = node.findOne('.tabletop-overlay') as Konva.Image | null;
+
     if (!colorHex) {
-      if (baseImage) baseImage.visible(true);
+      if (baseImage) {
+        if (meta.type.startsWith('table_organic_bean')) {
+          const fullSvg = generateOrganicBeanTableSVG(meta.tabletopColor || '#FAF8F5', '#FFFFFF', meta.type);
+          loadImageAsync(svgToDataUrl(fullSvg)).then((img) => {
+            baseImage.image(img);
+            this.decorLayer.batchDraw();
+          });
+        }
+        baseImage.visible(true);
+      }
       if (supportBase) supportBase.visible(false);
+      if (tabletopOverlay) tabletopOverlay.visible(false);
       return;
     }
 
@@ -2064,6 +2145,11 @@ export class CanvasEngine {
     }
 
     node.add(coverGroup);
+
+    if (tabletopOverlay) {
+      tabletopOverlay.visible(true);
+      tabletopOverlay.moveToTop();
+    }
   }
 
   async attachCoverToNode(node: Konva.Group, coverImageUrl: string | null) {
@@ -2077,12 +2163,23 @@ export class CanvasEngine {
       existingCoverGroup.destroy();
     }
 
-    const baseImage = node.findOne('.base-image');
+    const baseImage = node.findOne('.base-image') as Konva.Image | null;
     const supportBase = node.findOne('.panel-support-base');
+    const tabletopOverlay = node.findOne('.tabletop-overlay') as Konva.Image | null;
 
     if (!coverImageUrl) {
-      if (baseImage) baseImage.visible(true);
+      if (baseImage) {
+        if (meta.type.startsWith('table_organic_bean')) {
+          const fullSvg = generateOrganicBeanTableSVG(meta.tabletopColor || '#FAF8F5', '#FFFFFF', meta.type);
+          loadImageAsync(svgToDataUrl(fullSvg)).then((img) => {
+            baseImage.image(img);
+            this.decorLayer.batchDraw();
+          });
+        }
+        baseImage.visible(true);
+      }
       if (supportBase) supportBase.visible(false);
+      if (tabletopOverlay) tabletopOverlay.visible(false);
       return;
     }
 
@@ -2131,7 +2228,63 @@ export class CanvasEngine {
     }
 
     node.add(coverGroup);
+
+    if (tabletopOverlay) {
+      tabletopOverlay.visible(true);
+      tabletopOverlay.moveToTop();
+    }
+
     this.decorLayer.batchDraw();
+  }
+
+  /**
+   * Aplica cor sólida no tampo feijão da mesa orgânica (o tampo aceita exclusivamente cor sólida)
+   */
+  async applyTabletopColorToSelected(colorHex: string) {
+    if (!this.selectedNode) return false;
+    const meta = this.selectedNode.getAttr('itemMeta') as PresetItem;
+    if (!meta || !meta.type.startsWith('table_organic_bean')) return false;
+
+    meta.tabletopColor = colorHex;
+    this.selectedNode.setAttr('itemMeta', meta);
+
+    // 1. Atualiza ou cria o tabletop-overlay
+    let tabletopOverlay = this.selectedNode.findOne('.tabletop-overlay') as Konva.Image | null;
+    if (!tabletopOverlay) {
+      tabletopOverlay = await createOrganicBeanTabletopNodeAsync(
+        this.selectedNode.width(),
+        this.selectedNode.height(),
+        colorHex,
+        meta.type
+      );
+      this.selectedNode.add(tabletopOverlay);
+    } else {
+      const topImg = await loadImageAsync(svgToDataUrl(generateOrganicBeanTabletopOnlySVG(colorHex, meta.type)));
+      tabletopOverlay.image(topImg);
+    }
+
+    // 2. Atualiza a base-image
+    const baseImg = this.selectedNode.findOne('.base-image') as Konva.Image | null;
+    if (baseImg) {
+      const fullSvg = generateOrganicBeanTableSVG(colorHex, meta.customColor || '#FFFFFF', meta.type);
+      const fullImg = await loadImageAsync(svgToDataUrl(fullSvg));
+      baseImg.image(fullImg);
+    }
+
+    const hasCoverOrColor = !!(meta.customCoverUrl || meta.customColor);
+    tabletopOverlay.visible(hasCoverOrColor);
+    if (hasCoverOrColor) {
+      tabletopOverlay.moveToTop();
+    }
+
+    this.decorLayer.batchDraw();
+    this.saveSnapshot();
+    this.notifyLayersChange();
+
+    if (this.onSelectionChange) {
+      this.onSelectionChange(meta, this.selectedNode);
+    }
+    return true;
   }
 
   // ========================================================
@@ -2482,6 +2635,7 @@ export class CanvasEngine {
           coverScale: meta.coverScale || 1,
           modularColors: meta.modularColors || null,
           balloonColors: meta.balloonColors || null,
+          tabletopColor: meta.tabletopColor || null,
           currentColor: meta.currentColor,
           availableColors: meta.availableColors,
           rentalPrice: meta.rentalPrice,

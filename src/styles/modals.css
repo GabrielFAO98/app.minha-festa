@@ -663,6 +663,53 @@
    ESTÚDIO DE CORES & CAPAS (MODAL AVANÇADO)
    ======================================================== */
 
+.cover-modal-part-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-surface-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 10px;
+}
+
+.part-selector-label {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.part-selector-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.part-selector-btn {
+  padding: 6px 14px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.part-selector-btn:hover {
+  color: var(--text-main);
+  border-color: var(--primary);
+}
+
+.part-selector-btn.active {
+  background: #F7F1E3;
+  border-color: #B58938;
+  color: #9A7229;
+  font-weight: 700;
+}
+
 .modal-subtabs-bar {
   display: flex;
   background: var(--bg-surface-elevated);

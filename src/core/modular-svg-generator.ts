@@ -110,6 +110,7 @@ export function getItemCustomizationMode(item: PresetItem | null | undefined): S
     type === 'panel_half_moon' ||
     type === 'cylinder' ||
     type === 'cube' ||
+    type.startsWith('table_organic_bean') ||
     type === 'rug_rect_3d' ||
     type === 'rug_oval' ||
     type === 'rug_round'

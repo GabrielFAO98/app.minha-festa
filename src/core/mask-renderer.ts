@@ -1,4 +1,5 @@
 import Konva from 'konva';
+import { svgToDataUrl, generateOrganicBeanTabletopOnlySVG } from './presets-data';
 
 // Cache em memória de imagens e SVGs pré-rasterizados em GPU Bitmap
 const imageBitmapCache = new Map<string, HTMLImageElement | HTMLCanvasElement>();
@@ -60,6 +61,26 @@ export function createClipFunction(type: string, width: number, height: number) 
     const ry = 12.5 * scaleY;
     const yTop = 35 * scaleY;
     const yBottom = 195 * scaleY;
+
+    return (ctx: any) => {
+      ctx.beginPath();
+      ctx.moveTo(cx - rx, yTop);
+      ctx.ellipse(cx, yTop, rx, ry, 0, Math.PI, 0, false);
+      ctx.lineTo(cx + rx, yBottom);
+      ctx.ellipse(cx, yBottom, rx, ry, 0, 0, Math.PI, false);
+      ctx.closePath();
+    };
+  }
+
+  if (type.startsWith('table_organic_bean')) {
+    const vHeight = type === 'table_organic_bean_g' ? 300 : (type === 'table_organic_bean_m' ? 250 : 200);
+    const scaleX = width / 320;
+    const scaleY = height / vHeight;
+    const cx = 160 * scaleX;
+    const rx = 55 * scaleX;
+    const ry = 12 * scaleY;
+    const yTop = 55 * scaleY;
+    const yBottom = (vHeight - 12) * scaleY;
 
     return (ctx: any) => {
       ctx.beginPath();
@@ -184,6 +205,12 @@ export function calculateCoverPlacement(
     targetY = nodeHeight * (18 / 235);
     targetW = nodeWidth * (130 / 160);
     targetH = nodeHeight * (207 / 235);
+  } else if (type.startsWith('table_organic_bean')) {
+    const vHeight = type === 'table_organic_bean_g' ? 300 : (type === 'table_organic_bean_m' ? 250 : 200);
+    targetX = nodeWidth * (105 / 320);
+    targetY = nodeHeight * (43 / vHeight);
+    targetW = nodeWidth * (110 / 320);
+    targetH = nodeHeight * ((vHeight - 45) / vHeight);
   }
 
   const baseScale = Math.max(targetW / (imgWidth || 1), targetH / (imgHeight || 1));
@@ -297,6 +324,34 @@ export function createShadingOverlay(type: string, width: number, height: number
 
     ctx.fillStyle = vertGrad;
     ctx.fillRect(xLeft, yTop, 164 * scaleX, yBottom - yTop);
+  } else if (type.startsWith('table_organic_bean')) {
+    const vHeight = type === 'table_organic_bean_g' ? 300 : (type === 'table_organic_bean_m' ? 250 : 200);
+    const scaleX = w / 320;
+    const scaleY = h / vHeight;
+    const cx = 160 * scaleX;
+    const rx = 55 * scaleX;
+    const ry = 12 * scaleY;
+    const yTop = 55 * scaleY;
+    const yBottom = (vHeight - 12) * scaleY;
+    const xLeft = cx - rx;
+    const xRight = cx + rx;
+
+    const bodyGrad = ctx.createLinearGradient(xLeft, 0, xRight, 0);
+    bodyGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.24)');
+    bodyGrad.addColorStop(0.14, 'rgba(0, 0, 0, 0.06)');
+    bodyGrad.addColorStop(0.34, 'rgba(255, 255, 255, 0.14)');
+    bodyGrad.addColorStop(0.55, 'rgba(255, 255, 255, 0.0)');
+    bodyGrad.addColorStop(0.84, 'rgba(0, 0, 0, 0.14)');
+    bodyGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.32)');
+
+    ctx.fillStyle = bodyGrad;
+    ctx.fillRect(xLeft, yTop - ry, rx * 2, (yBottom - yTop) + ry * 2);
+
+    const dropShadowGrad = ctx.createLinearGradient(0, yTop, 0, yTop + 30 * scaleY);
+    dropShadowGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.35)');
+    dropShadowGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
+    ctx.fillStyle = dropShadowGrad;
+    ctx.fillRect(xLeft, yTop, rx * 2, 30 * scaleY);
   } else if (type === 'rug_oval') {
     const cx = w * 0.5;
     const cy = h * 0.5;
@@ -585,6 +640,10 @@ export function isPointInsideMask(type: string, x: number, y: number, width: num
     return false;
   }
 
+  if (type.startsWith('table_organic_bean')) {
+    return x >= 0 && x <= width && y >= 0 && y <= height;
+  }
+
   if (type === 'rug_oval') {
     const cx = width * 0.5;
     const cy = height * 0.5;
@@ -697,5 +756,27 @@ export function loadImageAsync(src: string): Promise<HTMLImageElement> {
     };
     img.onerror = (err) => reject(err);
     img.src = src;
+  });
+}
+
+/**
+ * Cria o nó Konva do tampo orgânico feijão sobreposto às capas/pinturas do cilindro
+ */
+export async function createOrganicBeanTabletopNodeAsync(
+  width: number,
+  height: number,
+  tabletopColor: string = '#FAF8F5',
+  type: string = 'table_organic_bean'
+): Promise<Konva.Image> {
+  const svgStr = generateOrganicBeanTabletopOnlySVG(tabletopColor, type);
+  const dataUrl = svgToDataUrl(svgStr);
+  const img = await loadImageAsync(dataUrl);
+
+  return new Konva.Image({
+    name: 'tabletop-overlay',
+    image: img,
+    width: width,
+    height: height,
+    listening: false
   });
 }

@@ -22,6 +22,12 @@ export class CoverModal {
   tabPaneColors: HTMLElement | null;
   tabPaneCovers: HTMLElement | null;
 
+  // Seletor de Parte (Mesa Orgânica: Base vs Tampo Feijão)
+  partSelectorEl: HTMLElement | null;
+  partBtnCylinder: HTMLElement | null;
+  partBtnTabletop: HTMLElement | null;
+  activePart: 'cylinder' | 'tabletop' = 'cylinder';
+
   // Seletor de Cores
   previewBadge: HTMLElement | null;
   sliderHue: HTMLInputElement | null;
@@ -60,6 +66,11 @@ export class CoverModal {
 
     this.modalEl = document.getElementById('cover-modal');
     this.btnClose = document.getElementById('btn-close-cover-modal');
+
+    // Seletor de Parte
+    this.partSelectorEl = document.getElementById('cover-modal-part-selector');
+    this.partBtnCylinder = document.getElementById('part-btn-cylinder');
+    this.partBtnTabletop = document.getElementById('part-btn-tabletop');
 
     // Abas
     this.subtabBtnColors = document.getElementById('subtab-btn-colors');
@@ -187,10 +198,55 @@ export class CoverModal {
 
     // Remover Estampa / Restaurar Base
     this.btnRemoveCover?.addEventListener('click', async () => {
-      await this.canvasEngine.applyCoverToSelected(null);
-      this.canvasEngine.applySolidColorToSelected(null);
+      if (Boolean(this.targetMeta?.type?.startsWith('table_organic_bean')) && this.activePart === 'tabletop') {
+        await this.canvasEngine.applyTabletopColorToSelected('#FAF8F5');
+      } else {
+        await this.canvasEngine.applyCoverToSelected(null);
+        this.canvasEngine.applySolidColorToSelected(null);
+      }
       this.close();
     });
+
+    // Seletor de Parte da Mesa Orgânica (Base Cilindro vs Tampo Feijão)
+    this.partBtnCylinder?.addEventListener('click', () => this.switchPart('cylinder'));
+    this.partBtnTabletop?.addEventListener('click', () => this.switchPart('tabletop'));
+  }
+
+  switchPart(part: 'cylinder' | 'tabletop'): void {
+    this.activePart = part;
+    const subtitleEl = document.getElementById('cover-modal-subtitle');
+
+    if (part === 'tabletop') {
+      this.partBtnCylinder?.classList.remove('active');
+      this.partBtnTabletop?.classList.add('active');
+
+      // O tampo aceita exclusivamente cor sólida
+      if (this.subtabBtnCovers) {
+        this.subtabBtnCovers.style.display = 'none';
+      }
+      this.switchSubtab('colors');
+
+      const topHex = this.targetMeta?.tabletopColor || '#FAF8F5';
+      this.setColorHex(topHex);
+
+      if (subtitleEl && this.targetMeta) {
+        subtitleEl.textContent = `${this.targetMeta.name} • Escolha a Cor do Tampo Curvo (Feijão)`;
+      }
+    } else {
+      this.partBtnCylinder?.classList.add('active');
+      this.partBtnTabletop?.classList.remove('active');
+
+      if (this.subtabBtnCovers) {
+        this.subtabBtnCovers.style.display = 'inline-flex';
+      }
+
+      const cylHex = this.targetMeta?.customColor || '#B58938';
+      this.setColorHex(cylHex);
+
+      if (subtitleEl && this.targetMeta) {
+        subtitleEl.textContent = `${this.targetMeta.name} • Escolha uma Cor Sólida ou Capa para a Base (Cilindro)`;
+      }
+    }
   }
 
   switchSubtab(tab: 'colors' | 'covers'): void {
@@ -211,13 +267,29 @@ export class CoverModal {
 
   async open(meta: PresetItem | null): Promise<void> {
     this.targetMeta = meta;
+    this.activePart = 'cylinder';
 
     // 1. Abre o modal imediatamente no compositor (0ms)
     this.modalEl?.classList.add('open');
 
+    // Configura o seletor de parte caso seja mesa orgânica
+    if (Boolean(this.targetMeta?.type?.startsWith('table_organic_bean'))) {
+      if (this.partSelectorEl) this.partSelectorEl.style.display = 'flex';
+      this.partBtnCylinder?.classList.add('active');
+      this.partBtnTabletop?.classList.remove('active');
+      if (this.subtabBtnCovers) this.subtabBtnCovers.style.display = 'inline-flex';
+    } else {
+      if (this.partSelectorEl) this.partSelectorEl.style.display = 'none';
+      if (this.subtabBtnCovers) this.subtabBtnCovers.style.display = 'inline-flex';
+    }
+
     const subtitleEl = document.getElementById('cover-modal-subtitle');
     if (subtitleEl && meta) {
-      subtitleEl.textContent = `${meta.name} • Escolha uma Cor Sólida ou Capa`;
+      if (meta.type.startsWith('table_organic_bean')) {
+        subtitleEl.textContent = `${meta.name} • Escolha uma Cor Sólida ou Capa para a Base (Cilindro)`;
+      } else {
+        subtitleEl.textContent = `${meta.name} • Escolha uma Cor Sólida ou Capa`;
+      }
     }
 
     const hasCover = Boolean(meta?.customCoverUrl);
@@ -307,7 +379,11 @@ export class CoverModal {
 
   applySolidColor(hex: string): void {
     this.saveRecentColor(hex);
-    this.canvasEngine.applySolidColorToSelected(hex);
+    if (Boolean(this.targetMeta?.type?.startsWith('table_organic_bean')) && this.activePart === 'tabletop') {
+      this.canvasEngine.applyTabletopColorToSelected(hex);
+    } else {
+      this.canvasEngine.applySolidColorToSelected(hex);
+    }
     this.close();
   }
 

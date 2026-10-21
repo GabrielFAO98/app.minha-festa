@@ -1,4 +1,5 @@
 import type { PresetItem, ThemeCover } from '../types';
+import { adjustColorBrightness } from './modular-svg-generator';
 export const SVG_RUG_BOHO_SISAL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 260" width="260" height="260">
   <defs>
     <radialGradient id="sisalBaseGrad" cx="48%" cy="45%" r="55%">
@@ -2522,6 +2523,128 @@ export const SVG_TABLE_ORGANIC = `<svg xmlns="http://www.w3.org/2000/svg" viewBo
   </g>
 </svg>`;
 
+// 22B. Mesas Orgânicas Curvas Feijão com Base Cilíndrica (P 60cm, M 75cm, G 90cm)
+export function generateOrganicBeanTableSVG(
+  tabletopColor: string = '#FAF8F5',
+  cylinderColor?: string,
+  type: string = 'table_organic_bean'
+): string {
+  const topLight = adjustColorBrightness(tabletopColor, 0.15);
+  const topDark = adjustColorBrightness(tabletopColor, -0.15);
+  const topRimDark = adjustColorBrightness(tabletopColor, -0.28);
+
+  const cylC = cylinderColor || '#FFFFFF';
+  const cylLight = adjustColorBrightness(cylC, 0.15);
+  const cylMid = adjustColorBrightness(cylC, -0.08);
+  const cylDark = adjustColorBrightness(cylC, -0.24);
+
+  const vHeight = type === 'table_organic_bean_g' ? 300 : (type === 'table_organic_bean_m' ? 250 : 200);
+  const cylBottom = vHeight - 12;
+  const shadowY = cylBottom + 1;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 ${vHeight}" width="320" height="${vHeight}">
+  <defs>
+    <!-- Gradiente do Cilindro Base -->
+    <linearGradient id="beanCylGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="${cylDark}"/>
+      <stop offset="12%" stop-color="${cylLight}"/>
+      <stop offset="42%" stop-color="${cylC}"/>
+      <stop offset="76%" stop-color="${cylMid}"/>
+      <stop offset="100%" stop-color="${cylDark}"/>
+    </linearGradient>
+
+    <!-- Gradiente da Face Superior do Tampo Feijão -->
+    <radialGradient id="beanTopSurfaceGrad" cx="42%" cy="38%" r="60%">
+      <stop offset="0%" stop-color="${topLight}"/>
+      <stop offset="65%" stop-color="${tabletopColor}"/>
+      <stop offset="100%" stop-color="${topDark}"/>
+    </radialGradient>
+
+    <!-- Gradiente da Borda Chanfrada do Tampo Feijão -->
+    <linearGradient id="beanRimGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="${topDark}"/>
+      <stop offset="100%" stop-color="${topRimDark}"/>
+    </linearGradient>
+
+    <!-- Sombra sob o Tampo no Cilindro -->
+    <linearGradient id="beanTopUnderShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(15, 23, 42, 0.38)"/>
+      <stop offset="65%" stop-color="rgba(15, 23, 42, 0.12)"/>
+      <stop offset="100%" stop-color="rgba(15, 23, 42, 0)"/>
+    </linearGradient>
+
+    <filter id="beanFloorBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+    <filter id="beanTableDropShadow" x="-15%" y="-15%" width="130%" height="135%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.20"/>
+    </filter>
+  </defs>
+
+  <!-- 1. Sombra Difusa de Contato no Piso -->
+  <ellipse cx="160" cy="${shadowY}" rx="68" ry="10" fill="#0f172a" opacity="0.25" filter="url(#beanFloorBlur)"/>
+
+  <!-- 2. Cilindro Base (Coluna Cilíndrica: x=105 a 215, y=55 a ${cylBottom}) -->
+  <g id="bean-cylinder-base">
+    <path d="M 105 55 L 105 ${cylBottom} A 55 12 0 0 0 215 ${cylBottom} L 215 55 Z" fill="url(#beanCylGrad)"/>
+    <ellipse cx="160" cy="${cylBottom}" rx="55" ry="12" fill="url(#beanCylGrad)"/>
+    <!-- Sombra de Oclusão sob o Tampo Feijão -->
+    <rect x="105" y="55" width="110" height="26" fill="url(#beanTopUnderShadow)"/>
+  </g>
+
+  <!-- 3. Tampo Orgânico Curvilíneo Feijão (Largura ajustada e harmoniosa com a base) -->
+  <g id="bean-tabletop" filter="url(#beanTableDropShadow)">
+    <!-- Borda Lateral Chanfrada (Espessura 11px) -->
+    <path d="M 45 56 C 45 34, 105 22, 160 25 C 215 28, 275 36, 275 57 L 275 67 C 275 87, 225 94, 175 87 C 150 83, 125 83, 105 86 C 60 91, 45 78, 45 66 Z" fill="url(#beanRimGrad)" stroke="${topRimDark}" stroke-width="0.8"/>
+    <!-- Superfície Superior Laqueada -->
+    <path d="M 45 55 C 45 33, 105 21, 160 24 C 215 27, 275 35, 275 56 C 275 76, 225 83, 175 76 C 150 72, 125 72, 105 75 C 60 80, 45 67, 45 55 Z" fill="url(#beanTopSurfaceGrad)" stroke="${topDark}" stroke-width="1.2"/>
+    <!-- Bisotê / Filete Iluminado na Borda Frontal -->
+    <path d="M 48 55 C 48 35, 106 23, 160 26 C 213 29, 272 37, 272 56 C 272 73, 223 80, 175 73 C 150 70, 125 70, 105 73 C 62 77, 48 65, 48 55 Z" fill="none" stroke="rgba(255, 255, 255, 0.75)" stroke-width="1.2"/>
+  </g>
+</svg>`;
+}
+
+export function generateOrganicBeanTabletopOnlySVG(
+  tabletopColor: string = '#FAF8F5',
+  type: string = 'table_organic_bean'
+): string {
+  const topLight = adjustColorBrightness(tabletopColor, 0.15);
+  const topDark = adjustColorBrightness(tabletopColor, -0.15);
+  const topRimDark = adjustColorBrightness(tabletopColor, -0.28);
+
+  const vHeight = type === 'table_organic_bean_g' ? 300 : (type === 'table_organic_bean_m' ? 250 : 200);
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 ${vHeight}" width="320" height="${vHeight}">
+  <defs>
+    <radialGradient id="beanTopOnlySurfaceGrad" cx="42%" cy="38%" r="60%">
+      <stop offset="0%" stop-color="${topLight}"/>
+      <stop offset="65%" stop-color="${tabletopColor}"/>
+      <stop offset="100%" stop-color="${topDark}"/>
+    </radialGradient>
+
+    <linearGradient id="beanTopOnlyRimGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="${topDark}"/>
+      <stop offset="100%" stop-color="${topRimDark}"/>
+    </linearGradient>
+
+    <filter id="beanTopOnlyDropShadow" x="-15%" y="-15%" width="130%" height="135%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <g id="bean-tabletop-only" filter="url(#beanTopOnlyDropShadow)">
+    <path d="M 45 56 C 45 34, 105 22, 160 25 C 215 28, 275 36, 275 57 L 275 67 C 275 87, 225 94, 175 87 C 150 83, 125 83, 105 86 C 60 91, 45 78, 45 66 Z" fill="url(#beanTopOnlyRimGrad)" stroke="${topRimDark}" stroke-width="0.8"/>
+    <path d="M 45 55 C 45 33, 105 21, 160 24 C 215 27, 275 35, 275 56 C 275 76, 225 83, 175 76 C 150 72, 125 72, 105 75 C 60 80, 45 67, 45 55 Z" fill="url(#beanTopOnlySurfaceGrad)" stroke="${topDark}" stroke-width="1.2"/>
+    <path d="M 48 55 C 48 35, 106 23, 160 26 C 213 29, 272 37, 272 56 C 272 73, 223 80, 175 73 C 150 70, 125 70, 105 73 C 62 77, 48 65, 48 55 Z" fill="none" stroke="rgba(255, 255, 255, 0.75)" stroke-width="1.2"/>
+  </g>
+</svg>`;
+}
+
+export const SVG_TABLE_ORGANIC_BEAN_P = generateOrganicBeanTableSVG('#FFFFFF', undefined, 'table_organic_bean');
+export const SVG_TABLE_ORGANIC_BEAN_M = generateOrganicBeanTableSVG('#FFFFFF', undefined, 'table_organic_bean_m');
+export const SVG_TABLE_ORGANIC_BEAN_G = generateOrganicBeanTableSVG('#FFFFFF', undefined, 'table_organic_bean_g');
+export const SVG_TABLE_ORGANIC_BEAN = SVG_TABLE_ORGANIC_BEAN_P;
+
 // 23. Mesa Orgânica Apoio Gota (80cm x 60cm)
 export const SVG_TABLE_ORGANIC_DROP = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" width="200" height="180">
   <defs>
@@ -3195,6 +3318,42 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 35
+  },
+  {
+    id: 'preset-mesa-organica-feijao',
+    name: 'Mesa Orgânica Feijão Baixa 60cm',
+    category: 'mesas',
+    type: 'table_organic_bean',
+    widthCm: 100,
+    heightCm: 60,
+    previewUrl: svgToDataUrl(SVG_TABLE_ORGANIC_BEAN_P),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 50
+  },
+  {
+    id: 'preset-mesa-organica-feijao-m',
+    name: 'Mesa Orgânica Feijão Média 75cm',
+    category: 'mesas',
+    type: 'table_organic_bean_m',
+    widthCm: 100,
+    heightCm: 75,
+    previewUrl: svgToDataUrl(SVG_TABLE_ORGANIC_BEAN_M),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 60
+  },
+  {
+    id: 'preset-mesa-organica-feijao-g',
+    name: 'Mesa Orgânica Feijão Alta 90cm',
+    category: 'mesas',
+    type: 'table_organic_bean_g',
+    widthCm: 100,
+    heightCm: 90,
+    previewUrl: svgToDataUrl(SVG_TABLE_ORGANIC_BEAN_G),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 70
   },
   {
     id: 'preset-mesa-cavalete',

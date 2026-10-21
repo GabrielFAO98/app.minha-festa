@@ -410,10 +410,10 @@ export class CanvasEngine {
       rotateEnabled: false, // Desativa âncora flutuante externa nativa; rotação integrada no canto superior esquerdo
       anchorSize: 20,
       anchorCornerRadius: 10,
-      anchorStroke: '#c5a059',
+      anchorStroke: '#B58938',
       anchorFill: '#ffffff',
       anchorStrokeWidth: 2,
-      borderStroke: '#c5a059',
+      borderStroke: '#B58938',
       borderStrokeWidth: 1.8,
       borderDash: [5, 4],
       keepRatio: true,
@@ -422,7 +422,7 @@ export class CanvasEngine {
         anchor.hitStrokeWidth(16);
         // Desenha o ícone de seta diagonal de duas pontas (⤢) no botão superior direito
         if (anchor.hasName('top-right')) {
-          anchor.stroke('#c5a059');
+          anchor.stroke('#B58938');
           anchor.fill('#ffffff');
           anchor.strokeWidth(2);
           anchor.cornerRadius(10);
@@ -440,8 +440,8 @@ export class CanvasEngine {
             // Seta diagonal com 2 pontas (⤢)
             ctx.save();
             ctx.translate(w / 2, h / 2);
-            ctx.strokeStyle = '#c5a059';
-            ctx.fillStyle = '#c5a059';
+            ctx.strokeStyle = '#B58938';
+            ctx.fillStyle = '#B58938';
             ctx.lineWidth = 1.3;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
@@ -531,7 +531,7 @@ export class CanvasEngine {
     const circleRotate = new Konva.Circle({
       radius: 10,
       fill: '#ffffff',
-      stroke: '#c5a059',
+      stroke: '#B58938',
       strokeWidth: 2,
       listening: false
     });
@@ -540,8 +540,8 @@ export class CanvasEngine {
     const iconRotate = new Konva.Shape({
       sceneFunc: (ctx, shape) => {
         ctx.save();
-        ctx.strokeStyle = '#c5a059';
-        ctx.fillStyle = '#c5a059';
+        ctx.strokeStyle = '#B58938';
+        ctx.fillStyle = '#B58938';
         ctx.lineWidth = 1.3;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
@@ -602,7 +602,7 @@ export class CanvasEngine {
     const circleFlip = new Konva.Circle({
       radius: 10,
       fill: '#ffffff',
-      stroke: '#c5a059',
+      stroke: '#B58938',
       strokeWidth: 2,
       listening: false
     });
@@ -614,7 +614,7 @@ export class CanvasEngine {
         ctx.beginPath();
         ctx.moveTo(0, -5);
         ctx.lineTo(0, 5);
-        ctx.strokeStyle = '#c5a059';
+        ctx.strokeStyle = '#B58938';
         ctx.lineWidth = 1.1;
         ctx.stroke();
 
@@ -624,7 +624,7 @@ export class CanvasEngine {
         ctx.lineTo(-5.5, 0);
         ctx.lineTo(-1.2, 4);
         ctx.closePath();
-        ctx.fillStyle = '#c5a059';
+        ctx.fillStyle = '#B58938';
         ctx.fill();
 
         // Triângulo direito (apontando para direita)
@@ -633,7 +633,7 @@ export class CanvasEngine {
         ctx.lineTo(5.5, 0);
         ctx.lineTo(1.2, 4);
         ctx.closePath();
-        ctx.fillStyle = '#c5a059';
+        ctx.fillStyle = '#B58938';
         ctx.fill();
       },
       listening: false
@@ -678,7 +678,7 @@ export class CanvasEngine {
     const circleDup = new Konva.Circle({
       radius: 10,
       fill: '#ffffff',
-      stroke: '#c5a059',
+      stroke: '#B58938',
       strokeWidth: 2,
       listening: false
     });
@@ -686,7 +686,7 @@ export class CanvasEngine {
     // Ícone de Duplicar: Dois quadrados sobrepostos
     const iconDup = new Konva.Shape({
       sceneFunc: (ctx, shape) => {
-        ctx.strokeStyle = '#c5a059';
+        ctx.strokeStyle = '#B58938';
         ctx.lineWidth = 1.1;
 
         // Quadrado traseiro (topo-direita)
@@ -734,7 +734,7 @@ export class CanvasEngine {
     // Haste de conexão vertical elegante (liga o topo da seleção até a alça)
     const stemMove = new Konva.Line({
       points: [0, 0, 0, 26],
-      stroke: '#c5a059',
+      stroke: '#B58938',
       strokeWidth: 1.8,
       dash: [3, 2.5],
       listening: false
@@ -755,7 +755,7 @@ export class CanvasEngine {
       y: 0,
       radius: 10,
       fill: '#ffffff',
-      stroke: '#c5a059',
+      stroke: '#B58938',
       strokeWidth: 2,
       shadowColor: 'rgba(0, 0, 0, 0.15)',
       shadowBlur: 5,
@@ -769,7 +769,7 @@ export class CanvasEngine {
       x: 0,
       y: 0,
       sceneFunc: (ctx, shape) => {
-        ctx.strokeStyle = '#c5a059';
+        ctx.strokeStyle = '#B58938';
         ctx.fillStyle = '#ffffff';
         ctx.lineWidth = 1.3;
 
@@ -1530,7 +1530,7 @@ export class CanvasEngine {
     this.isPinchingCover = false;
 
     if (this.transformer) {
-      this.transformer.borderStroke('#c5a059');
+      this.transformer.borderStroke('#B58938');
       this.transformer.borderDash([5, 4]);
       this.transformer.enabledAnchors(['top-right']);
       this.transformer.rotateEnabled(false);

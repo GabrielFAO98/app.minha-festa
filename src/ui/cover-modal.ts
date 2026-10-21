@@ -49,7 +49,7 @@ export class CoverModal {
   currentHue = 41;
   currentSaturation = 50;
   currentLightness = 56;
-  currentHex = '#c5a059';
+  currentHex = '#B58938';
   activeSubtab: 'colors' | 'covers' = 'colors';
   private curatedPalettesRendered = false;
   private factoryCoversRendered = false;
@@ -224,7 +224,7 @@ export class CoverModal {
     this.renderCallout(hasCover);
 
     // Inicializa a cor atual
-    const initialHex = meta?.customColor || '#c5a059';
+    const initialHex = meta?.customColor || '#B58938';
     this.setColorHex(initialHex);
 
     // Renderiza seções da aba Cores de forma instantânea (cacheado)

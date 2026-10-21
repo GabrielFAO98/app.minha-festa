@@ -141,7 +141,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background-color: var(--bg-surface-elevated);
+  background-color: #ffffff;
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -153,12 +153,12 @@
   height: 28px;
   padding: 0 10px;
   border-radius: var(--radius-full);
-  background-color: var(--bg-surface);
-  color: var(--text-muted);
+  background-color: #ffffff;
+  color: #57534E;
   font-size: 0.70rem;
-  font-weight: 600;
+  font-weight: 500;
   border: 1px solid var(--border-subtle);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: none;
   flex-shrink: 0;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
@@ -166,12 +166,18 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.pill-btn:hover {
+  background-color: #F7F1E3;
+  border-color: #B58938;
+  color: #9A7229;
+}
+
 .pill-btn.active {
-  background: linear-gradient(135deg, #c5a059, #b08c47);
-  color: #fff;
-  border-color: #b08c47;
-  font-weight: 700;
-  box-shadow: 0 2px 8px var(--primary-glow);
+  background: #F7F1E3;
+  color: #9A7229;
+  border: 1px solid #B58938;
+  font-weight: 600;
+  box-shadow: none;
 }
 
 .sheet-body {
@@ -196,7 +202,7 @@
   aspect-ratio: 1 / 1.08;
   border-radius: var(--radius-md);
   border: 1.5px solid var(--border-subtle);
-  background-color: #ffffff;
+  background-color: #EAE6DF;
   overflow: hidden;
   cursor: pointer;
   display: flex;
@@ -222,6 +228,7 @@
   max-height: 82%;
   object-fit: contain;
   transition: transform 0.15s ease;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.12));
 }
 
 .element-card-overlay {
@@ -276,7 +283,7 @@
   align-items: center;
   justify-content: center;
   margin-bottom: 6px;
-  background-color: #ffffff;
+  background-color: #EAE6DF;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 4px;
@@ -287,6 +294,7 @@
   max-height: 64px;
   max-width: 90%;
   object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.12));
 }
 
 .my-item-card-title {
@@ -376,7 +384,7 @@
   align-items: center;
   justify-content: center;
   margin-bottom: 6px;
-  background: radial-gradient(circle at center, #ffffff 30%, #f4f5f7 100%);
+  background-color: #EAE6DF;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 4px;
@@ -388,6 +396,7 @@
   max-height: 54px;
   max-width: 85%;
   object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.12));
 }
 
 .item-card-title {

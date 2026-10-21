@@ -316,6 +316,16 @@ export class DesktopStudio {
     const btnCover = document.getElementById('btn-desktop-cover');
     const framingPanel = document.getElementById('desktop-cover-framing-panel');
 
+    // Sincroniza o destaque de camada ativa na lista do painel
+    const listEl = document.getElementById('desktop-layers-list');
+    if (listEl) {
+      const selectedId = meta?.instanceId || null;
+      listEl.querySelectorAll('.layer-row-item').forEach((r) => {
+        const itemEl = r as HTMLElement;
+        itemEl.classList.toggle('selected', Boolean(selectedId && itemEl.dataset.instanceId === selectedId));
+      });
+    }
+
     if (!node || !meta) {
       if (box) box.style.display = 'none';
       if (emptyBox) emptyBox.style.display = 'flex';

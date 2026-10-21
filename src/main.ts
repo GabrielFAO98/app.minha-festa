@@ -132,6 +132,7 @@ async function bootstrap() {
   canvasEngine.onSelectionChange = (meta, node) => {
     itemToolbar.updateSelection(meta, node);
     desktopStudio?.updateInspector(meta, node);
+    bottomDock?.syncLayerSelection(meta?.instanceId || null);
     if (!canvasEngine.isRepositioningCover && repositionBar) {
       repositionBar.style.display = 'none';
     }

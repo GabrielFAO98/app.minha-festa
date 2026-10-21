@@ -209,6 +209,13 @@ export class CanvasEngine {
     this.decorLayer = new Konva.Layer({ listening: false });
     this.stage.add(this.decorLayer);
 
+    // Aplica sombra de base/contato realista no canvas da camada de peças decorativas
+    const decorCanvasEl = this.decorLayer.getCanvas()?._canvas;
+    if (decorCanvasEl) {
+      decorCanvasEl.classList.add('canvas-decor-layer');
+      decorCanvasEl.style.filter = 'drop-shadow(0 8px 10px rgba(0, 0, 0, 0.18))';
+    }
+
     // Apenas uiLayer possui listening: true para as 4 âncoras de redimensionamento/rotação do Transformer
     this.uiLayer = new Konva.Layer({ listening: true });
     this.stage.add(this.uiLayer);
@@ -2380,15 +2387,61 @@ export class CanvasEngine {
     const exportScale = this.baseScale;
     const exportX = this.baseOffsetX;
     const exportY = this.baseOffsetY;
+    const exportW = this.VIRTUAL_WIDTH * exportScale;
+    const exportH = this.VIRTUAL_HEIGHT * exportScale;
+    const pixelRatio = Math.max(1, 1 / exportScale);
 
-    const dataUrl = this.stage.toDataURL({
-      x: exportX,
-      y: exportY,
-      width: this.VIRTUAL_WIDTH * exportScale,
-      height: this.VIRTUAL_HEIGHT * exportScale,
-      pixelRatio: Math.max(1, 1 / exportScale),
-      mimeType: 'image/png'
-    }) || '';
+    let dataUrl = '';
+    try {
+      // Composição com sombra de contato realista para exportação HD
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = exportW * pixelRatio;
+      exportCanvas.height = exportH * pixelRatio;
+      const exportCtx = exportCanvas.getContext('2d');
+
+      if (exportCtx && this.bgLayer && this.decorLayer) {
+        exportCtx.imageSmoothingEnabled = true;
+        exportCtx.imageSmoothingQuality = 'high';
+
+        // 1. Renderiza o fundo do cenário (piso e parede)
+        const bgCanvas = this.bgLayer.toCanvas({
+          x: exportX,
+          y: exportY,
+          width: exportW,
+          height: exportH,
+          pixelRatio
+        });
+        exportCtx.drawImage(bgCanvas, 0, 0);
+
+        // 2. Renderiza as peças decorativas com sombra de contato realista
+        exportCtx.save();
+        exportCtx.filter = 'drop-shadow(0 8px 10px rgba(0, 0, 0, 0.18))';
+        const decorCanvas = this.decorLayer.toCanvas({
+          x: exportX,
+          y: exportY,
+          width: exportW,
+          height: exportH,
+          pixelRatio
+        });
+        exportCtx.drawImage(decorCanvas, 0, 0);
+        exportCtx.restore();
+
+        dataUrl = exportCanvas.toDataURL('image/png') || '';
+      }
+    } catch {
+      dataUrl = '';
+    }
+
+    if (!dataUrl) {
+      dataUrl = this.stage.toDataURL({
+        x: exportX,
+        y: exportY,
+        width: exportW,
+        height: exportH,
+        pixelRatio,
+        mimeType: 'image/png'
+      }) || '';
+    }
 
     // Restaura o zoom e pan que o usuário estava usando
     if (prevZoom !== 1 || prevPanX !== 0 || prevPanY !== 0) {

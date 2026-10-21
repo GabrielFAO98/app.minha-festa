@@ -154,7 +154,7 @@
 
 .btn-zoom-ctrl:active {
   transform: scale(0.92);
-  background: rgba(197, 160, 89, 0.2);
+  background: var(--primary-glow);
 }
 
 .btn-zoom-level {

@@ -291,6 +291,13 @@ body {
   touch-action: none !important;
 }
 
+/* Sombra de base/contato realista para elementos no palco (painéis, cilindros, mesas) */
+#konva-container canvas.canvas-decor-layer,
+#konva-container .konvajs-content canvas:nth-child(2),
+#konva-container canvas:nth-child(2) {
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.18));
+}
+
 /* BARRA FLUTUANTE DE AÇÕES DA PEÇA (MOBILE) */
 .item-actions-floating {
   position: absolute;
@@ -836,6 +843,7 @@ body {
   user-select: none;
   transition: background var(--transition-fast), border-color var(--transition-fast), transform 0.15s ease, box-shadow 0.15s ease;
   position: relative;
+  overflow: hidden;
 }
 
 .layer-row-item:hover {
@@ -844,9 +852,14 @@ body {
 }
 
 .layer-row-item.selected {
-  border-color: var(--primary);
-  background: var(--primary-light);
-  box-shadow: 0 0 0 1px var(--primary);
+  border: 1px solid #B58938;
+  background-color: #F7F1E3;
+  box-shadow: none;
+}
+
+.layer-row-item.selected:hover {
+  background-color: #F7F1E3;
+  border-color: #B58938;
 }
 
 /* Feedback de Arrastar (Drag & Drop) */
@@ -877,7 +890,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
+  width: 20px;
   height: 32px;
   color: var(--text-muted);
   cursor: grab;
@@ -899,10 +912,10 @@ body {
 
 /* Thumbnail e Informações da Peça */
 .layer-thumb {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
-  background: #EAE6DF;
+  background: var(--bg-thumb-contrast);
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
   padding: 2px;
@@ -912,22 +925,31 @@ body {
 
 .layer-info {
   flex: 1;
-  overflow: hidden;
   min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
 }
 
 .layer-title {
-  font-size: 0.78rem;
+  font-size: 0.80rem;
   font-weight: 600;
   color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.25;
 }
 
 .layer-sub {
-  font-size: 0.65rem;
+  font-size: 12px;
   color: var(--text-muted);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Ações de Reordenação por Linha (Botões Canva) */
@@ -942,12 +964,12 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
-  background: var(--bg-surface-elevated);
+  background: var(--bg-surface);
   color: var(--text-main);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   cursor: pointer;
@@ -966,7 +988,40 @@ body {
 }
 
 .layer-mini-btn svg {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
   display: block;
+}
+
+/* Em telas Desktop, controles de ordenação compactados com sobreposição suave em hover/seleção */
+@media (min-width: 900px) {
+  .layer-item-actions {
+    position: absolute;
+    right: 4px;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding-left: 24px;
+    padding-right: 6px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, #FFFFFF 26%, #FFFFFF 100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-fast);
+    z-index: 2;
+  }
+
+  .layer-row-item:hover .layer-item-actions {
+    opacity: 1;
+    pointer-events: auto;
+    background: linear-gradient(90deg, rgba(250, 248, 245, 0) 0%, var(--bg-surface-elevated) 26%, var(--bg-surface-elevated) 100%);
+  }
+
+  .layer-row-item.selected .layer-item-actions,
+  .layer-row-item.selected:hover .layer-item-actions {
+    opacity: 1;
+    pointer-events: auto;
+    background: linear-gradient(90deg, rgba(247, 241, 227, 0) 0%, #F7F1E3 26%, #F7F1E3 100%);
+  }
 }

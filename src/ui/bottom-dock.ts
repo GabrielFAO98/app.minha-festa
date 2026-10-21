@@ -700,4 +700,12 @@ export class BottomDock {
       this.renderLayersTab();
     });
   }
+
+  syncLayerSelection(selectedId?: string | null): void {
+    if (!this.paneLayers) return;
+    this.paneLayers.querySelectorAll('.layer-row-item').forEach((r) => {
+      const itemEl = r as HTMLElement;
+      itemEl.classList.toggle('selected', Boolean(selectedId && itemEl.dataset.instanceId === selectedId));
+    });
+  }
 }

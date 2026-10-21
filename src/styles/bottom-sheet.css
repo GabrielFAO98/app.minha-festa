@@ -30,6 +30,18 @@
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
+  position: relative;
+}
+
+.dock-tab-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: transparent;
+  transition: background-color 0.18s ease;
 }
 
 .dock-tab-btn .tab-icon {
@@ -40,6 +52,7 @@
   height: 24px;
   font-size: 1.25rem;
   line-height: 1;
+  transition: color 0.15s ease, transform 0.15s ease;
 }
 
 .dock-tab-btn .tab-icon svg {
@@ -47,14 +60,32 @@
   height: 20px;
   stroke: currentColor;
   stroke-width: 2.2;
+  transition: stroke 0.15s ease;
+}
+
+.dock-tab-btn span {
+  transition: color 0.15s ease;
 }
 
 .dock-tab-btn.active {
-  color: var(--primary);
+  color: #B58938;
+}
+
+.dock-tab-btn.active::before {
+  background-color: #B58938;
 }
 
 .dock-tab-btn.active .tab-icon {
+  color: #B58938;
   transform: translateY(-2px) scale(1.08);
+}
+
+.dock-tab-btn.active .tab-icon svg {
+  stroke: #B58938;
+}
+
+.dock-tab-btn.active span {
+  color: #B58938;
 }
 
 /* Gaveta Deslizante (Totalmente oculta quando fechada) */

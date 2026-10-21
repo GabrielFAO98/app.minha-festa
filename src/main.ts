@@ -255,35 +255,36 @@ async function loadDefaultScene(canvasEngine: CanvasEngine) {
     if (panel) {
       const panelH = (panel.heightCm || 190) * pxPerCm;
       await canvasEngine.addItem(panel, {
-        x: 380,
+        x: 360,
         y: Math.round(floorY + 45 - panelH)
       }, false, false);
     }
 
-    // 3. Cilindro G (Direita, 1º nível de profundidade à frente dos painéis)
-    if (cylG) {
-      const cylGH = (cylG.heightCm || 80) * pxPerCm;
-      await canvasEngine.addItem(cylG, {
-        x: 640,
-        y: Math.round(floorY + 180 - cylGH)
-      }, false, false);
-    }
+    // 3. Trio de Cilindros P, M, G rigorosamente alinhados na mesma linha de base no piso
+    // Larguras: P=147px, M=170px, G=193px. Espaçamento uniforme de 20px, perfeitamente centralizados no palco (x: 265 a 815)
+    const baselineY = Math.round(floorY + 225); // 1372px (base comum horizontal no piso de madeira)
 
-    // 4. Cilindro M (Centro, 2º nível em cascata para frente)
-    if (cylM) {
-      const cylMH = (cylM.heightCm || 60) * pxPerCm;
-      await canvasEngine.addItem(cylM, {
-        x: 485,
-        y: Math.round(floorY + 245 - cylMH)
-      }, false, false);
-    }
-
-    // 5. Cilindro P (Esquerda, 3º nível mais próximo do observador)
     if (cylP) {
       const cylPH = (cylP.heightCm || 45) * pxPerCm;
       await canvasEngine.addItem(cylP, {
-        x: 345,
-        y: Math.round(floorY + 300 - cylPH)
+        x: 265,
+        y: Math.round(baselineY - cylPH)
+      }, false, false);
+    }
+
+    if (cylM) {
+      const cylMH = (cylM.heightCm || 60) * pxPerCm;
+      await canvasEngine.addItem(cylM, {
+        x: 432,
+        y: Math.round(baselineY - cylMH)
+      }, false, false);
+    }
+
+    if (cylG) {
+      const cylGH = (cylG.heightCm || 80) * pxPerCm;
+      await canvasEngine.addItem(cylG, {
+        x: 622,
+        y: Math.round(baselineY - cylGH)
       }, false, false);
     }
 

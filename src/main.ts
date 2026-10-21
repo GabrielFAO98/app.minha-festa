@@ -1,4 +1,5 @@
 import { initDatabase, getItemsByCategory } from './core/db';
+import { DEFAULT_PRESET_ITEMS } from './core/presets-data';
 import { CanvasEngine } from './core/canvas-engine';
 import { ItemToolbar } from './ui/item-toolbar';
 import { BottomDock } from './ui/bottom-dock';
@@ -232,40 +233,57 @@ async function loadDefaultScene(canvasEngine: CanvasEngine) {
     const allPanels = await getItemsByCategory('paineis');
     const allCylinders = await getItemsByCategory('cilindros');
 
-    const panel = allPanels.find((p) => p.id === 'preset-painel-redondo');
-    const cylG = allCylinders.find((c) => c.id === 'preset-cilindro-g');
-    const cylM = allCylinders.find((c) => c.id === 'preset-cilindro-m');
-    const cylP = allCylinders.find((c) => c.id === 'preset-cilindro-p');
+    const arch = allPanels.find((p) => p.id === 'preset-arco-romano') || DEFAULT_PRESET_ITEMS.find((p) => p.id === 'preset-arco-romano');
+    const panel = allPanels.find((p) => p.id === 'preset-painel-redondo') || DEFAULT_PRESET_ITEMS.find((p) => p.id === 'preset-painel-redondo');
+    const cylG = allCylinders.find((c) => c.id === 'preset-cilindro-g') || DEFAULT_PRESET_ITEMS.find((c) => c.id === 'preset-cilindro-g');
+    const cylM = allCylinders.find((c) => c.id === 'preset-cilindro-m') || DEFAULT_PRESET_ITEMS.find((c) => c.id === 'preset-cilindro-m');
+    const cylP = allCylinders.find((c) => c.id === 'preset-cilindro-p') || DEFAULT_PRESET_ITEMS.find((c) => c.id === 'preset-cilindro-p');
 
-    const centerX = 540; // Centro exato de 1080
-    const floorY = canvasEngine.WALL_HEIGHT; // Linha do chão padrão vertical 9:16 (1147)
+    const floorY = canvasEngine.WALL_HEIGHT; // 1147px (horizonte de encontro da parede com o piso)
+    const pxPerCm = canvasEngine.pxPerCm;
 
-    // 1. Painel Redondo ao Centro
+    // 1. Painel Arco Romano 1,00x2,00m (Fundo Esquerda - painel alto e imponente)
+    if (arch) {
+      const archH = (arch.heightCm || 200) * pxPerCm;
+      await canvasEngine.addItem(arch, {
+        x: 160,
+        y: Math.round(floorY + 45 - archH)
+      }, false, false);
+    }
+
+    // 2. Painel Redondo 1,50m (Fundo Centro-Direita, sobrepondo o Arco com elegância)
     if (panel) {
+      const panelH = (panel.heightCm || 190) * pxPerCm;
       await canvasEngine.addItem(panel, {
-        x: centerX - 290,
-        y: floorY - 570
+        x: 380,
+        y: Math.round(floorY + 45 - panelH)
       }, false, false);
     }
-    // 2. Trio de Cilindros P, M, G à frente no piso
+
+    // 3. Cilindro G (Direita, 1º nível de profundidade à frente dos painéis)
     if (cylG) {
+      const cylGH = (cylG.heightCm || 80) * pxPerCm;
       await canvasEngine.addItem(cylG, {
-        x: centerX + 50,
-        y: floorY - 268
+        x: 640,
+        y: Math.round(floorY + 180 - cylGH)
       }, false, false);
     }
 
+    // 4. Cilindro M (Centro, 2º nível em cascata para frente)
     if (cylM) {
+      const cylMH = (cylM.heightCm || 60) * pxPerCm;
       await canvasEngine.addItem(cylM, {
-        x: centerX - 140,
-        y: floorY - 151
+        x: 485,
+        y: Math.round(floorY + 245 - cylMH)
       }, false, false);
     }
 
+    // 5. Cilindro P (Esquerda, 3º nível mais próximo do observador)
     if (cylP) {
+      const cylPH = (cylP.heightCm || 45) * pxPerCm;
       await canvasEngine.addItem(cylP, {
-        x: centerX - 300,
-        y: floorY - 63
+        x: 345,
+        y: Math.round(floorY + 300 - cylPH)
       }, false, false);
     }
 

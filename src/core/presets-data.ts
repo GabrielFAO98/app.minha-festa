@@ -3196,17 +3196,17 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     rentalPrice: 55
   },
   {
-    id: 'preset-painel-ripado',
-    name: 'Painel Ripado 1,00x2,20m',
+    id: 'preset-painel-arco-ripado',
+    name: 'Painel Arco Ripado Madeira 1,00x2,10m',
     category: 'paineis',
-    type: 'panel_slat',
-    svgRole: 'modular',
+    type: 'panel_arch',
+    svgRole: 'photo',
     widthCm: 100,
-    heightCm: 220,
-    previewUrl: svgToDataUrl(SVG_PANEL_SLAT_100x220),
+    heightCm: 210,
+    previewUrl: '/items/painel-arco-ripado.png',
     isCustom: false,
     stockQuantity: 1,
-    rentalPrice: 70
+    rentalPrice: 65
   },
   {
     id: 'preset-painel-meia-lua',
@@ -3221,16 +3221,46 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     rentalPrice: 55
   },
   {
-    id: 'preset-shimmer-wall',
-    name: 'Shimmer Wall (Paetê Dourado) 30x30cm',
+    id: 'preset-moinho-mdf-marrom',
+    name: 'Painel Moinho Fazendinha MDF 1,80m - Cru',
     category: 'paineis',
-    type: 'shimmer_wall',
-    widthCm: 30,
-    heightCm: 30,
-    previewUrl: svgToDataUrl(SVG_SHIMMER_WALL),
+    type: 'moinho',
+    currentColor: 'marrom',
+    availableColors: ['marrom', 'branco', 'bege'],
+    widthCm: 105,
+    heightCm: 180,
+    previewUrl: '/items/moinho-mdf-marrom.png',
     isCustom: false,
-    stockQuantity: 12,
-    rentalPrice: 15
+    stockQuantity: 1,
+    rentalPrice: 65
+  },
+  {
+    id: 'preset-moinho-mdf-branco',
+    name: 'Painel Moinho Fazendinha MDF 1,80m - Branco',
+    category: 'paineis',
+    type: 'moinho',
+    currentColor: 'branco',
+    availableColors: ['marrom', 'branco', 'bege'],
+    widthCm: 105,
+    heightCm: 180,
+    previewUrl: '/items/moinho-mdf-branco.png',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 65
+  },
+  {
+    id: 'preset-moinho-mdf-bege',
+    name: 'Painel Moinho Fazendinha MDF 1,80m - Bege',
+    category: 'paineis',
+    type: 'moinho',
+    currentColor: 'bege',
+    availableColors: ['marrom', 'branco', 'bege'],
+    widthCm: 105,
+    heightCm: 180,
+    previewUrl: '/items/moinho-mdf-bege.png',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 65
   },
 
   // 2. CILINDROS, CUBOS E MESAS
@@ -3391,6 +3421,84 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     stockQuantity: 1,
     rentalPrice: 50
   },
+  {
+    id: 'preset-escada-mesa-pinus',
+    name: 'Estante Escada Pinus 1,17m',
+    category: 'mesas',
+    type: 'table',
+    svgRole: 'photo',
+    widthCm: 60,
+    heightCm: 117,
+    previewUrl: '/items/escada-pinus.png',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 45
+  },
+  {
+    id: 'preset-mesa-bistro-mdf',
+    name: 'Mesa Bistrô Redonda MDF 75cm',
+    category: 'mesas',
+    type: 'table_side',
+    svgRole: 'photo',
+    widthCm: 58,
+    heightCm: 75,
+    previewUrl: '/items/mesa-bistro-mdf.png',
+    isCustom: false,
+    stockQuantity: 2,
+    rentalPrice: 35
+  },
+  {
+    id: 'preset-mesa-pedestal-pinus-g',
+    name: 'Mesa Pedestal Pinus G (38x85cm)',
+    category: 'mesas',
+    type: 'table',
+    svgRole: 'photo',
+    widthCm: 38,
+    heightCm: 85,
+    previewUrl: '/items/mesa-pedestal-pinus-g.png',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 35
+  },
+  {
+    id: 'preset-mesa-pedestal-pinus-m',
+    name: 'Mesa Pedestal Pinus M (30x70cm)',
+    category: 'mesas',
+    type: 'table',
+    svgRole: 'photo',
+    widthCm: 30,
+    heightCm: 70,
+    previewUrl: '/items/mesa-pedestal-pinus-m.png',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 30
+  },
+  {
+    id: 'preset-mesa-pedestal-pinus-p',
+    name: 'Mesa Pedestal Pinus P (28x55cm)',
+    category: 'mesas',
+    type: 'table',
+    svgRole: 'photo',
+    widthCm: 28,
+    heightCm: 55,
+    previewUrl: '/items/mesa-pedestal-pinus-p.png',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 25
+  },
+  {
+    id: 'preset-mesa-cone-ripada',
+    name: 'Mesa Cone Ripada MDF 80cm',
+    category: 'mesas',
+    type: 'table',
+    svgRole: 'photo',
+    widthCm: 65,
+    heightCm: 80,
+    previewUrl: '/items/mesa-cone-ripada.png',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 45
+  },
 
 
   // 4. PISO (TAPETES)
@@ -3481,30 +3589,6 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     rentalPrice: 15
   },
   {
-    id: 'preset-vaso-garrafinha-4',
-    name: 'Vaso Garrafinha Branca - Arranjo Slim',
-    category: 'acessorios',
-    type: 'generic',
-    widthCm: 15.5,
-    heightCm: 32,
-    previewUrl: '/items/vaso-garrafinha-branco-4.png',
-    isCustom: false,
-    stockQuantity: 4,
-    rentalPrice: 15
-  },
-  {
-    id: 'preset-display-mesa',
-    name: 'Display de Mesa MDF 25cm',
-    category: 'displays',
-    type: 'display',
-    widthCm: 20,
-    heightCm: 25,
-    previewUrl: svgToDataUrl(SVG_DISPLAY_TABLE),
-    isCustom: false,
-    stockQuantity: 4,
-    rentalPrice: 15
-  },
-  {
     id: 'preset-bolo-fake',
     name: 'Bolo Fake Cenográfico 3 Andares',
     category: 'acessorios',
@@ -3515,49 +3599,6 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 45
-  },
-  // MOINHO DECORATIVO EM MDF 89cm (FOTOGRAFIA REAL DO PRODUTO EM FUNDO TRANSPARENTE)
-  {
-    id: 'preset-moinho-mdf-marrom',
-    name: 'Moinho Fazendinha MDF 89cm - Cru',
-    category: 'displays',
-    type: 'moinho',
-    currentColor: 'marrom',
-    availableColors: ['marrom', 'branco', 'bege'],
-    widthCm: 52,
-    heightCm: 89,
-    previewUrl: '/items/moinho-mdf-marrom.png',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 50
-  },
-  {
-    id: 'preset-moinho-mdf-branco',
-    name: 'Moinho Fazendinha MDF 89cm - Branco',
-    category: 'displays',
-    type: 'moinho',
-    currentColor: 'branco',
-    availableColors: ['marrom', 'branco', 'bege'],
-    widthCm: 52,
-    heightCm: 89,
-    previewUrl: '/items/moinho-mdf-branco.png',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 50
-  },
-  {
-    id: 'preset-moinho-mdf-bege',
-    name: 'Moinho Fazendinha MDF 89cm - Bege',
-    category: 'displays',
-    type: 'moinho',
-    currentColor: 'bege',
-    availableColors: ['marrom', 'branco', 'bege'],
-    widthCm: 52,
-    heightCm: 89,
-    previewUrl: '/items/moinho-mdf-bege.png',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 50
   },
   {
     id: 'preset-display-chao',
@@ -3618,21 +3659,8 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 25
-  },
-  // --- NOVAS ADIÇÕES PREMIUM SUGERIDAS ---
-  {
-    id: 'preset-caixa-presente-luxo',
-    name: 'Caixa de Presente Cenográfica com Laço Luxo',
-    category: 'displays',
-    type: 'display',
-    widthCm: 50,
-    heightCm: 55,
-    previewUrl: svgToDataUrl(SVG_GIFT_BOX_LUXURY),
-    isCustom: false,
-    stockQuantity: 2,
-    rentalPrice: 25
-  },
-  ];
+  }
+];
 
 // Presets de Capas e Estampas de Demonstração (Imagens Realistas de Festas Reais)
 export const DEFAULT_THEME_COVERS: ThemeCover[] = [

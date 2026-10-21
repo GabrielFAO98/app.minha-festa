@@ -2,7 +2,6 @@ import { getAllCovers, addCustomCover, deleteCustomCover, type CoverItemRecord }
 import { optimizeUserUploadedImage } from '../core/image-optimizer';
 import {
   PARTY_PALETTE_GROUPS,
-  extractColorsFromImage,
   hslToHex,
   hexToHsl
 } from '../core/color-extractor';
@@ -35,12 +34,14 @@ export class CoverModal {
   hexTextInput: HTMLInputElement | null;
   btnApplyCustomColor: HTMLElement | null;
 
-  // Paletas e Extração
+  // Paletas e Conta-gotas
   sceneColorsContainer: HTMLElement | null;
   curatedPalettesContainer: HTMLElement | null;
-  btnTriggerPhotoExtract: HTMLElement | null;
-  photoPaletteInput: HTMLInputElement | null;
-  extractedPaletteRow: HTMLElement | null;
+  btnTriggerEyedropper: HTMLElement | null;
+  eyedropperActiveBanner: HTMLElement | null;
+  btnCancelEyedropper: HTMLElement | null;
+  isEyedropperActive = false;
+  private eyedropperCleanup: (() => void) | null = null;
 
   // Capas e Uploads
   calloutPlaceholder: HTMLElement | null;
@@ -88,9 +89,9 @@ export class CoverModal {
     // Paletas
     this.sceneColorsContainer = document.getElementById('scene-active-colors-container');
     this.curatedPalettesContainer = document.getElementById('curated-palettes-container');
-    this.btnTriggerPhotoExtract = document.getElementById('btn-trigger-photo-extract');
-    this.photoPaletteInput = document.getElementById('photo-palette-input') as HTMLInputElement | null;
-    this.extractedPaletteRow = document.getElementById('extracted-palette-row');
+    this.btnTriggerEyedropper = document.getElementById('btn-trigger-eyedropper');
+    this.eyedropperActiveBanner = document.getElementById('eyedropper-active-banner');
+    this.btnCancelEyedropper = document.getElementById('btn-cancel-eyedropper');
 
     // Capas
     this.calloutPlaceholder = document.getElementById('cover-active-callout-placeholder');
@@ -147,25 +148,13 @@ export class CoverModal {
       this.applySolidColor(this.currentHex);
     });
 
-    // Extração de Paleta a partir de Imagem / Convite
-    this.btnTriggerPhotoExtract?.addEventListener('click', () => {
-      this.photoPaletteInput?.click();
+    // Ferramenta Conta-gotas no Cenário
+    this.btnTriggerEyedropper?.addEventListener('click', () => {
+      this.startEyedropper();
     });
 
-    this.photoPaletteInput?.addEventListener('change', async (e) => {
-      const target = e.target as HTMLInputElement | null;
-      const file = target?.files?.[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        const dataUrl = ev.target?.result as string;
-        if (!dataUrl) return;
-        const colors = await extractColorsFromImage(dataUrl, 5);
-        this.renderExtractedPalette(colors);
-      };
-      reader.readAsDataURL(file);
-      if (this.photoPaletteInput) this.photoPaletteInput.value = '';
+    this.btnCancelEyedropper?.addEventListener('click', () => {
+      this.cancelEyedropper();
     });
 
     // Upload de Nova Estampa / Foto
@@ -526,35 +515,153 @@ export class CoverModal {
     this.curatedPalettesContainer.appendChild(fragment);
   }
 
-  renderExtractedPalette(colors: string[]): void {
-    if (!this.extractedPaletteRow) return;
-    if (colors.length === 0) {
-      this.extractedPaletteRow.style.display = 'none';
+  // ========================================================
+  // CONTA-GOTAS DINÂMICO NO CENÁRIO
+  // ========================================================
+  async startEyedropper(): Promise<void> {
+    const meta = this.targetMeta;
+    const part = this.activePart;
+
+    // 1. O menu desce imediatamente (fecha o modal para liberar 100% da visão do cenário)
+    this.close();
+
+    // 2. Se o navegador suporta EyeDropper nativo (ex: Chrome, Edge desktop e Android)
+    if (typeof window !== 'undefined' && (window as any).EyeDropper) {
+      try {
+        const eyeDropper = new (window as any).EyeDropper();
+        const result = await eyeDropper.open();
+        if (result?.sRGBHex) {
+          const hex = result.sRGBHex.toLowerCase();
+          await this.handleEyedropperColorPicked(hex, meta, part);
+          return;
+        }
+      } catch {
+        // Usuário cancelou ou apertou Esc
+      }
+      // Reabre o modal restaurando o estado
+      await this.open(meta);
+      this.switchPart(part);
       return;
     }
 
-    this.extractedPaletteRow.style.display = 'flex';
-    this.extractedPaletteRow.innerHTML = `
-      <div style="font-size: 0.72rem; font-weight: 700; color: var(--primary);">Cores Extraídas da Imagem:</div>
-      <div class="extracted-swatches-list">
-        ${colors
-          .map(
-            (c) =>
-              `<button type="button" class="solid-color-swatch-btn" data-hex="${c}" style="background-color: ${c}; width: 28px; height: 28px;" title="${c}"></button>`
-          )
-          .join('')}
-      </div>
-    `;
+    // 3. Fallback Interativo para Safari iOS, Firefox ou navegadores sem EyeDropper API:
+    // Exibe a barra flutuante no topo e ativa o modo de captura por toque/clique no canvas
+    if (this.eyedropperActiveBanner) {
+      this.eyedropperActiveBanner.style.display = 'flex';
+    }
+    this.isEyedropperActive = true;
 
-    this.extractedPaletteRow.querySelectorAll('.solid-color-swatch-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const hex = (btn as HTMLElement).dataset.hex;
-        if (hex) {
-          this.setColorHex(hex);
-          this.applySolidColor(hex);
+    const stageContainer = this.canvasEngine.stage?.container();
+    if (stageContainer) {
+      stageContainer.style.cursor = 'crosshair';
+    }
+
+    const cleanup = () => {
+      this.isEyedropperActive = false;
+      this.stopEyedropperBanner();
+      if (stageContainer) {
+        stageContainer.style.cursor = 'default';
+        stageContainer.removeEventListener('pointerdown', onPointerDown, true);
+      }
+      this.eyedropperCleanup = null;
+    };
+
+    const onPointerDown = (e: PointerEvent) => {
+      // Ignora cliques nos botões da barra flutuante de cancelamento
+      if ((e.target as HTMLElement)?.closest('#eyedropper-active-banner')) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const clientX = e.clientX;
+      const clientY = e.clientY;
+
+      cleanup();
+
+      const sampledHex = this.sampleStageColorAt(clientX, clientY);
+      const hexToApply = sampledHex || '#B58938';
+      this.handleEyedropperColorPicked(hexToApply, meta, part);
+    };
+
+    if (stageContainer) {
+      stageContainer.addEventListener('pointerdown', onPointerDown, true);
+    }
+
+    this.eyedropperCleanup = cleanup;
+  }
+
+  cancelEyedropper(): void {
+    if (this.eyedropperCleanup) {
+      this.eyedropperCleanup();
+    }
+    this.stopEyedropperBanner();
+    this.open(this.targetMeta);
+    this.switchPart(this.activePart);
+  }
+
+  private stopEyedropperBanner(): void {
+    if (this.eyedropperActiveBanner) {
+      this.eyedropperActiveBanner.style.display = 'none';
+    }
+  }
+
+  private async handleEyedropperColorPicked(hex: string, meta: PresetItem | null, part: 'cylinder' | 'tabletop'): Promise<void> {
+    this.saveRecentColor(hex);
+
+    if (Boolean(meta?.type?.startsWith('table_organic_bean')) && part === 'tabletop') {
+      await this.canvasEngine.applyTabletopColorToSelected(hex);
+    } else {
+      this.canvasEngine.applySolidColorToSelected(hex);
+    }
+
+    await this.open(meta);
+    this.switchPart(part);
+    this.setColorHex(hex);
+  }
+
+  sampleStageColorAt(clientX: number, clientY: number): string | null {
+    try {
+      if (!this.canvasEngine.stage) return null;
+      const container = this.canvasEngine.stage.container();
+      if (!container) return null;
+
+      const rect = container.getBoundingClientRect();
+      const screenX = clientX - rect.left;
+      const screenY = clientY - rect.top;
+
+      const canvases = container.querySelectorAll('canvas');
+      if (!canvases || canvases.length === 0) return null;
+
+      const sampleCanvas = document.createElement('canvas');
+      sampleCanvas.width = 1;
+      sampleCanvas.height = 1;
+      const ctx = sampleCanvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) return null;
+
+      const firstCanvas = canvases[0];
+      const pixelRatio = (firstCanvas.width / this.canvasEngine.stage.width()) || 1;
+      const sourceX = Math.round(screenX * pixelRatio);
+      const sourceY = Math.round(screenY * pixelRatio);
+
+      canvases.forEach((c) => {
+        try {
+          ctx.drawImage(c, sourceX, sourceY, 1, 1, 0, 0, 1, 1);
+        } catch {
+          // Ignora erro em caso de CORS
         }
       });
-    });
+
+      const pixel = ctx.getImageData(0, 0, 1, 1).data;
+      if (pixel[3] < 10) return null;
+
+      const r = pixel[0].toString(16).padStart(2, '0');
+      const g = pixel[1].toString(16).padStart(2, '0');
+      const b = pixel[2].toString(16).padStart(2, '0');
+      return `#${r}${g}${b}`;
+    } catch (err) {
+      console.warn('Erro ao capturar cor da tela:', err);
+      return null;
+    }
   }
 
   // ========================================================
@@ -628,9 +735,6 @@ export class CoverModal {
     card.innerHTML = `
       <img src="${cover.imageUrl}" alt="${cover.name}" loading="lazy" />
       <div class="my-cover-card-actions">
-        <button type="button" class="btn-card-action btn-extract-cover" title="Extrair Paleta de Cores desta Imagem">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"/></svg>
-        </button>
         <button type="button" class="btn-card-action btn-del-cover" title="Excluir da Minha Galeria">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -644,14 +748,6 @@ export class CoverModal {
       await this.canvasEngine.applyCoverToSelected(cover.imageUrl);
       this.close();
       this.canvasEngine.enterCoverRepositionMode();
-    });
-
-    // Ação: Extrair Paleta desta imagem
-    card.querySelector('.btn-extract-cover')?.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const colors = await extractColorsFromImage(cover.imageUrl, 5);
-      this.switchSubtab('colors');
-      this.renderExtractedPalette(colors);
     });
 
     // Ação: Excluir imagem do acervo pessoal

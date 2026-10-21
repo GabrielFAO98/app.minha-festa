@@ -56,6 +56,7 @@ export interface PresetItem {
   category: ItemCategory | string;
   type: ItemType;
   svgRole?: SvgRole;
+  solidHitbox?: boolean;
   widthCm: number;
   heightCm: number;
   previewUrl: string;

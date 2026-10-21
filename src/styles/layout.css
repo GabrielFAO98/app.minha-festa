@@ -800,6 +800,14 @@ body {
     font-size: 0.75rem;
   }
 
+  .desktop-sidebar-right .desktop-inspector-section:last-child {
+    flex: 1 1 auto;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
   .layers-header-row {
     display: flex;
     align-items: center;
@@ -818,13 +826,31 @@ body {
 
   .desktop-layers-list {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     display: flex;
     flex-direction: column;
     gap: 6px;
-    max-height: calc(100vh - 430px);
-    padding-right: 2px;
+    padding-right: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .desktop-layers-list::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .desktop-layers-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .desktop-layers-list::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 4px;
+  }
+
+  .desktop-layers-list::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
   }
 }
 
@@ -836,6 +862,9 @@ body {
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
+  min-height: 52px;
+  flex-shrink: 0;
+  box-sizing: border-box;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);

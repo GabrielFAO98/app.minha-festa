@@ -1657,6 +1657,11 @@ export class CanvasEngine {
 
     const meta = group.getAttr('itemMeta') || {};
 
+    // Hitbox sólido para peças vazadas (ex: mesas pedestal, bistrô, cone ripado, estante escada) facilitando a seleção pelo interior
+    if (meta.solidHitbox || (meta.id && (meta.id.includes('pedestal') || meta.id.includes('escada') || meta.id.includes('cone-ripada') || meta.id.includes('bistro')))) {
+      return localPt.x >= 0 && localPt.x <= w && localPt.y >= 0 && localPt.y <= h;
+    }
+
     const geometricTypes = ['panel_round', 'panel_arch', 'cylinder', 'cylinder_fluted', 'rug_oval', 'rug_round', 'rug_rect_3d'];
     if (meta.type && (geometricTypes.includes(meta.type) || meta.type.startsWith('rug'))) {
       return isPointInsideMask(meta.type, localPt.x, localPt.y, w, h);

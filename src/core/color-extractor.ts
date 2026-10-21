@@ -33,14 +33,86 @@ export const PARTY_PALETTE_GROUPS: CuratedPaletteGroup[] = [
   },
   {
     id: 'safari',
-    name: 'Safari e Cores Vivas',
+    name: 'Safari e Selva',
     colors: [
-      { name: 'Verde Esmeralda', hex: '#15803d' },
-      { name: 'Verde Folhagem', hex: '#166534' },
+      { name: 'Verde Floresta', hex: '#15803d' },
+      { name: 'Verde Musgo', hex: '#3f6212' },
       { name: 'Laranja Solar', hex: '#ea580c' },
-      { name: 'Amarelo Ouro', hex: '#eab308' },
-      { name: 'Azul Royal', hex: '#1d4ed8' },
-      { name: 'Vermelho Rubi', hex: '#dc2626' }
+      { name: 'Mostarda Ocre', hex: '#ca8a04' },
+      { name: 'Bege Savana', hex: '#d6c7a1' },
+      { name: 'Marrom Madeira', hex: '#713f12' }
+    ]
+  },
+  {
+    id: 'jardim',
+    name: 'Jardim Encantado e Floral',
+    colors: [
+      { name: 'Rosa Chá', hex: '#f472b6' },
+      { name: 'Rosa Seco', hex: '#be185d' },
+      { name: 'Verde Oliva Suave', hex: '#65a30d' },
+      { name: 'Lavanda Floral', hex: '#c084fc' },
+      { name: 'Amarelo Pólen', hex: '#fde047' },
+      { name: 'Branco Lírio', hex: '#fdfbf7' }
+    ]
+  },
+  {
+    id: 'princesas',
+    name: 'Princesas e Romântico',
+    colors: [
+      { name: 'Rosa Chiclete', hex: '#f43f5e' },
+      { name: 'Dourado Real', hex: '#d4af37' },
+      { name: 'Azul Cinderela', hex: '#7dd3fc' },
+      { name: 'Lilás Rapunzel', hex: '#a855f7' },
+      { name: 'Rosa Madrepérola', hex: '#fce7f3' },
+      { name: 'Champagne Brilho', hex: '#fef3c7' }
+    ]
+  },
+  {
+    id: 'herois',
+    name: 'Heróis e Aventura',
+    colors: [
+      { name: 'Azul Bic Heroico', hex: '#1d4ed8' },
+      { name: 'Vermelho Escarlate', hex: '#dc2626' },
+      { name: 'Amarelo Relâmpago', hex: '#eab308' },
+      { name: 'Verde Gamer', hex: '#16a34a' },
+      { name: 'Roxo Poder', hex: '#7e22ce' },
+      { name: 'Preto Carbono', hex: '#0f172a' }
+    ]
+  },
+  {
+    id: 'mar',
+    name: 'Fundo do Mar e Sereia',
+    colors: [
+      { name: 'Azul Turquesa', hex: '#06b6d4' },
+      { name: 'Verde Água Marinha', hex: '#14b8a6' },
+      { name: 'Lilás Concha', hex: '#c084fc' },
+      { name: 'Coral Suave', hex: '#fb7185' },
+      { name: 'Azul Oceano Profundo', hex: '#0369a1' },
+      { name: 'Areia Perolada', hex: '#fef08a' }
+    ]
+  },
+  {
+    id: 'maternidade',
+    name: 'Chá Revelação e Maternidade',
+    colors: [
+      { name: 'Rosa Nuvens', hex: '#f9a8d4' },
+      { name: 'Azul Algodão', hex: '#93c5fd' },
+      { name: 'Creme Vanilla', hex: '#fef9c3' },
+      { name: 'Cinza Algodão', hex: '#cbd5e1' },
+      { name: 'Verde Alecrim Bebê', hex: '#bbf7d0' },
+      { name: 'Branco Puro', hex: '#ffffff' }
+    ]
+  },
+  {
+    id: 'tropical',
+    name: 'Sunset e Tropical',
+    colors: [
+      { name: 'Laranja Pôr do Sol', hex: '#f97316' },
+      { name: 'Rosa Flamingo', hex: '#fb7185' },
+      { name: 'Amarelo Manga', hex: '#f59e0b' },
+      { name: 'Verde Folha Tropical', hex: '#059669' },
+      { name: 'Roxo Pitaya', hex: '#c026d3' },
+      { name: 'Azul Piscina', hex: '#38bdf8' }
     ]
   },
   {
@@ -48,11 +120,11 @@ export const PARTY_PALETTE_GROUPS: CuratedPaletteGroup[] = [
     name: 'Luxo e Neutros Clássicos',
     colors: [
       { name: 'Branco Neve', hex: '#ffffff' },
-      { name: 'Off-White Puro', hex: '#f8fafc' },
-      { name: 'Dourado Metálico', hex: '#d4af37' },
-      { name: 'Rose Gold', hex: '#b76e79' },
+      { name: 'Off-White Editorial', hex: '#f8fafc' },
+      { name: 'Dourado Metálico', hex: '#b58938' },
+      { name: 'Rose Gold Glamour', hex: '#b76e79' },
       { name: 'Azul Marinho Noite', hex: '#1e3a8a' },
-      { name: 'Preto Ônix', hex: '#1e293b' }
+      { name: 'Preto Ônix', hex: '#18181b' }
     ]
   }
 ];

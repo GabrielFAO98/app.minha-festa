@@ -247,6 +247,9 @@ export class CoverModal {
         subtitleEl.textContent = `${this.targetMeta.name} • Escolha uma Cor Sólida ou Capa para a Base (Cilindro)`;
       }
     }
+
+    this.renderSceneActiveColors();
+    this.renderCuratedPalettes();
   }
 
   switchSubtab(tab: 'colors' | 'covers'): void {
@@ -373,7 +376,7 @@ export class CoverModal {
     }
     if (this.sliderLightness) {
       const pureHueHex = hslToHex(this.currentHue, 100, 50);
-      this.sliderLightness.style.background = `linear-gradient(to right, #ffffff 0%, ${pureHueHex} 50%, #000000 100%)`;
+      this.sliderLightness.style.background = `linear-gradient(to right, #000000 0%, ${pureHueHex} 50%, #ffffff 100%)`;
     }
   }
 
@@ -417,26 +420,33 @@ export class CoverModal {
       // Ignora erro de JSON
     }
 
-    const colorsList = Array.from(colorsSet).slice(0, 14);
+    const colorsList = Array.from(colorsSet).slice(0, 24);
 
     if (colorsList.length === 0) {
       this.sceneColorsContainer.style.display = 'none';
       return;
     }
 
+    const currentActiveColor = (
+      this.activePart === 'tabletop' ? this.targetMeta?.tabletopColor : this.targetMeta?.customColor
+    )?.toLowerCase() || '';
+
     this.sceneColorsContainer.style.display = 'flex';
     this.sceneColorsContainer.innerHTML = `
       <div class="scene-colors-label">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/></svg>
-        Cores em Uso no Cenário / Recentes
+        <span style="display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/></svg>
+          Cores em Uso no Cenário / Recentes
+        </span>
+        ${colorsList.length > 7 ? '<span style="font-size: 0.65rem; color: var(--text-muted); font-weight: normal;">deslize para ver mais →</span>' : ''}
       </div>
       <div class="scene-colors-swatches-grid">
         ${colorsList
           .map(
             (c) =>
               `<button type="button" class="solid-color-swatch-btn ${
-                this.targetMeta?.customColor?.toLowerCase() === c ? 'active' : ''
-              }" data-hex="${c}" style="background-color: ${c}; width: 28px; height: 28px;" title="${c}"></button>`
+                currentActiveColor === c ? 'active' : ''
+              }" data-hex="${c}" style="background-color: ${c};" title="${c}"></button>`
           )
           .join('')}
       </div>
@@ -458,7 +468,7 @@ export class CoverModal {
       const recent: string[] = JSON.parse(localStorage.getItem(RECENT_COLORS_KEY) || '[]');
       const filtered = recent.filter((c) => c.toLowerCase() !== hex.toLowerCase());
       filtered.unshift(hex.toLowerCase());
-      localStorage.setItem(RECENT_COLORS_KEY, JSON.stringify(filtered.slice(0, 16)));
+      localStorage.setItem(RECENT_COLORS_KEY, JSON.stringify(filtered.slice(0, 24)));
     } catch (e) {
       // Ignora erro de armazenamento
     }
@@ -467,10 +477,13 @@ export class CoverModal {
   renderCuratedPalettes(): void {
     if (!this.curatedPalettesContainer) return;
 
+    const currentActiveHex = (
+      this.activePart === 'tabletop' ? this.targetMeta?.tabletopColor : this.targetMeta?.customColor
+    )?.toLowerCase() || '';
+
     if (this.curatedPalettesRendered) {
-      const activeHex = this.targetMeta?.customColor?.toLowerCase() || '';
       this.curatedPalettesContainer.querySelectorAll<HTMLButtonElement>('.solid-color-swatch-btn').forEach((btn) => {
-        btn.classList.toggle('active', btn.dataset.hex?.toLowerCase() === activeHex);
+        btn.classList.toggle('active', btn.dataset.hex?.toLowerCase() === currentActiveHex);
       });
       return;
     }
@@ -487,7 +500,7 @@ export class CoverModal {
         .map(
           (c) =>
             `<button type="button" class="solid-color-swatch-btn ${
-              this.targetMeta?.customColor?.toLowerCase() === c.hex.toLowerCase() ? 'active' : ''
+              currentActiveHex === c.hex.toLowerCase() ? 'active' : ''
             }" data-hex="${c.hex}" title="${c.name}" style="background-color: ${c.hex};"></button>`
         )
         .join('');

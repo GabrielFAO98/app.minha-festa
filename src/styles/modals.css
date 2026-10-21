@@ -860,7 +860,7 @@
 }
 
 .lightness-range-slider {
-  background: linear-gradient(to right, #ffffff 0%, #94a3b8 50%, #020617 100%);
+  background: linear-gradient(to right, #020617 0%, #94a3b8 50%, #ffffff 100%);
 }
 
 .hue-range-slider::-webkit-slider-thumb,
@@ -919,7 +919,7 @@
   text-transform: uppercase;
 }
 
-/* Linha de Cores em Uso no Cenário */
+/* Linha de Cores em Uso no Cenário / Recentes em Carrossel */
 .scene-active-colors-container {
   display: flex;
   flex-direction: column;
@@ -928,6 +928,7 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .scene-colors-label {
@@ -936,13 +937,39 @@
   color: var(--text-muted);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 6px;
 }
 
 .scene-colors-swatches-grid {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
   gap: 8px;
+  padding: 2px 2px 6px 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.scene-colors-swatches-grid::-webkit-scrollbar {
+  height: 4px;
+}
+
+.scene-colors-swatches-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scene-colors-swatches-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
+
+.scene-colors-swatches-grid .solid-color-swatch-btn {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
 }
 
 /* Paletas Curadas Temáticas */

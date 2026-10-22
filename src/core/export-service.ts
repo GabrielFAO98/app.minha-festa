@@ -49,7 +49,7 @@ export function generateRomaneio(elements) {
  * @returns {string} Mensagem pronta com emojis
  */
 export function formatWhatsAppMessage(projectTitle, romaneio, clientName = '') {
-  let text = `*PROJETO DE DECORAÇÃO: MINHA FESTA*\n`;
+  let text = `*PROJETO DE DECORAÇÃO — DECORALY*\n`;
   if (clientName) {
     text += `*Cliente:* ${clientName}\n`;
   }
@@ -64,7 +64,7 @@ export function formatWhatsAppMessage(projectTitle, romaneio, clientName = '') {
     text += `\n*Capas e Estampas Inclusas:* ${romaneio.coversCount} peça(s) personalizada(s)\n`;
   }
 
-  text += `\n_Simulação visual gerada no Minha Festa App._`;
+  text += `\n_Simulação visual gerada no Decoraly App._`;
   return text;
 }
 
@@ -91,7 +91,7 @@ export function shareViaWhatsApp(phone, text) {
  * @param {string} dataUrl Base64 da imagem
  * @param {string} filename Nome do arquivo para download
  */
-export function downloadImage(dataUrl, filename = 'decoracao-minha-festa.png') {
+export function downloadImage(dataUrl, filename = 'decoracao-decoraly.png') {
   const link = document.createElement('a');
   link.href = dataUrl;
   link.download = filename;

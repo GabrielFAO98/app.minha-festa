@@ -7,10 +7,14 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <meta name="theme-color" content="#B58938" />
-  <meta name="description" content="Minha Festa - Aplicativo para simulação e montagem de decorações." />
-  <title>Minha Festa</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="description" content="Decoraly - Aplicativo para simulação e montagem de decorações." />
+  <title>Decoraly</title>
+  <link rel="icon" type="image/png" href="/logo-decoraly.png" />
+  <link rel="apple-touch-icon" href="/pwa-icon-512.png" />
   <link rel="manifest" href="/manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/src/styles/main.css" />
 </head>
 <body>
@@ -18,21 +22,9 @@
   <div id="app-splash-screen" class="app-splash-screen">
     <div class="splash-content">
       <div class="splash-logo">
-        <svg width="68" height="68" viewBox="0 0 24 24" fill="none" style="overflow: visible;">
-          <ellipse cx="12" cy="10" rx="7" ry="8" fill="url(#splashBalloonGrad)"/>
-          <path d="M10.5 18L12 19.5L13.5 18H10.5Z" fill="#c5a059"/>
-          <path d="M12 19.5V23" stroke="#c5a059" stroke-width="1.6" stroke-linecap="round"/>
-          <path d="M9 7C9.5 5.5 11 4.5 12.5 4.5" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
-          <path d="M19 3L19.5 4.5L21 5L19.5 5.5L19 7L18.5 5.5L17 5L18.5 4.5L19 3Z" fill="#dfba73"/>
-          <defs>
-            <linearGradient id="splashBalloonGrad" x1="5" y1="2" x2="19" y2="18" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#c5a059"/>
-              <stop offset="1" stop-color="#dfba73"/>
-            </linearGradient>
-          </defs>
-        </svg>
+        <img src="/logo-decoraly.png" alt="Decoraly" width="84" height="84" />
       </div>
-      <h1 class="splash-title">Minha Festa</h1>
+      <h1 class="splash-title">Decoraly</h1>
       <div class="splash-loading-text">Carregando...</div>
     </div>
   </div>
@@ -43,22 +35,10 @@
       <header class="home-header">
         <div class="home-brand">
           <div class="home-brand-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" style="overflow: visible;">
-              <ellipse cx="12" cy="10" rx="7" ry="8" fill="url(#homeBalloonGrad)"/>
-              <path d="M10.5 18L12 19.5L13.5 18H10.5Z" fill="#c5a059"/>
-              <path d="M12 19.5V23" stroke="#c5a059" stroke-width="1.6" stroke-linecap="round"/>
-              <path d="M9 7C9.5 5.5 11 4.5 12.5 4.5" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
-              <path d="M19 3L19.5 4.5L21 5L19.5 5.5L19 7L18.5 5.5L17 5L18.5 4.5L19 3Z" fill="#dfba73"/>
-              <defs>
-                <linearGradient id="homeBalloonGrad" x1="5" y1="2" x2="19" y2="18" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#c5a059"/>
-                  <stop offset="1" stop-color="#dfba73"/>
-                </linearGradient>
-              </defs>
-            </svg>
+            <img src="/logo-decoraly.png" alt="Decoraly" width="44" height="44" />
           </div>
           <div>
-            <h1 class="home-title">Minha Festa</h1>
+            <h1 class="home-title">Decoraly</h1>
           </div>
         </div>
         <p class="home-welcome">O que você deseja fazer agora?</p>
@@ -201,24 +181,12 @@
             <polyline points="9 22 9 12 15 12 15 22"/>
           </svg>
         </button>
-        <div class="app-brand" id="brand-header-click" title="Minha Festa" style="cursor: pointer;">
+        <div class="app-brand" id="brand-header-click" title="Decoraly" style="cursor: pointer;">
           <div class="brand-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <ellipse cx="12" cy="10" rx="7" ry="8" fill="url(#balloonGrad)"/>
-              <path d="M10.5 18L12 19.5L13.5 18H10.5Z" fill="#c5a059"/>
-              <path d="M12 19.5V23" stroke="#c5a059" stroke-width="1.6" stroke-linecap="round"/>
-              <path d="M9 7C9.5 5.5 11 4.5 12.5 4.5" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/>
-              <path d="M19 3L19.5 4.5L21 5L19.5 5.5L19 7L18.5 5.5L17 5L18.5 4.5L19 3Z" fill="#dfba73"/>
-              <defs>
-                <linearGradient id="balloonGrad" x1="5" y1="2" x2="19" y2="18" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#c5a059"/>
-                  <stop offset="1" stop-color="#dfba73"/>
-                </linearGradient>
-              </defs>
-            </svg>
+            <img src="/logo-decoraly.png" alt="Decoraly" width="32" height="32" />
           </div>
           <div class="brand-title">
-            <span class="brand-name">Minha Festa</span>
+            <span class="brand-name">Decoraly</span>
             <span class="brand-subtitle" id="project-title-display">Novo Cenário</span>
           </div>
         </div>
@@ -658,6 +626,18 @@
           <div id="factory-covers-grid" class="covers-grid"></div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- LUPA INTERATIVA DE AMPLIAÇÃO DO CONTA-GOTAS -->
+  <div id="eyedropper-loupe" class="eyedropper-loupe" style="display: none;">
+    <div class="eyedropper-loupe-lens">
+      <canvas id="eyedropper-loupe-canvas" width="80" height="80"></canvas>
+      <div class="eyedropper-loupe-crosshair"></div>
+    </div>
+    <div class="eyedropper-loupe-badge">
+      <span id="eyedropper-loupe-swatch" class="eyedropper-loupe-swatch"></span>
+      <span id="eyedropper-loupe-hex" class="eyedropper-loupe-hex">#FFFFFF</span>
     </div>
   </div>
 

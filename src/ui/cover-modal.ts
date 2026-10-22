@@ -40,6 +40,10 @@ export class CoverModal {
   btnTriggerEyedropper: HTMLElement | null;
   eyedropperActiveBanner: HTMLElement | null;
   btnCancelEyedropper: HTMLElement | null;
+  loupeEl: HTMLElement | null;
+  loupeCanvas: HTMLCanvasElement | null;
+  loupeSwatch: HTMLElement | null;
+  loupeHex: HTMLElement | null;
   isEyedropperActive = false;
   private eyedropperCleanup: (() => void) | null = null;
 
@@ -92,6 +96,10 @@ export class CoverModal {
     this.btnTriggerEyedropper = document.getElementById('btn-trigger-eyedropper');
     this.eyedropperActiveBanner = document.getElementById('eyedropper-active-banner');
     this.btnCancelEyedropper = document.getElementById('btn-cancel-eyedropper');
+    this.loupeEl = document.getElementById('eyedropper-loupe');
+    this.loupeCanvas = document.getElementById('eyedropper-loupe-canvas') as HTMLCanvasElement | null;
+    this.loupeSwatch = document.getElementById('eyedropper-loupe-swatch');
+    this.loupeHex = document.getElementById('eyedropper-loupe-hex');
 
     // Capas
     this.calloutPlaceholder = document.getElementById('cover-active-callout-placeholder');
@@ -123,6 +131,9 @@ export class CoverModal {
     // Slider de Matiz (Hue)
     this.sliderHue?.addEventListener('input', () => {
       this.currentHue = parseInt(this.sliderHue?.value || '0', 10);
+      if (this.currentSaturation === 0) {
+        this.currentSaturation = 80;
+      }
       this.updateColorFromSliders();
     });
 
@@ -347,7 +358,7 @@ export class CoverModal {
     this.currentHex = hex.toLowerCase();
     const hsl = hexToHsl(this.currentHex);
     this.currentHue = hsl.h;
-    this.currentSaturation = hsl.s || 75;
+    this.currentSaturation = hsl.s !== undefined && !isNaN(hsl.s) ? hsl.s : 75;
     this.currentLightness = hsl.l;
 
     if (this.sliderHue) this.sliderHue.value = String(this.currentHue);
@@ -522,30 +533,18 @@ export class CoverModal {
     const meta = this.targetMeta;
     const part = this.activePart;
 
-    // 1. O menu desce imediatamente (fecha o modal para liberar 100% da visão do cenário)
-    this.close();
-
-    // 2. Se o navegador suporta EyeDropper nativo (ex: Chrome, Edge desktop e Android)
-    if (typeof window !== 'undefined' && (window as any).EyeDropper) {
-      try {
-        const eyeDropper = new (window as any).EyeDropper();
-        const result = await eyeDropper.open();
-        if (result?.sRGBHex) {
-          const hex = result.sRGBHex.toLowerCase();
-          await this.handleEyedropperColorPicked(hex, meta, part);
-          return;
-        }
-      } catch {
-        // Usuário cancelou ou apertou Esc
-      }
-      // Reabre o modal restaurando o estado
-      await this.open(meta);
-      this.switchPart(part);
-      return;
+    // 1. Oculta o modal instantaneamente (sem transição de fade preto que distorcia a cor)
+    if (this.modalEl) {
+      this.modalEl.style.display = 'none';
+      this.modalEl.classList.remove('open');
     }
 
-    // 3. Fallback Interativo para Safari iOS, Firefox ou navegadores sem EyeDropper API:
-    // Exibe a barra flutuante no topo e ativa o modo de captura por toque/clique no canvas
+    // 2. Oculta temporariamente a camada UI (Transformer, âncoras e botões de ação) para visão 100% limpa
+    const wasUiVisible = this.canvasEngine.uiLayer.visible();
+    this.canvasEngine.uiLayer.visible(false);
+    this.canvasEngine.uiLayer.batchDraw();
+
+    // 3. Exibe o banner de instrução no topo e ativa o modo de captura no canvas
     if (this.eyedropperActiveBanner) {
       this.eyedropperActiveBanner.style.display = 'flex';
     }
@@ -556,18 +555,83 @@ export class CoverModal {
       stageContainer.style.cursor = 'crosshair';
     }
 
+    let currentSampledHex: string | null = null;
+
+    const updateLoupeAt = (clientX: number, clientY: number) => {
+      if (!this.canvasEngine.stage || !this.loupeEl) return;
+      const container = this.canvasEngine.stage.container();
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+
+      const screenX = clientX - rect.left;
+      const screenY = clientY - rect.top;
+
+      // Se o cursor estiver fora do contêiner do palco, oculta a lupa
+      if (screenX < -15 || screenX > rect.width + 15 || screenY < -15 || screenY > rect.height + 15) {
+        this.loupeEl.style.display = 'none';
+        return;
+      }
+
+      this.loupeEl.style.display = 'flex';
+      this.loupeEl.style.left = `${clientX}px`;
+      this.loupeEl.style.top = `${clientY}px`;
+      if (clientY < 110) {
+        this.loupeEl.style.transform = 'translate(-50%, 25px)';
+      } else {
+        this.loupeEl.style.transform = 'translate(-50%, -125%)';
+      }
+
+      const sampleResult = this.sampleStageColorAt(clientX, clientY);
+      if (sampleResult) {
+        currentSampledHex = sampleResult.hex;
+        if (this.loupeSwatch) {
+          this.loupeSwatch.style.backgroundColor = sampleResult.hex;
+        }
+        if (this.loupeHex) {
+          this.loupeHex.textContent = sampleResult.label
+            ? `${sampleResult.hex.toUpperCase()} • ${sampleResult.label}`
+            : sampleResult.hex.toUpperCase();
+        }
+      }
+
+      if (this.loupeCanvas) {
+        this.renderLoupeMagnifiedView(this.loupeCanvas, screenX, screenY, rect);
+      }
+    };
+
     const cleanup = () => {
       this.isEyedropperActive = false;
       this.stopEyedropperBanner();
+      if (this.loupeEl) {
+        this.loupeEl.style.display = 'none';
+      }
       if (stageContainer) {
         stageContainer.style.cursor = 'default';
         stageContainer.removeEventListener('pointerdown', onPointerDown, true);
+        stageContainer.removeEventListener('pointermove', onPointerMove, true);
+      }
+      window.removeEventListener('keydown', onKeyDown);
+
+      // Restaura a camada de UI
+      this.canvasEngine.uiLayer.visible(wasUiVisible);
+      this.canvasEngine.uiLayer.batchDraw();
+
+      // Restaura o display do modal
+      if (this.modalEl) {
+        this.modalEl.style.display = '';
       }
       this.eyedropperCleanup = null;
     };
 
+    const onPointerMove = (e: PointerEvent) => {
+      if ((e.target as HTMLElement)?.closest('#eyedropper-active-banner')) {
+        if (this.loupeEl) this.loupeEl.style.display = 'none';
+        return;
+      }
+      updateLoupeAt(e.clientX, e.clientY);
+    };
+
     const onPointerDown = (e: PointerEvent) => {
-      // Ignora cliques nos botões da barra flutuante de cancelamento
       if ((e.target as HTMLElement)?.closest('#eyedropper-active-banner')) return;
 
       e.preventDefault();
@@ -576,16 +640,26 @@ export class CoverModal {
       const clientX = e.clientX;
       const clientY = e.clientY;
 
-      cleanup();
+      const sample = this.sampleStageColorAt(clientX, clientY);
+      const pickedColor = sample?.hex || currentSampledHex || '#B58938';
 
-      const sampledHex = this.sampleStageColorAt(clientX, clientY);
-      const hexToApply = sampledHex || '#B58938';
-      this.handleEyedropperColorPicked(hexToApply, meta, part);
+      cleanup();
+      this.handleEyedropperColorPicked(pickedColor, meta, part);
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        cleanup();
+        this.open(meta);
+        this.switchPart(part);
+      }
     };
 
     if (stageContainer) {
+      stageContainer.addEventListener('pointermove', onPointerMove, true);
       stageContainer.addEventListener('pointerdown', onPointerDown, true);
     }
+    window.addEventListener('keydown', onKeyDown);
 
     this.eyedropperCleanup = cleanup;
   }
@@ -603,6 +677,9 @@ export class CoverModal {
     if (this.eyedropperActiveBanner) {
       this.eyedropperActiveBanner.style.display = 'none';
     }
+    if (this.loupeEl) {
+      this.loupeEl.style.display = 'none';
+    }
   }
 
   private async handleEyedropperColorPicked(hex: string, meta: PresetItem | null, part: 'cylinder' | 'tabletop'): Promise<void> {
@@ -619,7 +696,72 @@ export class CoverModal {
     this.setColorHex(hex);
   }
 
-  sampleStageColorAt(clientX: number, clientY: number): string | null {
+  private renderLoupeMagnifiedView(
+    loupeCanvas: HTMLCanvasElement,
+    screenX: number,
+    screenY: number,
+    rect: DOMRect
+  ): void {
+    const bgCanvas = this.canvasEngine.bgLayer?.getCanvas()?._canvas;
+    const decorCanvas = this.canvasEngine.decorLayer?.getCanvas()?._canvas;
+    if (!bgCanvas) return;
+
+    const ctx = loupeCanvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.imageSmoothingEnabled = false;
+
+    const scaleX = bgCanvas.width / (rect.width || 1);
+    const scaleY = bgCanvas.height / (rect.height || 1);
+    const sourceX = Math.round(screenX * scaleX);
+    const sourceY = Math.round(screenY * scaleY);
+
+    const PATCH_SIZE = 16;
+    const halfPatch = Math.floor(PATCH_SIZE / 2);
+
+    const sx = Math.max(0, Math.min(bgCanvas.width - PATCH_SIZE, sourceX - halfPatch));
+    const sy = Math.max(0, Math.min(bgCanvas.height - PATCH_SIZE, sourceY - halfPatch));
+
+    ctx.clearRect(0, 0, loupeCanvas.width, loupeCanvas.height);
+
+    // 1. Parede e Piso
+    try {
+      ctx.drawImage(
+        bgCanvas,
+        sx,
+        sy,
+        PATCH_SIZE,
+        PATCH_SIZE,
+        0,
+        0,
+        loupeCanvas.width,
+        loupeCanvas.height
+      );
+    } catch {
+      // Ignora erro em caso de CORS
+    }
+
+    // 2. Peças Decorativas
+    if (decorCanvas) {
+      try {
+        ctx.drawImage(
+          decorCanvas,
+          sx,
+          sy,
+          PATCH_SIZE,
+          PATCH_SIZE,
+          0,
+          0,
+          loupeCanvas.width,
+          loupeCanvas.height
+        );
+      } catch {
+        // Ignora erro em caso de CORS
+      }
+    }
+  }
+
+  sampleStageColorAt(clientX: number, clientY: number): { hex: string; label?: string } | null {
     try {
       if (!this.canvasEngine.stage) return null;
       const container = this.canvasEngine.stage.container();
@@ -629,35 +771,63 @@ export class CoverModal {
       const screenX = clientX - rect.left;
       const screenY = clientY - rect.top;
 
-      const canvases = container.querySelectorAll('canvas');
-      if (!canvases || canvases.length === 0) return null;
+      if (screenX < 0 || screenX > rect.width || screenY < 0 || screenY > rect.height) {
+        return null;
+      }
+
+      // 1. Prioridade inteligente: se passou por cima de um item decorativo com cor configurada
+      const finalScale = this.canvasEngine.baseScale * this.canvasEngine.zoomLevel;
+      const finalPosX = this.canvasEngine.baseOffsetX + this.canvasEngine.panX;
+      const finalPosY = this.canvasEngine.baseOffsetY + this.canvasEngine.panY;
+
+      const virtualX = (screenX - finalPosX) / finalScale;
+      const virtualY = (screenY - finalPosY) / finalScale;
+
+      const items = this.canvasEngine.findOpaqueItemsAtPoint({ x: virtualX, y: virtualY });
+      if (items && items.length > 0) {
+        const topItem = items[0];
+        const meta = topItem.getAttr('itemMeta') as PresetItem | undefined;
+        if (meta) {
+          if (meta.type?.startsWith('table_organic_bean') && meta.tabletopColor) {
+            return { hex: meta.tabletopColor.toLowerCase(), label: meta.name };
+          }
+          if (meta.customColor) {
+            return { hex: meta.customColor.toLowerCase(), label: meta.name };
+          }
+        }
+      }
+
+      // 2. Amostragem direta dos pixels reais do canvas (bgLayer + decorLayer)
+      const bgCanvas = this.canvasEngine.bgLayer?.getCanvas()?._canvas;
+      const decorCanvas = this.canvasEngine.decorLayer?.getCanvas()?._canvas;
+      if (!bgCanvas) return null;
+
+      const scaleX = bgCanvas.width / (rect.width || 1);
+      const scaleY = bgCanvas.height / (rect.height || 1);
+      const sourceX = Math.round(screenX * scaleX);
+      const sourceY = Math.round(screenY * scaleY);
+
+      const clampedX = Math.max(0, Math.min(bgCanvas.width - 1, sourceX));
+      const clampedY = Math.max(0, Math.min(bgCanvas.height - 1, sourceY));
 
       const sampleCanvas = document.createElement('canvas');
       sampleCanvas.width = 1;
       sampleCanvas.height = 1;
-      const ctx = sampleCanvas.getContext('2d', { willReadFrequently: true });
-      if (!ctx) return null;
+      const sCtx = sampleCanvas.getContext('2d', { willReadFrequently: true });
+      if (!sCtx) return null;
 
-      const firstCanvas = canvases[0];
-      const pixelRatio = (firstCanvas.width / this.canvasEngine.stage.width()) || 1;
-      const sourceX = Math.round(screenX * pixelRatio);
-      const sourceY = Math.round(screenY * pixelRatio);
+      sCtx.drawImage(bgCanvas, clampedX, clampedY, 1, 1, 0, 0, 1, 1);
+      if (decorCanvas) {
+        sCtx.drawImage(decorCanvas, clampedX, clampedY, 1, 1, 0, 0, 1, 1);
+      }
 
-      canvases.forEach((c) => {
-        try {
-          ctx.drawImage(c, sourceX, sourceY, 1, 1, 0, 0, 1, 1);
-        } catch {
-          // Ignora erro em caso de CORS
-        }
-      });
-
-      const pixel = ctx.getImageData(0, 0, 1, 1).data;
+      const pixel = sCtx.getImageData(0, 0, 1, 1).data;
       if (pixel[3] < 10) return null;
 
       const r = pixel[0].toString(16).padStart(2, '0');
       const g = pixel[1].toString(16).padStart(2, '0');
       const b = pixel[2].toString(16).padStart(2, '0');
-      return `#${r}${g}${b}`;
+      return { hex: `#${r}${g}${b}` };
     } catch (err) {
       console.warn('Erro ao capturar cor da tela:', err);
       return null;

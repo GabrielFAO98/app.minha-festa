@@ -65,7 +65,7 @@ export class ExportModal {
 
   async handleShareImage(): Promise<void> {
     if (!this.currentDataUrl) return;
-    const title = document.getElementById('project-title-display')?.textContent?.trim() || 'Decoração Minha Festa';
+    const title = document.getElementById('project-title-display')?.textContent?.trim() || 'Decoração Decoraly';
     const safeFilename = `${title.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'decoracao'}.png`;
 
     try {

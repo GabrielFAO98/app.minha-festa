@@ -1089,6 +1089,89 @@
   background: rgba(255, 255, 255, 0.22);
 }
 
+/* Lupa Interativa do Conta-Gotas */
+.eyedropper-loupe {
+  position: fixed;
+  pointer-events: none;
+  z-index: 10001;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translate(-50%, -125%);
+  transition: opacity 0.12s ease;
+  will-change: transform, left, top;
+}
+
+.eyedropper-loupe-lens {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  border: 3.5px solid #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 0 1.5px rgba(181, 137, 56, 0.6);
+  overflow: hidden;
+  position: relative;
+  background: #1c1917;
+}
+
+.eyedropper-loupe-lens canvas {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  display: block;
+}
+
+.eyedropper-loupe-crosshair {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.eyedropper-loupe-crosshair::before {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.8), inset 0 0 1px rgba(0, 0, 0, 0.8);
+  border-radius: 1px;
+}
+
+.eyedropper-loupe-badge {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(28, 25, 23, 0.94);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+  padding: 3px 10px;
+  color: #FAF8F5;
+  font-size: 0.72rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+}
+
+.eyedropper-loupe-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.eyedropper-loupe-hex {
+  font-family: monospace;
+  letter-spacing: 0.3px;
+}
+
 /* Seção de Capas & Uploads Recentes */
 .covers-section-heading {
   display: flex;

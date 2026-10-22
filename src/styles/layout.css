@@ -795,14 +795,31 @@ body {
   }
 
   .desktop-inspector-empty {
-    padding: 28px 14px;
+    padding: 24px 14px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     text-align: center;
-    gap: 10px;
+    gap: 8px;
     color: var(--text-muted);
-    font-size: 0.75rem;
+  }
+
+  .desktop-inspector-empty .empty-state-icon-badge {
+    margin-bottom: 2px;
+  }
+
+  .desktop-inspector-empty .empty-state-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+
+  .desktop-inspector-empty .empty-state-text {
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+    max-width: 250px;
   }
 
   .desktop-sidebar-right .desktop-inspector-section:last-child {

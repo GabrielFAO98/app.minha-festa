@@ -440,7 +440,21 @@ export class DesktopStudio {
     if (badgeEl) badgeEl.textContent = `${elements.length} peças`;
 
     if (elements.length === 0) {
-      listEl.innerHTML = '<div style="font-size: 0.72rem; color: var(--text-muted); padding: 8px;">Nenhuma peça na decoração ainda.</div>';
+      listEl.innerHTML = `
+        <div class="desktop-inspector-empty" style="padding: 20px 10px;">
+          <div class="empty-state-icon-badge" style="width: 44px; height: 44px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+              <polyline points="2 17 12 22 22 17"/>
+              <polyline points="2 12 12 17 22 12"/>
+            </svg>
+          </div>
+          <div class="empty-state-title" style="font-size: 0.84rem;">Nenhuma peça no cenário</div>
+          <div class="empty-state-text" style="font-size: 0.74rem;">
+            Adicione painéis, mesas e cilindros do catálogo à esquerda para começar sua composição.
+          </div>
+        </div>
+      `;
       return;
     }
 

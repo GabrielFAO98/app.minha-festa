@@ -1,3 +1,4 @@
+import { normalizeSearch } from './search-bar';
 import { getAllCovers, addCustomCover, deleteCustomCover, type CoverItemRecord } from '../core/db';
 import { optimizeUserUploadedImage } from '../core/image-optimizer';
 import {
@@ -54,6 +55,8 @@ export class CoverModal {
   btnRemoveCover: HTMLElement | null;
   myCoversGrid: HTMLElement | null;
   factoryCoversGrid: HTMLElement | null;
+  coverSearchInput: HTMLInputElement | null = null;
+  btnClearCoverSearch: HTMLElement | null = null;
   btnClose: HTMLElement | null;
 
   // Estado Interno
@@ -108,6 +111,8 @@ export class CoverModal {
     this.btnRemoveCover = document.getElementById('btn-remove-cover');
     this.myCoversGrid = document.getElementById('my-covers-grid');
     this.factoryCoversGrid = document.getElementById('factory-covers-grid');
+    this.coverSearchInput = document.getElementById('input-search-cover-modal') as HTMLInputElement | null;
+    this.btnClearCoverSearch = document.getElementById('btn-clear-cover-modal-search');
 
     this.setupEvents();
 
@@ -127,6 +132,26 @@ export class CoverModal {
     // Troca de Abas (Cores vs Estampas)
     this.subtabBtnColors?.addEventListener('click', () => this.switchSubtab('colors'));
     this.subtabBtnCovers?.addEventListener('click', () => this.switchSubtab('covers'));
+
+    this.coverSearchInput?.addEventListener('input', () => {
+      const val = this.coverSearchInput?.value || '';
+      if (this.btnClearCoverSearch) {
+        this.btnClearCoverSearch.style.display = val.length > 0 ? 'flex' : 'none';
+      }
+      this.filterCoversInModal();
+    });
+
+    this.btnClearCoverSearch?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (this.coverSearchInput) {
+        this.coverSearchInput.value = '';
+        this.coverSearchInput.focus();
+      }
+      if (this.btnClearCoverSearch) {
+        this.btnClearCoverSearch.style.display = 'none';
+      }
+      this.filterCoversInModal();
+    });
 
     // Slider de Matiz (Hue)
     this.sliderHue?.addEventListener('input', () => {
@@ -934,6 +959,7 @@ export class CoverModal {
         factoryCovers.forEach((cover) => {
           const card = document.createElement('div');
           card.className = 'cover-card';
+          card.dataset.normalizedText = normalizeSearch(cover.name + ' ' + (cover.themeName || ''));
           card.dataset.coverUrl = cover.imageUrl;
           if (this.targetMeta?.customCoverUrl === cover.imageUrl) {
             card.classList.add('selected');
@@ -955,9 +981,36 @@ export class CoverModal {
     }
   }
 
+
+  filterCoversInModal(): void {
+    const term = normalizeSearch(this.coverSearchInput?.value || '');
+    const myCards = this.myCoversGrid?.querySelectorAll<HTMLElement>('.my-cover-card') || [];
+    let myVisible = 0;
+    myCards.forEach((c) => {
+      const text = c.dataset.normalizedText || '';
+      const match = !term || text.includes(term);
+      c.style.display = match ? '' : 'none';
+      if (match) myVisible++;
+    });
+
+    const factoryCards = this.factoryCoversGrid?.querySelectorAll<HTMLElement>('.cover-card') || [];
+    let factoryVisible = 0;
+    factoryCards.forEach((c) => {
+      const text = c.dataset.normalizedText || '';
+      const match = !term || text.includes(term);
+      c.style.display = match ? '' : 'none';
+      if (match) factoryVisible++;
+    });
+
+    const headings = document.getElementById('cover-tab-covers')?.querySelectorAll<HTMLElement>('.covers-section-heading') || [];
+    if (headings[0]) headings[0].style.display = myVisible > 0 ? '' : 'none';
+    if (headings[1]) headings[1].style.display = factoryVisible > 0 ? '' : 'none';
+  }
+
   createMyCoverCard(cover: CoverItemRecord): HTMLElement {
     const card = document.createElement('div');
     card.className = 'my-cover-card';
+    card.dataset.normalizedText = normalizeSearch(cover.name + ' ' + (cover.themeName || ''));
     if (this.targetMeta?.customCoverUrl === cover.imageUrl) {
       card.classList.add('selected');
     }

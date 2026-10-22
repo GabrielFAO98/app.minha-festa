@@ -1,4 +1,5 @@
 import { generateMoinhoSVG, DEFAULT_PRESET_ITEMS } from '../core/presets-data';
+import { createSearchBar, normalizeSearch } from './search-bar';
 import { getItemCustomizationMode } from '../core/modular-svg-generator';
 import { getAllItems, getAllCovers } from '../core/db';
 import { REALISTIC_ENVIRONMENTS } from '../core/textures-data';
@@ -15,6 +16,9 @@ export class DesktopStudio {
 
   activeCatalogTab: string;
   currentPresetCategory: string;
+  presetsSearchTerm = '';
+  myItemsSearchTerm = '';
+  coversSearchTerm = '';
 
   constructor(
     canvasEngine: CanvasEngine,
@@ -77,6 +81,16 @@ export class DesktopStudio {
 
   // ABA 1: Presets Base
   async renderPresets(container: HTMLElement): Promise<void> {
+    const searchBar = createSearchBar({
+      placeholder: 'Buscar elementos...',
+      initialValue: this.presetsSearchTerm,
+      onSearch: (term) => {
+        this.presetsSearchTerm = normalizeSearch(term);
+        this.renderCatalogContent();
+      }
+    });
+    container.appendChild(searchBar);
+
     const catBar = document.createElement('div');
     catBar.className = 'desktop-category-pills';
 
@@ -107,6 +121,20 @@ export class DesktopStudio {
     if (this.currentPresetCategory !== 'todos') {
       presetItems = DEFAULT_PRESET_ITEMS.filter((i) => i.category === this.currentPresetCategory);
     }
+    if (this.presetsSearchTerm) {
+      presetItems = presetItems.filter((i) => normalizeSearch(i.name).includes(this.presetsSearchTerm));
+    }
+
+    if (presetItems.length === 0) {
+      const emptySearch = document.createElement('div');
+      emptySearch.className = 'catalog-search-empty';
+      emptySearch.innerHTML = `
+        <div class="empty-state-title" style="font-size: 0.86rem;">Nenhum elemento encontrado</div>
+        <div class="empty-state-text" style="font-size: 0.74rem;">Nenhum item corresponde à sua busca. Tente outro termo ou categoria.</div>
+      `;
+      container.appendChild(emptySearch);
+      return;
+    }
 
     const grid = document.createElement('div');
     grid.className = 'desktop-catalog-grid';
@@ -135,7 +163,7 @@ export class DesktopStudio {
   // ABA 2: Meu Acervo
   async renderMyItems(container: HTMLElement): Promise<void> {
     const addHeader = document.createElement('div');
-    addHeader.style.padding = '8px 12px';
+    addHeader.style.padding = '4px 0 8px 0';
     addHeader.innerHTML = `
       <button class="btn-primary" style="width: 100%; height: 42px; font-size: 0.84rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px;" id="btn-desktop-add-inventory">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -148,8 +176,21 @@ export class DesktopStudio {
       this.onOpenInventoryModal();
     });
 
+    const searchBar = createSearchBar({
+      placeholder: 'Buscar no meu acervo...',
+      initialValue: this.myItemsSearchTerm,
+      onSearch: (term) => {
+        this.myItemsSearchTerm = normalizeSearch(term);
+        this.renderCatalogContent();
+      }
+    });
+    container.appendChild(searchBar);
+
     const allItems = await getAllItems();
-    const customItems = allItems.filter((i) => i.isCustom);
+    let customItems = allItems.filter((i) => i.isCustom);
+    if (this.myItemsSearchTerm) {
+      customItems = customItems.filter((i) => normalizeSearch(i.name).includes(this.myItemsSearchTerm));
+    }
 
     if (customItems.length === 0) {
       const empty = document.createElement('div');
@@ -163,10 +204,12 @@ export class DesktopStudio {
           </svg>
         </div>
         <div class="empty-state-title">
-          Seu acervo ainda está vazio
+          ${this.myItemsSearchTerm ? 'Nenhuma peça encontrada' : 'Seu acervo ainda está vazio'}
         </div>
         <div class="empty-state-text">
-          Fotografe suas peças reais de decoração para compor cenários exclusivos e orçamentos automáticos!
+          ${this.myItemsSearchTerm
+            ? 'Nenhuma peça corresponde à sua busca. Tente outro termo.'
+            : 'Fotografe suas peças reais de decoração para compor cenários exclusivos e orçamentos automáticos!'}
         </div>
       `;
       container.appendChild(empty);
@@ -202,12 +245,41 @@ export class DesktopStudio {
 
   // ABA 3: Capas e Estampas
   async renderCovers(container: HTMLElement): Promise<void> {
+    const searchBar = createSearchBar({
+      placeholder: 'Buscar estampas ou temas...',
+      initialValue: this.coversSearchTerm,
+      onSearch: (term) => {
+        this.coversSearchTerm = normalizeSearch(term);
+        this.renderCatalogContent();
+      }
+    });
+    container.appendChild(searchBar);
+
     const covers = await getAllCovers();
+    let filteredCovers = covers;
+    if (this.coversSearchTerm) {
+      filteredCovers = covers.filter((c) =>
+        normalizeSearch(c.name).includes(this.coversSearchTerm) ||
+        normalizeSearch(c.themeName || '').includes(this.coversSearchTerm)
+      );
+    }
+
+    if (filteredCovers.length === 0) {
+      const emptySearch = document.createElement('div');
+      emptySearch.className = 'catalog-search-empty';
+      emptySearch.innerHTML = `
+        <div class="empty-state-title" style="font-size: 0.86rem;">Nenhuma estampa encontrada</div>
+        <div class="empty-state-text" style="font-size: 0.74rem;">Nenhuma estampa corresponde ao termo digitado.</div>
+      `;
+      container.appendChild(emptySearch);
+      return;
+    }
+
     const grid = document.createElement('div');
     grid.className = 'desktop-catalog-grid';
     const coversFrag = document.createDocumentFragment();
 
-    covers.forEach((cover) => {
+    filteredCovers.forEach((cover) => {
       const card = document.createElement('div');
       card.className = 'desktop-item-card';
       card.innerHTML = `
@@ -234,7 +306,6 @@ export class DesktopStudio {
     });
 
     grid.appendChild(coversFrag);
-
     container.appendChild(grid);
   }
 

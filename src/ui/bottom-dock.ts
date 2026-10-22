@@ -2,6 +2,7 @@ import { getAllItems, getAllCovers } from '../core/db';
 import { getItemCustomizationMode } from '../core/modular-svg-generator';
 import { REALISTIC_ENVIRONMENTS, WALL_OPTIONS, FLOOR_OPTIONS } from '../core/textures-data';
 import { DEFAULT_PRESET_ITEMS } from '../core/presets-data';
+import { createSearchBar, normalizeSearch } from './search-bar';
 import type { CanvasEngine } from '../core/canvas-engine';
 import type { PresetItem, ItemCategory } from '../types';
 import { CANVA_LAYER_ICONS, setupLayersDragAndDrop } from './layers-drag-drop';
@@ -35,6 +36,9 @@ export class BottomDock {
   private envRendered = false;
   private cachedCustomItems: PresetItem[] | null = null;
   private renderedPillsTab: 'presets' | 'my-items' | null = null;
+  private presetsSearchTerm = '';
+  private myItemsSearchTerm = '';
+  private coversSearchTerm = '';
 
   constructor(
     canvasEngine: CanvasEngine,
@@ -207,6 +211,16 @@ export class BottomDock {
 
   private buildPresetsGrid(): void {
     if (!this.panePresets) return;
+
+    const searchBar = createSearchBar({
+      placeholder: 'Buscar elementos...',
+      initialValue: this.presetsSearchTerm,
+      onSearch: (term) => {
+        this.presetsSearchTerm = normalizeSearch(term);
+        this.filterPresetsGrid();
+      }
+    });
+
     const grid = document.createElement('div');
     grid.className = 'items-grid';
     grid.id = 'sheet-items-grid';
@@ -216,6 +230,7 @@ export class BottomDock {
       const card = document.createElement('div');
       card.className = 'element-card';
       card.dataset.category = item.category;
+      card.dataset.normalizedName = normalizeSearch(item.name);
       card.title = item.name;
       card.innerHTML = `
         <img src="${item.previewUrl}" alt="${item.name}" loading="lazy" decoding="async"/>
@@ -231,17 +246,37 @@ export class BottomDock {
     });
 
     grid.appendChild(fragment);
-    this.panePresets.replaceChildren(grid);
+
+    const emptySearch = document.createElement('div');
+    emptySearch.className = 'catalog-search-empty';
+    emptySearch.id = 'presets-search-empty';
+    emptySearch.style.display = 'none';
+    emptySearch.innerHTML = `
+      <div class="empty-state-title" style="font-size: 0.86rem;">Nenhum elemento encontrado</div>
+      <div class="empty-state-text" style="font-size: 0.74rem;">Nenhum item corresponde à sua busca. Tente outro termo ou categoria.</div>
+    `;
+
+    this.panePresets.replaceChildren(searchBar, grid, emptySearch);
   }
 
   private filterPresetsGrid(): void {
     if (!this.panePresets) return;
     const cards = this.panePresets.querySelectorAll<HTMLElement>('.element-card');
+    let visibleCount = 0;
     cards.forEach((card) => {
       const cat = card.dataset.category;
-      const match = this.currentCategory === 'todos' || cat === this.currentCategory;
-      card.style.display = match ? '' : 'none';
+      const name = card.dataset.normalizedName || '';
+      const matchCat = this.currentCategory === 'todos' || cat === this.currentCategory;
+      const matchSearch = !this.presetsSearchTerm || name.includes(this.presetsSearchTerm);
+      const visible = matchCat && matchSearch;
+      card.style.display = visible ? '' : 'none';
+      if (visible) visibleCount++;
     });
+
+    const emptyEl = this.panePresets.querySelector<HTMLElement>('#presets-search-empty');
+    if (emptyEl) {
+      emptyEl.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
   }
 
   renderCategoryPills(tab: 'presets' | 'my-items'): void {
@@ -316,35 +351,54 @@ export class BottomDock {
     if (this.myItemsCategory !== 'todos') {
       customItems = customItems.filter((i) => i.category === this.myItemsCategory);
     }
+    if (this.myItemsSearchTerm) {
+      customItems = customItems.filter((i) => normalizeSearch(i.name).includes(this.myItemsSearchTerm));
+    }
 
-    let html = `
-      <div style="margin-bottom: 12px;">
-        <button id="btn-add-inventory-item" class="btn-primary" style="width: 100%; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Cadastrar Nova Peça com Foto
-        </button>
-      </div>
+    const wrapper = document.createElement('div');
+
+    const addHeader = document.createElement('div');
+    addHeader.style.marginBottom = '8px';
+    addHeader.innerHTML = `
+      <button id="btn-add-inventory-item" class="btn-primary" style="width: 100%; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Cadastrar Nova Peça com Foto
+      </button>
     `;
+    wrapper.appendChild(addHeader);
+
+    const searchBar = createSearchBar({
+      placeholder: 'Buscar no meu acervo...',
+      initialValue: this.myItemsSearchTerm,
+      onSearch: (term) => {
+        this.myItemsSearchTerm = normalizeSearch(term);
+        this.renderMyItemsTab(true);
+      }
+    });
+    wrapper.appendChild(searchBar);
 
     if (customItems.length === 0) {
-      this.paneMyItems.innerHTML = html + `
-        <div class="empty-state my-items-empty">
-          <div class="empty-state-icon-badge">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-              <circle cx="12" cy="13" r="4"/>
-            </svg>
-          </div>
-          <div class="empty-state-title">
-            ${this.myItemsCategory === 'todos' ? 'Seu acervo ainda está vazio' : 'Nenhuma peça nesta categoria'}
-          </div>
-          <div class="empty-state-text">
-            ${this.myItemsCategory === 'todos'
+      const emptyDiv = document.createElement('div');
+      emptyDiv.className = 'empty-state my-items-empty';
+      emptyDiv.innerHTML = `
+        <div class="empty-state-icon-badge">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+        </div>
+        <div class="empty-state-title">
+          ${this.myItemsSearchTerm ? 'Nenhuma peça encontrada' : (this.myItemsCategory === 'todos' ? 'Seu acervo ainda está vazio' : 'Nenhuma peça nesta categoria')}
+        </div>
+        <div class="empty-state-text">
+          ${this.myItemsSearchTerm
+            ? 'Nenhuma peça corresponde à sua busca. Tente outro termo.'
+            : (this.myItemsCategory === 'todos'
               ? 'Fotografe suas peças reais de decoração para compor cenários exclusivos e orçamentos automáticos!'
-              : 'Nenhuma peça cadastrada nesta categoria. Toque no botão acima para adicionar!'}
-          </div>
+              : 'Nenhuma peça cadastrada nesta categoria. Toque no botão acima para adicionar!')}
         </div>
       `;
+      wrapper.appendChild(emptyDiv);
     } else {
       const grid = document.createElement('div');
       grid.className = 'items-grid';
@@ -355,12 +409,10 @@ export class BottomDock {
         fragment.appendChild(card);
       });
       grid.appendChild(fragment);
-
-      const wrapper = document.createElement('div');
-      wrapper.innerHTML = html;
       wrapper.appendChild(grid);
-      this.paneMyItems.replaceChildren(wrapper);
     }
+
+    this.paneMyItems.replaceChildren(wrapper);
 
     this.paneMyItems.querySelector('#btn-add-inventory-item')?.addEventListener('click', () => {
       if (this.onOpenInventoryModal) {
@@ -426,24 +478,27 @@ export class BottomDock {
     const customCovers = allCovers.filter((c) => c.isCustom).reverse();
     const factoryCovers = allCovers.filter((c) => !c.isCustom);
 
-    this.paneCovers.innerHTML = `
-      <div style="margin-bottom: 12px;">
-        <button id="btn-add-new-cover" class="btn-primary" style="width: 100%; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Subir nova estampa
-        </button>
-      </div>
-      ${customCovers.length > 0 ? `
-        <div class="covers-section-heading" style="margin-top: 10px; margin-bottom: 8px;">
-          <span>Estampas e Imagens</span>
-        </div>
-        <div class="covers-grid" id="sheet-my-covers-grid" style="margin-bottom: 16px;"></div>
-      ` : ''}
-      <div class="covers-section-heading" style="margin-top: 10px; margin-bottom: 8px;">
-        <span>Capas do Catálogo Padrão</span>
-      </div>
-      <div class="covers-grid" id="sheet-factory-covers-grid"></div>
+    const wrapper = document.createElement('div');
+
+    const addHeader = document.createElement('div');
+    addHeader.style.marginBottom = '8px';
+    addHeader.innerHTML = `
+      <button id="btn-add-new-cover" class="btn-primary" style="width: 100%; height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Subir nova estampa
+      </button>
     `;
+    wrapper.appendChild(addHeader);
+
+    const searchBar = createSearchBar({
+      placeholder: 'Buscar estampas ou temas...',
+      initialValue: this.coversSearchTerm,
+      onSearch: (term) => {
+        this.coversSearchTerm = normalizeSearch(term);
+        this.filterCoversInDock();
+      }
+    });
+    wrapper.appendChild(searchBar);
 
     const attachCoverClick = (card: HTMLElement, coverUrl: string) => {
       card.addEventListener('click', async () => {
@@ -463,41 +518,109 @@ export class BottomDock {
     };
 
     if (customCovers.length > 0) {
-      const myGrid = this.paneCovers.querySelector('#sheet-my-covers-grid');
-      const frag = document.createDocumentFragment();
+      const heading = document.createElement('div');
+      heading.className = 'covers-section-heading';
+      heading.id = 'heading-my-covers';
+      heading.style.marginTop = '10px';
+      heading.style.marginBottom = '8px';
+      heading.innerHTML = `<span>Estampas e Imagens</span>`;
+      wrapper.appendChild(heading);
+
+      const myGrid = document.createElement('div');
+      myGrid.className = 'covers-grid';
+      myGrid.id = 'sheet-my-covers-grid';
+      myGrid.style.marginBottom = '16px';
       customCovers.forEach((cover) => {
         const card = document.createElement('div');
         card.className = 'cover-card';
+        card.dataset.normalizedText = normalizeSearch(cover.name + ' ' + (cover.themeName || ''));
         card.innerHTML = `
           <img src="${cover.imageUrl}" alt="${cover.name}" loading="lazy" decoding="async"/>
           <div class="cover-card-label">${cover.name}</div>
         `;
         attachCoverClick(card, cover.imageUrl);
-        frag.appendChild(card);
+        myGrid.appendChild(card);
       });
-      myGrid?.appendChild(frag);
+      wrapper.appendChild(myGrid);
     }
 
-    const factoryGrid = this.paneCovers.querySelector('#sheet-factory-covers-grid');
-    const factoryFrag = document.createDocumentFragment();
+    const factoryHeading = document.createElement('div');
+    factoryHeading.className = 'covers-section-heading';
+    factoryHeading.id = 'heading-factory-covers';
+    factoryHeading.style.marginTop = '10px';
+    factoryHeading.style.marginBottom = '8px';
+    factoryHeading.innerHTML = `<span>Capas do Catálogo Padrão</span>`;
+    wrapper.appendChild(factoryHeading);
+
+    const factoryGrid = document.createElement('div');
+    factoryGrid.className = 'covers-grid';
+    factoryGrid.id = 'sheet-factory-covers-grid';
     factoryCovers.forEach((cover) => {
       const card = document.createElement('div');
       card.className = 'cover-card';
+      card.dataset.normalizedText = normalizeSearch(cover.name + ' ' + (cover.themeName || ''));
       card.innerHTML = `
         <img src="${cover.imageUrl}" alt="${cover.name}" loading="lazy" decoding="async"/>
         <div class="cover-card-label">${cover.name}</div>
       `;
       attachCoverClick(card, cover.imageUrl);
-      factoryFrag.appendChild(card);
+      factoryGrid.appendChild(card);
     });
-    factoryGrid?.appendChild(factoryFrag);
+    wrapper.appendChild(factoryGrid);
 
-    this.paneCovers.querySelector('#btn-add-new-cover')?.addEventListener('click', () => {
+    const emptySearch = document.createElement('div');
+    emptySearch.className = 'catalog-search-empty';
+    emptySearch.id = 'covers-search-empty';
+    emptySearch.style.display = 'none';
+    emptySearch.innerHTML = `
+      <div class="empty-state-title" style="font-size: 0.86rem;">Nenhuma estampa encontrada</div>
+      <div class="empty-state-text" style="font-size: 0.74rem;">Nenhuma estampa corresponde ao termo digitado.</div>
+    `;
+    wrapper.appendChild(emptySearch);
+
+    this.paneCovers.replaceChildren(wrapper);
+
+    wrapper.querySelector('#btn-add-new-cover')?.addEventListener('click', () => {
       if (this.onOpenCoverModal) {
         const meta = this.canvasEngine.selectedNode?.getAttr('itemMeta') || null;
         this.onOpenCoverModal(meta);
       }
     });
+
+    this.filterCoversInDock();
+  }
+
+  private filterCoversInDock(): void {
+    if (!this.paneCovers) return;
+    const term = this.coversSearchTerm;
+    const myCards = this.paneCovers.querySelectorAll<HTMLElement>('#sheet-my-covers-grid .cover-card');
+    let myVisible = 0;
+    myCards.forEach((c) => {
+      const text = c.dataset.normalizedText || '';
+      const match = !term || text.includes(term);
+      c.style.display = match ? '' : 'none';
+      if (match) myVisible++;
+    });
+
+    const factoryCards = this.paneCovers.querySelectorAll<HTMLElement>('#sheet-factory-covers-grid .cover-card');
+    let factoryVisible = 0;
+    factoryCards.forEach((c) => {
+      const text = c.dataset.normalizedText || '';
+      const match = !term || text.includes(term);
+      c.style.display = match ? '' : 'none';
+      if (match) factoryVisible++;
+    });
+
+    const myHeading = this.paneCovers.querySelector<HTMLElement>('#heading-my-covers');
+    if (myHeading) myHeading.style.display = myVisible > 0 ? '' : 'none';
+
+    const factoryHeading = this.paneCovers.querySelector<HTMLElement>('#heading-factory-covers');
+    if (factoryHeading) factoryHeading.style.display = factoryVisible > 0 ? '' : 'none';
+
+    const emptySearch = this.paneCovers.querySelector<HTMLElement>('#covers-search-empty');
+    if (emptySearch) {
+      emptySearch.style.display = (myVisible === 0 && factoryVisible === 0) ? 'block' : 'none';
+    }
   }
 
   // ABA 4: Cenários Realistas COM ESCOLHA POR IMAGEM (Cacheado)

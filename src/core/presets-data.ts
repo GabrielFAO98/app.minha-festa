@@ -3161,7 +3161,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   // 1. PAINÉIS
   {
     id: 'preset-painel-redondo',
-    name: 'Painel Redondo 1,50m',
+    name: 'Painel Redondo',
     category: 'paineis',
     type: 'panel_round',
     widthCm: 150,
@@ -3173,7 +3173,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-arco-romano',
-    name: 'Painel Arco Romano 1,00x2,00m',
+    name: 'Painel Arco Romano',
     category: 'paineis',
     type: 'panel_arch',
     widthCm: 100,
@@ -3185,7 +3185,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-painel-retangular',
-    name: 'Painel Retangular 1,00x2,00m',
+    name: 'Painel Retangular',
     category: 'paineis',
     type: 'panel_rect',
     widthCm: 100,
@@ -3197,7 +3197,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-painel-arco-ripado',
-    name: 'Painel Arco Ripado Madeira 1,00x2,10m',
+    name: 'Painel Arco Ripado Madeira',
     category: 'paineis',
     type: 'panel_arch',
     svgRole: 'photo',
@@ -3210,7 +3210,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-painel-meia-lua',
-    name: 'Painel Meia-lua / Assimétrico 1,00x2,00m',
+    name: 'Painel Meia-lua / Assimétrico',
     category: 'paineis',
     type: 'panel_half_moon',
     widthCm: 100,
@@ -3222,7 +3222,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-moinho-mdf-marrom',
-    name: 'Painel Moinho Fazendinha MDF 1,80m - Cru',
+    name: 'Painel Moinho Fazendinha MDF Cru',
     category: 'paineis',
     type: 'moinho',
     currentColor: 'marrom',
@@ -3236,7 +3236,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-moinho-mdf-branco',
-    name: 'Painel Moinho Fazendinha MDF 1,80m - Branco',
+    name: 'Painel Moinho Fazendinha MDF Branco',
     category: 'paineis',
     type: 'moinho',
     currentColor: 'branco',
@@ -3250,7 +3250,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-moinho-mdf-bege',
-    name: 'Painel Moinho Fazendinha MDF 1,80m - Bege',
+    name: 'Painel Moinho Fazendinha MDF Bege',
     category: 'paineis',
     type: 'moinho',
     currentColor: 'bege',
@@ -3266,7 +3266,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   // 2. CILINDROS, CUBOS E MESAS
   {
     id: 'preset-cilindro-g',
-    name: 'Cilindro G (50x80cm)',
+    name: 'Cilindro G',
     category: 'cilindros',
     type: 'cylinder',
     widthCm: 50,
@@ -3278,7 +3278,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-cilindro-m',
-    name: 'Cilindro M (44x60cm)',
+    name: 'Cilindro M',
     category: 'cilindros',
     type: 'cylinder',
     widthCm: 44,
@@ -3290,7 +3290,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-cilindro-p',
-    name: 'Cilindro P (38x45cm)',
+    name: 'Cilindro P',
     category: 'cilindros',
     type: 'cylinder',
     widthCm: 38,
@@ -3315,7 +3315,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-cubo-p',
-    name: 'Cubo P (35x45cm)',
+    name: 'Cubo P',
     category: 'cilindros',
     type: 'cube',
     widthCm: 35,
@@ -3327,7 +3327,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-cubo-m',
-    name: 'Cubo M (40x60cm)',
+    name: 'Cubo M',
     category: 'cilindros',
     type: 'cube',
     widthCm: 40,
@@ -3339,7 +3339,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-cubo-g',
-    name: 'Cubo G (45x80cm)',
+    name: 'Cubo G',
     category: 'cilindros',
     type: 'cube',
     widthCm: 45,
@@ -3351,7 +3351,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-mesa-organica-feijao',
-    name: 'Mesa Orgânica Feijão Baixa 60cm',
+    name: 'Mesa Orgânica Feijão Baixa',
     category: 'mesas',
     type: 'table_organic_bean',
     widthCm: 100,
@@ -3363,7 +3363,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-mesa-organica-feijao-m',
-    name: 'Mesa Orgânica Feijão Média 75cm',
+    name: 'Mesa Orgânica Feijão Média',
     category: 'mesas',
     type: 'table_organic_bean_m',
     widthCm: 100,
@@ -3375,7 +3375,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-mesa-organica-feijao-g',
-    name: 'Mesa Orgânica Feijão Alta 90cm',
+    name: 'Mesa Orgânica Feijão Alta',
     category: 'mesas',
     type: 'table_organic_bean_g',
     widthCm: 100,
@@ -3387,7 +3387,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-mesa-cavalete',
-    name: 'Mesa Tradicional / Cavalete 1,50m',
+    name: 'Mesa Tradicional / Cavalete',
     category: 'mesas',
     type: 'table',
     widthCm: 150,
@@ -3399,7 +3399,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-mesa-apoio-lateral',
-    name: 'Mesa de Apoio Lateral 60x60cm',
+    name: 'Mesa de Apoio Lateral',
     category: 'mesas',
     type: 'table_side',
     widthCm: 60,
@@ -3423,7 +3423,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-escada-mesa-pinus',
-    name: 'Estante Escada Pinus 1,17m',
+    name: 'Estante Escada Pinus',
     category: 'mesas',
     type: 'table',
     svgRole: 'photo',
@@ -3437,7 +3437,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-mesa-bistro-mdf',
-    name: 'Mesa Bistrô Redonda MDF 75cm',
+    name: 'Mesa Bistrô Redonda MDF',
     category: 'mesas',
     type: 'table_side',
     svgRole: 'photo',
@@ -3451,7 +3451,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-mesa-pedestal-pinus-g',
-    name: 'Mesa Pedestal Pinus G (38x85cm)',
+    name: 'Mesa Pedestal Pinus G',
     category: 'mesas',
     type: 'table',
     svgRole: 'photo',
@@ -3465,7 +3465,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-mesa-pedestal-pinus-m',
-    name: 'Mesa Pedestal Pinus M (30x70cm)',
+    name: 'Mesa Pedestal Pinus M',
     category: 'mesas',
     type: 'table',
     svgRole: 'photo',
@@ -3479,7 +3479,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-mesa-pedestal-pinus-p',
-    name: 'Mesa Pedestal Pinus P (28x55cm)',
+    name: 'Mesa Pedestal Pinus P',
     category: 'mesas',
     type: 'table',
     svgRole: 'photo',
@@ -3493,7 +3493,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-mesa-cone-ripada',
-    name: 'Mesa Cone Ripada MDF 80cm',
+    name: 'Mesa Cone Ripada MDF',
     category: 'mesas',
     type: 'table',
     svgRole: 'photo',
@@ -3510,7 +3510,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   // 4. PISO (TAPETES)
   {
     id: 'preset-tapete-retangular-3d',
-    name: 'Tapete Retangular / Lona 2,50x2,00m',
+    name: 'Tapete Retangular / Lona',
     category: 'tapetes',
     type: 'rug_rect_3d',
     widthCm: 250,
@@ -3522,7 +3522,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-tapete-oval',
-    name: 'Tapete Oval em Perspectiva (160x70cm)',
+    name: 'Tapete Oval em Perspectiva',
     category: 'tapetes',
     type: 'rug_oval',
     widthCm: 160,
@@ -3536,7 +3536,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   // 5. BANCADA E DISPLAYS
   {
     id: 'preset-boleira',
-    name: 'Boleira Cerâmica 30x20cm',
+    name: 'Boleira Cerâmica',
     category: 'acessorios',
     type: 'generic',
     widthCm: 30,
@@ -3548,7 +3548,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-bandeja-baixa',
-    name: 'Bandeja de Doces Baixa 20x5cm',
+    name: 'Bandeja de Doces Baixa',
     category: 'acessorios',
     type: 'generic',
     widthCm: 20,

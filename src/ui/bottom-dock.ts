@@ -150,6 +150,16 @@ export class BottomDock {
     this.myItemsRendered = false;
   }
 
+  private resetSheetScroll(): void {
+    if (!this.sheetBody) return;
+    this.sheetBody.scrollTop = 0;
+    requestAnimationFrame(() => {
+      if (this.sheetBody) {
+        this.sheetBody.scrollTop = 0;
+      }
+    });
+  }
+
   async openTab(tabName: string): Promise<void> {
     this.activeTab = tabName;
 
@@ -168,6 +178,7 @@ export class BottomDock {
 
     // 2. Alterna para o painel em memória (0ms)
     this.showPane(tabName);
+    this.resetSheetScroll();
 
     // 3. Popula / sincroniza dados do painel ativo
     if (tabName === 'presets') {
@@ -217,7 +228,7 @@ export class BottomDock {
       initialValue: this.presetsSearchTerm,
       onSearch: (term) => {
         this.presetsSearchTerm = normalizeSearch(term);
-        this.filterPresetsGrid();
+        this.filterPresetsGrid(true);
       }
     });
 
@@ -259,7 +270,7 @@ export class BottomDock {
     this.panePresets.replaceChildren(searchBar, grid, emptySearch);
   }
 
-  private filterPresetsGrid(): void {
+  private filterPresetsGrid(resetScroll = false): void {
     if (!this.panePresets) return;
     const cards = this.panePresets.querySelectorAll<HTMLElement>('.element-card');
     let visibleCount = 0;
@@ -276,6 +287,10 @@ export class BottomDock {
     const emptyEl = this.panePresets.querySelector<HTMLElement>('#presets-search-empty');
     if (emptyEl) {
       emptyEl.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+
+    if (resetScroll) {
+      this.resetSheetScroll();
     }
   }
 
@@ -312,15 +327,22 @@ export class BottomDock {
       btn.textContent = cat.label;
       btn.addEventListener('click', () => {
         if (tab === 'presets') {
-          if (this.currentCategory === cat.id) return;
+          if (this.currentCategory === cat.id) {
+            this.resetSheetScroll();
+            return;
+          }
           this.currentCategory = cat.id;
           this.renderCategoryPills('presets');
-          this.filterPresetsGrid();
+          this.filterPresetsGrid(true);
         } else {
-          if (this.myItemsCategory === cat.id) return;
+          if (this.myItemsCategory === cat.id) {
+            this.resetSheetScroll();
+            return;
+          }
           this.myItemsCategory = cat.id;
           this.renderCategoryPills('my-items');
           this.renderMyItemsTab();
+          this.resetSheetScroll();
         }
       });
       fragment.appendChild(btn);
@@ -373,6 +395,7 @@ export class BottomDock {
       onSearch: (term) => {
         this.myItemsSearchTerm = normalizeSearch(term);
         this.renderMyItemsTab(true);
+        this.resetSheetScroll();
       }
     });
     wrapper.appendChild(searchBar);

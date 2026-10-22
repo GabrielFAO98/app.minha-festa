@@ -68,3 +68,4 @@ export function createSearchBar(options: SearchBarOptions): HTMLElement {
 
   return wrap;
 }
+

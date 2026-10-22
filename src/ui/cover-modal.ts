@@ -539,12 +539,17 @@ export class CoverModal {
       this.modalEl.classList.remove('open');
     }
 
-    // 2. Oculta temporariamente a camada UI (Transformer, âncoras e botões de ação) para visão 100% limpa
+    // 2. Oculta temporariamente a barra flutuante de ações da peça no mobile
+    const floatingToolbar = document.getElementById('item-toolbar');
+    const wasToolbarActive = floatingToolbar?.classList.contains('active') ?? false;
+    floatingToolbar?.classList.remove('active');
+
+    // 3. Oculta temporariamente a camada UI (Transformer, âncoras e botões de ação) para visão 100% limpa
     const wasUiVisible = this.canvasEngine.uiLayer.visible();
     this.canvasEngine.uiLayer.visible(false);
     this.canvasEngine.uiLayer.batchDraw();
 
-    // 3. Exibe o banner de instrução no topo e ativa o modo de captura no canvas
+    // 4. Exibe o banner de instrução no topo e ativa o modo de captura no canvas
     if (this.eyedropperActiveBanner) {
       this.eyedropperActiveBanner.style.display = 'flex';
     }
@@ -556,6 +561,9 @@ export class CoverModal {
     }
 
     let currentSampledHex: string | null = null;
+    let isTouchActive = false;
+    let touchStartX = 0;
+    let touchStartY = 0;
 
     const updateLoupeAt = (clientX: number, clientY: number) => {
       if (!this.canvasEngine.stage || !this.loupeEl) return;
@@ -567,7 +575,7 @@ export class CoverModal {
       const screenY = clientY - rect.top;
 
       // Se o cursor estiver fora do contêiner do palco, oculta a lupa
-      if (screenX < -15 || screenX > rect.width + 15 || screenY < -15 || screenY > rect.height + 15) {
+      if (screenX < -20 || screenX > rect.width + 20 || screenY < -20 || screenY > rect.height + 20) {
         this.loupeEl.style.display = 'none';
         return;
       }
@@ -575,10 +583,10 @@ export class CoverModal {
       this.loupeEl.style.display = 'flex';
       this.loupeEl.style.left = `${clientX}px`;
       this.loupeEl.style.top = `${clientY}px`;
-      if (clientY < 110) {
-        this.loupeEl.style.transform = 'translate(-50%, 25px)';
+      if (clientY < 130) {
+        this.loupeEl.style.transform = 'translate(-50%, 45px)';
       } else {
-        this.loupeEl.style.transform = 'translate(-50%, -125%)';
+        this.loupeEl.style.transform = 'translate(-50%, -135%)';
       }
 
       const sampleResult = this.sampleStageColorAt(clientX, clientY);
@@ -607,14 +615,24 @@ export class CoverModal {
       }
       if (stageContainer) {
         stageContainer.style.cursor = 'default';
-        stageContainer.removeEventListener('pointerdown', onPointerDown, true);
-        stageContainer.removeEventListener('pointermove', onPointerMove, true);
       }
+
+      // Remove listeners globais
+      window.removeEventListener('touchstart', onTouchStart, true);
+      window.removeEventListener('touchmove', onTouchMove, true);
+      window.removeEventListener('touchend', onTouchEnd, true);
+      window.removeEventListener('mousemove', onMouseMove, true);
+      window.removeEventListener('mousedown', onMouseDown, true);
       window.removeEventListener('keydown', onKeyDown);
 
       // Restaura a camada de UI
       this.canvasEngine.uiLayer.visible(wasUiVisible);
       this.canvasEngine.uiLayer.batchDraw();
+
+      // Restaura a barra flutuante da peça
+      if (wasToolbarActive) {
+        floatingToolbar?.classList.add('active');
+      }
 
       // Restaura o display do modal
       if (this.modalEl) {
@@ -623,7 +641,49 @@ export class CoverModal {
       this.eyedropperCleanup = null;
     };
 
-    const onPointerMove = (e: PointerEvent) => {
+    // TOQUE MOBILE: arrastar o dedo desliza a lupa acima do dedo; soltar confirma a cor
+    const onTouchStart = (e: TouchEvent) => {
+      if ((e.target as HTMLElement)?.closest('#eyedropper-active-banner')) return;
+      if (e.touches.length === 0) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      isTouchActive = true;
+      const t = e.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+      updateLoupeAt(t.clientX, t.clientY);
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!isTouchActive || e.touches.length === 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      const t = e.touches[0];
+      updateLoupeAt(t.clientX, t.clientY);
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (!isTouchActive) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      isTouchActive = false;
+      const t = e.changedTouches[0] || e.touches[0];
+      const clientX = t ? t.clientX : touchStartX;
+      const clientY = t ? t.clientY : touchStartY;
+
+      const sample = this.sampleStageColorAt(clientX, clientY);
+      const pickedColor = sample?.hex || currentSampledHex || '#B58938';
+
+      cleanup();
+      this.handleEyedropperColorPicked(pickedColor, meta, part);
+    };
+
+    // MOUSE DESKTOP: mover atualiza a lupa; clicar confirma a cor
+    const onMouseMove = (e: MouseEvent) => {
       if ((e.target as HTMLElement)?.closest('#eyedropper-active-banner')) {
         if (this.loupeEl) this.loupeEl.style.display = 'none';
         return;
@@ -631,16 +691,14 @@ export class CoverModal {
       updateLoupeAt(e.clientX, e.clientY);
     };
 
-    const onPointerDown = (e: PointerEvent) => {
+    const onMouseDown = (e: MouseEvent) => {
+      if (isTouchActive) return;
       if ((e.target as HTMLElement)?.closest('#eyedropper-active-banner')) return;
 
       e.preventDefault();
       e.stopPropagation();
 
-      const clientX = e.clientX;
-      const clientY = e.clientY;
-
-      const sample = this.sampleStageColorAt(clientX, clientY);
+      const sample = this.sampleStageColorAt(e.clientX, e.clientY);
       const pickedColor = sample?.hex || currentSampledHex || '#B58938';
 
       cleanup();
@@ -655,10 +713,12 @@ export class CoverModal {
       }
     };
 
-    if (stageContainer) {
-      stageContainer.addEventListener('pointermove', onPointerMove, true);
-      stageContainer.addEventListener('pointerdown', onPointerDown, true);
-    }
+    // Anexa na window com capture para não perder rastreio em telas de toque
+    window.addEventListener('touchstart', onTouchStart, { passive: false, capture: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: false, capture: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: false, capture: true });
+    window.addEventListener('mousemove', onMouseMove, { passive: false, capture: true });
+    window.addEventListener('mousedown', onMouseDown, { passive: false, capture: true });
     window.addEventListener('keydown', onKeyDown);
 
     this.eyedropperCleanup = cleanup;

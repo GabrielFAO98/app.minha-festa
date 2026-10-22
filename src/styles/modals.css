@@ -1024,21 +1024,25 @@
 /* Floating Banner do Modo Conta-gotas */
 .eyedropper-active-banner {
   position: fixed;
-  top: 20px;
+  top: 14px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10000;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 10px 18px;
+  justify-content: space-between;
+  gap: 10px;
+  width: calc(100% - 24px);
+  max-width: 400px;
+  box-sizing: border-box;
+  padding: 8px 14px;
   background: rgba(28, 25, 23, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1.5px solid #B58938;
   border-radius: 9999px;
   color: #FAF8F5;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(181, 137, 56, 0.35);
   animation: slideDownEyedropper 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: auto;
@@ -1059,8 +1063,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 500;
-  letter-spacing: 0.2px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
 }
 
 .eyedropper-pulse-icon {
@@ -1082,6 +1090,7 @@
   font-size: 0.74rem;
   font-weight: 600;
   cursor: pointer;
+  flex-shrink: 0;
   transition: all var(--transition-fast);
 }
 

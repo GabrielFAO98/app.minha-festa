@@ -303,33 +303,40 @@
 /* Grade de Botões de Ação da Foto */
 .export-actions-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   width: 100%;
   margin-top: 4px;
 }
 
 .btn-export-share {
-  height: 46px;
+  height: 44px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 7px;
+  padding: 0 10px;
   border-radius: var(--radius-md);
   background: linear-gradient(135deg, var(--primary), var(--primary-hover));
   color: #ffffff;
   font-weight: 700;
-  font-size: 0.9rem;
-  border: none;
-  box-shadow: 0 4px 14px var(--primary-glow);
+  font-size: 0.84rem;
+  letter-spacing: 0.2px;
+  border: 1px solid #8D6722;
+  box-shadow: 0 3px 12px var(--primary-glow);
   cursor: pointer;
+  white-space: nowrap;
   transition: all var(--transition-fast);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .btn-export-share:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.08);
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px var(--primary-glow);
+  box-shadow: 0 5px 16px rgba(181, 137, 56, 0.35);
 }
 
 .btn-export-share:active {
@@ -337,30 +344,40 @@
 }
 
 .btn-export-download {
-  height: 46px;
+  height: 44px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 7px;
+  padding: 0 10px;
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.08);
+  background: #ffffff;
   color: var(--text-main);
   font-weight: 600;
-  font-size: 0.9rem;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  font-size: 0.84rem;
+  letter-spacing: 0.2px;
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   cursor: pointer;
+  white-space: nowrap;
   transition: all var(--transition-fast);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .btn-export-download:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #ffffff;
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary-hover);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(181, 137, 56, 0.16);
 }
 
 .btn-export-download:active {
   transform: scale(0.97);
+  background: #EFE8D6;
 }
 
 .export-modal-body {

@@ -7,6 +7,7 @@ import { CoverModal } from './ui/cover-modal';
 import { BalloonModal } from './ui/balloon-modal';
 import { InventoryModal } from './ui/inventory-modal';
 import { ExportModal } from './ui/export-modal';
+import { ConfirmModal } from './ui/confirm-modal';
 import { ProjectsModal } from './ui/projects-modal';
 import { DesktopStudio } from './ui/desktop-studio';
 import { HomeScreen } from './ui/home-screen';
@@ -23,10 +24,11 @@ async function bootstrap() {
   canvasEngine.init(container);
 
   // 3. Inicializar Modais
+  const confirmModal = new ConfirmModal();
   const coverModal = new CoverModal(canvasEngine);
   const balloonModal = new BalloonModal(canvasEngine);
   const exportModal = new ExportModal(canvasEngine);
-  const projectsModal = new ProjectsModal(canvasEngine);
+  const projectsModal = new ProjectsModal(canvasEngine, confirmModal);
 
   let bottomDock: BottomDock | null = null;
   let desktopStudio: DesktopStudio | null = null;
@@ -208,21 +210,95 @@ async function bootstrap() {
   // 9. Carrega Cenário Inicial e Salva Estado Base de Histórico
   await loadDefaultScene(canvasEngine);
   canvasEngine.saveSnapshot();
+  projectsModal.markClean();
 
   // 10. Menu Inicial (Home Screen) & Controlador de Splash Screen
   const homeScreen = new HomeScreen({
-    onNewScene: () => {
-      canvasEngine.fitToView();
+    onNewScene: async () => {
+      await projectsModal.createNewProject();
     },
     onOpenProjects: () => {
       projectsModal.openProjectsScreen(false);
+    },
+    onBeforeExitToHome: async () => {
+      if (projectsModal.hasUnsavedChanges()) {
+        const choice = await confirmModal.promptUnsaved({
+          title: 'Sair do Cenário',
+          message: 'Você possui alterações não salvas. Deseja salvar antes de voltar ao menu inicial?',
+          saveLabel: 'Salvar e Sair',
+          discardLabel: 'Sair sem Salvar',
+          cancelLabel: 'Continuar no Cenário'
+        });
+
+        if (choice === 'cancel') return false;
+
+        if (choice === 'save') {
+          const saved = await projectsModal.quickSave();
+          if (!saved) return false;
+        }
+      }
+      return true;
     }
   });
 
   projectsModal.onProjectLoaded = () => {
     homeScreen.hide();
+    history.pushState({ screen: 'studio' }, '');
     canvasEngine.fitToView();
   };
+
+  // Configuração de Histórico Mobile e Interceptação do Botão Voltar / Gestos
+  history.replaceState({ screen: 'home' }, '');
+
+  window.addEventListener('popstate', async () => {
+    // 1. Se a gaveta inferior (bottom dock) estiver aberta, fecha a gaveta
+    if (bottomDock?.sheetEl?.classList.contains('open')) {
+      bottomDock.closeSheet();
+      history.pushState({ screen: 'studio' }, '');
+      return;
+    }
+
+    // 2. Se modal de confirmação estiver aberto, fecha
+    if (confirmModal.isOpen) {
+      confirmModal.close();
+      history.pushState({ screen: 'studio' }, '');
+      return;
+    }
+
+    // 3. Se outros modais estiverem abertos, fecha
+    const openModal = document.querySelector<HTMLElement>('.modal-backdrop.open');
+    if (openModal) {
+      openModal.classList.remove('open');
+      history.pushState({ screen: 'studio' }, '');
+      return;
+    }
+
+    // 4. Se a tela de projetos estiver aberta, fecha
+    const projScreen = document.getElementById('projects-screen');
+    if (projScreen && !projScreen.classList.contains('hidden')) {
+      projectsModal.closeProjectsScreen();
+      history.pushState({ screen: 'studio' }, '');
+      return;
+    }
+
+    // 5. Se estiver no estúdio (Home oculta), pede confirmação antes de sair
+    if (!homeScreen.active) {
+      history.pushState({ screen: 'studio' }, '');
+
+      const canExit = await homeScreen.requestReturnToHome();
+      if (canExit) {
+        history.replaceState({ screen: 'home' }, '');
+      }
+    }
+  });
+
+  // Alerta nativo caso feche a aba ou recarregue a página com alterações não salvas
+  window.addEventListener('beforeunload', (e) => {
+    if (projectsModal.hasUnsavedChanges()) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
 
   // 11. Desativa a Splash Screen suavemente (tempo mínimo elegante de 650ms)
   HomeScreen.dismissSplashScreen(650, splashStartTime);

@@ -858,6 +858,35 @@
     </div>
   </div>
 
+  <!-- MODAL: Confirmação Elegante e Salvar Alterações -->
+  <div id="confirm-modal" class="modal-backdrop">
+    <div class="modal-container" style="max-width: 440px;">
+      <div class="modal-header">
+        <div class="modal-title" id="confirm-modal-title">Salvar Alterações</div>
+        <button id="btn-close-confirm-modal" class="modal-close-btn" aria-label="Fechar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <p id="confirm-modal-message" class="confirm-modal-text">
+          Você possui alterações não salvas no cenário atual. Deseja salvar antes de continuar?
+        </p>
+        <div class="confirm-actions-stack" id="confirm-actions-container">
+          <button type="button" id="btn-confirm-save" class="btn-primary btn-confirm-action" style="width: 100%; height: 44px; justify-content: center; font-weight: 700; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span>Salvar e Continuar</span>
+          </button>
+          <button type="button" id="btn-confirm-discard" class="btn-secondary btn-confirm-action" style="width: 100%; height: 42px; justify-content: center; font-weight: 600; color: #dc2626; border-color: rgba(220, 38, 38, 0.3);">
+            Descartar Alterações
+          </button>
+          <button type="button" id="btn-confirm-cancel" class="btn-ghost btn-confirm-action" style="width: 100%; height: 40px; justify-content: center; color: var(--text-muted); font-weight: 600;">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: Salvar Cenário Atual -->
   <div id="save-project-modal" class="modal-backdrop">
     <div class="modal-container" style="max-width: 440px;">

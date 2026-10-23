@@ -1,12 +1,15 @@
 // Gerenciador de Projetos: Tela Exclusiva de Cenários e Modal de Salvar
 import { getAllProjects, saveProject, deleteProject } from '../core/db';
 import type { CanvasEngine } from '../core/canvas-engine';
+import type { ConfirmModal } from './confirm-modal';
 import type { ProjectData } from '../types';
 
 export class ProjectsModal {
   canvasEngine: CanvasEngine;
+  confirmModal: ConfirmModal;
   currentProjectId: string | null;
   currentProjectTitle: string;
+  private lastSavedSnapshot: string = '';
 
   // Tela Exclusiva de Projetos
   projectsScreenEl: HTMLElement | null;
@@ -20,6 +23,7 @@ export class ProjectsModal {
   titleInput: HTMLInputElement | null;
   btnSave: HTMLElement | null;
   btnCloseSave: HTMLElement | null;
+  private saveModalResolve: ((saved: boolean) => void) | null = null;
 
   // Header do Estúdio
   titleDisplay: HTMLElement | null;
@@ -29,8 +33,9 @@ export class ProjectsModal {
   onProjectLoaded?: (() => void) | null;
   private openedFromStudio = false;
 
-  constructor(canvasEngine: CanvasEngine) {
+  constructor(canvasEngine: CanvasEngine, confirmModal: ConfirmModal) {
     this.canvasEngine = canvasEngine;
+    this.confirmModal = confirmModal;
     this.currentProjectId = null;
     this.currentProjectTitle = 'Novo Cenário';
 
@@ -62,14 +67,14 @@ export class ProjectsModal {
     });
 
     // Tela de Projetos: Botão Novo Cenário
-    this.btnProjectsNewScene?.addEventListener('click', () => {
-      this.createNewProject();
+    this.btnProjectsNewScene?.addEventListener('click', async () => {
+      await this.createNewProject();
     });
 
     // Modal Salvar: Fechar
-    this.btnCloseSave?.addEventListener('click', () => this.closeSaveModal());
+    this.btnCloseSave?.addEventListener('click', () => this.closeSaveModal(false));
     this.saveModalEl?.addEventListener('click', (e) => {
-      if (e.target === this.saveModalEl) this.closeSaveModal();
+      if (e.target === this.saveModalEl) this.closeSaveModal(false);
     });
 
     // Modal Salvar: Confirmar Salvar
@@ -96,6 +101,31 @@ export class ProjectsModal {
         this.quickSave();
       }
     });
+  }
+
+  // ========================================================
+  // RASTREAMENTO DE ALTERAÇÕES (DIRTY STATE)
+  // ========================================================
+  getSceneSnapshot(): string {
+    return JSON.stringify({
+      elements: this.canvasEngine.getSceneElements(),
+      wall: this.canvasEngine.wallTextureUrl || '',
+      floor: this.canvasEngine.floorTextureUrl || '',
+      bg: this.canvasEngine.bgImageUrl || ''
+    });
+  }
+
+  markClean(): void {
+    this.lastSavedSnapshot = this.getSceneSnapshot();
+  }
+
+  hasUnsavedChanges(): boolean {
+    const elements = this.canvasEngine.getSceneElements();
+    if (!this.lastSavedSnapshot) {
+      return elements.length > 0;
+    }
+    const current = this.getSceneSnapshot();
+    return current !== this.lastSavedSnapshot;
   }
 
   // ========================================================
@@ -131,7 +161,7 @@ export class ProjectsModal {
 
   close(): void {
     this.closeProjectsScreen();
-    this.closeSaveModal();
+    this.closeSaveModal(false);
   }
 
   async renderProjectsGrid(): Promise<void> {
@@ -161,8 +191,8 @@ export class ProjectsModal {
         </div>
       `;
 
-      this.projectsGridEl.querySelector('#btn-empty-create-scene')?.addEventListener('click', () => {
-        this.createNewProject();
+      this.projectsGridEl.querySelector('#btn-empty-create-scene')?.addEventListener('click', async () => {
+        await this.createNewProject();
       });
       return;
     }
@@ -209,16 +239,24 @@ export class ProjectsModal {
         </div>
       `;
 
-      // Ação Abrir Cenário
+      // Ação Abrir Cenário com Verificação Segura de Salvamento
       card.querySelector('.btn-proj-open')?.addEventListener('click', async (e) => {
         e.stopPropagation();
-        await this.loadProject(proj);
+        await this.handleOpenProject(proj);
       });
 
-      // Ação Excluir Cenário
+      // Ação Excluir Cenário com Modal Elegante de Confirmação
       card.querySelector('.btn-proj-delete')?.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (confirm(`Deseja excluir permanentemente o cenário "${proj.title}"?`)) {
+        const confirmed = await this.confirmModal.ask({
+          title: 'Excluir Cenário',
+          message: `Deseja excluir permanentemente o cenário "${proj.title}"? Esta ação não pode ser desfeita.`,
+          confirmLabel: 'Excluir Cenário',
+          cancelLabel: 'Cancelar',
+          danger: true
+        });
+
+        if (confirmed) {
           if (this.currentProjectId === proj.id) {
             this.currentProjectId = null;
             this.currentProjectTitle = 'Novo Cenário';
@@ -233,6 +271,33 @@ export class ProjectsModal {
     });
 
     this.projectsGridEl.appendChild(fragment);
+  }
+
+  // Abertura Segura: Salva cenário atual antes de carregar o escolhido
+  async handleOpenProject(proj: ProjectData): Promise<void> {
+    if (this.currentProjectId === proj.id) {
+      this.closeProjectsScreen();
+      return;
+    }
+
+    if (this.hasUnsavedChanges()) {
+      const choice = await this.confirmModal.promptUnsaved({
+        title: 'Abrir Outro Cenário',
+        message: `Você possui alterações não salvas no cenário atual. Deseja salvar antes de abrir "${proj.title}"?`,
+        saveLabel: 'Salvar e Abrir',
+        discardLabel: 'Descartar e Abrir',
+        cancelLabel: 'Cancelar'
+      });
+
+      if (choice === 'cancel') return;
+
+      if (choice === 'save') {
+        const saved = await this.quickSave();
+        if (!saved) return;
+      }
+    }
+
+    await this.loadProject(proj);
   }
 
   async loadProject(proj: ProjectData): Promise<void> {
@@ -259,19 +324,35 @@ export class ProjectsModal {
     }
 
     this.canvasEngine.saveSnapshot();
+    this.markClean();
     this.closeProjectsScreen();
     this.onProjectLoaded?.();
+    this.canvasEngine.fitToView();
   }
 
-  // Iniciar Novo Cenário
-  createNewProject(): void {
-    const elements = this.canvasEngine.getSceneElements();
-    if (elements.length > 0) {
-      if (!confirm('Deseja iniciar um novo cenário do zero? O cenário atual será limpo.')) {
-        return;
+  // Iniciar Novo Cenário com Verificação Prévia de Salvamento
+  async createNewProject(): Promise<void> {
+    if (this.hasUnsavedChanges()) {
+      const choice = await this.confirmModal.promptUnsaved({
+        title: 'Criar Novo Cenário',
+        message: 'Você possui alterações não salvas no cenário atual. Deseja salvar antes de iniciar um novo?',
+        saveLabel: 'Salvar e Criar Novo',
+        discardLabel: 'Descartar e Criar Novo',
+        cancelLabel: 'Cancelar'
+      });
+
+      if (choice === 'cancel') return;
+
+      if (choice === 'save') {
+        const saved = await this.quickSave();
+        if (!saved) return;
       }
     }
 
+    this.executeNewProject();
+  }
+
+  executeNewProject(): void {
     this.canvasEngine.clearScene();
     this.currentProjectId = null;
     this.currentProjectTitle = 'Novo Cenário';
@@ -283,41 +364,50 @@ export class ProjectsModal {
       this.titleInput.value = '';
     }
 
+    this.canvasEngine.saveSnapshot();
+    this.markClean();
     this.closeProjectsScreen();
     this.onProjectLoaded?.();
+    this.canvasEngine.fitToView();
   }
 
   // ========================================================
   // MODAL DE SALVAR CENÁRIO NO ESTÚDIO
   // ========================================================
-  openSaveModal(): void {
-    if (this.titleInput) {
-      this.titleInput.value = this.currentProjectId ? this.currentProjectTitle : '';
-    }
-    this.saveModalEl?.classList.add('open');
-    setTimeout(() => this.titleInput?.focus(), 120);
+  openSaveModal(): Promise<boolean> {
+    return new Promise((resolve) => {
+      this.saveModalResolve = resolve;
+      if (this.titleInput) {
+        this.titleInput.value = this.currentProjectId ? this.currentProjectTitle : '';
+      }
+      this.saveModalEl?.classList.add('open');
+      setTimeout(() => this.titleInput?.focus(), 120);
+    });
   }
 
-  closeSaveModal(): void {
+  closeSaveModal(saved = false): void {
     this.saveModalEl?.classList.remove('open');
+    if (this.saveModalResolve) {
+      this.saveModalResolve(saved);
+      this.saveModalResolve = null;
+    }
   }
 
   // Salvar Rápido (acionado pelo botão Salvar do Header ou Ctrl+S)
-  async quickSave(): Promise<void> {
+  async quickSave(): Promise<boolean> {
     const elements = this.canvasEngine.getSceneElements();
 
     if (elements.length === 0) {
       alert('Adicione ao menos uma peça no cenário antes de salvar.');
-      return;
+      return false;
     }
 
     // Se o projeto ainda não tem nome/ID, abre o modal para o usuário nomear
     if (!this.currentProjectId) {
-      this.openSaveModal();
-      return;
+      return await this.openSaveModal();
     }
 
-    // Se já tem ID ativo, atualiza o projeto sem criar duplicatas!
+    // Se já tem ID ativo, atualiza o projeto sem criar duplicatas
     const thumb = this.canvasEngine.exportHDImage();
 
     await saveProject({
@@ -330,17 +420,19 @@ export class ProjectsModal {
       thumbnailUrl: thumb
     });
 
+    this.markClean();
     this.showSaveFeedback();
+    return true;
   }
 
   // Salvar a partir do campo de texto do modal (permite nomear ou renomear)
-  async saveFromModal(): Promise<void> {
+  async saveFromModal(): Promise<boolean> {
     const title = this.titleInput?.value.trim() || this.currentProjectTitle || 'Minha Decoração';
     const elements = this.canvasEngine.getSceneElements();
 
     if (elements.length === 0) {
       alert('Adicione ao menos uma peça no cenário antes de salvar.');
-      return;
+      return false;
     }
 
     const thumb = this.canvasEngine.exportHDImage();
@@ -362,8 +454,10 @@ export class ProjectsModal {
       this.titleDisplay.textContent = saved.title;
     }
 
+    this.markClean();
     this.showSaveFeedback();
-    this.closeSaveModal();
+    this.closeSaveModal(true);
+    return true;
   }
 
   // Feedback visual discreto e elegante de "Salvo!"

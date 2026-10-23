@@ -1,7 +1,8 @@
 // Menu Inicial (Home Screen) e Controlador de Splash Screen
 export interface HomeScreenCallbacks {
-  onNewScene: () => void;
+  onNewScene: () => Promise<void> | void;
   onOpenProjects: () => void;
+  onBeforeExitToHome?: () => Promise<boolean>;
 }
 
 export class HomeScreen {
@@ -27,9 +28,8 @@ export class HomeScreen {
 
   private setupEvents(): void {
     // 1. Card: Novo Cenário
-    this.cardNewScene?.addEventListener('click', () => {
-      this.hide();
-      this.callbacks.onNewScene();
+    this.cardNewScene?.addEventListener('click', async () => {
+      await this.callbacks.onNewScene();
     });
 
     // 2. Card: Projetos Salvos
@@ -38,13 +38,13 @@ export class HomeScreen {
     });
 
     // 3. Botão no Header para retornar ao Início
-    this.btnHeaderHome?.addEventListener('click', () => {
-      this.show();
+    this.btnHeaderHome?.addEventListener('click', async () => {
+      await this.requestReturnToHome();
     });
 
     // 4. Clique na marca do app no header para retornar ao Início
-    this.brandHeaderClick?.addEventListener('click', () => {
-      this.show();
+    this.brandHeaderClick?.addEventListener('click', async () => {
+      await this.requestReturnToHome();
     });
 
     // Acessibilidade via teclado (Enter / Space nos cards)
@@ -56,6 +56,15 @@ export class HomeScreen {
         }
       });
     });
+  }
+
+  async requestReturnToHome(): Promise<boolean> {
+    if (this.callbacks.onBeforeExitToHome) {
+      const allowed = await this.callbacks.onBeforeExitToHome();
+      if (!allowed) return false;
+    }
+    this.show();
+    return true;
   }
 
   show(): void {

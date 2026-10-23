@@ -245,6 +245,13 @@ export class ProjectsModal {
         await this.handleOpenProject(proj);
       });
 
+      // Tornar o card inteiro clicável para abrir o cenário no estúdio
+      card.addEventListener('click', async (e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('.btn-proj-delete')) return;
+        await this.handleOpenProject(proj);
+      });
+
       // Ação Excluir Cenário com Modal Elegante de Confirmação
       card.querySelector('.btn-proj-delete')?.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -275,59 +282,78 @@ export class ProjectsModal {
 
   // Abertura Segura: Salva cenário atual antes de carregar o escolhido
   async handleOpenProject(proj: ProjectData): Promise<void> {
-    if (this.currentProjectId === proj.id) {
-      this.closeProjectsScreen();
-      return;
-    }
-
-    if (this.hasUnsavedChanges()) {
-      const choice = await this.confirmModal.promptUnsaved({
-        title: 'Abrir Outro Cenário',
-        message: `Você possui alterações não salvas no cenário atual. Deseja salvar antes de abrir "${proj.title}"?`,
-        saveLabel: 'Salvar e Abrir',
-        discardLabel: 'Descartar e Abrir',
-        cancelLabel: 'Cancelar'
-      });
-
-      if (choice === 'cancel') return;
-
-      if (choice === 'save') {
-        const saved = await this.quickSave();
-        if (!saved) return;
+    try {
+      // Se o projeto clicado já é o que está ativo, apenas entra no estúdio diretamente
+      if (this.currentProjectId === proj.id) {
+        this.projectsScreenEl?.classList.add('hidden');
+        const homeEl = document.getElementById('home-screen');
+        homeEl?.classList.add('hidden');
+        this.onProjectLoaded?.();
+        this.canvasEngine.fitToView();
+        return;
       }
-    }
 
-    await this.loadProject(proj);
+      // Se há alterações não salvas no cenário atual, solicita confirmação
+      if (this.hasUnsavedChanges()) {
+        const choice = await this.confirmModal.promptUnsaved({
+          title: 'Abrir Outro Cenário',
+          message: `Você possui alterações não salvas no cenário atual. Deseja salvar antes de abrir "${proj.title}"?`,
+          saveLabel: 'Salvar e Abrir',
+          discardLabel: 'Descartar e Abrir',
+          cancelLabel: 'Cancelar'
+        });
+
+        if (choice === 'cancel') return;
+
+        if (choice === 'save') {
+          const saved = await this.quickSave();
+          if (!saved) return;
+        }
+      }
+
+      await this.loadProject(proj);
+    } catch (err) {
+      console.error('Erro ao abrir projeto:', err);
+    }
   }
 
   async loadProject(proj: ProjectData): Promise<void> {
-    await this.canvasEngine.loadSceneElements(proj.elements || []);
+    try {
+      await this.canvasEngine.loadSceneElements(proj.elements || []);
 
-    if (proj.bgImageUrl) {
-      await this.canvasEngine.setEnvironmentScenario(proj.bgImageUrl);
-    } else {
-      const wall = proj.wallTextureUrl || proj.wallTexture;
-      const floor = proj.floorTextureUrl || proj.floorTexture;
-      if (wall || floor) {
-        await this.canvasEngine.setEnvironmentTextures(wall || null, floor || null);
+      if (proj.bgImageUrl) {
+        await this.canvasEngine.setEnvironmentScenario(proj.bgImageUrl);
+      } else {
+        const wall = proj.wallTextureUrl || proj.wallTexture;
+        const floor = proj.floorTextureUrl || proj.floorTexture;
+        if (wall || floor) {
+          await this.canvasEngine.setEnvironmentTextures(wall || null, floor || null);
+        }
       }
-    }
 
-    this.currentProjectId = proj.id;
-    this.currentProjectTitle = proj.title;
+      this.currentProjectId = proj.id;
+      this.currentProjectTitle = proj.title || 'Meu Cenário';
 
-    if (this.titleDisplay) {
-      this.titleDisplay.textContent = proj.title;
-    }
-    if (this.titleInput) {
-      this.titleInput.value = proj.title;
-    }
+      if (this.titleDisplay) {
+        this.titleDisplay.textContent = this.currentProjectTitle;
+      }
+      if (this.titleInput) {
+        this.titleInput.value = this.currentProjectTitle;
+      }
 
-    this.canvasEngine.saveSnapshot();
-    this.markClean();
-    this.closeProjectsScreen();
-    this.onProjectLoaded?.();
-    this.canvasEngine.fitToView();
+      this.canvasEngine.saveSnapshot();
+      this.markClean();
+
+      // Oculta a tela de projetos e o menu inicial para exibir o estúdio
+      this.projectsScreenEl?.classList.add('hidden');
+      const homeEl = document.getElementById('home-screen');
+      homeEl?.classList.add('hidden');
+
+      this.onProjectLoaded?.();
+      this.canvasEngine.fitToView();
+    } catch (err) {
+      console.error('Erro ao carregar cenário:', err);
+    }
   }
 
   // Iniciar Novo Cenário com Verificação Prévia de Salvamento
@@ -366,7 +392,11 @@ export class ProjectsModal {
 
     this.canvasEngine.saveSnapshot();
     this.markClean();
-    this.closeProjectsScreen();
+
+    this.projectsScreenEl?.classList.add('hidden');
+    const homeEl = document.getElementById('home-screen');
+    homeEl?.classList.add('hidden');
+
     this.onProjectLoaded?.();
     this.canvasEngine.fitToView();
   }

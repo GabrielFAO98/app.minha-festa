@@ -48,9 +48,13 @@ export class BalloonStudioModal {
 
   // Dragging state no canvas
   private isDragging = false;
-  private dragStartX = 0;
-  private dragStartY = 0;
+  private dragPointerId: number | null = null;
+  private dragStartSvgX = 0;
+  private dragStartSvgY = 0;
   private dragPieceInitialPositions: Map<string, { x: number; y: number }> = new Map();
+
+  // Mobile Tabs
+  private activeMobileTab: 'colors' | 'add' | 'inspector' = 'colors';
 
   // Callbacks
   private onInsertCallback?: (item: PresetItem) => void;
@@ -149,7 +153,8 @@ export class BalloonStudioModal {
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                 <polyline points="17 21 17 13 7 13 7 21"></polyline>
               </svg>
-              <span>Salvar em Meus Elementos</span>
+              <span class="bs-btn-label-desktop">Salvar em Meus Elementos</span>
+              <span class="bs-btn-label-mobile">Salvar</span>
             </button>
 
             <button id="bs-btn-insert-scene" class="bs-btn-accent" title="Salvar e Inserir no Cenário">
@@ -157,17 +162,32 @@ export class BalloonStudioModal {
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
-              <span>Inserir no Cenário</span>
+              <span class="bs-btn-label-desktop">Inserir no Cenário</span>
+              <span class="bs-btn-label-mobile">Inserir</span>
             </button>
           </div>
         </header>
 
         <!-- Corpo Principal: Sidebar Ferramentas + Canvas + Inspetor -->
-        <div class="bs-body">
+        <div class="bs-body" data-mobile-tab="colors">
+          <!-- Abas de Navegação Mobile (< 900px) -->
+          <nav class="bs-mobile-tabs" id="bs-mobile-tabs">
+            <button class="bs-mobile-tab active" data-tab="colors" type="button">
+              <span>🎨 Cores</span>
+            </button>
+            <button class="bs-mobile-tab" data-tab="add" type="button">
+              <span>➕ Adicionar</span>
+            </button>
+            <button class="bs-mobile-tab" data-tab="inspector" type="button">
+              <span>⚙️ Inspetor</span>
+              <span id="bs-tab-insp-indicator" class="bs-tab-dot" style="display:none"></span>
+            </button>
+          </nav>
+
           <!-- Sidebar Esquerda: Paletas e Adicionar Balões -->
           <aside class="bs-sidebar-left">
             <!-- Seção 1: Paleta Vinculada (Troca global de cores) -->
-            <div class="bs-panel-box">
+            <div class="bs-panel-box" id="bs-panel-colors">
               <div class="bs-panel-header">
                 <h3 class="bs-panel-title">Cores Vinculadas</h3>
                 <span class="bs-panel-tip" title="Ao alterar uma cor aqui, todos os balões com essa letra mudam juntos">Dica: troca global</span>
@@ -234,7 +254,7 @@ export class BalloonStudioModal {
             </div>
 
             <!-- Seção 2: Ferramentas de Inserção -->
-            <div class="bs-panel-box">
+            <div class="bs-panel-box" id="bs-panel-add">
               <div class="bs-panel-header">
                 <h3 class="bs-panel-title">Adicionar Balões</h3>
               </div>
@@ -570,7 +590,15 @@ export class BalloonStudioModal {
     document.getElementById('bs-btn-save-element')?.addEventListener('click', () => this.saveToCustomElements(false));
     document.getElementById('bs-btn-insert-scene')?.addEventListener('click', () => this.saveToCustomElements(true));
 
-    // Eventos do Canvas Interativo (Mouse & Touch)
+    // Abas Mobile (< 900px)
+    this.overlayEl.querySelectorAll('.bs-mobile-tab').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const tab = (e.currentTarget as HTMLElement).dataset.tab as 'colors' | 'add' | 'inspector';
+        if (tab) this.setMobileTab(tab);
+      });
+    });
+
+    // Eventos do Canvas Interativo (Mouse & Touch via PointerEvents)
     this.setupCanvasInteraction();
 
     // Atalhos de Teclado no Estúdio
@@ -597,12 +625,28 @@ export class BalloonStudioModal {
     });
   }
 
-  // Interação direta com os balões no canvas (Arrasto e Seleção)
+  // Alterna a aba ativa no layout responsivo mobile
+  public setMobileTab(tab: 'colors' | 'add' | 'inspector'): void {
+    this.activeMobileTab = tab;
+    const body = this.overlayEl?.querySelector('.bs-body') as HTMLElement | null;
+    if (body) {
+      body.setAttribute('data-mobile-tab', tab);
+    }
+    this.overlayEl?.querySelectorAll('.bs-mobile-tab').forEach((b) => {
+      const btn = b as HTMLElement;
+      btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+  }
+
+  // Interação direta com os balões no canvas (Arrasto e Seleção com suporte a Touch & Mouse via PointerEvents)
   private setupCanvasInteraction(): void {
     const canvas = this.canvasSvgEl;
     if (!canvas) return;
 
-    canvas.addEventListener('mousedown', (e) => {
+    canvas.addEventListener('pointerdown', (e: PointerEvent) => {
+      // Bloqueia clique secundário do mouse
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+
       const target = e.target as SVGElement;
       const pieceGroup = target.closest('.balloon-piece') as SVGElement | null;
 
@@ -614,16 +658,34 @@ export class BalloonStudioModal {
         this.selectedPieceIds.add(pieceId);
         this.updateInspectorUI();
         this.renderSelectionOutlines();
+        this.setMobileTab('inspector'); // No mobile: auto-muda para a aba Inspetor
 
-        // Inicia arrasto
+        // Inicia arrasto com coordenadas SVG fiéis via matriz CTM
         this.isDragging = true;
-        this.dragStartX = e.clientX;
-        this.dragStartY = e.clientY;
+        this.dragPointerId = e.pointerId;
+
+        const ctm = canvas.getScreenCTM();
+        if (ctm) {
+          const pt = canvas.createSVGPoint();
+          pt.x = e.clientX;
+          pt.y = e.clientY;
+          const svgPt = pt.matrixTransform(ctm.inverse());
+          this.dragStartSvgX = svgPt.x;
+          this.dragStartSvgY = svgPt.y;
+        } else {
+          this.dragStartSvgX = e.clientX;
+          this.dragStartSvgY = e.clientY;
+        }
+
         this.dragPieceInitialPositions.clear();
         this.selectedPieceIds.forEach((id) => {
           const p = this.pieces.find((x) => x.id === id);
           if (p) this.dragPieceInitialPositions.set(id, { x: p.x, y: p.y });
         });
+
+        try {
+          canvas.setPointerCapture(e.pointerId);
+        } catch (_) {}
       } else {
         // Clicou no fundo do canvas: desseleciona
         this.selectedPieceIds.clear();
@@ -632,11 +694,24 @@ export class BalloonStudioModal {
       }
     });
 
-    window.addEventListener('mousemove', (e) => {
-      if (!this.isDragging) return;
+    canvas.addEventListener('pointermove', (e: PointerEvent) => {
+      if (!this.isDragging || (this.dragPointerId !== null && e.pointerId !== this.dragPointerId)) return;
 
-      const dx = e.clientX - this.dragStartX;
-      const dy = e.clientY - this.dragStartY;
+      let dx = 0;
+      let dy = 0;
+
+      const ctm = canvas.getScreenCTM();
+      if (ctm) {
+        const pt = canvas.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const svgPt = pt.matrixTransform(ctm.inverse());
+        dx = svgPt.x - this.dragStartSvgX;
+        dy = svgPt.y - this.dragStartSvgY;
+      } else {
+        dx = e.clientX - this.dragStartSvgX;
+        dy = e.clientY - this.dragStartSvgY;
+      }
 
       // Atualiza coordenadas dos balões selecionados
       this.selectedPieceIds.forEach((id) => {
@@ -651,13 +726,22 @@ export class BalloonStudioModal {
       this.renderCanvas(false); // Atualização rápida sem salvar histórico a cada pixel
     });
 
-    window.addEventListener('mouseup', () => {
-      if (this.isDragging) {
+    const onPointerEnd = (e: PointerEvent) => {
+      if (this.isDragging && (this.dragPointerId === null || e.pointerId === this.dragPointerId)) {
         this.isDragging = false;
+        this.dragPointerId = null;
+        try {
+          if (canvas.hasPointerCapture(e.pointerId)) {
+            canvas.releasePointerCapture(e.pointerId);
+          }
+        } catch (_) {}
         this.saveHistory();
         this.renderCanvas();
       }
-    });
+    };
+
+    canvas.addEventListener('pointerup', onPointerEnd);
+    canvas.addEventListener('pointercancel', onPointerEnd);
   }
 
   // Abre o Estúdio com um template pré-carregado
@@ -978,6 +1062,9 @@ export class BalloonStudioModal {
     if (!content || !empty || !badge) return;
 
     const count = this.selectedPieceIds.size;
+    const tabIndicator = document.getElementById('bs-tab-insp-indicator');
+    if (tabIndicator) tabIndicator.style.display = count > 0 ? 'inline-block' : 'none';
+
     if (count === 0) {
       content.style.display = 'none';
       empty.style.display = 'block';

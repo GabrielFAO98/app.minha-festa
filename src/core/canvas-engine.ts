@@ -84,6 +84,9 @@ export class CanvasEngine {
   private rotateCenterScreenY: number;
   private rotateStartAngle: number;
   private rotateNodeStartRotation: number;
+  private rotateNodeCenterParent: { x: number; y: number };
+  private rotateFlipSign: number;
+  private lastPinchEndTime: number;
 
   // Motor Direto 1:1 de Arraste (Zero Lag no Mobile)
   private draggingNode: Konva.Group | null;
@@ -167,6 +170,9 @@ export class CanvasEngine {
     this.rotateCenterScreenY = 0;
     this.rotateStartAngle = 0;
     this.rotateNodeStartRotation = 0;
+    this.rotateNodeCenterParent = { x: 0, y: 0 };
+    this.rotateFlipSign = 1;
+    this.lastPinchEndTime = 0;
 
     this.draggingNode = null;
     this.dragStartClientX = 0;
@@ -257,8 +263,63 @@ export class CanvasEngine {
     this.applyViewTransform();
   }
 
+  /**
+   * Delimita o deslocamento (pan) do palco para garantir que o cenário nunca se perca fora da tela,
+   * ao mesmo tempo em que oferece uma margem de respiro (bleed) generosa para posicionar e visualizar
+   * elementos que transbordam propositalmente os limites (ex: arcos e cascatas de balões, tapetes).
+   */
+  clampPan(): void {
+    if (!this.stage) return;
+    const containerW = this.stage.width();
+    const containerH = this.stage.height();
+    const finalScale = this.baseScale * this.zoomLevel;
+
+    if (this.zoomLevel <= 1.001) {
+      this.panX = 0;
+      this.panY = 0;
+      return;
+    }
+
+    const stageScaledW = this.VIRTUAL_WIDTH * finalScale;
+    const stageScaledH = this.VIRTUAL_HEIGHT * finalScale;
+
+    // Margem generosa para permitir visualizar itens que transbordam o palco (ex: arcos orgânicos nas laterais)
+    const bleedX = Math.max(120, 320 * finalScale);
+    const bleedY = Math.max(120, 320 * finalScale);
+
+    // Limites de Pan X (impede que o palco saia fora da tela além do limite de respiro)
+    let minPanX: number;
+    let maxPanX: number;
+    if (stageScaledW <= containerW) {
+      minPanX = -this.baseOffsetX - bleedX;
+      maxPanX = (containerW - stageScaledW) - this.baseOffsetX + bleedX;
+    } else {
+      minPanX = containerW - this.baseOffsetX - stageScaledW - bleedX;
+      maxPanX = -this.baseOffsetX + bleedX;
+    }
+
+    // Limites de Pan Y
+    let minPanY: number;
+    let maxPanY: number;
+    if (stageScaledH <= containerH) {
+      minPanY = -this.baseOffsetY - bleedY;
+      maxPanY = (containerH - stageScaledH) - this.baseOffsetY + bleedY;
+    } else {
+      minPanY = containerH - this.baseOffsetY - stageScaledH - bleedY;
+      maxPanY = -this.baseOffsetY + bleedY;
+    }
+
+    if (isNaN(this.panX)) this.panX = 0;
+    if (isNaN(this.panY)) this.panY = 0;
+
+    this.panX = Math.max(minPanX, Math.min(maxPanX, this.panX));
+    this.panY = Math.max(minPanY, Math.min(maxPanY, this.panY));
+  }
+
   applyViewTransform() {
     if (!this.stage) return;
+    this.clampPan();
+
     const finalScale = this.baseScale * this.zoomLevel;
     const finalPosX = this.baseOffsetX + this.panX;
     const finalPosY = this.baseOffsetY + this.panY;
@@ -278,10 +339,10 @@ export class CanvasEngine {
 
   setZoom(newZoom: number, focusScreenX?: number, focusScreenY?: number) {
     if (!this.stage) return;
-    // Trava estritamente em no mínimo 1.0 (100%), facilitando o retorno ao enquadramento original sem sub-zoom
-    const clampedZoom = Math.max(1.0, Math.min(4.0, newZoom));
+    // Trava estritamente em no mínimo 1.0 (100%) e máximo 3.5 (350%)
+    const clampedZoom = Math.max(1.0, Math.min(3.5, newZoom));
     if (Math.abs(clampedZoom - this.zoomLevel) < 0.001) {
-      if (clampedZoom === 1.0 && (this.panX !== 0 || this.panY !== 0)) {
+      if (clampedZoom <= 1.001 && (this.panX !== 0 || this.panY !== 0)) {
         this.panX = 0;
         this.panY = 0;
         this.applyViewTransform();
@@ -298,8 +359,8 @@ export class CanvasEngine {
     const newScale = this.baseScale * clampedZoom;
 
     // Converte o ponto da tela em coordenadas do palco virtual antes do zoom
-    const virtualX = (screenFocusX - (this.baseOffsetX + this.panX)) / oldScale;
-    const virtualY = (screenFocusY - (this.baseOffsetY + this.panY)) / oldScale;
+    const virtualX = (screenFocusX - (this.baseOffsetX + this.panX)) / (oldScale || 1);
+    const virtualY = (screenFocusY - (this.baseOffsetY + this.panY)) / (oldScale || 1);
 
     // Ajusta o pan para que o ponto da tela permaneça no mesmo local sob o novo zoom
     if (clampedZoom <= 1.001) {
@@ -308,6 +369,7 @@ export class CanvasEngine {
     } else {
       this.panX = screenFocusX - this.baseOffsetX - virtualX * newScale;
       this.panY = screenFocusY - this.baseOffsetY - virtualY * newScale;
+      this.clampPan();
     }
 
     this.zoomLevel = clampedZoom <= 1.001 ? 1.0 : clampedZoom;
@@ -315,7 +377,7 @@ export class CanvasEngine {
   }
 
   zoomIn() {
-    const nextZoom = Math.min(4.0, Math.round((this.zoomLevel + 0.25) * 4) / 4);
+    const nextZoom = Math.min(3.5, Math.round((this.zoomLevel + 0.25) * 4) / 4);
     this.setZoom(nextZoom);
   }
 
@@ -332,8 +394,10 @@ export class CanvasEngine {
   }
 
   panBy(screenDx: number, screenDy: number) {
+    if (this.zoomLevel <= 1.001) return;
     this.panX += screenDx;
     this.panY += screenDy;
+    this.clampPan();
     this.applyViewTransform();
   }
 
@@ -432,6 +496,20 @@ export class CanvasEngine {
       borderDash: [5, 4],
       keepRatio: true,
       shouldOverdrawWholeArea: false,
+      flipEnabled: false, // Impede inversão acidental de escala pelo transformer
+      ignoreStroke: true,
+      boundBoxFunc: (oldBox, newBox) => {
+        const MIN_SIZE = 45;
+        // Se a largura ou altura ficar menor que o tamanho mínimo funcional, trava no tamanho anterior
+        if (Math.abs(newBox.width) < MIN_SIZE || Math.abs(newBox.height) < MIN_SIZE) {
+          return oldBox;
+        }
+        // Impede inversão de caixa pelo transformer (evita scale negativo descontrolado)
+        if (newBox.width < 0 || newBox.height < 0) {
+          return oldBox;
+        }
+        return newBox;
+      },
       anchorStyleFunc: (anchor) => {
         anchor.hitStrokeWidth(16);
         // Desenha o ícone de seta diagonal de duas pontas (⤢) no botão superior direito
@@ -496,6 +574,15 @@ export class CanvasEngine {
     this.createCornerActionButtons();
 
     this.transformer.on('transform', () => {
+      if (this.selectedNode && this.transformer) {
+        const w = this.selectedNode.width() * Math.abs(this.selectedNode.scaleX() || 1);
+        const h = this.selectedNode.height() * Math.abs(this.selectedNode.scaleY() || 1);
+        const MIN_SPAN = 85;
+        const padX = w < MIN_SPAN ? Math.round((MIN_SPAN - w) / 2) : 4;
+        const padY = h < MIN_SPAN ? Math.round((MIN_SPAN - h) / 2) : 4;
+        const pad = Math.max(padX, padY, 4);
+        this.transformer.padding(pad);
+      }
       this.updateCornerActionButtons();
       this.decorLayer?.batchDraw();
       this.uiLayer?.batchDraw();
@@ -505,11 +592,12 @@ export class CanvasEngine {
       if (this.selectedNode && this.transformer) {
         const w = (typeof (this.selectedNode as any).width === 'function' ? (this.selectedNode as any).width() : 100) * Math.abs(this.selectedNode.scaleX() || 1);
         const h = (typeof (this.selectedNode as any).height === 'function' ? (this.selectedNode as any).height() : 100) * Math.abs(this.selectedNode.scaleY() || 1);
-        const MIN_SPAN = 80;
+        const MIN_SPAN = 85;
         const padX = w < MIN_SPAN ? Math.round((MIN_SPAN - w) / 2) : 4;
         const padY = h < MIN_SPAN ? Math.round((MIN_SPAN - h) / 2) : 4;
         const pad = Math.max(padX, padY, 4);
         this.transformer.padding(pad);
+        (this.transformer as any)._resetTransformCache();
         this.transformer.update();
       }
       this.updateCornerActionButtons();
@@ -873,13 +961,23 @@ export class CanvasEngine {
       return;
     }
 
-    // Obtém dimensões sem padding do nó selecionado
+    // Obtém dimensões sem padding do nó selecionado (sempre estritamente positivas para evitar inversões)
     const nodeRect = typeof (this.transformer as any)._getNodeRect === 'function'
       ? (this.transformer as any)._getNodeRect()
       : null;
-    const bw = nodeRect && typeof nodeRect.width === 'number' ? nodeRect.width : back.width();
-    const bh = nodeRect && typeof nodeRect.height === 'number' ? nodeRect.height : back.height();
-    const pad = this.transformer.padding() || 0;
+    const rawW = nodeRect && typeof nodeRect.width === 'number' ? nodeRect.width : (this.selectedNode.width() * Math.abs(this.selectedNode.scaleX() || 1));
+    const rawH = nodeRect && typeof nodeRect.height === 'number' ? nodeRect.height : (this.selectedNode.height() * Math.abs(this.selectedNode.scaleY() || 1));
+    const bw = Math.max(30, Math.abs(rawW));
+    const bh = Math.max(30, Math.abs(rawH));
+
+    const MIN_SPAN = 85;
+    const padX = bw < MIN_SPAN ? Math.round((MIN_SPAN - bw) / 2) : 4;
+    const padY = bh < MIN_SPAN ? Math.round((MIN_SPAN - bh) / 2) : 4;
+    const pad = Math.max(padX, padY, this.transformer.padding() || 4);
+
+    if (this.transformer.padding() !== pad) {
+      this.transformer.padding(pad);
+    }
 
     // Atualiza o quadro delimitador tracejado (.back) para envolver perfeitamente o padding
     back.x(-pad);
@@ -887,34 +985,33 @@ export class CanvasEngine {
     back.width(bw + pad * 2);
     back.height(bh + pad * 2);
 
+    // Ajusta a escala visual dos botões quando o quadro for muito pequeno para evitar sobreposição
+    const btnScale = bw < 65 || bh < 65 ? 0.82 : 1;
+
     // Canto superior esquerdo: Rotação (seta girando)
     if (this.btnCornerRotate) {
-      this.btnCornerRotate.scaleX(1);
-      this.btnCornerRotate.scaleY(1);
+      this.btnCornerRotate.scale({ x: btnScale, y: btnScale });
       this.btnCornerRotate.position({ x: -pad, y: -pad });
       this.btnCornerRotate.visible(true);
     }
 
     // Canto inferior esquerdo: Espelhar
     if (this.btnCornerFlip) {
-      this.btnCornerFlip.scaleX(1);
-      this.btnCornerFlip.scaleY(1);
+      this.btnCornerFlip.scale({ x: btnScale, y: btnScale });
       this.btnCornerFlip.position({ x: -pad, y: bh + pad });
       this.btnCornerFlip.visible(true);
     }
 
     // Canto inferior direito: Duplicar
     if (this.btnCornerDuplicate) {
-      this.btnCornerDuplicate.scaleX(1);
-      this.btnCornerDuplicate.scaleY(1);
+      this.btnCornerDuplicate.scale({ x: btnScale, y: btnScale });
       this.btnCornerDuplicate.position({ x: bw + pad, y: bh + pad });
       this.btnCornerDuplicate.visible(true);
     }
 
     // Posiciona a alça de mover no topo-centro com altura de -26px a partir do topo delimitado
     if (this.btnCornerMove) {
-      this.btnCornerMove.scaleX(1);
-      this.btnCornerMove.scaleY(1);
+      this.btnCornerMove.scale({ x: btnScale, y: btnScale });
       this.btnCornerMove.position({ x: bw / 2, y: -pad - 26 });
       this.btnCornerMove.visible(true);
     }
@@ -1021,17 +1118,30 @@ export class CanvasEngine {
         this.lastTouchTime = performance.now();
         const touchEvt = rawEvt as TouchEvent;
 
-        // GESTO COM 2 DEDOS NO MOBILE
-        if (touchEvt.touches && touchEvt.touches.length === 2) {
+        // GESTO COM 2 OU MAIS DEDOS NO MOBILE: BLOQUEIA TOTALMENTE SELEÇÃO E ARRASTE DE ITEM
+        if (touchEvt.touches && touchEvt.touches.length >= 2) {
+          if (rawEvt.cancelable) rawEvt.preventDefault();
+
+          // Aborta qualquer arraste de item que possa ter sido engatilhado pelo 1º dedo instantes antes
+          if (this.draggingNode) {
+            if (this.hasMovedDuringDrag) {
+              this.draggingNode.position({ x: this.dragStartNodeX, y: this.dragStartNodeY });
+            }
+            this.draggingNode = null;
+            this.pendingDragPos = null;
+            this.hasMovedDuringDrag = false;
+          }
+          if (!this.wasAlreadySelectedOnDown) {
+            this.deselect();
+          }
+
           // 1. Gesto de Pinça na Capa (quando em modo Enquadrar Capa ativo)
           if (this.isRepositioningCover && this.selectedNode) {
             const meta = this.selectedNode.getAttr('itemMeta') || {};
             if (meta.customCoverUrl) {
-              if (rawEvt.cancelable) rawEvt.preventDefault();
               const t1 = touchEvt.touches[0];
               const t2 = touchEvt.touches[1];
               const center = getTouchCenter(t1, t2);
-              this.draggingNode = null;
               this.isDraggingCoverInternal = false;
               this.isPinchingCover = true;
               this.pinchStartDist = Math.max(12, getTouchDistance(t1, t2));
@@ -1045,11 +1155,9 @@ export class CanvasEngine {
           }
 
           // 2. Gesto de Pinça e Pan do Palco Inteiro
-          if (rawEvt.cancelable) rawEvt.preventDefault();
           const t1 = touchEvt.touches[0];
           const t2 = touchEvt.touches[1];
           const center = getTouchCenter(t1, t2);
-          this.draggingNode = null;
           this.isDraggingCoverInternal = false;
           this.isPinchingCover = false;
           this.isPinchingStage = true;
@@ -1061,6 +1169,12 @@ export class CanvasEngine {
         }
 
         if (touchEvt.touches && touchEvt.touches.length > 2) return;
+
+        // Cooldown após soltar a pinça: impede que o dedo residual toque ou arraste acidentalmente um item
+        if (performance.now() - this.lastPinchEndTime < 220) {
+          if (rawEvt.cancelable) rawEvt.preventDefault();
+          return;
+        }
       } else {
         // Ignora mousedown sintético disparado pelo navegador mobile após touchstart
         if (performance.now() - this.lastTouchTime < 500) return;
@@ -1089,10 +1203,11 @@ export class CanvasEngine {
         ? (rawEvt as TouchEvent).touches[0].clientY
         : (rawEvt as MouseEvent).clientY;
 
-      // Se clicou/tocou no Botão de Rotação (canto superior esquerdo), inicia a rotação em torno do centro da peça
+      // Se clicou/tocou no Botão de Rotação (canto superior esquerdo), inicia a rotação em torno do centro da peça com ponto de pivô fixo
       if (this.isRotateHandle(e.target) && this.selectedNode && !this.selectedNode.getAttr('locked')) {
         this.isRotatingNode = true;
         const centerLocal = { x: this.selectedNode.width() / 2, y: this.selectedNode.height() / 2 };
+        this.rotateNodeCenterParent = this.selectedNode.getTransform().point(centerLocal);
         const centerStage = this.selectedNode.getAbsoluteTransform().point(centerLocal);
         this.rotateCenterScreenX = rect.left + centerStage.x * this.dragContainerScaleX;
         this.rotateCenterScreenY = rect.top + centerStage.y * this.dragContainerScaleY;
@@ -1101,6 +1216,7 @@ export class CanvasEngine {
         const dy = clientY - this.rotateCenterScreenY;
         this.rotateStartAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
         this.rotateNodeStartRotation = this.selectedNode.rotation() || 0;
+        this.rotateFlipSign = (this.selectedNode.scaleX() || 1) < 0 ? -1 : 1;
         return;
       }
 
@@ -1182,6 +1298,40 @@ export class CanvasEngine {
     const handleMove = (evt: MouseEvent | TouchEvent) => {
       const isTouch = evt.type.startsWith('touch');
 
+      // DETECÇÃO PRECOCE DE MULTI-TOQUE (2 DEDOS): CANCELA IMEDIATAMENTE QUALQUER ARRASTE DE ITEM
+      if (isTouch) {
+        const touchEvt = evt as TouchEvent;
+        if (touchEvt.touches && touchEvt.touches.length >= 2) {
+          if (this.draggingNode) {
+            if (this.hasMovedDuringDrag) {
+              this.draggingNode.position({ x: this.dragStartNodeX, y: this.dragStartNodeY });
+            }
+            this.draggingNode = null;
+            this.pendingDragPos = null;
+            this.hasMovedDuringDrag = false;
+            if (!this.wasAlreadySelectedOnDown) {
+              this.deselect();
+            }
+          }
+
+          if (this.isPinchingCover && this.selectedNode) {
+            // Continua gesto de pinça na capa abaixo
+          } else {
+            // Se ainda não estava em modo pinça de palco, inicia imediatamente
+            if (!this.isPinchingStage) {
+              const t1 = touchEvt.touches[0];
+              const t2 = touchEvt.touches[1];
+              const center = getTouchCenter(t1, t2);
+              this.isPinchingStage = true;
+              this.pinchStageStartDist = Math.max(12, getTouchDistance(t1, t2));
+              this.pinchStageStartZoom = this.zoomLevel;
+              this.pinchStageStartCenter = { x: center.x, y: center.y };
+              this.pinchStageStartPan = { x: this.panX, y: this.panY };
+            }
+          }
+        }
+      }
+
       // 1. PINCH-TO-ZOOM / PAN DO PALCO INTEIRO
       if (this.isPinchingStage) {
         if (evt.cancelable) evt.preventDefault();
@@ -1195,7 +1345,7 @@ export class CanvasEngine {
             const center = getTouchCenter(t1, t2);
 
             const scaleRatio = dist / this.pinchStageStartDist;
-            const targetZoom = Math.max(1.0, Math.min(4.0, this.pinchStageStartZoom * scaleRatio));
+            const targetZoom = Math.max(1.0, Math.min(3.5, this.pinchStageStartZoom * scaleRatio));
 
             // Aplica zoom mantendo o centro do toque estável
             const contentEl = this.stage?.content || this.stage?.container();
@@ -1208,8 +1358,9 @@ export class CanvasEngine {
             // Adiciona translação do gesto com 2 dedos
             const panDx = (center.x - this.pinchStageStartCenter.x) / this.dragContainerScaleX;
             const panDy = (center.y - this.pinchStageStartCenter.y) / this.dragContainerScaleY;
-            this.panX += panDx * 0.15;
-            this.panY += panDy * 0.15;
+            this.panX = this.pinchStageStartPan.x + panDx;
+            this.panY = this.pinchStageStartPan.y + panDy;
+            this.clampPan();
             this.applyViewTransform();
             return;
           }
@@ -1227,6 +1378,7 @@ export class CanvasEngine {
         const screenDy = (clientY - this.dragStartClientY) / this.dragContainerScaleY;
         this.panX = this.pinchStageStartPan.x + screenDx;
         this.panY = this.pinchStageStartPan.y + screenDy;
+        this.clampPan();
         this.applyViewTransform();
         return;
       }
@@ -1237,7 +1389,7 @@ export class CanvasEngine {
         return;
       }
 
-      // ROTAÇÃO DIRETA PELO BOTÃO SUPERIOR ESQUERDO
+      // ROTAÇÃO DIRETA PELO BOTÃO SUPERIOR ESQUERDO COM CENTRO FIXO DETERMINÍSTICO (ZERO DRIFT)
       if (this.isRotatingNode && this.selectedNode) {
         if (evt.cancelable) evt.preventDefault();
 
@@ -1251,34 +1403,31 @@ export class CanvasEngine {
         const dx = clientX - this.rotateCenterScreenX;
         const dy = clientY - this.rotateCenterScreenY;
         const currentAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
-        const deltaAngle = currentAngle - this.rotateStartAngle;
+        const deltaAngle = (currentAngle - this.rotateStartAngle) * this.rotateFlipSign;
 
         let newAngle = this.rotateNodeStartRotation + deltaAngle;
         let normalizedAngle = ((newAngle % 360) + 360) % 360;
 
-        // Snapping suave a cada 45 graus (0, 45, 90, 135, 180, etc.) com tolerância de 4 graus
+        // Snapping suave a cada 45 graus (0, 45, 90, 135, 180, etc.) com tolerância magnética de 4.5 graus
         const snaps = [0, 45, 90, 135, 180, 225, 270, 315, 360];
         for (const snap of snaps) {
-          if (Math.abs(normalizedAngle - snap) < 4) {
+          if (Math.abs(normalizedAngle - snap) < 4.5) {
             newAngle = newAngle + ((snap === 360 ? 0 : snap) - normalizedAngle);
             break;
           }
         }
 
-        const centerParent = this.selectedNode.getTransform().point({
-          x: this.selectedNode.width() / 2,
-          y: this.selectedNode.height() / 2
-        });
-
+        const centerLocal = { x: this.selectedNode.width() / 2, y: this.selectedNode.height() / 2 };
         this.selectedNode.rotation(newAngle);
 
-        const newCenterParent = this.selectedNode.getTransform().point({
-          x: this.selectedNode.width() / 2,
-          y: this.selectedNode.height() / 2
-        });
+        const currentCenterParent = this.selectedNode.getTransform().point(centerLocal);
+        const shiftX = this.rotateNodeCenterParent.x - currentCenterParent.x;
+        const shiftY = this.rotateNodeCenterParent.y - currentCenterParent.y;
 
-        this.selectedNode.x(this.selectedNode.x() + (centerParent.x - newCenterParent.x));
-        this.selectedNode.y(this.selectedNode.y() + (centerParent.y - newCenterParent.y));
+        this.selectedNode.position({
+          x: this.selectedNode.x() + shiftX,
+          y: this.selectedNode.y() + shiftY
+        });
 
         if (this.transformer) {
           (this.transformer as any)._resetTransformCache();
@@ -1374,11 +1523,10 @@ export class CanvasEngine {
           this.uiLayer?.drawScene();
         }
 
-        const w = this.draggingNode.width() * Math.abs(this.draggingNode.scaleX() || 1);
-        const h = this.draggingNode.height() * Math.abs(this.draggingNode.scaleY() || 1);
-
-        const newX = Math.max(-180, Math.min(this.VIRTUAL_WIDTH - w + 180, this.dragStartNodeX + virtualDx));
-        const newY = Math.max(-180, Math.min(this.VIRTUAL_HEIGHT - h + 180, this.dragStartNodeY + virtualDy));
+        // Permite transbordamento generoso para elementos decorativos (arcos, tapetes, displays)
+        const MARGIN = 350;
+        const newX = Math.max(-MARGIN, Math.min(this.VIRTUAL_WIDTH + MARGIN, this.dragStartNodeX + virtualDx));
+        const newY = Math.max(-MARGIN, Math.min(this.VIRTUAL_HEIGHT + MARGIN, this.dragStartNodeY + virtualDy));
 
         this.pendingDragPos = { x: newX, y: newY };
         this.scheduleFastDraw();
@@ -1402,6 +1550,9 @@ export class CanvasEngine {
 
       if (this.isPinchingStage) {
         this.isPinchingStage = false;
+        this.lastPinchEndTime = performance.now();
+        this.clampPan();
+        this.applyViewTransform();
         return;
       }
 

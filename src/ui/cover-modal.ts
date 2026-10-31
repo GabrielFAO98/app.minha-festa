@@ -212,9 +212,9 @@ export class CoverModal {
           targetType: 'all'
         });
 
-        await this.canvasEngine.applyCoverToSelected(newCover.imageUrl);
+        await this.applyCoverToActivePart(newCover.imageUrl);
         this.close();
-        this.canvasEngine.enterCoverRepositionMode();
+        this.canvasEngine.enterCoverRepositionMode(this.activePart === 'tabletop' ? 'top' : 'bottom');
       } catch (err) {
         console.error('Falha ao processar estampa:', err);
       }
@@ -223,7 +223,15 @@ export class CoverModal {
 
     // Remover Estampa / Restaurar Base
     this.btnRemoveCover?.addEventListener('click', async () => {
-      if (Boolean(this.targetMeta?.type?.startsWith('table_organic_bean')) && this.activePart === 'tabletop') {
+      if (this.isSkirtTable()) {
+        if (this.activePart === 'tabletop') {
+          await this.canvasEngine.applyTabletopCoverToSelected(null);
+          await this.canvasEngine.applyTabletopColorToSelected(null);
+        } else {
+          await this.canvasEngine.applyCoverToSelected(null);
+          this.canvasEngine.applySolidColorToSelected(null);
+        }
+      } else if (Boolean(this.targetMeta?.type?.startsWith('table_organic_bean')) && this.activePart === 'tabletop') {
         await this.canvasEngine.applyTabletopColorToSelected('#FAF8F5');
       } else {
         await this.canvasEngine.applyCoverToSelected(null);
@@ -237,25 +245,56 @@ export class CoverModal {
     this.partBtnTabletop?.addEventListener('click', () => this.switchPart('tabletop'));
   }
 
+  isSkirtTable(): boolean {
+    const t = this.targetMeta?.type;
+    return t === 'table_skirt_scallop' || t === 'table_skirt_straight';
+  }
+
+  async applyCoverToActivePart(coverUrl: string | null): Promise<void> {
+    if (this.isSkirtTable() && this.activePart === 'tabletop') {
+      await this.canvasEngine.applyTabletopCoverToSelected(coverUrl);
+    } else {
+      await this.canvasEngine.applyCoverToSelected(coverUrl);
+    }
+  }
+
   switchPart(part: 'cylinder' | 'tabletop'): void {
     this.activePart = part;
     const subtitleEl = document.getElementById('cover-modal-subtitle');
+    const isSkirt = this.isSkirtTable();
 
     if (part === 'tabletop') {
       this.partBtnCylinder?.classList.remove('active');
       this.partBtnTabletop?.classList.add('active');
 
-      // O tampo aceita exclusivamente cor sólida
-      if (this.subtabBtnCovers) {
-        this.subtabBtnCovers.style.display = 'none';
-      }
-      this.switchSubtab('colors');
+      if (isSkirt) {
+        if (this.subtabBtnCovers) {
+          this.subtabBtnCovers.style.display = 'inline-flex';
+        }
+        const hasTopCover = Boolean(this.targetMeta?.tabletopCoverUrl);
+        this.renderCallout(hasTopCover);
+        this.switchSubtab(hasTopCover ? 'covers' : 'colors');
 
-      const topHex = this.targetMeta?.tabletopColor || '#FAF8F5';
-      this.setColorHex(topHex);
+        const topHex = this.targetMeta?.tabletopColor || (this.targetMeta?.type === 'table_skirt_straight' ? '#facc15' : '#f472b6');
+        this.setColorHex(topHex);
 
-      if (subtitleEl && this.targetMeta) {
-        subtitleEl.textContent = `${this.targetMeta.name} • Escolha a Cor do Tampo Curvo (Feijão)`;
+        if (subtitleEl && this.targetMeta) {
+          const topLabel = this.targetMeta.type === 'table_skirt_scallop' ? 'Sobreposição Ondulada' : 'Tampo e Faixa';
+          subtitleEl.textContent = `${this.targetMeta.name} • Escolha uma Cor ou Capa para a ${topLabel}`;
+        }
+      } else {
+        // Mesa orgânica: tampo aceita apenas cor sólida
+        if (this.subtabBtnCovers) {
+          this.subtabBtnCovers.style.display = 'none';
+        }
+        this.switchSubtab('colors');
+
+        const topHex = this.targetMeta?.tabletopColor || '#FAF8F5';
+        this.setColorHex(topHex);
+
+        if (subtitleEl && this.targetMeta) {
+          subtitleEl.textContent = `${this.targetMeta.name} • Escolha a Cor do Tampo Curvo (Feijão)`;
+        }
       }
     } else {
       this.partBtnCylinder?.classList.add('active');
@@ -265,11 +304,19 @@ export class CoverModal {
         this.subtabBtnCovers.style.display = 'inline-flex';
       }
 
-      const cylHex = this.targetMeta?.customColor || '#B58938';
+      const hasBottomCover = Boolean(this.targetMeta?.customCoverUrl);
+      this.renderCallout(hasBottomCover);
+      this.switchSubtab(hasBottomCover ? 'covers' : 'colors');
+
+      const cylHex = this.targetMeta?.customColor || (isSkirt ? (this.targetMeta?.type === 'table_skirt_straight' ? '#facc15' : '#f472b6') : '#B58938');
       this.setColorHex(cylHex);
 
       if (subtitleEl && this.targetMeta) {
-        subtitleEl.textContent = `${this.targetMeta.name} • Escolha uma Cor Sólida ou Capa para a Base (Cilindro)`;
+        if (isSkirt) {
+          subtitleEl.textContent = `${this.targetMeta.name} • Escolha uma Cor ou Capa para a Saia Plissada`;
+        } else {
+          subtitleEl.textContent = `${this.targetMeta.name} • Escolha uma Cor Sólida ou Capa para a Base (Cilindro)`;
+        }
       }
     }
 
@@ -300,11 +347,27 @@ export class CoverModal {
     // 1. Abre o modal imediatamente no compositor (0ms)
     this.modalEl?.classList.add('open');
 
-    // Configura o seletor de parte caso seja mesa orgânica
-    if (Boolean(this.targetMeta?.type?.startsWith('table_organic_bean'))) {
+    // Configura o seletor de parte caso seja mesa orgânica ou mesa com capa
+    const isSkirt = Boolean(this.targetMeta?.type === 'table_skirt_scallop' || this.targetMeta?.type === 'table_skirt_straight');
+    const isOrganic = Boolean(this.targetMeta?.type?.startsWith('table_organic_bean'));
+
+    if (isSkirt || isOrganic) {
       if (this.partSelectorEl) this.partSelectorEl.style.display = 'flex';
       this.partBtnCylinder?.classList.add('active');
       this.partBtnTabletop?.classList.remove('active');
+
+      if (isSkirt) {
+        if (this.partBtnCylinder) this.partBtnCylinder.textContent = 'Parte de Baixo (Saia)';
+        if (this.partBtnTabletop) {
+          this.partBtnTabletop.textContent = this.targetMeta?.type === 'table_skirt_scallop'
+            ? 'Parte de Cima (Sobreposição)'
+            : 'Parte de Cima (Tampo e Faixa)';
+        }
+      } else {
+        if (this.partBtnCylinder) this.partBtnCylinder.textContent = 'Base (Cilindro)';
+        if (this.partBtnTabletop) this.partBtnTabletop.textContent = 'Tampo Curvo (Feijão)';
+      }
+
       if (this.subtabBtnCovers) this.subtabBtnCovers.style.display = 'inline-flex';
     } else {
       if (this.partSelectorEl) this.partSelectorEl.style.display = 'none';
@@ -367,7 +430,7 @@ export class CoverModal {
 
     this.calloutPlaceholder.querySelector('#btn-modal-reposition-active-cover')?.addEventListener('click', () => {
       this.close();
-      this.canvasEngine.enterCoverRepositionMode();
+      this.canvasEngine.enterCoverRepositionMode(this.activePart === 'tabletop' ? 'top' : 'bottom');
     });
   }
 
@@ -407,7 +470,13 @@ export class CoverModal {
 
   applySolidColor(hex: string): void {
     this.saveRecentColor(hex);
-    if (Boolean(this.targetMeta?.type?.startsWith('table_organic_bean')) && this.activePart === 'tabletop') {
+    if (this.isSkirtTable()) {
+      if (this.activePart === 'tabletop') {
+        this.canvasEngine.applyTabletopColorToSelected(hex);
+      } else {
+        this.canvasEngine.applySolidColorToSelected(hex);
+      }
+    } else if (Boolean(this.targetMeta?.type?.startsWith('table_organic_bean')) && this.activePart === 'tabletop') {
       this.canvasEngine.applyTabletopColorToSelected(hex);
     } else {
       this.canvasEngine.applySolidColorToSelected(hex);
@@ -970,7 +1039,7 @@ export class CoverModal {
           `;
 
           card.addEventListener('click', async () => {
-            await this.canvasEngine.applyCoverToSelected(cover.imageUrl);
+            await this.applyCoverToActivePart(cover.imageUrl);
             this.close();
           });
 
@@ -1028,9 +1097,9 @@ export class CoverModal {
     // 1 Toque: Reutiliza a imagem aplicando como capa na peça selecionada
     card.addEventListener('click', async (e) => {
       if ((e.target as HTMLElement).closest('.btn-card-action')) return;
-      await this.canvasEngine.applyCoverToSelected(cover.imageUrl);
+      await this.applyCoverToActivePart(cover.imageUrl);
       this.close();
-      this.canvasEngine.enterCoverRepositionMode();
+      this.canvasEngine.enterCoverRepositionMode(this.activePart === 'tabletop' ? 'top' : 'bottom');
     });
 
     // Ação: Excluir imagem do acervo pessoal

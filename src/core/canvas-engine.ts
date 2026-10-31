@@ -7,9 +7,12 @@ import {
   createShadingOverlay,
   createCylinderFloorShadow,
   createPanelSupportBase,
-  createOrganicBeanTabletopNodeAsync
+  createOrganicBeanTabletopNodeAsync,
+  createTableFloorShadow,
+  createPleatedShadingOverlay,
+  createTopShadingOverlay
 } from './mask-renderer';
-import { generateOrganicBeanTableSVG, generateOrganicBeanTabletopOnlySVG, svgToDataUrl } from './presets-data';
+import { generateOrganicBeanTableSVG, generateOrganicBeanTabletopOnlySVG, generateSkirtTableSVG, generateSkirtTablePartSVG, svgToDataUrl } from './presets-data';
 import { TEXTURE_WALL_BOISERIE, TEXTURE_FLOOR_WOOD } from './textures-data';
 import { generateBalloonArchDataUrl } from './balloon-generator';
 import { getItemCustomizationMode, generateModularSvgDataUrl } from './modular-svg-generator';
@@ -68,6 +71,7 @@ export class CanvasEngine {
 
   // Modo Enquadrar Capa (Pinça + Arraste Direto)
   isRepositioningCover: boolean;
+  activeCoverRepositionPart: 'bottom' | 'top' = 'bottom';
   private isDraggingCoverInternal: boolean;
   private isPinchingCover: boolean;
   private pinchStartDist: number;
@@ -150,6 +154,7 @@ export class CanvasEngine {
     this.pinchStageStartPan = { x: 0, y: 0 };
 
     this.isRepositioningCover = false;
+    this.activeCoverRepositionPart = 'bottom';
     this.isDraggingCoverInternal = false;
     this.isPinchingCover = false;
     this.pinchStartDist = 1;
@@ -1507,10 +1512,18 @@ export class CanvasEngine {
     });
   }
 
-  enterCoverRepositionMode() {
+  enterCoverRepositionMode(targetPart?: 'bottom' | 'top') {
     if (!this.selectedNode) return;
     const meta = this.selectedNode.getAttr('itemMeta') || {};
-    if (!meta.customCoverUrl) return;
+    if (!meta.customCoverUrl && !meta.tabletopCoverUrl) return;
+
+    if (targetPart) {
+      this.activeCoverRepositionPart = targetPart;
+    } else if (meta.tabletopCoverUrl && !meta.customCoverUrl) {
+      this.activeCoverRepositionPart = 'top';
+    } else {
+      this.activeCoverRepositionPart = 'bottom';
+    }
 
     this.isRepositioningCover = true;
     this.draggingNode = null;
@@ -1561,10 +1574,15 @@ export class CanvasEngine {
   panSelectedCoverBy(dx: number, dy: number) {
     if (!this.selectedNode) return;
     const meta = this.selectedNode.getAttr('itemMeta') || {};
-    if (!meta.customCoverUrl) return;
+    if (!meta.customCoverUrl && !meta.tabletopCoverUrl) return;
 
-    meta.coverOffsetX = (meta.coverOffsetX || 0) + dx;
-    meta.coverOffsetY = (meta.coverOffsetY || 0) + dy;
+    if (this.activeCoverRepositionPart === 'top' && meta.tabletopCoverUrl) {
+      meta.tabletopOffsetX = (meta.tabletopOffsetX || 0) + dx;
+      meta.tabletopOffsetY = (meta.tabletopOffsetY || 0) + dy;
+    } else {
+      meta.coverOffsetX = (meta.coverOffsetX || 0) + dx;
+      meta.coverOffsetY = (meta.coverOffsetY || 0) + dy;
+    }
     this.selectedNode.setAttr('itemMeta', meta);
 
     this.refreshCoverPlacementOnNode(this.selectedNode);
@@ -1573,10 +1591,14 @@ export class CanvasEngine {
   setCoverScale(newScale: number, saveSnap: boolean = false) {
     if (!this.selectedNode) return;
     const meta = this.selectedNode.getAttr('itemMeta') || {};
-    if (!meta.customCoverUrl) return;
+    if (!meta.customCoverUrl && !meta.tabletopCoverUrl) return;
 
     const clamped = Math.max(0.4, Math.min(3.2, newScale));
-    meta.coverScale = clamped;
+    if (this.activeCoverRepositionPart === 'top' && meta.tabletopCoverUrl) {
+      meta.tabletopScale = clamped;
+    } else {
+      meta.coverScale = clamped;
+    }
     this.selectedNode.setAttr('itemMeta', meta);
 
     this.refreshCoverPlacementOnNode(this.selectedNode);
@@ -1591,11 +1613,17 @@ export class CanvasEngine {
   resetCoverTransform() {
     if (!this.selectedNode) return;
     const meta = this.selectedNode.getAttr('itemMeta') || {};
-    if (!meta.customCoverUrl) return;
+    if (!meta.customCoverUrl && !meta.tabletopCoverUrl) return;
 
-    meta.coverOffsetX = 0;
-    meta.coverOffsetY = 0;
-    meta.coverScale = 1;
+    if (this.activeCoverRepositionPart === 'top' && meta.tabletopCoverUrl) {
+      meta.tabletopOffsetX = 0;
+      meta.tabletopOffsetY = 0;
+      meta.tabletopScale = 1;
+    } else {
+      meta.coverOffsetX = 0;
+      meta.coverOffsetY = 0;
+      meta.coverScale = 1;
+    }
     this.selectedNode.setAttr('itemMeta', meta);
 
     this.refreshCoverPlacementOnNode(this.selectedNode);
@@ -1607,32 +1635,63 @@ export class CanvasEngine {
 
   refreshCoverPlacementOnNode(node: Konva.Group, redraw: boolean = true) {
     const meta = node.getAttr('itemMeta') || {};
-    const coverGroup = node.findOne('.cover-group') as Konva.Group | null;
-    if (!coverGroup) return;
-    const coverImgNode = coverGroup.findOne('.cover-image-node') as Konva.Image | null;
-    if (!coverImgNode) return;
-
-    const imgEl = coverImgNode.image() as HTMLImageElement | null;
-    if (!imgEl) return;
-
     const w = node.width();
     const h = node.height();
-    const imgNatW = (imgEl as any).naturalWidth || imgEl.width;
-    const imgNatH = (imgEl as any).naturalHeight || imgEl.height;
 
-    const placement = calculateCoverPlacement(
-      meta.type,
-      w,
-      h,
-      imgNatW,
-      imgNatH,
-      meta.coverScale || 1,
-      meta.coverOffsetX || 0,
-      meta.coverOffsetY || 0
-    );
+    // 1. Reposicionamento do tampo / sobreposição
+    const topGroup = node.findOne('.skirt-top-group') as Konva.Group | null;
+    if (topGroup) {
+      const topImgNode = topGroup.findOne('.tabletop-cover-image-node') as Konva.Image | null;
+      if (topImgNode) {
+        const topImgEl = topImgNode.image() as HTMLImageElement | null;
+        if (topImgEl) {
+          const natW = (topImgEl as any).naturalWidth || topImgEl.width;
+          const natH = (topImgEl as any).naturalHeight || topImgEl.height;
+          const placement = calculateCoverPlacement(
+            meta.type + '_top',
+            w,
+            h,
+            natW,
+            natH,
+            meta.tabletopScale || 1,
+            meta.tabletopOffsetX || 0,
+            meta.tabletopOffsetY || 0
+          );
+          topImgNode.x(placement.x);
+          topImgNode.y(placement.y);
+          topImgNode.width(placement.width);
+          topImgNode.height(placement.height);
+        }
+      }
+    }
 
-    coverImgNode.position({ x: placement.x, y: placement.y });
-    coverImgNode.size({ width: placement.width, height: placement.height });
+    // 2. Reposicionamento da saia / base
+    const coverGroup = (node.findOne('.skirt-bottom-group') || node.findOne('.cover-group')) as Konva.Group | null;
+    if (coverGroup) {
+      const coverImgNode = coverGroup.findOne('.cover-image-node') as Konva.Image | null;
+      if (coverImgNode) {
+        const imgEl = coverImgNode.image() as HTMLImageElement | null;
+        if (imgEl) {
+          const imgNatW = (imgEl as any).naturalWidth || imgEl.width;
+          const imgNatH = (imgEl as any).naturalHeight || imgEl.height;
+          const placement = calculateCoverPlacement(
+            meta.type.startsWith('table_skirt') ? (meta.type + '_bottom') : meta.type,
+            w,
+            h,
+            imgNatW,
+            imgNatH,
+            meta.coverScale || 1,
+            meta.coverOffsetX || 0,
+            meta.coverOffsetY || 0
+          );
+          coverImgNode.x(placement.x);
+          coverImgNode.y(placement.y);
+          coverImgNode.width(placement.width);
+          coverImgNode.height(placement.height);
+        }
+      }
+    }
+
     if (redraw) {
       this.decorLayer.batchDraw();
     }
@@ -1893,7 +1952,7 @@ export class CanvasEngine {
       svgRole,
       instanceId: itemData.instanceId || ('inst-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5)),
       customCoverUrl: itemData.customCoverUrl || null,
-      customColor: itemData.customColor || null,
+      customColor: itemData.customColor || (itemData.type === 'table_skirt_scallop' ? '#f472b6' : (itemData.type === 'table_skirt_straight' ? '#facc15' : null)),
       coverOffsetX: itemData.coverOffsetX || 0,
       coverOffsetY: itemData.coverOffsetY || 0,
       coverScale: itemData.coverScale || 1,
@@ -1911,12 +1970,10 @@ export class CanvasEngine {
     if (itemData.type === 'cylinder' || itemData.type === 'cylinder_fluted') {
       const floorShadow = createCylinderFloorShadow(widthPx, heightPx);
       group.add(floorShadow);
-    } else if (
-      itemData.type === 'panel_round' ||
-      itemData.type === 'panel_arch' ||
-      itemData.type === 'panel_rect' ||
-      itemData.type === 'panel_half_moon'
-    ) {
+    } else if (itemData.type === 'table_skirt_scallop' || itemData.type === 'table_skirt_straight') {
+      const floorShadow = createTableFloorShadow(widthPx, heightPx);
+      group.add(floorShadow);
+    } else if (itemData.type === 'panel_round') {
       const supportBase = createPanelSupportBase(itemData.type, widthPx, heightPx);
       supportBase.visible(false);
       group.add(supportBase);
@@ -1941,9 +1998,14 @@ export class CanvasEngine {
       );
       tabletopOverlay.visible(!!(itemData.customCoverUrl || itemData.customColor));
       group.add(tabletopOverlay);
+    } else if (itemData.type === 'table_skirt_scallop' || itemData.type === 'table_skirt_straight') {
+      const meta = group.getAttr('itemMeta') as PresetItem;
+      if (meta.customCoverUrl || meta.customColor || meta.tabletopCoverUrl || meta.tabletopColor) {
+        await this.updateSkirtTableNode(group);
+      }
     }
 
-    if (svgRole === 'structural') {
+    if (svgRole === 'structural' && itemData.type !== 'table_skirt_scallop' && itemData.type !== 'table_skirt_straight') {
       if (itemData.customCoverUrl) {
         await this.attachCoverToNode(group, itemData.customCoverUrl);
       } else if (itemData.customColor) {
@@ -2091,6 +2153,13 @@ export class CanvasEngine {
 
   attachSolidColorToNode(node: Konva.Group, colorHex: string | null) {
     const meta = node.getAttr('itemMeta') as PresetItem;
+    if (meta.type === 'table_skirt_scallop' || meta.type === 'table_skirt_straight') {
+      meta.customColor = colorHex;
+      if (colorHex) meta.customCoverUrl = null;
+      node.setAttr('itemMeta', meta);
+      this.updateSkirtTableNode(node);
+      return;
+    }
     meta.customColor = colorHex;
     if (colorHex) meta.customCoverUrl = null;
     node.setAttr('itemMeta', meta);
@@ -2159,6 +2228,13 @@ export class CanvasEngine {
 
   async attachCoverToNode(node: Konva.Group, coverImageUrl: string | null) {
     const meta = node.getAttr('itemMeta') as PresetItem;
+    if (meta.type === 'table_skirt_scallop' || meta.type === 'table_skirt_straight') {
+      meta.customCoverUrl = coverImageUrl;
+      if (coverImageUrl) meta.customColor = null;
+      node.setAttr('itemMeta', meta);
+      await this.updateSkirtTableNode(node);
+      return;
+    }
     meta.customCoverUrl = coverImageUrl;
     if (coverImageUrl) meta.customColor = null;
     node.setAttr('itemMeta', meta);
@@ -2243,12 +2319,217 @@ export class CanvasEngine {
   }
 
   /**
-   * Aplica cor sólida no tampo feijão da mesa orgânica (o tampo aceita exclusivamente cor sólida)
+   * Atualiza as camadas 3D modulares (saia inferior e sobreposição/tampo) de mesas com capa
    */
-  async applyTabletopColorToSelected(colorHex: string) {
+  async updateSkirtTableNode(node: Konva.Group) {
+    const meta = node.getAttr('itemMeta') as PresetItem;
+    if (!meta) return;
+
+    const baseImage = node.findOne('.base-image') as Konva.Image | null;
+    const hasBottomCustom = Boolean(meta.customColor || meta.customCoverUrl);
+    const hasTopCustom = Boolean(meta.tabletopColor || meta.tabletopCoverUrl);
+
+    // Se nenhuma parte for customizada, exibe a ilustração SVG padrão de altíssima fidelidade
+    if (!hasBottomCustom && !hasTopCustom) {
+      const bGroup = node.findOne('.skirt-bottom-group');
+      if (bGroup) bGroup.destroy();
+      const tGroup = node.findOne('.skirt-top-group');
+      if (tGroup) tGroup.destroy();
+      if (baseImage) baseImage.visible(true);
+      this.decorLayer.batchDraw();
+      return;
+    }
+
+    if (baseImage) baseImage.visible(false);
+
+    const w = node.width();
+    const h = node.height();
+
+    // 1. ATUALIZA A CAMADA DA SAIA PLISSADA INFERIOR
+    let bottomGroup = node.findOne('.skirt-bottom-group') as Konva.Group | null;
+    if (bottomGroup) bottomGroup.destroy();
+
+    bottomGroup = new Konva.Group({
+      name: 'skirt-bottom-group',
+      clipFunc: createClipFunction(meta.type + '_bottom', w, h),
+      listening: false
+    });
+
+    if (meta.customCoverUrl) {
+      const coverImg = await loadImageAsync(meta.customCoverUrl);
+      const imgNatW = (coverImg as any).naturalWidth || coverImg.width;
+      const imgNatH = (coverImg as any).naturalHeight || coverImg.height;
+      const placement = calculateCoverPlacement(
+        meta.type + '_bottom',
+        w,
+        h,
+        imgNatW,
+        imgNatH,
+        meta.coverScale || 1,
+        meta.coverOffsetX || 0,
+        meta.coverOffsetY || 0
+      );
+      const imgNode = new Konva.Image({
+        name: 'cover-image-node',
+        image: coverImg,
+        x: placement.x,
+        y: placement.y,
+        width: placement.width,
+        height: placement.height,
+        listening: false
+      });
+      bottomGroup.add(imgNode);
+      bottomGroup.add(createPleatedShadingOverlay(meta.type, w, h));
+    } else if (meta.customColor) {
+      const colorRect = new Konva.Rect({
+        name: 'solid-color-node',
+        x: 0,
+        y: 0,
+        width: w,
+        height: h,
+        fill: meta.customColor,
+        listening: false
+      });
+      bottomGroup.add(colorRect);
+      bottomGroup.add(createPleatedShadingOverlay(meta.type, w, h));
+    } else {
+      // Saia padrão quando apenas a parte de cima foi customizada
+      const defaultSkirtColor = meta.type === 'table_skirt_straight' ? '#facc15' : '#f472b6';
+      const colorRect = new Konva.Rect({
+        name: 'solid-color-node',
+        x: 0,
+        y: 0,
+        width: w,
+        height: h,
+        fill: defaultSkirtColor,
+        listening: false
+      });
+      bottomGroup.add(colorRect);
+      bottomGroup.add(createPleatedShadingOverlay(meta.type, w, h));
+    }
+    node.add(bottomGroup);
+
+    // 2. ATUALIZA A CAMADA DA SOBREPOSIÇÃO / TAMPO SUPERIOR
+    let topGroup = node.findOne('.skirt-top-group') as Konva.Group | null;
+    if (topGroup) topGroup.destroy();
+
+    topGroup = new Konva.Group({
+      name: 'skirt-top-group',
+      clipFunc: createClipFunction(meta.type + '_top', w, h),
+      listening: false
+    });
+
+    if (meta.tabletopCoverUrl) {
+      const topCoverImg = await loadImageAsync(meta.tabletopCoverUrl);
+      const imgNatW = (topCoverImg as any).naturalWidth || topCoverImg.width;
+      const imgNatH = (topCoverImg as any).naturalHeight || topCoverImg.height;
+      const placement = calculateCoverPlacement(
+        meta.type + '_top',
+        w,
+        h,
+        imgNatW,
+        imgNatH,
+        meta.tabletopScale || 1,
+        meta.tabletopOffsetX || 0,
+        meta.tabletopOffsetY || 0
+      );
+      const imgNode = new Konva.Image({
+        name: 'tabletop-cover-image-node',
+        image: topCoverImg,
+        x: placement.x,
+        y: placement.y,
+        width: placement.width,
+        height: placement.height,
+        listening: false
+      });
+      topGroup.add(imgNode);
+      topGroup.add(createTopShadingOverlay(meta.type, w, h, meta.tabletopColor));
+    } else if (meta.tabletopColor) {
+      const colorRect = new Konva.Rect({
+        name: 'tabletop-color-node',
+        x: 0,
+        y: 0,
+        width: w,
+        height: h,
+        fill: meta.tabletopColor,
+        listening: false
+      });
+      topGroup.add(colorRect);
+      topGroup.add(createTopShadingOverlay(meta.type, w, h, meta.tabletopColor));
+    } else {
+      // Topo padrão quando apenas a saia foi customizada
+      const defaultTopSvg = generateSkirtTablePartSVG(meta.type, 'top');
+      const defaultTopImg = await loadImageAsync(svgToDataUrl(defaultTopSvg));
+      const defNode = new Konva.Image({
+        name: 'default-top-node',
+        image: defaultTopImg,
+        x: 0,
+        y: 0,
+        width: w,
+        height: h,
+        listening: false
+      });
+      topGroup.add(defNode);
+    }
+    node.add(topGroup);
+
+    // Garante que o topo fique sempre sobreposto à saia
+    topGroup.moveToTop();
+    this.decorLayer.batchDraw();
+  }
+
+  /**
+   * Aplica estampa sublimada na parte de cima (sobreposição / tampo) da mesa
+   */
+  async applyTabletopCoverToSelected(coverImageUrl: string | null): Promise<boolean> {
     if (!this.selectedNode) return false;
     const meta = this.selectedNode.getAttr('itemMeta') as PresetItem;
-    if (!meta || !meta.type.startsWith('table_organic_bean')) return false;
+    if (!meta) return false;
+    if (meta.type !== 'table_skirt_scallop' && meta.type !== 'table_skirt_straight') return false;
+
+    meta.tabletopCoverUrl = coverImageUrl;
+    if (coverImageUrl) {
+      meta.tabletopColor = null;
+      meta.tabletopOffsetX = 0;
+      meta.tabletopOffsetY = 0;
+      meta.tabletopScale = 1;
+    }
+    this.selectedNode.setAttr('itemMeta', meta);
+    await this.updateSkirtTableNode(this.selectedNode as Konva.Group);
+
+    this.decorLayer.batchDraw();
+    this.saveSnapshot();
+    this.notifyLayersChange();
+
+    if (this.onSelectionChange) {
+      this.onSelectionChange(this.selectedNode.getAttr('itemMeta'), this.selectedNode);
+    }
+    return true;
+  }
+
+  /**
+   * Aplica cor sólida no tampo feijão da mesa orgânica ou no topo da mesa com capa
+   */
+  async applyTabletopColorToSelected(colorHex: string | null) {
+    if (!this.selectedNode) return false;
+    const meta = this.selectedNode.getAttr('itemMeta') as PresetItem;
+    if (!meta) return false;
+
+    if (meta.type === 'table_skirt_scallop' || meta.type === 'table_skirt_straight') {
+      meta.tabletopColor = colorHex;
+      if (colorHex) meta.tabletopCoverUrl = null;
+      this.selectedNode.setAttr('itemMeta', meta);
+      await this.updateSkirtTableNode(this.selectedNode as Konva.Group);
+      this.decorLayer.batchDraw();
+      this.saveSnapshot();
+      this.notifyLayersChange();
+      if (this.onSelectionChange) {
+        this.onSelectionChange(this.selectedNode.getAttr('itemMeta'), this.selectedNode);
+      }
+      return true;
+    }
+
+    if (!meta.type.startsWith('table_organic_bean')) return false;
 
     meta.tabletopColor = colorHex;
     this.selectedNode.setAttr('itemMeta', meta);
@@ -2641,6 +2922,10 @@ export class CanvasEngine {
           modularColors: meta.modularColors || null,
           balloonColors: meta.balloonColors || null,
           tabletopColor: meta.tabletopColor || null,
+          tabletopCoverUrl: meta.tabletopCoverUrl || null,
+          tabletopOffsetX: meta.tabletopOffsetX || 0,
+          tabletopOffsetY: meta.tabletopOffsetY || 0,
+          tabletopScale: meta.tabletopScale || 1,
           currentColor: meta.currentColor,
           availableColors: meta.availableColors,
           rentalPrice: meta.rentalPrice,

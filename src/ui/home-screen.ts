@@ -2,6 +2,7 @@
 export interface HomeScreenCallbacks {
   onNewScene: () => Promise<void> | void;
   onOpenProjects: () => void;
+  onOpenBalloonStudio?: () => void;
   onBeforeExitToHome?: () => Promise<boolean>;
 }
 
@@ -9,6 +10,7 @@ export class HomeScreen {
   homeEl: HTMLElement | null;
   cardNewScene: HTMLElement | null;
   cardSavedProjects: HTMLElement | null;
+  cardBalloonStudio: HTMLElement | null;
   btnHeaderHome: HTMLElement | null;
   brandHeaderClick: HTMLElement | null;
 
@@ -20,6 +22,7 @@ export class HomeScreen {
     this.homeEl = document.getElementById('home-screen');
     this.cardNewScene = document.getElementById('card-new-scene');
     this.cardSavedProjects = document.getElementById('card-saved-projects');
+    this.cardBalloonStudio = document.getElementById('card-balloon-studio');
     this.btnHeaderHome = document.getElementById('btn-header-home');
     this.brandHeaderClick = document.getElementById('brand-header-click');
 
@@ -37,6 +40,11 @@ export class HomeScreen {
       this.callbacks.onOpenProjects();
     });
 
+    // 2b. Card: Estúdio de Balões
+    this.cardBalloonStudio?.addEventListener('click', () => {
+      this.callbacks.onOpenBalloonStudio?.();
+    });
+
     // 3. Botão no Header para retornar ao Início
     this.btnHeaderHome?.addEventListener('click', async () => {
       await this.requestReturnToHome();
@@ -48,7 +56,7 @@ export class HomeScreen {
     });
 
     // Acessibilidade via teclado (Enter / Space nos cards)
-    [this.cardNewScene, this.cardSavedProjects].forEach((card) => {
+    [this.cardNewScene, this.cardSavedProjects, this.cardBalloonStudio].forEach((card) => {
       card?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();

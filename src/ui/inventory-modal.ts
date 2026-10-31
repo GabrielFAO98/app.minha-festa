@@ -94,6 +94,7 @@ export class InventoryModal {
       if (category === 'paineis') type = 'panel_round';
       if (category === 'cilindros') type = 'cylinder';
       if (category === 'mesas') type = 'table';
+    if (category === 'baloes') type = 'balloon_arch';
       if (category === 'displays') type = 'display';
       if (category === 'tapetes') type = 'carpet';
 

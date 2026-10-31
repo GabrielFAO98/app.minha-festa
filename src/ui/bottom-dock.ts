@@ -313,6 +313,7 @@ export class BottomDock {
       { id: 'paineis', label: 'Painéis' },
       { id: 'cilindros', label: 'Cilindros' },
       { id: 'mesas', label: 'Mesas' },
+      { id: 'baloes', label: 'Balões' },
       { id: 'tapetes', label: 'Tapetes' },
       { id: 'displays', label: 'Displays' },
       { id: 'acessorios', label: 'Acessórios' }

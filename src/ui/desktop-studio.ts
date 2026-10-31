@@ -99,6 +99,7 @@ export class DesktopStudio {
       { id: 'paineis', label: 'Painéis' },
       { id: 'cilindros', label: 'Cilindros' },
       { id: 'mesas', label: 'Mesas' },
+      { id: 'baloes', label: 'Balões' },
       { id: 'tapetes', label: 'Tapetes' },
       { id: 'displays', label: 'Displays' },
       { id: 'acessorios', label: 'Acessórios' }
@@ -434,10 +435,12 @@ export class DesktopStudio {
     }
 
     if (framingPanel) {
-      if (mode === 'structural' && meta.customCoverUrl) {
+      const hasAnyCover = Boolean(meta.customCoverUrl || meta.tabletopCoverUrl);
+      if (mode === 'structural' && hasAnyCover) {
         framingPanel.style.display = 'flex';
         const isRepositioning = this.canvasEngine.isRepositioningCover;
-        const scaleVal = meta.coverScale || 1;
+        const isTopActive = this.canvasEngine.activeCoverRepositionPart === 'top' && Boolean(meta.tabletopCoverUrl);
+        const scaleVal = isTopActive ? (meta.tabletopScale || 1) : (meta.coverScale || 1);
         framingPanel.innerHTML = `
           <div class="framing-panel-header">
             <span style="display: inline-flex; align-items: center; gap: 6px;">

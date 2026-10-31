@@ -94,24 +94,29 @@
           </div>
         </div>
 
-        <!-- Card 3: Meu Acervo (Acinzentado / Não clicável) -->
-        <div class="home-card card-disabled" aria-disabled="true">
+        <!-- Card 3: Estúdio de Balões (Ativo) -->
+        <div id="card-balloon-studio" class="home-card" role="button" tabindex="0">
           <div class="home-card-header">
-            <div class="home-card-icon-badge">
+            <div class="home-card-icon-badge badge-accent">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                <path d="M12 2C7.58 2 4 5.58 4 10c0 4.5 5.5 10 8 11.5 2.5-1.5 8-7 8-11.5 0-4.42-3.58-8-8-8z"/>
+                <path d="M12 21.5v2"/>
+                <path d="M10 23.5h4"/>
               </svg>
             </div>
-            <span class="home-card-tag-badge">Em breve</span>
+            <div class="home-card-arrow">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </div>
           </div>
           <div class="home-card-body">
-            <h2 class="home-card-title">Meu Acervo</h2>
-            <p class="home-card-desc">Cadastre suas peças físicas, fotos, medidas e preços para locação.</p>
+            <h2 class="home-card-title">Estúdio de Balões</h2>
+            <p class="home-card-desc">Crie arcos e clusters orgânicos personalizados, balões com glitter e vincule cores.</p>
           </div>
           <div class="home-card-footer">
-            <span class="home-card-cta-disabled">Indisponível</span>
+            <span class="home-card-cta">Criar Balões →</span>
           </div>
         </div>
 
@@ -192,6 +197,13 @@
         </div>
       </div>
       <div class="header-actions">
+        <button id="btn-header-balloon-studio" class="btn-header btn-header-ghost" title="Estúdio de Balões (Criador Orgânico)">
+          <svg class="header-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2C7.58 2 4 5.58 4 10c0 4.5 5.5 10 8 11.5 2.5-1.5 8-7 8-11.5 0-4.42-3.58-8-8-8z"/>
+            <path d="M12 21.5v2"/>
+          </svg>
+          <span class="header-btn-label">Estúdio de Balões</span>
+        </button>
         <button id="btn-header-save" class="btn-header btn-header-ghost" title="Salvar Cenário (Ctrl+S)">
           <svg class="header-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
@@ -759,6 +771,7 @@
               <option value="paineis">Painéis</option>
               <option value="cilindros">Cilindros</option>
               <option value="mesas">Mesas e Móveis</option>
+            <option value="baloes">Balões e Arcos</option>
               <option value="tapetes">Tapetes</option>
               <option value="displays">Displays</option>
               <option value="acessorios">Acessórios / Mesa</option>

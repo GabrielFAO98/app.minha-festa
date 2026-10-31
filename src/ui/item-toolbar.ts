@@ -72,7 +72,8 @@ export class ItemToolbar {
 
     btnReposition?.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (!this.selectedNode || !this.selectedMeta?.customCoverUrl) return;
+      const hasAnyCover = Boolean(this.selectedMeta?.customCoverUrl || this.selectedMeta?.tabletopCoverUrl);
+      if (!this.selectedNode || !hasAnyCover) return;
       if (this.canvasEngine.isRepositioningCover) {
         this.canvasEngine.exitCoverRepositionMode();
       } else {
@@ -152,7 +153,8 @@ export class ItemToolbar {
     }
 
     if (btnReposition) {
-      if (mode === 'structural' && meta.customCoverUrl) {
+      const hasAnyCover = Boolean(meta.customCoverUrl || meta.tabletopCoverUrl);
+      if (mode === 'structural' && hasAnyCover) {
         btnReposition.style.display = 'inline-flex';
         btnReposition.innerHTML = `${cropSvg} Enquadrar`;
         btnReposition.title = 'Ajustar Enquadramento da Capa';

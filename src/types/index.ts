@@ -21,6 +21,8 @@ export type ItemType =
   | 'cylinder_fluted'
   | 'cube'
   | 'table'
+  | 'table_skirt_scallop'
+  | 'table_skirt_straight'
   | 'table_organic'
   | 'table_organic_bean'
   | 'table_organic_bean_m'
@@ -29,6 +31,11 @@ export type ItemType =
   | 'table_side'
   | 'dresser_bombe'
   | 'balloon_arch'
+  | 'balloon_arch_l'
+  | 'balloon_arch_demi'
+  | 'balloon_arch_cascade'
+  | 'balloon_cluster_floor'
+  | 'balloon_cluster_totem'
   | 'balloon_single'
   | 'balloon_bubble'
   | 'balloon_number'
@@ -68,6 +75,10 @@ export interface PresetItem {
   customCoverUrl?: string | null;
   customColor?: string | null;
   tabletopColor?: string | null;
+  tabletopCoverUrl?: string | null;
+  tabletopOffsetX?: number;
+  tabletopOffsetY?: number;
+  tabletopScale?: number;
   coverOffsetX?: number;
   coverOffsetY?: number;
   coverScale?: number;

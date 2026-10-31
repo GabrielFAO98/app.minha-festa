@@ -1,5 +1,10 @@
 import type { PresetItem, ThemeCover } from '../types';
 import { adjustColorBrightness } from './modular-svg-generator';
+import {
+  BALLOON_STUDIO_TEMPLATES,
+  renderArrangementSvg,
+  arrangementSvgToDataUrl
+} from './balloon-studio-engine';
 export const SVG_RUG_BOHO_SISAL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 260" width="260" height="260">
   <defs>
     <radialGradient id="sisalBaseGrad" cx="48%" cy="45%" r="55%">
@@ -226,7 +231,14 @@ export const SVG_DISPLAY_NEON_OH_BABY = `<svg xmlns="http://www.w3.org/2000/svg"
 </svg>`;
 
 // Ilustraes SVG e dados tcnicos dos Presets de Fbrica do Pegue-Monte
-import { generateBalloonArchDataUrl } from './balloon-generator';
+import {
+  generateBalloonArchDataUrl,
+  SVG_BALLOON_ARCH_L,
+  SVG_BALLOON_ARCH_DEMI,
+  SVG_BALLOON_ARCH_CASCADE,
+  SVG_BALLOON_CLUSTER_FLOOR,
+  SVG_BALLOON_CLUSTER_TOTEM
+} from './balloon-generator';
 
 // Funo auxiliar para gerar Data URI de SVG
 export function svgToDataUrl(svgString) {
@@ -279,25 +291,12 @@ export const SVG_PANEL_ARCH = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="
       <stop offset="55%" stop-color="#f8fafc"/>
       <stop offset="100%" stop-color="#e2e8f0"/>
     </linearGradient>
-    <linearGradient id="archGoldFoot" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#9a6f0a"/>
-      <stop offset="50%" stop-color="#fef08a"/>
-      <stop offset="100%" stop-color="#b4830e"/>
-    </linearGradient>
     <filter id="archDropShadow" x="-18%" y="-10%" width="136%" height="125%">
       <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.18"/>
     </filter>
-    <filter id="archFloorBlur" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="3"/>
-    </filter>
   </defs>
 
-  <!-- Sombra de Contato no Piso -->
-  <ellipse cx="100" cy="373" rx="82" ry="4" fill="#0f172a" opacity="0.20" filter="url(#archFloorBlur)"/>
-
-  <!-- Pés Dourados Discretos na Base -->
-  <path d="M 22 367 L 46 367 L 44 371.5 L 24 371.5 Z" fill="url(#archGoldFoot)"/>
-  <path d="M 154 367 L 178 367 L 176 371.5 L 156 371.5 Z" fill="url(#archGoldFoot)"/>
+  <!-- Sem pés e sem sombra no piso -->
 
   <!-- Face Frontal do Arco Romano Sem Bordas / Sem Contornos (yBottom=368) -->
   <path d="M 18 368 L 18 100 A 82 82 0 0 1 182 100 L 182 368 Z" fill="url(#archFabricStudio)" stroke="none" filter="url(#archDropShadow)"/>
@@ -623,10 +622,7 @@ export const SVG_TABLE_EASEL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox=
     </filter>
   </defs>
 
-  <!-- Sombras dos Cavaletes no Piso -->
-  <ellipse cx="52" cy="169" rx="34" ry="5" fill="#0f172a" opacity="0.26"/>
-  <ellipse cx="228" cy="169" rx="34" ry="5" fill="#0f172a" opacity="0.26"/>
-  <ellipse cx="140" cy="168" rx="115" ry="7" fill="#0f172a" opacity="0.12"/>
+  <!-- Sem sombra no piso -->
 
   <!-- CAVALETE ESQUERDO 3D -->
   <g filter="url(#easelTableDrop)">
@@ -696,10 +692,7 @@ export const SVG_DRESSER_BOMBE = `<svg xmlns="http://www.w3.org/2000/svg" viewBo
     </filter>
   </defs>
 
-  <!-- Sombras dos Pés no Piso -->
-  <ellipse cx="100" cy="171" rx="76" ry="6" fill="#0f172a" opacity="0.22"/>
-  <ellipse cx="30" cy="172" rx="12" ry="3.5" fill="#0f172a" opacity="0.3"/>
-  <ellipse cx="170" cy="172" rx="12" ry="3.5" fill="#0f172a" opacity="0.3"/>
+  <!-- Sem sombra no piso -->
 
   <g filter="url(#bombeDropShadow)">
     <!-- Pés Traseiros Cabriolé -->
@@ -1876,25 +1869,12 @@ export const SVG_PANEL_RECT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="
       <stop offset="55%" stop-color="#f8fafc"/>
       <stop offset="100%" stop-color="#e2e8f0"/>
     </linearGradient>
-    <linearGradient id="rectGoldFoot" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#9a6f0a"/>
-      <stop offset="50%" stop-color="#fef08a"/>
-      <stop offset="100%" stop-color="#b4830e"/>
-    </linearGradient>
     <filter id="rectDropShadow" x="-18%" y="-10%" width="136%" height="125%">
       <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.18"/>
     </filter>
-    <filter id="rectFloorBlur" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="3"/>
-    </filter>
   </defs>
 
-  <!-- Sombra de Contato no Piso -->
-  <ellipse cx="100" cy="373" rx="82" ry="4" fill="#0f172a" opacity="0.20" filter="url(#rectFloorBlur)"/>
-
-  <!-- Pés Dourados Discretos na Base -->
-  <path d="M 22 367 L 46 367 L 44 371.5 L 24 371.5 Z" fill="url(#rectGoldFoot)"/>
-  <path d="M 154 367 L 178 367 L 176 371.5 L 156 371.5 Z" fill="url(#rectGoldFoot)"/>
+  <!-- Sem pés e sem sombra no piso -->
 
   <!-- Face Frontal do Painel Retangular Sem Bordas (x=18, y=18, w=164, h=350, yBottom=368) -->
   <rect x="18" y="18" width="164" height="350" rx="4" fill="url(#rectFabricStudio)" stroke="none" filter="url(#rectDropShadow)"/>
@@ -2015,25 +1995,12 @@ export const SVG_PANEL_HALF_MOON = `<svg xmlns="http://www.w3.org/2000/svg" view
       <stop offset="55%" stop-color="#f8fafc"/>
       <stop offset="100%" stop-color="#e2e8f0"/>
     </linearGradient>
-    <linearGradient id="hmGoldFoot" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#9a6f0a"/>
-      <stop offset="50%" stop-color="#fef08a"/>
-      <stop offset="100%" stop-color="#b4830e"/>
-    </linearGradient>
     <filter id="hmShadow" x="-18%" y="-10%" width="136%" height="125%">
       <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.18"/>
     </filter>
-    <filter id="hmFloorBlur" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="3"/>
-    </filter>
   </defs>
 
-  <!-- Sombra no Piso -->
-  <ellipse cx="100" cy="373" rx="82" ry="4" fill="#0f172a" opacity="0.20" filter="url(#hmFloorBlur)"/>
-
-  <!-- Pés Dourados Discretos -->
-  <path d="M 22 367 L 46 367 L 44 371.5 L 24 371.5 Z" fill="url(#hmGoldFoot)"/>
-  <path d="M 154 367 L 178 367 L 176 371.5 L 156 371.5 Z" fill="url(#hmGoldFoot)"/>
+  <!-- Sem pés e sem sombra no piso -->
 
   <!-- Face Principal Assimétrica Meia-lua Sem Bordas (yBottom=368, w=164, h=350) -->
   <path d="M 18 368 L 18 130 C 18 35, 95 18, 182 22 L 182 368 Z" fill="url(#halfMoonFabric)" stroke="none" filter="url(#hmShadow)"/>
@@ -2645,7 +2612,327 @@ export const SVG_TABLE_ORGANIC_BEAN_M = generateOrganicBeanTableSVG('#FFFFFF', u
 export const SVG_TABLE_ORGANIC_BEAN_G = generateOrganicBeanTableSVG('#FFFFFF', undefined, 'table_organic_bean_g');
 export const SVG_TABLE_ORGANIC_BEAN = SVG_TABLE_ORGANIC_BEAN_P;
 
+
+// 22C. Mesas com Capa e Saia (Festonê / Sobreposição Ondulada e Saia Plissada Longa)
+function buildSkirtHemPath(yTop: number): string {
+  let path = `M 22 ${yTop} L 298 ${yTop} L 296 182 `;
+  for (let i = 33; i >= 0; i--) {
+    const px = 24 + i * 8;
+    path += `Q ${px + 4} 185, ${px} 182 `;
+  }
+  path += `L 22 182 Z`;
+  return path;
+}
+
+function buildSkirtPleatsSVG(yTop: number): string {
+  let pleatsSvg = '';
+  const pleatHeight = 184 - yTop;
+  for (let i = 0; i < 34; i++) {
+    const px = 24 + i * 8;
+    const isEven = i % 2 === 0;
+    pleatsSvg += `
+      <rect x="${px}" y="${yTop}" width="4" height="${pleatHeight}" fill="#ffffff" opacity="${isEven ? 0.14 : 0.06}"/>
+      <rect x="${px + 4}" y="${yTop}" width="4" height="${pleatHeight}" fill="#000000" opacity="${isEven ? 0.08 : 0.16}"/>
+      <line x1="${px}" y1="${yTop}" x2="${px}" y2="183" stroke="rgba(0,0,0,0.14)" stroke-width="0.8"/>
+      <line x1="${px + 4}" y1="${yTop}" x2="${px + 4}" y2="183" stroke="rgba(255,255,255,0.22)" stroke-width="0.6"/>
+    `;
+  }
+  return pleatsSvg;
+}
+
+export function generateSkirtTableSVG(
+  type: 'table_skirt_scallop' | 'table_skirt_straight' | string = 'table_skirt_scallop',
+  options: {
+    topColor?: string | null;
+    bottomColor?: string | null;
+  } = {}
+): string {
+  const isScallop = type === 'table_skirt_scallop';
+  const defaultTop = isScallop ? '#f472b6' : '#facc15';
+  const defaultBottom = isScallop ? '#f472b6' : '#facc15';
+
+  const topColor = options.topColor || null;
+  const bottomColor = options.bottomColor || null;
+
+  const topC = topColor || defaultTop;
+  const bottomC = bottomColor || defaultBottom;
+
+  const topBorderDark = adjustColorBrightness(topC, -0.22);
+  const bottomBorderDark = adjustColorBrightness(bottomC, -0.25);
+
+  if (isScallop) {
+    const isTopPattern = !topColor;
+    const topFill = isTopPattern ? 'url(#topGinghamPink)' : topC;
+    const bottomFill = bottomC;
+
+    let scallopPath = 'M 20 56 L 20 95 ';
+    let scallopBorder = 'M 20 95 ';
+    for (let i = 0; i < 7; i++) {
+      const x1 = 20 + i * 40;
+      const x2 = x1 + 40;
+      scallopPath += `C ${x1 + 10} 110, ${x2 - 10} 110, ${x2} 95 `;
+      scallopBorder += `C ${x1 + 10} 110, ${x2 - 10} 110, ${x2} 95 `;
+    }
+    scallopPath += 'L 300 56 Z';
+
+    const skirtPath = buildSkirtHemPath(56);
+    const pleatsSvg = buildSkirtPleatsSVG(56);
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200">
+  <defs>
+    <filter id="scallopDropShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.22"/>
+    </filter>
+    <pattern id="topGinghamPink" width="12" height="12" patternUnits="userSpaceOnUse">
+      <rect width="12" height="12" fill="#ffffff"/>
+      <rect x="0" y="0" width="6" height="12" fill="${topC}" fill-opacity="0.45"/>
+      <rect x="0" y="0" width="12" height="6" fill="${topC}" fill-opacity="0.45"/>
+    </pattern>
+    <linearGradient id="scallopOverlayShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(0,0,0,0)"/>
+      <stop offset="80%" stop-color="rgba(0,0,0,0.02)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.2)"/>
+    </linearGradient>
+    <linearGradient id="topSurfaceGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.32)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.05)"/>
+    </linearGradient>
+    <linearGradient id="skirtDropShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(0,0,0,0.35)"/>
+      <stop offset="18%" stop-color="rgba(0,0,0,0.10)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Sombra no piso -->
+  <ellipse cx="160" cy="186" rx="142" ry="7.5" fill="#0f172a" opacity="0.22"/>
+
+  <!-- SAIA PLISSADA INFERIOR -->
+  <g filter="url(#scallopDropShadow)">
+    <rect x="22" y="56" width="276" height="126" fill="${bottomFill}"/>
+    <path d="${skirtPath}" fill="${bottomFill}"/>
+    ${pleatsSvg}
+    <rect x="20" y="56" width="280" height="65" fill="url(#skirtDropShadow)"/>
+  </g>
+
+  <!-- SOBREPOSIÇÃO ONDULADA (FESTONÊ) -->
+  <g filter="url(#scallopDropShadow)">
+    <path d="M 44 30 L 20 56 L 20 95 C 26 102, 38 98, 44 80 Z" fill="${topFill}"/>
+    <path d="M 44 30 L 20 56 L 20 95 C 26 102, 38 98, 44 80 Z" fill="rgba(0,0,0,0.12)"/>
+    <path d="M 276 30 L 300 56 L 300 95 C 294 102, 282 98, 276 80 Z" fill="${topFill}"/>
+    <path d="M 276 30 L 300 56 L 300 95 C 294 102, 282 98, 276 80 Z" fill="rgba(0,0,0,0.18)"/>
+    <path d="${scallopPath}" fill="${topFill}"/>
+    <path d="${scallopPath}" fill="url(#scallopOverlayShadow)"/>
+    <path d="${scallopBorder}" fill="none" stroke="${topBorderDark}" stroke-width="4.8" stroke-linecap="round"/>
+    <path d="${scallopBorder}" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M 46 30 L 274 30 L 298 56 L 22 56 Z" fill="${topFill}"/>
+    <path d="M 46 30 L 274 30 L 298 56 L 22 56 Z" fill="url(#topSurfaceGrad)"/>
+    <line x1="22" y1="56" x2="298" y2="56" stroke="rgba(255,255,255,0.7)" stroke-width="1"/>
+    <line x1="46" y1="30" x2="274" y2="30" stroke="rgba(0,0,0,0.1)" stroke-width="0.8"/>
+  </g>
+</svg>`;
+  } else {
+    // STRAIGHT
+    const isBottomPattern = !bottomColor;
+    const topFill = topC;
+    const bottomFill = isBottomPattern ? 'url(#bottomGinghamYellow)' : bottomC;
+
+    const skirtPath = buildSkirtHemPath(68);
+    const pleatsSvg = buildSkirtPleatsSVG(68);
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200">
+  <defs>
+    <filter id="straightDropShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.22"/>
+    </filter>
+    <pattern id="bottomGinghamYellow" width="12" height="12" patternUnits="userSpaceOnUse">
+      <rect width="12" height="12" fill="#ffffff"/>
+      <rect x="0" y="0" width="6" height="12" fill="${bottomC}" fill-opacity="0.48"/>
+      <rect x="0" y="0" width="12" height="6" fill="${bottomC}" fill-opacity="0.48"/>
+    </pattern>
+    <linearGradient id="topSurfaceGradY" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.38)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.06)"/>
+    </linearGradient>
+    <linearGradient id="topBandGradY" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.2)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.12)"/>
+    </linearGradient>
+    <linearGradient id="skirtTopShadowY" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(0,0,0,0.3)"/>
+      <stop offset="25%" stop-color="rgba(0,0,0,0.08)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Sombra no piso -->
+  <ellipse cx="160" cy="186" rx="142" ry="7.5" fill="#0f172a" opacity="0.22"/>
+
+  <!-- SAIA PLISSADA LONGA INFERIOR -->
+  <g filter="url(#straightDropShadow)">
+    <rect x="22" y="68" width="276" height="114" fill="${bottomFill}"/>
+    <path d="${skirtPath}" fill="${bottomFill}"/>
+    ${pleatsSvg}
+    <rect x="20" y="68" width="280" height="30" fill="url(#skirtTopShadowY)"/>
+  </g>
+
+  <!-- TAMPO E FAIXA SUPERIOR RETA -->
+  <g filter="url(#straightDropShadow)">
+    <path d="M 44 30 L 20 56 L 20 68 L 44 42 Z" fill="${topFill}"/>
+    <path d="M 44 30 L 20 56 L 20 68 L 44 42 Z" fill="rgba(0,0,0,0.12)"/>
+    <path d="M 276 30 L 300 56 L 300 68 L 276 42 Z" fill="${topFill}"/>
+    <path d="M 276 30 L 300 56 L 300 68 L 276 42 Z" fill="rgba(0,0,0,0.18)"/>
+    <rect x="20" y="56" width="280" height="12" fill="${topFill}"/>
+    <rect x="20" y="56" width="280" height="12" fill="url(#topBandGradY)"/>
+    <line x1="20" y1="68" x2="300" y2="68" stroke="${bottomBorderDark}" stroke-width="1.2"/>
+    <path d="M 46 30 L 274 30 L 298 56 L 22 56 Z" fill="${topFill}"/>
+    <path d="M 46 30 L 274 30 L 298 56 L 22 56 Z" fill="url(#topSurfaceGradY)"/>
+    <line x1="22" y1="56" x2="298" y2="56" stroke="rgba(255,255,255,0.7)" stroke-width="1"/>
+    <line x1="46" y1="30" x2="274" y2="30" stroke="rgba(0,0,0,0.1)" stroke-width="0.8"/>
+  </g>
+</svg>`;
+  }
+}
+
+export function generateSkirtTablePartSVG(
+  type: 'table_skirt_scallop' | 'table_skirt_straight' | string,
+  part: 'top' | 'bottom',
+  color: string | null = null
+): string {
+  const isScallop = type === 'table_skirt_scallop';
+  const defaultTop = isScallop ? '#f472b6' : '#facc15';
+  const defaultBottom = isScallop ? '#f472b6' : '#facc15';
+  const c = color || (part === 'top' ? defaultTop : defaultBottom);
+  const borderDark = adjustColorBrightness(c, -0.22);
+
+  if (part === 'top') {
+    if (isScallop) {
+      const isPattern = !color;
+      const fill = isPattern ? 'url(#partTopGinghamPink)' : c;
+      let scallopPath = 'M 20 56 L 20 95 ';
+      let scallopBorder = 'M 20 95 ';
+      for (let i = 0; i < 7; i++) {
+        const x1 = 20 + i * 40;
+        const x2 = x1 + 40;
+        scallopPath += `C ${x1 + 10} 110, ${x2 - 10} 110, ${x2} 95 `;
+        scallopBorder += `C ${x1 + 10} 110, ${x2 - 10} 110, ${x2} 95 `;
+      }
+      scallopPath += 'L 300 56 Z';
+
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200">
+  <defs>
+    <filter id="partTopDropShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.22"/>
+    </filter>
+    <pattern id="partTopGinghamPink" width="12" height="12" patternUnits="userSpaceOnUse">
+      <rect width="12" height="12" fill="#ffffff"/>
+      <rect x="0" y="0" width="6" height="12" fill="${c}" fill-opacity="0.45"/>
+      <rect x="0" y="0" width="12" height="6" fill="${c}" fill-opacity="0.45"/>
+    </pattern>
+    <linearGradient id="scallopOverlayShadowPart" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(0,0,0,0)"/>
+      <stop offset="80%" stop-color="rgba(0,0,0,0.02)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.2)"/>
+    </linearGradient>
+    <linearGradient id="topSurfaceGradPart" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.32)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.05)"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#partTopDropShadow)">
+    <path d="M 44 30 L 20 56 L 20 95 C 26 102, 38 98, 44 80 Z" fill="${fill}"/>
+    <path d="M 44 30 L 20 56 L 20 95 C 26 102, 38 98, 44 80 Z" fill="rgba(0,0,0,0.12)"/>
+    <path d="M 276 30 L 300 56 L 300 95 C 294 102, 282 98, 276 80 Z" fill="${fill}"/>
+    <path d="M 276 30 L 300 56 L 300 95 C 294 102, 282 98, 276 80 Z" fill="rgba(0,0,0,0.18)"/>
+    <path d="${scallopPath}" fill="${fill}"/>
+    <path d="${scallopPath}" fill="url(#scallopOverlayShadowPart)"/>
+    <path d="${scallopBorder}" fill="none" stroke="${borderDark}" stroke-width="4.8" stroke-linecap="round"/>
+    <path d="${scallopBorder}" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M 46 30 L 274 30 L 298 56 L 22 56 Z" fill="${fill}"/>
+    <path d="M 46 30 L 274 30 L 298 56 L 22 56 Z" fill="url(#topSurfaceGradPart)"/>
+    <line x1="22" y1="56" x2="298" y2="56" stroke="rgba(255,255,255,0.7)" stroke-width="1"/>
+    <line x1="46" y1="30" x2="274" y2="30" stroke="rgba(0,0,0,0.1)" stroke-width="0.8"/>
+  </g>
+</svg>`;
+    } else {
+      // STRAIGHT TOP
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200">
+  <defs>
+    <filter id="partTopDropShadowS" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.22"/>
+    </filter>
+    <linearGradient id="topSurfaceGradYS" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.38)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.06)"/>
+    </linearGradient>
+    <linearGradient id="topBandGradYS" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.2)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.12)"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#partTopDropShadowS)">
+    <path d="M 44 30 L 20 56 L 20 68 L 44 42 Z" fill="${c}"/>
+    <path d="M 44 30 L 20 56 L 20 68 L 44 42 Z" fill="rgba(0,0,0,0.12)"/>
+    <path d="M 276 30 L 300 56 L 300 68 L 276 42 Z" fill="${c}"/>
+    <path d="M 276 30 L 300 56 L 300 68 L 276 42 Z" fill="rgba(0,0,0,0.18)"/>
+    <rect x="20" y="56" width="280" height="12" fill="${c}"/>
+    <rect x="20" y="56" width="280" height="12" fill="url(#topBandGradYS)"/>
+    <line x1="20" y1="68" x2="300" y2="68" stroke="${borderDark}" stroke-width="1.2"/>
+    <path d="M 46 30 L 274 30 L 298 56 L 22 56 Z" fill="${c}"/>
+    <path d="M 46 30 L 274 30 L 298 56 L 22 56 Z" fill="url(#topSurfaceGradYS)"/>
+    <line x1="22" y1="56" x2="298" y2="56" stroke="rgba(255,255,255,0.7)" stroke-width="1"/>
+    <line x1="46" y1="30" x2="274" y2="30" stroke="rgba(0,0,0,0.1)" stroke-width="0.8"/>
+  </g>
+</svg>`;
+    }
+  } else {
+    // BOTTOM
+    const yTop = isScallop ? 56 : 68;
+    const isPattern = !color && !isScallop;
+    const fill = isPattern ? 'url(#partBottomGinghamY)' : c;
+
+    const skirtPath = buildSkirtHemPath(yTop);
+    const pleatsSvg = buildSkirtPleatsSVG(yTop);
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200">
+  <defs>
+    <filter id="partBottomDropShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.22"/>
+    </filter>
+    <pattern id="partBottomGinghamY" width="12" height="12" patternUnits="userSpaceOnUse">
+      <rect width="12" height="12" fill="#ffffff"/>
+      <rect x="0" y="0" width="6" height="12" fill="${c}" fill-opacity="0.48"/>
+      <rect x="0" y="0" width="12" height="6" fill="${c}" fill-opacity="0.48"/>
+    </pattern>
+    <linearGradient id="partSkirtShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(0,0,0,0.35)"/>
+      <stop offset="20%" stop-color="rgba(0,0,0,0.08)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="160" cy="186" rx="142" ry="7.5" fill="#0f172a" opacity="0.22"/>
+  <g filter="url(#partBottomDropShadow)">
+    <rect x="22" y="${yTop}" width="276" height="${182 - yTop}" fill="${fill}"/>
+    <path d="${skirtPath}" fill="${fill}"/>
+    ${pleatsSvg}
+    <rect x="20" y="${yTop}" width="280" height="${isScallop ? 65 : 30}" fill="url(#partSkirtShadow)"/>
+  </g>
+</svg>`;
+  }
+}
+
+export const SVG_TABLE_SKIRT_SCALLOP = generateSkirtTableSVG('table_skirt_scallop');
+export const SVG_TABLE_SKIRT_STRAIGHT = generateSkirtTableSVG('table_skirt_straight');
+
 // 23. Mesa Orgânica Apoio Gota (80cm x 60cm)
+export {
+  SVG_BALLOON_ARCH_L,
+  SVG_BALLOON_ARCH_DEMI,
+  SVG_BALLOON_ARCH_CASCADE,
+  SVG_BALLOON_CLUSTER_FLOOR,
+  SVG_BALLOON_CLUSTER_TOTEM
+};
+
 export const SVG_TABLE_ORGANIC_DROP = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" width="200" height="180">
   <defs>
     <radialGradient id="dropTopLaca" cx="45%" cy="38%" r="60%">
@@ -3386,6 +3673,32 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     rentalPrice: 70
   },
   {
+    id: 'preset-mesa-sobreposicao-ondulada',
+    name: 'Mesa com Sobreposição Ondulada',
+    category: 'mesas',
+    type: 'table_skirt_scallop',
+    widthCm: 150,
+    heightCm: 80,
+    previewUrl: svgToDataUrl(SVG_TABLE_SKIRT_SCALLOP),
+    customColor: '#f472b6',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 85
+  },
+  {
+    id: 'preset-mesa-saia-plissada',
+    name: 'Mesa com Saia Plissada',
+    category: 'mesas',
+    type: 'table_skirt_straight',
+    widthCm: 150,
+    heightCm: 80,
+    previewUrl: svgToDataUrl(SVG_TABLE_SKIRT_STRAIGHT),
+    customColor: '#facc15',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 80
+  },
+  {
     id: 'preset-mesa-cavalete',
     name: 'Mesa Tradicional / Cavalete',
     category: 'mesas',
@@ -3507,7 +3820,26 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
 
 
-  // 4. PISO (TAPETES)
+  // 4. BALÕES E ARCOS ORGÂNICOS DESCONSTRUÍDOS (10 MODELOS REALISTAS DO ESTÚDIO)
+  ...BALLOON_STUDIO_TEMPLATES.map((tmpl) => {
+    const rendered = renderArrangementSvg(tmpl.pieces, tmpl.palette, { hasFloorShadow: true });
+    return {
+      id: `preset-${tmpl.id}`,
+      name: tmpl.name,
+      category: 'baloes' as const,
+      type: tmpl.id,
+      svgRole: 'modular' as const,
+      widthCm: tmpl.defaultWidthCm,
+      heightCm: tmpl.defaultHeightCm,
+      previewUrl: arrangementSvgToDataUrl(rendered.svg),
+      isCustom: false,
+      stockQuantity: 1,
+      rentalPrice: tmpl.defaultHeightCm >= 200 ? 120 : (tmpl.defaultHeightCm >= 100 ? 90 : 50),
+      modularColors: [tmpl.palette.A, tmpl.palette.B, tmpl.palette.C, tmpl.palette.D]
+    };
+  }),
+
+  // 5. PISO (TAPETES)
   {
     id: 'preset-tapete-retangular-3d',
     name: 'Tapete Retangular / Lona',

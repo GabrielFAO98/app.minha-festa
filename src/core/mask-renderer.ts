@@ -1,5 +1,6 @@
 import Konva from 'konva';
-import { svgToDataUrl, generateOrganicBeanTabletopOnlySVG } from './presets-data';
+import { svgToDataUrl, generateOrganicBeanTabletopOnlySVG, generateSkirtTablePartSVG } from './presets-data';
+import { adjustColorBrightness } from './modular-svg-generator';
 
 // Cache em memória de imagens e SVGs pré-rasterizados em GPU Bitmap
 const imageBitmapCache = new Map<string, HTMLImageElement | HTMLCanvasElement>();
@@ -53,6 +54,83 @@ export function createClipFunction(type: string, width: number, height: number) 
     };
   }
 
+
+  if (type === 'table_skirt_scallop_bottom' || type === 'table_skirt_straight_bottom') {
+    const scaleX = width / 320;
+    const scaleY = height / 200;
+    const isStraight = type.includes('straight');
+    const yTop = (isStraight ? 68 : 56) * scaleY;
+
+    return (ctx: any) => {
+      ctx.beginPath();
+      ctx.moveTo(22 * scaleX, yTop);
+      ctx.lineTo(298 * scaleX, yTop);
+      ctx.lineTo(296 * scaleX, 182 * scaleY);
+      for (let i = 33; i >= 0; i--) {
+        const px = 24 + i * 8;
+        ctx.quadraticCurveTo((px + 4) * scaleX, 185 * scaleY, px * scaleX, 182 * scaleY);
+      }
+      ctx.lineTo(22 * scaleX, 182 * scaleY);
+      ctx.closePath();
+    };
+  }
+
+  if (type === 'table_skirt_scallop_top') {
+    const scaleX = width / 320;
+    const scaleY = height / 200;
+
+    return (ctx: any) => {
+      ctx.beginPath();
+      ctx.moveTo(46 * scaleX, 30 * scaleY);
+      ctx.lineTo(274 * scaleX, 30 * scaleY);
+      ctx.lineTo(300 * scaleX, 56 * scaleY);
+      ctx.lineTo(300 * scaleX, 95 * scaleY);
+      for (let i = 6; i >= 0; i--) {
+        const x1 = (20 + i * 40) * scaleX;
+        const x2 = (20 + (i + 1) * 40) * scaleX;
+        ctx.bezierCurveTo(
+          x2 - 10 * scaleX, 110 * scaleY,
+          x1 + 10 * scaleX, 110 * scaleY,
+          x1, 95 * scaleY
+        );
+      }
+      ctx.lineTo(20 * scaleX, 56 * scaleY);
+      ctx.closePath();
+    };
+  }
+
+  if (type === 'table_skirt_straight_top') {
+    const scaleX = width / 320;
+    const scaleY = height / 200;
+
+    return (ctx: any) => {
+      ctx.beginPath();
+      ctx.moveTo(46 * scaleX, 30 * scaleY);
+      ctx.lineTo(274 * scaleX, 30 * scaleY);
+      ctx.lineTo(300 * scaleX, 56 * scaleY);
+      ctx.lineTo(300 * scaleX, 68 * scaleY);
+      ctx.lineTo(20 * scaleX, 68 * scaleY);
+      ctx.lineTo(20 * scaleX, 56 * scaleY);
+      ctx.closePath();
+    };
+  }
+
+  if (type === 'table_skirt_scallop' || type === 'table_skirt_straight') {
+    const scaleX = width / 320;
+    const scaleY = height / 200;
+
+    return (ctx: any) => {
+      ctx.beginPath();
+      ctx.moveTo(46 * scaleX, 30 * scaleY);
+      ctx.lineTo(274 * scaleX, 30 * scaleY);
+      ctx.lineTo(300 * scaleX, 56 * scaleY);
+      ctx.lineTo(298 * scaleX, 182 * scaleY);
+      ctx.lineTo(22 * scaleX, 182 * scaleY);
+      ctx.lineTo(20 * scaleX, 56 * scaleY);
+      ctx.closePath();
+    };
+  }
+
   if (type === 'cylinder' || type === 'cylinder_fluted') {
     const scaleX = width / 160;
     const scaleY = height / 220;
@@ -72,7 +150,7 @@ export function createClipFunction(type: string, width: number, height: number) 
     };
   }
 
-  if (type.startsWith('table_organic_bean')) {
+  if (type.startsWith('table_skirt') || type.startsWith('table_organic_bean')) {
     const vHeight = type === 'table_organic_bean_g' ? 300 : (type === 'table_organic_bean_m' ? 250 : 200);
     const scaleX = width / 320;
     const scaleY = height / vHeight;
@@ -205,6 +283,23 @@ export function calculateCoverPlacement(
     targetY = nodeHeight * (18 / 235);
     targetW = nodeWidth * (130 / 160);
     targetH = nodeHeight * (207 / 235);
+  } else if (type.includes('table_skirt')) {
+    if (type.includes('bottom')) {
+      targetX = nodeWidth * (20 / 320);
+      targetY = nodeHeight * (56 / 200);
+      targetW = nodeWidth * (280 / 320);
+      targetH = nodeHeight * (128 / 200);
+    } else if (type.includes('top')) {
+      targetX = nodeWidth * (20 / 320);
+      targetY = nodeHeight * (30 / 200);
+      targetW = nodeWidth * (280 / 320);
+      targetH = nodeHeight * ((type.includes('straight') ? 40 : 82) / 200);
+    } else {
+      targetX = nodeWidth * (20 / 320);
+      targetY = nodeHeight * (30 / 200);
+      targetW = nodeWidth * (280 / 320);
+      targetH = nodeHeight * (154 / 200);
+    }
   } else if (type.startsWith('table_organic_bean')) {
     const vHeight = type === 'table_organic_bean_g' ? 300 : (type === 'table_organic_bean_m' ? 250 : 200);
     targetX = nodeWidth * (105 / 320);
@@ -526,32 +621,6 @@ export function createPanelSupportBase(type: string, width: number, height: numb
       ctx.lineTo(190 * sx, 370.5 * sy);
       ctx.closePath();
       ctx.fill();
-    } else if (type === 'panel_arch' || type === 'panel_rect' || type === 'panel_half_moon') {
-      const sx = w / 200;
-      const sy = h / 380;
-
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
-      ctx.beginPath();
-      ctx.ellipse(100 * sx, 373 * sy, 82 * sx, 4 * sy, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = drawFootGrad(22 * sx, 46 * sx);
-      ctx.beginPath();
-      ctx.moveTo(22 * sx, 367 * sy);
-      ctx.lineTo(46 * sx, 367 * sy);
-      ctx.lineTo(44 * sx, 371.5 * sy);
-      ctx.lineTo(24 * sx, 371.5 * sy);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.fillStyle = drawFootGrad(154 * sx, 178 * sx);
-      ctx.beginPath();
-      ctx.moveTo(154 * sx, 367 * sy);
-      ctx.lineTo(178 * sx, 367 * sy);
-      ctx.lineTo(176 * sx, 371.5 * sy);
-      ctx.lineTo(156 * sx, 371.5 * sy);
-      ctx.closePath();
-      ctx.fill();
     }
   }
 
@@ -775,6 +844,219 @@ export async function createOrganicBeanTabletopNodeAsync(
   return new Konva.Image({
     name: 'tabletop-overlay',
     image: img,
+    width: width,
+    height: height,
+    listening: false
+  });
+}
+
+
+/**
+ * Cria a sombra suave de contato no piso para mesas retangulares com saia
+ */
+export function createTableFloorShadow(width: number, height: number): Konva.Image {
+  const w = Math.max(1, Math.round(width));
+  const h = Math.max(1, Math.round(height));
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = w;
+  offCanvas.height = h;
+  const ctx = offCanvas.getContext('2d');
+
+  if (ctx) {
+    const scaleX = w / 320;
+    const scaleY = h / 200;
+    const cx = w * 0.5;
+    const cy = 186 * scaleY;
+    const rx = 142 * scaleX;
+    const ry = 8 * scaleY;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(1.0, ry / rx);
+    const radGrad = ctx.createRadialGradient(0, 0, rx * 0.25, 0, 0, rx);
+    radGrad.addColorStop(0.0, 'rgba(15, 23, 42, 0.35)');
+    radGrad.addColorStop(0.55, 'rgba(15, 23, 42, 0.16)');
+    radGrad.addColorStop(1.0, 'rgba(15, 23, 42, 0)');
+    ctx.fillStyle = radGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, rx, 0, Math.PI * 2, false);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  return new Konva.Image({
+    name: 'table-floor-shadow',
+    image: offCanvas,
+    width: width,
+    height: height,
+    listening: false
+  });
+}
+
+/**
+ * Cria a camada pré-renderizada de dobras e pregas verticais 3D para a saia da mesa
+ */
+export function createPleatedShadingOverlay(type: string, width: number, height: number): Konva.Image {
+  const w = Math.max(1, Math.round(width));
+  const h = Math.max(1, Math.round(height));
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = w;
+  offCanvas.height = h;
+  const ctx = offCanvas.getContext('2d');
+
+  if (ctx) {
+    const scaleX = w / 320;
+    const scaleY = h / 200;
+    const isStraight = type.includes('straight');
+    const yTop = (isStraight ? 68 : 56) * scaleY;
+    const yBottom = 184 * scaleY;
+    const pleatHeight = yBottom - yTop;
+
+    for (let i = 0; i < 34; i++) {
+      const px = (24 + i * 8) * scaleX;
+      const pw = 4 * scaleX;
+      const isEven = i % 2 === 0;
+
+      ctx.fillStyle = isEven ? 'rgba(255, 255, 255, 0.14)' : 'rgba(255, 255, 255, 0.06)';
+      ctx.fillRect(px, yTop, pw, pleatHeight);
+
+      ctx.fillStyle = isEven ? 'rgba(0, 0, 0, 0.08)' : 'rgba(0, 0, 0, 0.16)';
+      ctx.fillRect(px + pw, yTop, pw, pleatHeight);
+
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.14)';
+      ctx.lineWidth = 0.8 * scaleX;
+      ctx.beginPath();
+      ctx.moveTo(px, yTop);
+      ctx.lineTo(px, yBottom);
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+      ctx.lineWidth = 0.6 * scaleX;
+      ctx.beginPath();
+      ctx.moveTo(px + pw, yTop);
+      ctx.lineTo(px + pw, yBottom);
+      ctx.stroke();
+    }
+
+    const dropH = (isStraight ? 32 : 65) * scaleY;
+    const dropGrad = ctx.createLinearGradient(0, yTop, 0, yTop + dropH);
+    dropGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.35)');
+    dropGrad.addColorStop(0.25, 'rgba(0, 0, 0, 0.10)');
+    dropGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+
+    ctx.fillStyle = dropGrad;
+    ctx.fillRect(20 * scaleX, yTop, 280 * scaleX, dropH);
+  }
+
+  return new Konva.Image({
+    name: 'pleated-shading-overlay',
+    image: offCanvas,
+    width: width,
+    height: height,
+    listening: false
+  });
+}
+
+/**
+ * Cria a camada pré-renderizada de brilho do tampo, festonê e acabamentos da sobreposição
+ */
+export function createTopShadingOverlay(type: string, width: number, height: number, color?: string | null): Konva.Image {
+  const w = Math.max(1, Math.round(width));
+  const h = Math.max(1, Math.round(height));
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = w;
+  offCanvas.height = h;
+  const ctx = offCanvas.getContext('2d');
+
+  if (ctx) {
+    const scaleX = w / 320;
+    const scaleY = h / 200;
+    const isScallop = type.includes('scallop');
+
+    const surfaceGrad = ctx.createLinearGradient(0, 30 * scaleY, 0, 56 * scaleY);
+    surfaceGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.34)');
+    surfaceGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.05)');
+
+    ctx.fillStyle = surfaceGrad;
+    ctx.beginPath();
+    ctx.moveTo(46 * scaleX, 30 * scaleY);
+    ctx.lineTo(274 * scaleX, 30 * scaleY);
+    ctx.lineTo(298 * scaleX, 56 * scaleY);
+    ctx.lineTo(22 * scaleX, 56 * scaleY);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.lineWidth = 1 * scaleY;
+    ctx.beginPath();
+    ctx.moveTo(22 * scaleX, 56 * scaleY);
+    ctx.lineTo(298 * scaleX, 56 * scaleY);
+    ctx.stroke();
+
+    if (isScallop) {
+      const drapeGrad = ctx.createLinearGradient(0, 56 * scaleY, 0, 110 * scaleY);
+      drapeGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0)');
+      drapeGrad.addColorStop(0.8, 'rgba(0, 0, 0, 0.02)');
+      drapeGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.20)');
+
+      ctx.fillStyle = drapeGrad;
+      ctx.beginPath();
+      ctx.moveTo(20 * scaleX, 56 * scaleY);
+      ctx.lineTo(20 * scaleX, 95 * scaleY);
+      for (let i = 0; i < 7; i++) {
+        const x1 = (20 + i * 40) * scaleX;
+        const x2 = (20 + (i + 1) * 40) * scaleX;
+        ctx.bezierCurveTo(
+          x1 + 10 * scaleX, 110 * scaleY,
+          x2 - 10 * scaleX, 110 * scaleY,
+          x2, 95 * scaleY
+        );
+      }
+      ctx.lineTo(300 * scaleX, 56 * scaleY);
+      ctx.closePath();
+      ctx.fill();
+
+      const borderHex = color ? adjustColorBrightness(color, -0.22) : '#e11d48';
+      ctx.strokeStyle = borderHex;
+      ctx.lineWidth = 4.8 * scaleX;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(20 * scaleX, 95 * scaleY);
+      for (let i = 0; i < 7; i++) {
+        const x1 = (20 + i * 40) * scaleX;
+        const x2 = (20 + (i + 1) * 40) * scaleX;
+        ctx.bezierCurveTo(
+          x1 + 10 * scaleX, 110 * scaleY,
+          x2 - 10 * scaleX, 110 * scaleY,
+          x2, 95 * scaleY
+        );
+      }
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.lineWidth = 1.2 * scaleX;
+      ctx.stroke();
+    } else {
+      const bandGrad = ctx.createLinearGradient(0, 56 * scaleY, 0, 68 * scaleY);
+      bandGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.20)');
+      bandGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.12)');
+
+      ctx.fillStyle = bandGrad;
+      ctx.fillRect(20 * scaleX, 56 * scaleY, 280 * scaleX, 12 * scaleY);
+
+      const borderHex = color ? adjustColorBrightness(color, -0.25) : '#ca8a04';
+      ctx.strokeStyle = borderHex;
+      ctx.lineWidth = 1.2 * scaleY;
+      ctx.beginPath();
+      ctx.moveTo(20 * scaleX, 68 * scaleY);
+      ctx.lineTo(300 * scaleX, 68 * scaleY);
+      ctx.stroke();
+    }
+  }
+
+  return new Konva.Image({
+    name: 'top-shading-overlay',
+    image: offCanvas,
     width: width,
     height: height,
     listening: false

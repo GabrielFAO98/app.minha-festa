@@ -1,5 +1,6 @@
 import type { PresetItem, SvgRole } from '../types';
 import { svgToDataUrl } from './presets-data';
+import { generateBalloonDataUrl, BALLOON_PALETTES } from './balloon-generator';
 
 // Utilitários de manipulação de cor Hex para gerar luzes e sombras 3D automaticamente
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
@@ -68,6 +69,15 @@ export function getItemCustomizationMode(item: PresetItem | null | undefined): S
   const id = item.id || '';
   const type = item.type || '';
 
+  if (
+    type.startsWith('balloon_') ||
+    item.category === 'baloes' ||
+    id.startsWith('preset-arco-balao') ||
+    id.startsWith('preset-cluster-balao')
+  ) {
+    return 'modular';
+  }
+
   // Peças fotográficas ou displays fechados que nunca levam capa nem pintura modular SVG
   if (
     type === 'moinho' ||
@@ -89,6 +99,10 @@ export function getItemCustomizationMode(item: PresetItem | null | undefined): S
     type === 'table' ||
     type === 'table_side' ||
     type === 'dresser_bombe' ||
+    type.startsWith('balloon_') ||
+    item.category === 'baloes' ||
+    id.startsWith('preset-arco-balao') ||
+    id.startsWith('preset-cluster-balao') ||
     id === 'preset-painel-ripado' ||
     id === 'preset-shimmer-wall' ||
     id === 'preset-cilindro-canelado' ||
@@ -111,6 +125,8 @@ export function getItemCustomizationMode(item: PresetItem | null | undefined): S
     type === 'cylinder' ||
     type === 'cube' ||
     type.startsWith('table_organic_bean') ||
+    type === 'table_skirt_scallop' ||
+    type === 'table_skirt_straight' ||
     type === 'rug_rect_3d' ||
     type === 'rug_oval' ||
     type === 'rug_round'
@@ -140,6 +156,31 @@ export interface ModularItemConfig {
 export function getModularConfigForItem(item: PresetItem): ModularItemConfig {
   const id = item.id || '';
   const type = item.type || '';
+
+  if (
+    item.category === 'baloes' ||
+    type.startsWith('balloon_') ||
+    id.startsWith('preset-arco-balao') ||
+    id.startsWith('preset-cluster-balao') ||
+    id.startsWith('preset-modelo-') ||
+    id.startsWith('modelo-')
+  ) {
+    return {
+      title: item.name || 'Arranjo de Balões Orgânico',
+      subtitle: 'Personalize as 4 cores vinculadas dos balões (Slots A, B, C e D)',
+      slotLabels: [
+        'Slot A (Cor Principal)',
+        'Slot B (Cor Secundária)',
+        'Slot C (Acento / Detalhe)',
+        'Slot D (Luz / Glitter)'
+      ],
+      defaultColors:
+        item.modularColors && item.modularColors.length >= 4
+          ? item.modularColors
+          : ['#c97a8e', '#f7dbe1', '#d4af37', '#fdfbf7'],
+      palettes: BALLOON_PALETTES.map((p) => ({ name: p.name, colors: p.colors }))
+    };
+  }
 
   if (type === 'panel_slat' || id === 'preset-painel-ripado') {
     return {
@@ -245,6 +286,15 @@ export function generateModularSvgDataUrl(item: PresetItem, colors: string[]): s
   const c1 = colors[0] || '#d97706';
   const c2 = colors[1] || '#1c0a00';
   const c3 = colors[2] || '#451a03';
+
+  if (
+    type.startsWith('balloon_') ||
+    item.category === 'baloes' ||
+    id.startsWith('preset-arco-balao') ||
+    id.startsWith('preset-cluster-balao')
+  ) {
+    return generateBalloonDataUrl(type, colors);
+  }
 
   // 1. PAINEL RIPADO 1,00x2,20m (Com pés dourados discretos e ripas customizáveis)
   if (type === 'panel_slat' || id === 'preset-painel-ripado') {
@@ -416,8 +466,7 @@ export function generateModularSvgDataUrl(item: PresetItem, colors: string[]): s
           <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.22"/>
         </filter>
       </defs>
-      <ellipse cx="62" cy="170" rx="36" ry="5" fill="#0f172a" opacity="0.22"/>
-      <ellipse cx="218" cy="170" rx="36" ry="5" fill="#0f172a" opacity="0.22"/>
+      <!-- Sem sombra no piso -->
       <g filter="url(#tblModShadow)">
         <!-- Cavalete Esquerdo -->
         <polygon points="52,42 60,42 36,168 27,168" fill="url(#tblLegMod)"/>
@@ -491,7 +540,7 @@ export function generateModularSvgDataUrl(item: PresetItem, colors: string[]): s
           <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.24"/>
         </filter>
       </defs>
-      <ellipse cx="100" cy="171" rx="76" ry="6" fill="#0f172a" opacity="0.24"/>
+      <!-- Sem sombra no piso -->
       <g filter="url(#bombeModShadow)">
         <path d="M 30 34 C 14 68, 16 112, 32 140 L 26 168 L 36 168 L 44 142 Q 100 152 156 142 L 164 168 L 174 168 L 168 140 C 184 112, 186 68, 170 34 Z" fill="url(#bombeBodyMod)" stroke="${bodyDeep}" stroke-width="1.2"/>
         <rect x="24" y="25" width="152" height="10" rx="3" fill="url(#bombeAccentMod)"/>

@@ -11,6 +11,7 @@ import { ConfirmModal } from './ui/confirm-modal';
 import { ProjectsModal } from './ui/projects-modal';
 import { DesktopStudio } from './ui/desktop-studio';
 import { HomeScreen } from './ui/home-screen';
+import { BalloonStudioModal } from './ui/balloon-studio-modal';
 
 async function bootstrap() {
   const splashStartTime = Date.now();
@@ -29,6 +30,37 @@ async function bootstrap() {
   const balloonModal = new BalloonModal(canvasEngine);
   const exportModal = new ExportModal(canvasEngine);
   const projectsModal = new ProjectsModal(canvasEngine, confirmModal);
+
+  const balloonStudioModal = new BalloonStudioModal(
+    async (newItem) => {
+      await canvasEngine.addItem(newItem);
+      if (homeScreen.active) {
+        homeScreen.hide();
+        history.pushState({ screen: 'studio' }, '');
+        canvasEngine.fitToView();
+      }
+      if (bottomDock) {
+        bottomDock.invalidateCustomItemsCache();
+        if (bottomDock.activeTab === 'my-items') {
+          await bottomDock.renderMyItemsTab(true);
+        }
+      }
+      if (desktopStudio) {
+        desktopStudio.renderCatalogContent();
+      }
+    },
+    async (_savedItem) => {
+      if (bottomDock) {
+        bottomDock.invalidateCustomItemsCache();
+        if (bottomDock.activeTab === 'my-items') {
+          await bottomDock.renderMyItemsTab(true);
+        }
+      }
+      if (desktopStudio) {
+        desktopStudio.renderCatalogContent();
+      }
+    }
+  );
 
   let bottomDock: BottomDock | null = null;
   let desktopStudio: DesktopStudio | null = null;
@@ -154,6 +186,11 @@ async function bootstrap() {
   const btnHeaderSave = document.getElementById('btn-header-save');
   const btnHeaderProjects = document.getElementById('btn-header-projects');
   const btnHeaderExport = document.getElementById('btn-header-export');
+  const btnHeaderBalloonStudio = document.getElementById('btn-header-balloon-studio');
+
+  btnHeaderBalloonStudio?.addEventListener('click', () => {
+    balloonStudioModal.open();
+  });
 
   btnHeaderUndo?.addEventListener('click', () => {
     canvasEngine.undo();
@@ -220,6 +257,9 @@ async function bootstrap() {
     onOpenProjects: () => {
       projectsModal.openProjectsScreen(false);
     },
+    onOpenBalloonStudio: () => {
+      balloonStudioModal.open();
+    },
     onBeforeExitToHome: async () => {
       if (projectsModal.hasUnsavedChanges()) {
         const choice = await confirmModal.promptUnsaved({
@@ -255,6 +295,13 @@ async function bootstrap() {
     if (bottomDock?.sheetEl?.classList.contains('open')) {
       bottomDock.closeSheet();
       history.pushState({ screen: 'studio' }, '');
+      return;
+    }
+
+    // 1b. Se o Estúdio de Balões estiver aberto, fecha
+    if (balloonStudioModal.isOpen()) {
+      balloonStudioModal.close();
+      history.pushState({ screen: homeScreen.active ? 'home' : 'studio' }, '');
       return;
     }
 

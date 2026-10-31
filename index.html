@@ -251,17 +251,22 @@
           <!-- CONTROLE FLUTUANTE DE ZOOM DO PROJETO (LADO ESQUERDO) -->
           <div id="stage-zoom-controls" class="stage-zoom-controls">
             <button id="btn-zoom-out" class="btn-zoom-ctrl" title="Diminuir Zoom" aria-label="Diminuir Zoom">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
             </button>
-            <button id="btn-zoom-reset" class="btn-zoom-ctrl btn-zoom-level" title="Clique para resetar (100%)">
-              <span id="stage-zoom-percent">100%</span>
-            </button>
+            <span id="stage-zoom-percent" class="stage-zoom-percent-badge" title="Nível de zoom atual (clique para resetar)">100%</span>
             <button id="btn-zoom-in" class="btn-zoom-ctrl" title="Aumentar Zoom" aria-label="Aumentar Zoom">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+            <div class="zoom-divider" aria-hidden="true"></div>
+            <button id="btn-zoom-reset" class="btn-zoom-ctrl btn-zoom-reset-ctrl" title="Resetar Zoom para 100%" aria-label="Resetar Zoom">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <polyline points="3 3 3 8 8 8"/>
               </svg>
             </button>
           </div>

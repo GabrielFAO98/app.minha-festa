@@ -157,18 +157,47 @@
   background: var(--primary-glow);
 }
 
-.btn-zoom-level {
+.stage-zoom-percent-badge {
   font-family: inherit;
   font-size: 0.74rem;
   font-weight: 700;
   color: var(--primary);
-  padding: 0 8px;
+  padding: 0 6px;
   letter-spacing: -0.01em;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background var(--transition-fast);
 }
 
-.btn-zoom-level:hover {
-  color: var(--primary-hover);
+.stage-zoom-percent-badge:hover {
   background: var(--primary-light);
+}
+
+.zoom-divider {
+  width: 1px;
+  height: 14px;
+  background-color: var(--border-subtle);
+  margin: 0 3px;
+}
+
+.btn-zoom-reset-ctrl {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.btn-zoom-reset-ctrl:hover {
+  opacity: 1;
+  color: #B58938;
+  background: var(--primary-light);
+}
+
+.btn-zoom-reset-ctrl.active-zoom {
+  opacity: 1;
+  color: #B58938;
+}
+
+.btn-zoom-reset-ctrl.active-zoom:hover {
+  background: rgba(181, 137, 56, 0.15);
 }
 
 

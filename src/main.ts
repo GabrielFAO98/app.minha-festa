@@ -238,9 +238,21 @@ async function bootstrap() {
     canvasEngine.resetZoom();
   });
 
+  stageZoomPercent?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    canvasEngine.resetZoom();
+  });
+
   canvasEngine.onZoomChange = (percent) => {
     if (stageZoomPercent) {
       stageZoomPercent.textContent = `${percent}%`;
+    }
+    const isZoomed = percent !== 100;
+    if (btnZoomReset) {
+      btnZoomReset.classList.toggle('active-zoom', isZoomed);
+      (btnZoomReset as HTMLButtonElement).title = isZoomed
+        ? `Resetar Zoom para 100% (atual: ${percent}%)`
+        : 'Resetar Zoom para 100%';
     }
   };
 

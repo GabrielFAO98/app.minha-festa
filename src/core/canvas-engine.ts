@@ -866,16 +866,19 @@ export class CanvasEngine {
       listening: false
     });
 
-    // Ícone de 4 setas direcionais em cruz
+    // Ícone de 4 setas direcionais em cruz (Move tool multidirecional nítida)
     const iconMove = new Konva.Shape({
       x: 0,
       y: 0,
       sceneFunc: (ctx, shape) => {
+        ctx.save();
         ctx.strokeStyle = '#B58938';
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#B58938';
         ctx.lineWidth = 1.3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
 
-        // Cruz
+        // Cruz Central
         ctx.beginPath();
         ctx.moveTo(0, -5.5);
         ctx.lineTo(0, 5.5);
@@ -883,37 +886,39 @@ export class CanvasEngine {
         ctx.lineTo(5.5, 0);
         ctx.stroke();
 
-        // Seta Cima
+        // Seta Cima (preenchida em dourado #B58938)
         ctx.beginPath();
-        ctx.moveTo(0, -6.8);
-        ctx.lineTo(-2.2, -4.2);
-        ctx.lineTo(2.2, -4.2);
+        ctx.moveTo(0, -7.0);
+        ctx.lineTo(-2.5, -4.2);
+        ctx.lineTo(2.5, -4.2);
         ctx.closePath();
         ctx.fill();
 
-        // Seta Baixo
+        // Seta Baixo (preenchida em dourado #B58938)
         ctx.beginPath();
-        ctx.moveTo(0, 6.8);
-        ctx.lineTo(-2.2, 4.2);
-        ctx.lineTo(2.2, 4.2);
+        ctx.moveTo(0, 7.0);
+        ctx.lineTo(-2.5, 4.2);
+        ctx.lineTo(2.5, 4.2);
         ctx.closePath();
         ctx.fill();
 
-        // Seta Esquerda
+        // Seta Esquerda (preenchida em dourado #B58938)
         ctx.beginPath();
-        ctx.moveTo(-6.8, 0);
-        ctx.lineTo(-4.2, -2.2);
-        ctx.lineTo(-4.2, 2.2);
+        ctx.moveTo(-7.0, 0);
+        ctx.lineTo(-4.2, -2.5);
+        ctx.lineTo(-4.2, 2.5);
         ctx.closePath();
         ctx.fill();
 
-        // Seta Direita
+        // Seta Direita (preenchida em dourado #B58938)
         ctx.beginPath();
-        ctx.moveTo(6.8, 0);
-        ctx.lineTo(4.2, -2.2);
-        ctx.lineTo(4.2, 2.2);
+        ctx.moveTo(7.0, 0);
+        ctx.lineTo(4.2, -2.5);
+        ctx.lineTo(4.2, 2.5);
         ctx.closePath();
         ctx.fill();
+
+        ctx.restore();
       },
       listening: false
     });

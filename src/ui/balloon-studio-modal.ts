@@ -1,13 +1,18 @@
-// Estúdio Visual de Criação e Customização de Balões Orgânicos
-// Padrão de Alto Nível para Decoradoras de Festa (Pegue e Monte)
+// Ateliê Visual de Criação e Customização de Balões Orgânicos
+// Padrão Editorial Ateliê Claro para Decoradoras de Festa
 
 import {
   BALLOON_STUDIO_TEMPLATES,
   STUDIO_PALETTE_PRESETS,
+  FASHION_BALLOON_COLORS,
   BALLOON_SIZE_RADIUS_MAP,
   renderArrangementSvg,
   arrangementSvgToDataUrl,
   calculateArrangementStats,
+  mirrorArrangementHorizontal,
+  distributeColors,
+  variateArrangement,
+  applyVolumeLevel,
   type BalloonPiece,
   type BalloonPaletteConfig,
   type BalloonSizeInches,
@@ -23,38 +28,63 @@ export class BalloonStudioModal {
   private overlayEl: HTMLElement | null = null;
   private canvasSvgEl: SVGSVGElement | null = null;
 
-  // Estado atual do estúdio
+  // Telas: 'gallery' (tela inicial com modelos) ou 'editor' (área de criação)
+  private currentScreen: 'gallery' | 'editor' = 'gallery';
+
+  // Estado atual do arranjo no editor
+  private arrangementTitle = 'Arco Orgânico em L';
   private pieces: BalloonPiece[] = [];
+  private baseTemplatePieces: BalloonPiece[] = [];
   private palette: BalloonPaletteConfig = {
     A: '#c97a8e',
     B: '#f7dbe1',
     C: '#d4af37',
     D: '#ffffff',
-    name: 'Rose Gold, Blush & Pérola'
+    name: 'Rose Gold, Blush & Pérola',
+    names: { A: 'Rosa Quartzo', B: 'Blush Suave', C: 'Ouro Cromo', D: 'Branco Neve' },
+    finishes: { A: 'satin', B: 'satin', C: 'chrome', D: 'matte' }
   };
 
   private selectedPieceIds: Set<string> = new Set();
   private selectedTemplateId: string = 'modelo-arco-l-luxo';
-  private currentGhostGuide: 'none' | 'round' | 'roman' | 'table' = 'none';
+  private activeColorSlot: BalloonSlot = 'A';
+  private currentVolumeLevel: 'enxuto' | 'padrao' | 'cheio' = 'padrao';
+  private currentDistributionMode: 'mesclado' | 'degrade' | 'blocos' = 'mesclado';
 
-  // Ferramenta de inserção padrão
-  private currentToolSize: BalloonSizeInches = 12;
-  private currentToolFinish: BalloonFinish = 'satin';
-  private currentToolSlot: BalloonSlot = 'A';
+  // Ferramenta ativa no canvas
+  private activeTouchTool: 'adjust' | 'base-balloon' | 'light-point' | 'big-balloon' | 'cluster-quad' | 'eraser' = 'adjust';
 
-  // Histórico Undo / Redo
-  private history: { pieces: BalloonPiece[]; palette: BalloonPaletteConfig }[] = [];
-  private historyIndex = -1;
+  // Aba ativa no dock inferior
+  private activeBottomTab: 'forma' | 'cores' | 'retoques' = 'forma';
 
-  // Dragging state no canvas
+  // Viewport e Zoom Controlado EXCLUSIVAMENTE por Pinça (Estável, sem pular ao arrastar balões)
+  private baseViewBox = { x: 0, y: 0, width: 600, height: 600 };
+  private zoomLevel = 1.0;
+  private panOffset = { x: 0, y: 0 };
+  private activePointers = new Map<number, { x: number; y: number }>();
+  private isPinching = false;
+  private pinchStartDist = 1;
+  private pinchStartZoom = 1;
+  private pinchStartPan = { x: 0, y: 0 };
+  private pinchStartMidpoint = { x: 0, y: 0 };
+  private multiTouchCooldown = 0;
+
+  // Arraste de peças individuais com 1 único ponteiro
   private isDragging = false;
   private dragPointerId: number | null = null;
   private dragStartSvgX = 0;
   private dragStartSvgY = 0;
   private dragPieceInitialPositions: Map<string, { x: number; y: number }> = new Map();
 
-  // Mobile Tabs
-  private activeMobileTab: 'colors' | 'add' | 'inspector' = 'colors';
+  // Histórico Undo / Redo
+  private history: { pieces: BalloonPiece[]; palette: BalloonPaletteConfig }[] = [];
+  private historyIndex = -1;
+
+  // Toggle de reserva na lista de materiais
+  private includeSpareBalloons = true;
+
+  // Slot em edição na gaveta de cores
+  private editingColorSlot: BalloonSlot = 'A';
 
   // Callbacks
   private onInsertCallback?: (item: PresetItem) => void;
@@ -74,7 +104,7 @@ export class BalloonStudioModal {
     this.onSavedCallback = cb;
   }
 
-  // Cria a estrutura visual completa do estúdio no DOM
+  // Cria a estrutura visual completa do Ateliê no DOM
   private createDomStructure(): void {
     if (document.getElementById('balloon-studio-overlay')) return;
 
@@ -85,368 +115,304 @@ export class BalloonStudioModal {
 
     overlay.innerHTML = `
       <div class="balloon-studio-container">
-        <!-- Topo: Barra de Navegação e Ações -->
-        <header class="bs-header">
-          <div class="bs-header-left">
-            <button id="bs-btn-back" class="bs-btn-ghost" title="Voltar">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <polyline points="15 18 9 12 15 6"></polyline>
-              </svg>
-              <span>Voltar</span>
-            </button>
-            <div class="bs-title-group">
-              <h1 class="bs-title">Estúdio de Balões</h1>
-              <span class="bs-badge-tag">Criador Orgânico</span>
-            </div>
-          </div>
-
-          <div class="bs-header-center">
-            <!-- Seletor de Modelos Prontos -->
-            <div class="bs-template-select-box">
-              <label class="bs-field-label">Modelo:</label>
-              <select id="bs-select-template" class="bs-select">
-                ${BALLOON_STUDIO_TEMPLATES.map(
-                  (t) => `<option value="${t.id}">${t.name}</option>`
-                ).join('')}
-                <option value="custom">✦ Em Branco (Do Zero)</option>
-              </select>
-            </div>
-
-            <!-- Gabarito de Fundo (Guias Visuais) -->
-            <div class="bs-ghost-guide-box">
-              <label class="bs-field-label">Gabarito:</label>
-              <div class="bs-ghost-btn-group">
-                <button class="bs-ghost-btn active" data-guide="none" title="Sem gabarito">Nenhum</button>
-                <button class="bs-ghost-btn" data-guide="roman" title="Painel Romano (100x200cm)">Romano</button>
-                <button class="bs-ghost-btn" data-guide="round" title="Painel Redondo (150cm)">Redondo</button>
-                <button class="bs-ghost-btn" data-guide="table" title="Mesa (150x80cm)">Mesa</button>
-              </div>
-            </div>
-
-            <!-- Contador de Balões / Lista de Material -->
-            <button id="bs-btn-counter" class="bs-counter-badge" title="Clique para ver a lista de compras completa">
-              <span class="bs-counter-icon">🎈</span>
-              <span id="bs-counter-label">0 balões</span>
-            </button>
-          </div>
-
-          <div class="bs-header-right">
-            <!-- Desfazer / Refazer -->
-            <div class="bs-undo-group">
-              <button id="bs-btn-undo" class="bs-btn-icon" title="Desfazer (Ctrl+Z)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3 7v6h6"></path>
-                  <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+        <!-- ======================================================= -->
+        <!-- 1. TELA INICIAL: GALERIA DE MODELOS & COMEÇAR DO ZERO   -->
+        <!-- ======================================================= -->
+        <section id="bs-gallery-screen" class="bs-screen">
+          <header class="bs-gallery-header">
+            <div class="bs-gallery-header-left">
+              <button id="bs-btn-close-gallery" class="bs-btn-icon-circle" title="Fechar">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
               </button>
-              <button id="bs-btn-redo" class="bs-btn-icon" title="Refazer (Ctrl+Y)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 7v6h-6"></path>
-                  <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
+              <h1 class="bs-gallery-header-title">Ateliê de Balões</h1>
+            </div>
+          </header>
+
+          <main class="bs-gallery-body">
+            <div class="bs-gallery-intro">
+              <h2 class="bs-gallery-title">Por onde vamos começar?</h2>
+              <p class="bs-gallery-sub">Escolha uma base. Você ajusta tudo depois.</p>
+            </div>
+
+            <!-- CARD 1: COMEÇAR DO ZERO (EM PRIMEIRO LUGAR - SEM TAGS) -->
+            <div id="bs-card-start-zero" class="bs-card-zero" title="Iniciar arranjo em branco">
+              <div class="bs-card-zero-icon">✦</div>
+              <div class="bs-card-zero-content">
+                <b class="bs-card-zero-title">Começar do zero (em branco)</b>
+                <span class="bs-card-zero-desc">Monte seu arranjo em um espaço livre sem modelo pré-definido</span>
+              </div>
+            </div>
+
+            <!-- GRID DOS 10 MODELOS REALISTAS (SEM TAGS) -->
+            <div class="bs-gallery-grid" id="bs-gallery-templates-grid">
+              ${BALLOON_STUDIO_TEMPLATES.map((tmpl) => {
+                const { svg } = renderArrangementSvg(tmpl.pieces, tmpl.palette, { pad: 16, hasFloorShadow: false });
+                return `
+                  <div class="bs-template-card" data-template-id="${tmpl.id}">
+                    <div class="bs-card-thumb">
+                      ${svg}
+                    </div>
+                    <div class="bs-card-meta">
+                      <b class="bs-card-name">${tmpl.name}</b>
+                      <span class="bs-card-sub">${tmpl.defaultWidthCm} × ${tmpl.defaultHeightCm} cm · ~${tmpl.pieces.length} balões</span>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </main>
+        </section>
+
+        <!-- ======================================================= -->
+        <!-- 2. TELA DO EDITOR: ATELIÊ DE CRIAÇÃO E PERSONALIZAÇÃO   -->
+        <!-- ======================================================= -->
+        <section id="bs-editor-screen" class="bs-screen" style="display:none">
+          <!-- Topo do Editor -->
+          <header class="bs-editor-header">
+            <div class="bs-header-left-actions">
+              <button id="bs-btn-back-to-gallery" class="bs-btn-back-gallery" title="Voltar para a galeria">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <span>Modelos</span>
+              </button>
+              <div id="bs-editor-title-container" class="bs-editor-title-box" title="Clique para renomear">
+                <h2 id="bs-editor-current-title" class="bs-editor-title">Arco Orgânico em L</h2>
+                <span class="bs-editor-title-icon">✎</span>
+              </div>
+            </div>
+
+            <div class="bs-header-right-actions">
+              <!-- Desfazer / Refazer -->
+              <div class="bs-undo-redo-group">
+                <button id="bs-btn-editor-undo" class="bs-btn-header-icon" title="Desfazer (Ctrl+Z)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M3 7v6h6"></path>
+                    <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+                  </svg>
+                </button>
+                <button id="bs-btn-editor-redo" class="bs-btn-header-icon" title="Refazer (Ctrl+Y)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M21 7v6h-6"></path>
+                    <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Ação Principal de Saída -->
+              <button id="bs-btn-conclude-flow" class="bs-btn-conclude" title="Concluir e usar no cenário">
+                <span>Concluir</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                  <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
               </button>
             </div>
+          </header>
 
-            <!-- Botões Principais de Salvamento -->
-            <button id="bs-btn-save-element" class="bs-btn-primary" title="Salvar em Meus Elementos">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                <polyline points="17 21 17 13 7 13 7 21"></polyline>
-              </svg>
-              <span class="bs-btn-label-desktop">Salvar em Meus Elementos</span>
-              <span class="bs-btn-label-mobile">Salvar</span>
-            </button>
-
-            <button id="bs-btn-insert-scene" class="bs-btn-accent" title="Salvar e Inserir no Cenário">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              <span class="bs-btn-label-desktop">Inserir no Cenário</span>
-              <span class="bs-btn-label-mobile">Inserir</span>
-            </button>
-          </div>
-        </header>
-
-        <!-- Corpo Principal: Sidebar Ferramentas + Canvas + Inspetor -->
-        <div class="bs-body" data-mobile-tab="colors">
-          <!-- Abas de Navegação Mobile (< 900px) -->
-          <nav class="bs-mobile-tabs" id="bs-mobile-tabs">
-            <button class="bs-mobile-tab active" data-tab="colors" type="button">
-              <span>🎨 Cores</span>
-            </button>
-            <button class="bs-mobile-tab" data-tab="add" type="button">
-              <span>➕ Adicionar</span>
-            </button>
-            <button class="bs-mobile-tab" data-tab="inspector" type="button">
-              <span>⚙️ Inspetor</span>
-              <span id="bs-tab-insp-indicator" class="bs-tab-dot" style="display:none"></span>
-            </button>
-          </nav>
-
-          <!-- Sidebar Esquerda: Paletas e Adicionar Balões -->
-          <aside class="bs-sidebar-left">
-            <!-- Seção 1: Paleta Vinculada (Troca global de cores) -->
-            <div class="bs-panel-box" id="bs-panel-colors">
-              <div class="bs-panel-header">
-                <h3 class="bs-panel-title">Cores Vinculadas</h3>
-                <span class="bs-panel-tip" title="Ao alterar uma cor aqui, todos os balões com essa letra mudam juntos">Dica: troca global</span>
-              </div>
-
-              <!-- 4 Slots de Cores -->
-              <div class="bs-slots-grid">
-                <div class="bs-slot-card" data-slot="A">
-                  <div class="bs-slot-indicator" style="background:#c97a8e" id="bs-slot-dot-A"></div>
-                  <div class="bs-slot-info">
-                    <span class="bs-slot-tag">Slot A</span>
-                    <span class="bs-slot-name">Principal</span>
-                  </div>
-                  <input type="color" id="bs-slot-color-A" class="bs-slot-color-input" value="#c97a8e">
-                </div>
-
-                <div class="bs-slot-card" data-slot="B">
-                  <div class="bs-slot-indicator" style="background:#f7dbe1" id="bs-slot-dot-B"></div>
-                  <div class="bs-slot-info">
-                    <span class="bs-slot-tag">Slot B</span>
-                    <span class="bs-slot-name">Secundária</span>
-                  </div>
-                  <input type="color" id="bs-slot-color-B" class="bs-slot-color-input" value="#f7dbe1">
-                </div>
-
-                <div class="bs-slot-card" data-slot="C">
-                  <div class="bs-slot-indicator" style="background:#d4af37" id="bs-slot-dot-C"></div>
-                  <div class="bs-slot-info">
-                    <span class="bs-slot-tag">Slot C</span>
-                    <span class="bs-slot-name">Destaque</span>
-                  </div>
-                  <input type="color" id="bs-slot-color-C" class="bs-slot-color-input" value="#d4af37">
-                </div>
-
-                <div class="bs-slot-card" data-slot="D">
-                  <div class="bs-slot-indicator" style="background:#ffffff" id="bs-slot-dot-D"></div>
-                  <div class="bs-slot-info">
-                    <span class="bs-slot-tag">Slot D</span>
-                    <span class="bs-slot-name">Base / Neutro</span>
-                  </div>
-                  <input type="color" id="bs-slot-color-D" class="bs-slot-color-input" value="#ffffff">
-                </div>
-              </div>
-
-              <!-- Paletas Prontas Populares -->
-              <div class="bs-palette-presets-box">
-                <label class="bs-field-label">Paletas Prontas da Festa:</label>
-                <div class="bs-palette-chips-grid">
-                  ${STUDIO_PALETTE_PRESETS.map(
-                    (p) => `
-                    <button class="bs-palette-chip" data-preset="${p.id}" title="${p.name}">
-                      <div class="bs-chip-swatches">
-                        <span style="background:${p.palette.A}"></span>
-                        <span style="background:${p.palette.B}"></span>
-                        <span style="background:${p.palette.C}"></span>
-                        <span style="background:${p.palette.D}"></span>
-                      </div>
-                      <span class="bs-chip-label">${p.name}</span>
-                    </button>
-                  `
-                  ).join('')}
-                </div>
-              </div>
-            </div>
-
-            <!-- Seção 2: Ferramentas de Inserção -->
-            <div class="bs-panel-box" id="bs-panel-add">
-              <div class="bs-panel-header">
-                <h3 class="bs-panel-title">Adicionar Balões</h3>
-              </div>
-
-              <!-- Tamanhos em Polegadas -->
-              <div class="bs-field-group">
-                <label class="bs-field-label">Tamanho do Balão:</label>
-                <div class="bs-size-selector">
-                  <button class="bs-size-btn" data-size="5" title="5 polegadas (Mini / Detalhe)">5"</button>
-                  <button class="bs-size-btn" data-size="10" title="10 polegadas (Pequeno)">10"</button>
-                  <button class="bs-size-btn active" data-size="12" title="12 polegadas (Padrão de Arco)">12"</button>
-                  <button class="bs-size-btn" data-size="18" title="18 polegadas (Grande Statement)">18"</button>
-                  <button class="bs-size-btn" data-size="24" title="24 polegadas (Gigante / Big Balloon)">24"</button>
-                </div>
-              </div>
-
-              <!-- Acabamentos de Látex -->
-              <div class="bs-field-group">
-                <label class="bs-field-label">Acabamento:</label>
-                <div class="bs-finish-selector">
-                  <button class="bs-finish-btn active" data-finish="satin" title="Látex Acetinado (Brilho suave)">Acetinado</button>
-                  <button class="bs-finish-btn" data-finish="matte" title="Látex Fosco / Aveludado">Fosco</button>
-                  <button class="bs-finish-btn" data-finish="chrome" title="Cromado / Espelhado Metálico">Cromado</button>
-                  <button class="bs-finish-btn" data-finish="crystal" title="Transparente Cristal">Cristal</button>
-                  <button class="bs-finish-btn" data-finish="glitter" title="Transparente com Glitter e Confete">Glitter ✨</button>
-                </div>
-              </div>
-
-              <!-- Slot de Cor para os novos balões -->
-              <div class="bs-field-group">
-                <label class="bs-field-label">Vincular à Cor:</label>
-                <div class="bs-slot-radio-group">
-                  <button class="bs-slot-radio-btn active" data-slot="A">Slot A</button>
-                  <button class="bs-slot-radio-btn" data-slot="B">Slot B</button>
-                  <button class="bs-slot-radio-btn" data-slot="C">Slot C</button>
-                  <button class="bs-slot-radio-btn" data-slot="D">Slot D</button>
-                </div>
-              </div>
-
-              <!-- Botões de Inserção Imediata -->
-              <div class="bs-action-buttons-group">
-                <button id="bs-btn-add-single" class="bs-tool-btn bs-tool-btn-primary">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="8" x2="12" y2="16"></line>
-                    <line x1="8" y1="12" x2="16" y2="12"></line>
-                  </svg>
-                  <span>+ Balão Individual</span>
-                </button>
-
-                <button id="bs-btn-add-quad" class="bs-tool-btn" title="Adiciona 4 balões interligados prontos (Quad profissional)">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-                    <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-                    <rect x="14" y="14" width="7" height="7" rx="1"></rect>
-                    <rect x="3" y="14" width="7" height="7" rx="1"></rect>
-                  </svg>
-                  <span>+ Cluster Quad (4x)</span>
-                </button>
-
-                <button id="bs-btn-add-trio" class="bs-tool-btn" title="Adiciona 3 mini balões de 5 polegadas para acabamento nas fendas">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="7" r="4"></circle>
-                    <circle cx="7" cy="16" r="4"></circle>
-                    <circle cx="17" cy="16" r="4"></circle>
-                  </svg>
-                  <span>+ Tufo Detalhe (3x 5")</span>
-                </button>
-              </div>
-            </div>
-          </aside>
-
-          <!-- Centro: Canvas Interativo de Montagem -->
+          <!-- Centro: Canvas Interativo com Zoom Estável por Pinça -->
           <main class="bs-canvas-area" id="bs-canvas-container">
-            <!-- Barra Flutuante de Dimensões e Dica -->
-            <div class="bs-canvas-info-bar">
-              <span id="bs-dimension-badge" class="bs-dimension-badge">180 cm × 230 cm</span>
-              <span class="bs-canvas-hint">Arraste para posicionar • Clique para selecionar • Del para remover</span>
+            <!-- Chips Flutuantes -->
+            <div id="bs-chip-dimension" class="bs-canvas-chip bs-chip-dim">180 × 230 cm</div>
+            <button id="bs-chip-mirror" class="bs-canvas-chip bs-chip-mirror" title="Inverter lado do arranjo (espelhar)">
+              <span>⇄ Inverter</span>
+            </button>
+            <button id="bs-btn-reset-view" class="bs-canvas-chip bs-chip-reset" style="display:none" title="Resetar zoom e centralizar">
+              <span>↺ <span id="bs-zoom-level-badge">100%</span></span>
+            </button>
+            <button id="bs-chip-shopping" class="bs-canvas-chip bs-chip-shop" title="Ver lista de compras de balões">
+              <span>🎈 <span id="bs-chip-count-label">0 balões</span> ›</span>
+            </button>
+
+            <!-- Banner de Ferramenta Ativa -->
+            <div id="bs-tool-active-banner" class="bs-tool-banner" style="display:none">
+              <span id="bs-tool-banner-text">Toque no arco para encaixar</span>
             </div>
 
-            <!-- SVG Renderizado Interativo -->
+            <!-- Estado Vazio (quando tela estiver em branco) -->
+            <div id="bs-canvas-empty-state" class="bs-canvas-empty-state" style="display:none">
+              <div class="bs-empty-state-icon">🎈</div>
+              <p class="bs-empty-state-text">Sua tela está livre</p>
+              <span class="bs-empty-state-sub">Toque para adicionar seu primeiro cluster ou balão</span>
+            </div>
+
+            <!-- SVG Interativo -->
             <svg id="bs-canvas-svg" class="bs-canvas-svg" xmlns="http://www.w3.org/2000/svg">
-              <!-- Definições e Gabarito Fantasma -->
               <defs id="bs-svg-defs"></defs>
-              <g id="bs-ghost-guide-layer"></g>
-              <!-- Camada de Peças de Balão -->
               <g id="bs-balloons-layer"></g>
-              <!-- Caixa de Seleção / Contorno -->
-              <g id="bs-selection-layer"></g>
+              <g id="bs-highlight-layer"></g>
             </svg>
+
+            <!-- Pílula Flutuante no Balão Selecionado -->
+            <div id="bs-floating-balloon-pill" class="bs-balloon-pill" style="display:none">
+              <button id="bs-pill-color-btn" class="bs-pill-btn" title="Mudar cor desta família">
+                <span id="bs-pill-swatch-dot" class="bs-pill-swatch-dot"></span>
+                <span id="bs-pill-color-name">Cor</span>
+                <small>▾</small>
+              </button>
+              <button id="bs-pill-size-btn" class="bs-pill-btn" title="Mudar tamanho">
+                <span id="bs-pill-size-text">12"</span>
+                <small>▾</small>
+              </button>
+              <button id="bs-pill-dup-btn" class="bs-pill-btn" title="Duplicar">⧉</button>
+              <button id="bs-pill-del-btn" class="bs-pill-btn bs-pill-btn-danger" title="Excluir">🗑</button>
+            </div>
           </main>
 
-          <!-- Sidebar Direita: Inspetor do Balão Selecionado -->
-          <aside class="bs-sidebar-right" id="bs-inspector-sidebar">
-            <div class="bs-panel-box" id="bs-inspector-box">
-              <div class="bs-panel-header">
-                <h3 class="bs-panel-title">Balão Selecionado</h3>
-                <span id="bs-selection-count-badge" class="bs-tag-selection">1 selecionado</span>
+          <!-- Faixa da Paleta (Cores da Festa) -->
+          <section class="bs-palette-strip">
+            <div class="bs-swatches-row" id="bs-swatches-container">
+              <!-- Swatches A, B, C, D gerados dinamicamente -->
+            </div>
+            <button id="bs-btn-open-palettes-sheet" class="bs-btn-strip-palettes" title="Escolher paleta pronta">
+              <span>🎨 Paletas</span>
+            </button>
+          </section>
+
+          <!-- Painel Ativo da Aba -->
+          <section class="bs-tab-panel" id="bs-tab-active-panel">
+            <!-- Conteúdo injetado dinamicamente: Forma, Cores ou Retoques -->
+          </section>
+
+          <!-- Dock Inferior com 3 Abas -->
+          <nav class="bs-tabs-dock">
+            <button class="bs-dock-tab active" data-tab="forma">
+              <span class="bs-dock-tab-icon">🧩</span>
+              <span>Modelos & Forma</span>
+            </button>
+            <button class="bs-dock-tab" data-tab="cores">
+              <span class="bs-dock-tab-icon">🎨</span>
+              <span>Cores</span>
+            </button>
+            <button class="bs-dock-tab" data-tab="retoques">
+              <span class="bs-dock-tab-icon">✨</span>
+              <span>Retoques</span>
+            </button>
+          </nav>
+        </section>
+
+        <!-- ======================================================= -->
+        <!-- 3. GAVETAS / BOTTOM SHEETS                             -->
+        <!-- ======================================================= -->
+
+        <!-- Gaveta: Trocar Cor & Acabamento da Família -->
+        <div id="bs-color-sheet" class="bs-sheet-dim" style="display:none">
+          <div class="bs-bottom-sheet">
+            <div class="bs-sheet-grabber"></div>
+            <div class="bs-sheet-header">
+              <h3 class="bs-sheet-title" id="bs-color-sheet-title">Editar Cor da Família</h3>
+              <button id="bs-btn-close-color-sheet" class="bs-sheet-close">✕</button>
+            </div>
+            <div class="bs-sheet-body">
+              <div class="bs-label-row" style="margin-bottom:8px">
+                <span>Acabamento do Látex:</span>
+              </div>
+              <div class="bs-finishes-selector" id="bs-sheet-finishes-grid">
+                <button class="bs-finish-btn-chip active" data-finish="satin">Acetinado</button>
+                <button class="bs-finish-btn-chip" data-finish="matte">Fosco</button>
+                <button class="bs-finish-btn-chip" data-finish="chrome">Cromado ✨</button>
+                <button class="bs-finish-btn-chip" data-finish="crystal">Cristal</button>
+                <button class="bs-finish-btn-chip" data-finish="glitter">Glitter</button>
               </div>
 
-              <div id="bs-inspector-content">
-                <!-- Seletor de Slot -->
-                <div class="bs-field-group">
-                  <label class="bs-field-label">Cor Vinculada:</label>
-                  <div class="bs-inspector-slots">
-                    <button class="bs-insp-slot-btn" data-slot="A">Slot A</button>
-                    <button class="bs-insp-slot-btn" data-slot="B">Slot B</button>
-                    <button class="bs-insp-slot-btn" data-slot="C">Slot C</button>
-                    <button class="bs-insp-slot-btn" data-slot="D">Slot D</button>
+              <div class="bs-label-row" style="margin: 14px 0 8px">
+                <span>Cores da Moda (Catálogo):</span>
+              </div>
+              <div class="bs-color-catalog-grid">
+                ${FASHION_BALLOON_COLORS.map((c) => `
+                  <div class="bs-color-tile" data-hex="${c.hex}" data-name="${c.name}">
+                    <span class="bs-color-tile-dot" style="background:${c.hex}"></span>
+                    <span class="bs-color-tile-name">${c.name}</span>
                   </div>
-                </div>
-
-                <!-- Seletor de Tamanho -->
-                <div class="bs-field-group">
-                  <label class="bs-field-label">Mudar Tamanho:</label>
-                  <div class="bs-inspector-sizes">
-                    <button class="bs-insp-size-btn" data-size="5">5"</button>
-                    <button class="bs-insp-size-btn" data-size="10">10"</button>
-                    <button class="bs-insp-size-btn" data-size="12">12"</button>
-                    <button class="bs-insp-size-btn" data-size="18">18"</button>
-                    <button class="bs-insp-size-btn" data-size="24">24"</button>
-                  </div>
-                </div>
-
-                <!-- Seletor de Acabamento -->
-                <div class="bs-field-group">
-                  <label class="bs-field-label">Mudar Acabamento:</label>
-                  <div class="bs-inspector-finishes">
-                    <button class="bs-insp-fin-btn" data-finish="satin">Acetinado</button>
-                    <button class="bs-insp-fin-btn" data-finish="matte">Fosco</button>
-                    <button class="bs-insp-fin-btn" data-finish="chrome">Cromado</button>
-                    <button class="bs-insp-fin-btn" data-finish="crystal">Cristal</button>
-                    <button class="bs-insp-fin-btn" data-finish="glitter">Glitter ✨</button>
-                  </div>
-                </div>
-
-                <!-- Ordem de Camadas (Profundidade 3D) -->
-                <div class="bs-field-group">
-                  <label class="bs-field-label">Profundidade / Camada:</label>
-                  <div class="bs-layers-btn-group">
-                    <button id="bs-btn-bring-front" class="bs-layer-btn" title="Trazer para o topo absoluto">
-                      <span>↑ Frente</span>
-                    </button>
-                    <button id="bs-btn-send-back" class="bs-layer-btn" title="Enviar para trás de todos">
-                      <span>↓ Trás</span>
-                    </button>
-                    <button id="bs-btn-step-forward" class="bs-layer-btn" title="Avançar uma posição">
-                      <span>+1 Acima</span>
-                    </button>
-                    <button id="bs-btn-step-backward" class="bs-layer-btn" title="Recuar uma posição">
-                      <span>-1 Abaixo</span>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Ações Rápidas (Duplicar e Deletar) -->
-                <div class="bs-field-group bs-actions-row">
-                  <button id="bs-btn-duplicate" class="bs-btn-secondary" title="Duplicar peça (Ctrl+D)">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
-                    <span>Duplicar</span>
-                  </button>
-
-                  <button id="bs-btn-delete" class="bs-btn-danger" title="Excluir balão (Del)">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
-                    <span>Excluir</span>
-                  </button>
-                </div>
+                `).join('')}
               </div>
 
-              <!-- Estado Vazio (Nenhum balão selecionado) -->
-              <div id="bs-inspector-empty" class="bs-inspector-empty">
-                <p>Clique em qualquer balão no canvas para personalizar cor, tamanho, acabamento e camada.</p>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid #E6E1DA">
+                <span style="font-size:12px;font-weight:600;color:var(--text-muted)">Cor personalizada (Hex):</span>
+                <input type="color" id="bs-custom-color-input" style="width:40px;height:34px;border:none;cursor:pointer;background:transparent">
               </div>
             </div>
-          </aside>
+          </div>
         </div>
 
-        <!-- Modal Popover de Lista de Compras / Contador -->
-        <div id="bs-shopping-modal" class="bs-shopping-modal" style="display:none">
-          <div class="bs-shopping-card">
-            <div class="bs-shopping-header">
-              <h3>Lista de Balões & Material</h3>
-              <button id="bs-btn-close-shopping" class="bs-btn-icon">✕</button>
+        <!-- Gaveta: Lista de Materiais e WhatsApp -->
+        <div id="bs-shopping-modal" class="bs-sheet-dim" style="display:none">
+          <div class="bs-bottom-sheet">
+            <div class="bs-sheet-grabber"></div>
+            <div class="bs-sheet-header">
+              <h3 class="bs-sheet-title">Lista de Balões & Material</h3>
+              <button id="bs-btn-close-shopping" class="bs-sheet-close">✕</button>
             </div>
-            <div class="bs-shopping-body" id="bs-shopping-content">
-              <!-- Conteúdo gerado dinamicamente -->
+            <div class="bs-sheet-body">
+              <div class="bs-shopping-summary-cards">
+                <div class="bs-stat-box">
+                  <span id="bs-stat-total-balloons" class="bs-stat-num">0</span>
+                  <span class="bs-stat-desc">Balões c/ reserva</span>
+                </div>
+                <div class="bs-stat-box">
+                  <span id="bs-stat-meters-frame" class="bs-stat-num">~2,5 m</span>
+                  <span class="bs-stat-desc">Fita / Estrutura</span>
+                </div>
+                <div class="bs-stat-box">
+                  <span id="bs-stat-estimated-time" class="bs-stat-num">~1h30</span>
+                  <span class="bs-stat-desc">Montagem aprox.</span>
+                </div>
+              </div>
+
+              <div class="bs-toggle-row">
+                <span>Somar 10% de reserva (estouros)</span>
+                <label class="bs-switch">
+                  <input type="checkbox" id="bs-toggle-spare-checkbox" checked>
+                  <span class="bs-slider-round"></span>
+                </label>
+              </div>
+
+              <div class="bs-materials-list" id="bs-materials-list-container">
+                <!-- Linhas por cor geradas dinamicamente -->
+              </div>
+
+              <div style="display:flex;gap:8px;margin-top:10px">
+                <button id="bs-btn-copy-shopping-text" class="bs-btn-conclude-saveonly" style="flex:1">
+                  📋 Copiar Lista
+                </button>
+                <button id="bs-btn-share-whatsapp" class="bs-btn-whatsapp" style="flex:2;margin-top:0">
+                  <span>Enviar no WhatsApp</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gaveta: Concluir / Salvar e Inserir no Cenário -->
+        <div id="bs-conclude-modal" class="bs-sheet-dim" style="display:none">
+          <div class="bs-bottom-sheet">
+            <div class="bs-sheet-grabber"></div>
+            <div class="bs-sheet-header">
+              <h3 class="bs-sheet-title">Ficou Lindo ✨</h3>
+              <button id="bs-btn-close-conclude" class="bs-sheet-close">✕</button>
+            </div>
+            <div class="bs-sheet-body">
+              <div class="bs-conclude-preview-card" id="bs-conclude-preview-box">
+                <!-- Miniatura SVG inserida dinamicamente -->
+              </div>
+
+              <div class="bs-input-field-group">
+                <label class="bs-input-label">Nome do Arranjo:</label>
+                <input type="text" id="bs-input-arrangement-name" class="bs-input-text" value="Arco Orgânico em L">
+              </div>
+
+              <button id="bs-btn-confirm-insert-scene" class="bs-btn-conclude-insert">
+                Colocar no Cenário
+              </button>
+              <button id="bs-btn-confirm-save-only" class="bs-btn-conclude-saveonly">
+                Só Salvar em Meus Elementos
+              </button>
+
+              <span id="bs-link-view-shopping" class="bs-conclude-materials-link">
+                🎈 Ver Lista de Materiais (<span id="bs-link-count">0</span> balões)
+              </span>
             </div>
           </div>
         </div>
@@ -460,159 +426,165 @@ export class BalloonStudioModal {
     this.setupEvents();
   }
 
-  // Vincula todos os eventos de clique, teclado e arraste
+  // Configura todos os eventos de UI e interação
   private setupEvents(): void {
     if (!this.overlayEl) return;
 
-    // Fechar / Voltar
-    document.getElementById('bs-btn-back')?.addEventListener('click', () => this.close());
+    // 1. Ações da Galeria Inicial
+    document.getElementById('bs-btn-close-gallery')?.addEventListener('click', () => this.close());
 
-    // Seletor de Modelo Pronto
-    const selectTemplate = document.getElementById('bs-select-template') as HTMLSelectElement | null;
-    selectTemplate?.addEventListener('change', (e) => {
-      const val = (e.target as HTMLSelectElement).value;
-      if (val === 'custom') {
-        this.pieces = [];
-        this.saveHistory();
-        this.renderCanvas();
-      } else {
-        this.loadTemplate(val);
-      }
+    // Card de Começar do Zero (Em Primeiro Lugar)
+    document.getElementById('bs-card-start-zero')?.addEventListener('click', () => {
+      this.startFromScratch();
     });
 
-    // Seletor de Gabarito de Fundo
-    this.overlayEl.querySelectorAll('.bs-ghost-btn').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        this.overlayEl?.querySelectorAll('.bs-ghost-btn').forEach((b) => b.classList.remove('active'));
+    // Cards dos 10 Modelos na Galeria
+    this.overlayEl.querySelectorAll('.bs-template-card').forEach((card) => {
+      card.addEventListener('click', (e) => {
         const target = e.currentTarget as HTMLElement;
-        target.classList.add('active');
-        this.currentGhostGuide = (target.dataset.guide as any) || 'none';
-        this.renderGhostGuide();
-      });
-    });
-
-    // Popover Lista de Compras
-    document.getElementById('bs-btn-counter')?.addEventListener('click', () => {
-      this.toggleShoppingModal(true);
-    });
-    document.getElementById('bs-btn-close-shopping')?.addEventListener('click', () => {
-      this.toggleShoppingModal(false);
-    });
-
-    // Desfazer e Refazer
-    document.getElementById('bs-btn-undo')?.addEventListener('click', () => this.undo());
-    document.getElementById('bs-btn-redo')?.addEventListener('click', () => this.redo());
-
-    // Cores Vinculadas (Slots A, B, C, D)
-    ['A', 'B', 'C', 'D'].forEach((slot) => {
-      const input = document.getElementById(`bs-slot-color-${slot}`) as HTMLInputElement | null;
-      input?.addEventListener('input', (e) => {
-        const col = (e.target as HTMLInputElement).value;
-        this.updateSlotColor(slot as BalloonSlot, col);
-      });
-    });
-
-    // Paletas Prontas
-    this.overlayEl.querySelectorAll('.bs-palette-chip').forEach((chip) => {
-      chip.addEventListener('click', (e) => {
-        const id = (e.currentTarget as HTMLElement).dataset.preset;
-        const preset = STUDIO_PALETTE_PRESETS.find((p) => p.id === id);
-        if (preset) {
-          this.applyPalettePreset(preset.palette);
+        const id = target.dataset.templateId;
+        if (id) {
+          this.loadTemplate(id);
+          this.setScreen('editor');
         }
       });
     });
 
-    // Seletores da Ferramenta de Inserção
-    this.overlayEl.querySelectorAll('.bs-size-btn').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        this.overlayEl?.querySelectorAll('.bs-size-btn').forEach((b) => b.classList.remove('active'));
+    // 2. Ações do Topo do Editor
+    document.getElementById('bs-btn-back-to-gallery')?.addEventListener('click', () => {
+      this.setScreen('gallery');
+    });
+
+    document.getElementById('bs-editor-title-container')?.addEventListener('click', () => {
+      const novo = prompt('Nome do arranjo:', this.arrangementTitle);
+      if (novo && novo.trim()) {
+        this.arrangementTitle = novo.trim();
+        const el = document.getElementById('bs-editor-current-title');
+        if (el) el.textContent = this.arrangementTitle;
+      }
+    });
+
+    document.getElementById('bs-btn-editor-undo')?.addEventListener('click', () => this.undo());
+    document.getElementById('bs-btn-editor-redo')?.addEventListener('click', () => this.redo());
+
+    document.getElementById('bs-btn-conclude-flow')?.addEventListener('click', () => {
+      this.openConcludeModal();
+    });
+
+    // 3. Chips do Canvas
+    document.getElementById('bs-chip-mirror')?.addEventListener('click', () => {
+      this.mirrorArrangement();
+    });
+
+    document.getElementById('bs-btn-reset-view')?.addEventListener('click', () => {
+      this.resetViewportZoom();
+    });
+
+    document.getElementById('bs-chip-shopping')?.addEventListener('click', () => {
+      this.openShoppingModal();
+    });
+
+    // 4. Pílula Flutuante do Balão
+    document.getElementById('bs-pill-color-btn')?.addEventListener('click', () => {
+      // Alterna entre Slot A, B, C, D para o balão selecionado
+      const slots: BalloonSlot[] = ['A', 'B', 'C', 'D'];
+      const currentSlot = this.getActiveSelectedPiece()?.slot || 'A';
+      const nextIdx = (slots.indexOf(currentSlot) + 1) % slots.length;
+      this.setSelectedPieceSlot(slots[nextIdx]);
+    });
+
+    document.getElementById('bs-pill-size-btn')?.addEventListener('click', () => {
+      // Cicla entre tamanhos 5", 10", 12", 18", 24"
+      const sizes: BalloonSizeInches[] = [5, 10, 12, 18, 24];
+      const p = this.getActiveSelectedPiece();
+      const currentSize = p?.sizeInches || 12;
+      const nextIdx = (sizes.indexOf(currentSize) + 1) % sizes.length;
+      this.setSelectedPieceSize(sizes[nextIdx]);
+    });
+
+    document.getElementById('bs-pill-dup-btn')?.addEventListener('click', () => {
+      this.duplicateSelected();
+    });
+
+    document.getElementById('bs-pill-del-btn')?.addEventListener('click', () => {
+      this.deleteSelected();
+    });
+
+    // 5. Botão de Paletas Prontas na Faixa
+    document.getElementById('bs-btn-open-palettes-sheet')?.addEventListener('click', () => {
+      this.setBottomTab('cores');
+    });
+
+    // 6. Dock de Abas Inferiores
+    this.overlayEl.querySelectorAll('.bs-dock-tab').forEach((tabBtn) => {
+      tabBtn.addEventListener('click', (e) => {
+        const btn = e.currentTarget as HTMLElement;
+        const tab = btn.dataset.tab as 'forma' | 'cores' | 'retoques';
+        if (tab) this.setBottomTab(tab);
+      });
+    });
+
+    // 7. Gavetas Modais (Fechar e Ações)
+    document.getElementById('bs-btn-close-color-sheet')?.addEventListener('click', () => this.toggleSheet('bs-color-sheet', false));
+    document.getElementById('bs-btn-close-shopping')?.addEventListener('click', () => this.toggleSheet('bs-shopping-modal', false));
+    document.getElementById('bs-btn-close-conclude')?.addEventListener('click', () => this.toggleSheet('bs-conclude-modal', false));
+
+    document.getElementById('bs-toggle-spare-checkbox')?.addEventListener('change', (e) => {
+      this.includeSpareBalloons = (e.target as HTMLInputElement).checked;
+      this.renderShoppingContent();
+    });
+
+    document.getElementById('bs-btn-copy-shopping-text')?.addEventListener('click', () => this.copyShoppingListText());
+    document.getElementById('bs-btn-share-whatsapp')?.addEventListener('click', () => this.shareOnWhatsApp());
+
+    document.getElementById('bs-btn-confirm-insert-scene')?.addEventListener('click', () => this.concludeSave(true));
+    document.getElementById('bs-btn-confirm-save-only')?.addEventListener('click', () => this.concludeSave(false));
+    document.getElementById('bs-link-view-shopping')?.addEventListener('click', () => {
+      this.toggleSheet('bs-conclude-modal', false);
+      this.openShoppingModal();
+    });
+
+    // Seletor de Acabamento na Gaveta de Cor
+    this.overlayEl.querySelectorAll('.bs-finish-btn-chip').forEach((chip) => {
+      chip.addEventListener('click', (e) => {
         const target = e.currentTarget as HTMLElement;
+        this.overlayEl?.querySelectorAll('.bs-finish-btn-chip').forEach((c) => c.classList.remove('active'));
         target.classList.add('active');
-        this.currentToolSize = Number(target.dataset.size) as BalloonSizeInches;
+        const fin = target.dataset.finish as BalloonFinish;
+        if (fin) this.updateSlotFinish(this.editingColorSlot, fin);
       });
     });
 
-    this.overlayEl.querySelectorAll('.bs-finish-btn').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        this.overlayEl?.querySelectorAll('.bs-finish-btn').forEach((b) => b.classList.remove('active'));
+    // Seletor de Cores da Moda na Gaveta de Cor
+    this.overlayEl.querySelectorAll('.bs-color-tile').forEach((tile) => {
+      tile.addEventListener('click', (e) => {
         const target = e.currentTarget as HTMLElement;
-        target.classList.add('active');
-        this.currentToolFinish = target.dataset.finish as BalloonFinish;
+        const hex = target.dataset.hex;
+        const name = target.dataset.name;
+        if (hex && name) {
+          this.updateSlotColorAndName(this.editingColorSlot, hex, name);
+          this.toggleSheet('bs-color-sheet', false);
+        }
       });
     });
 
-    this.overlayEl.querySelectorAll('.bs-slot-radio-btn').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        this.overlayEl?.querySelectorAll('.bs-slot-radio-btn').forEach((b) => b.classList.remove('active'));
-        const target = e.currentTarget as HTMLElement;
-        target.classList.add('active');
-        this.currentToolSlot = target.dataset.slot as BalloonSlot;
-      });
+    const customColorInput = document.getElementById('bs-custom-color-input') as HTMLInputElement | null;
+    customColorInput?.addEventListener('input', (e) => {
+      const hex = (e.target as HTMLInputElement).value;
+      if (hex) this.updateSlotColorAndName(this.editingColorSlot, hex, 'Cor Customizada');
     });
 
-    // Ações de Adição
-    document.getElementById('bs-btn-add-single')?.addEventListener('click', () => this.addSingleBalloon());
-    document.getElementById('bs-btn-add-quad')?.addEventListener('click', () => this.addClusterQuad());
-    document.getElementById('bs-btn-add-trio')?.addEventListener('click', () => this.addCreviceTrio());
+    // 8. Eventos de Canvas: Pinch-to-zoom com multi-touch guard e arrasto de balões
+    this.setupCanvasPointerGestures();
 
-    // Ações do Inspetor (Camadas, Duplicar, Deletar)
-    document.getElementById('bs-btn-bring-front')?.addEventListener('click', () => this.changeZIndex('front'));
-    document.getElementById('bs-btn-send-back')?.addEventListener('click', () => this.changeZIndex('back'));
-    document.getElementById('bs-btn-step-forward')?.addEventListener('click', () => this.changeZIndex('forward'));
-    document.getElementById('bs-btn-step-backward')?.addEventListener('click', () => this.changeZIndex('backward'));
-    document.getElementById('bs-btn-duplicate')?.addEventListener('click', () => this.duplicateSelected());
-    document.getElementById('bs-btn-delete')?.addEventListener('click', () => this.deleteSelected());
-
-    // Ações do Inspetor (Mudar propriedades da peça selecionada)
-    this.overlayEl.querySelectorAll('.bs-insp-slot-btn').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const slot = (e.currentTarget as HTMLElement).dataset.slot as BalloonSlot;
-        this.setSelectedPieceSlot(slot);
-      });
-    });
-
-    this.overlayEl.querySelectorAll('.bs-insp-size-btn').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const size = Number((e.currentTarget as HTMLElement).dataset.size) as BalloonSizeInches;
-        this.setSelectedPieceSize(size);
-      });
-    });
-
-    this.overlayEl.querySelectorAll('.bs-insp-fin-btn').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const fin = (e.currentTarget as HTMLElement).dataset.finish as BalloonFinish;
-        this.setSelectedPieceFinish(fin);
-      });
-    });
-
-    // Salvamento
-    document.getElementById('bs-btn-save-element')?.addEventListener('click', () => this.saveToCustomElements(false));
-    document.getElementById('bs-btn-insert-scene')?.addEventListener('click', () => this.saveToCustomElements(true));
-
-    // Abas Mobile (< 900px)
-    this.overlayEl.querySelectorAll('.bs-mobile-tab').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const tab = (e.currentTarget as HTMLElement).dataset.tab as 'colors' | 'add' | 'inspector';
-        if (tab) this.setMobileTab(tab);
-      });
-    });
-
-    // Eventos do Canvas Interativo (Mouse & Touch via PointerEvents)
-    this.setupCanvasInteraction();
-
-    // Atalhos de Teclado no Estúdio
+    // 9. Atalhos de teclado no estúdio
     window.addEventListener('keydown', (e) => {
-      if (!this.isOpen()) return;
-
+      if (!this.isOpen() || this.currentScreen !== 'editor') return;
       if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedPieceIds.size > 0) {
         if ((e.target as HTMLElement).tagName !== 'INPUT') {
           e.preventDefault();
           this.deleteSelected();
         }
-      } else if (e.ctrlKey && e.key.toLowerCase() === 'd') {
-        e.preventDefault();
-        this.duplicateSelected();
       } else if (e.ctrlKey && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         this.undo();
@@ -625,57 +597,194 @@ export class BalloonStudioModal {
     });
   }
 
-  // Alterna a aba ativa no layout responsivo mobile
-  public setMobileTab(tab: 'colors' | 'add' | 'inspector'): void {
-    this.activeMobileTab = tab;
-    const body = this.overlayEl?.querySelector('.bs-body') as HTMLElement | null;
-    if (body) {
-      body.setAttribute('data-mobile-tab', tab);
+  // Alterna entre tela inicial (galeria) e editor
+  private setScreen(screen: 'gallery' | 'editor'): void {
+    this.currentScreen = screen;
+    const galleryScreen = document.getElementById('bs-gallery-screen');
+    const editorScreen = document.getElementById('bs-editor-screen');
+    if (galleryScreen) galleryScreen.style.display = screen === 'gallery' ? 'flex' : 'none';
+    if (editorScreen) editorScreen.style.display = screen === 'editor' ? 'flex' : 'none';
+
+    if (screen === 'editor') {
+      this.renderCanvas();
+      this.syncPaletteSwatches();
+      this.renderTabActivePanel();
     }
-    this.overlayEl?.querySelectorAll('.bs-mobile-tab').forEach((b) => {
-      const btn = b as HTMLElement;
-      btn.classList.toggle('active', btn.dataset.tab === tab);
-    });
   }
 
-  // Interação direta com os balões no canvas (Arrasto e Seleção com suporte a Touch & Mouse via PointerEvents)
-  private setupCanvasInteraction(): void {
+  // ----------------------------------------------------------------------
+  // SISTEMA DE ZOOM POR PINÇA E GESTOS NO CANVAS
+  // ----------------------------------------------------------------------
+
+  // Calcula viewBox base estável baseado na envoltória inicial do modelo
+  private computeBaseViewBox(): void {
+    if (this.pieces.length === 0) {
+      this.baseViewBox = { x: 0, y: 0, width: 500, height: 500 };
+      this.zoomLevel = 1.0;
+      this.panOffset = { x: 0, y: 0 };
+      this.applyViewport();
+      return;
+    }
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const p of this.pieces) {
+      const r = BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28;
+      if (p.x - r < minX) minX = p.x - r;
+      if (p.x + r > maxX) maxX = p.x + r;
+      if (p.y - r < minY) minY = p.y - r;
+      if (p.y + r > maxY) maxY = p.y + r;
+    }
+
+    const pad = 60;
+    const w = Math.max(300, (maxX - minX) + pad * 2);
+    const h = Math.max(300, (maxY - minY) + pad * 2);
+    const size = Math.max(w, h);
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+
+    this.baseViewBox = {
+      x: Math.round(cx - size / 2),
+      y: Math.round(cy - size / 2),
+      width: Math.round(size),
+      height: Math.round(size)
+    };
+
+    this.zoomLevel = 1.0;
+    this.panOffset = { x: 0, y: 0 };
+    this.applyViewport();
+  }
+
+  // Aplica o viewBox calculado ao SVG (NUNCA altera com o simples arrasto de balões)
+  private applyViewport(): void {
+    if (!this.canvasSvgEl) return;
+    const w = this.baseViewBox.width / this.zoomLevel;
+    const h = this.baseViewBox.height / this.zoomLevel;
+    const cx = this.baseViewBox.x + this.baseViewBox.width / 2 + this.panOffset.x;
+    const cy = this.baseViewBox.y + this.baseViewBox.height / 2 + this.panOffset.y;
+
+    const vx = Math.round(cx - w / 2);
+    const vy = Math.round(cy - h / 2);
+    this.canvasSvgEl.setAttribute('viewBox', `${vx} ${vy} ${Math.round(w)} ${Math.round(h)}`);
+
+    // Atualiza chip discreto de reset de zoom
+    const resetBtn = document.getElementById('bs-btn-reset-view');
+    if (resetBtn) {
+      const isDefault = Math.abs(this.zoomLevel - 1) < 0.05 && Math.abs(this.panOffset.x) < 5 && Math.abs(this.panOffset.y) < 5;
+      resetBtn.style.display = isDefault ? 'none' : 'inline-flex';
+      const badge = document.getElementById('bs-zoom-level-badge');
+      if (badge) badge.textContent = `${Math.round(this.zoomLevel * 100)}%`;
+    }
+
+    this.updateBalloonPillPosition();
+  }
+
+  public resetViewportZoom(): void {
+    this.zoomLevel = 1.0;
+    this.panOffset = { x: 0, y: 0 };
+    this.applyViewport();
+  }
+
+  // Configuração dos ponteiros de toque no Canvas (Multi-Touch Guard + Pinça + Ferramentas)
+  private setupCanvasPointerGestures(): void {
     const canvas = this.canvasSvgEl;
     if (!canvas) return;
 
     canvas.addEventListener('pointerdown', (e: PointerEvent) => {
-      // Bloqueia clique secundário do mouse
       if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+      this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      // DOIS DEDOS: CANCELA IMEDIATAMENTE QUALQUER ARRASTO DE BALÃO!
+      if (this.activePointers.size >= 2) {
+        if (this.isDragging) {
+          this.isDragging = false;
+          this.dragPointerId = null;
+          // Reverte os balões para a posição original anterior ao toque acidental
+          this.selectedPieceIds.forEach((id) => {
+            const init = this.dragPieceInitialPositions.get(id);
+            const p = this.pieces.find((x) => x.id === id);
+            if (init && p) {
+              p.x = init.x;
+              p.y = init.y;
+            }
+          });
+          this.renderCanvas(false);
+        }
+        this.hideBalloonPill();
+
+        // Inicia pinça de zoom
+        const pts = Array.from(this.activePointers.values());
+        this.isPinching = true;
+        this.pinchStartDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+        this.pinchStartZoom = this.zoomLevel;
+        this.pinchStartPan = { ...this.panOffset };
+        this.pinchStartMidpoint = {
+          x: (pts[0].x + pts[1].x) / 2,
+          y: (pts[0].y + pts[1].y) / 2
+        };
+        return;
+      }
+
+      // Se ainda estiver no cooldown pós-pinça, ignora início de arrasto
+      if (Date.now() < this.multiTouchCooldown) return;
 
       const target = e.target as SVGElement;
       const pieceGroup = target.closest('.balloon-piece') as SVGElement | null;
 
+      // Execução conforme a ferramenta ativa
+      if (this.activeTouchTool === 'eraser') {
+        if (pieceGroup) {
+          const pieceId = pieceGroup.id.replace('piece-', '');
+          this.deletePieceById(pieceId);
+        }
+        return;
+      }
+
+      if (this.activeTouchTool === 'base-balloon') {
+        const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
+        this.insertBaseBalloonAt(svgCoords.x, svgCoords.y);
+        return;
+      }
+
+      if (this.activeTouchTool === 'light-point') {
+        const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
+        this.insertPointOfLightAt(svgCoords.x, svgCoords.y);
+        return;
+      }
+
+      if (this.activeTouchTool === 'big-balloon') {
+        const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
+        this.insertBigBalloonAt(svgCoords.x, svgCoords.y);
+        return;
+      }
+
+      if (this.activeTouchTool === 'cluster-quad') {
+        const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
+        this.insertClusterAt(svgCoords.x, svgCoords.y);
+        return;
+      }
+
+      // Se a tela estiver totalmente vazia e o usuário tocar em qualquer ponto
+      if (this.pieces.length === 0 && !pieceGroup) {
+        const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
+        this.insertClusterAt(svgCoords.x, svgCoords.y);
+        return;
+      }
+
+      // Ferramenta 'adjust' (padrão)
       if (pieceGroup) {
         const pieceId = pieceGroup.id.replace('piece-', '');
-        if (!e.shiftKey && !this.selectedPieceIds.has(pieceId)) {
-          this.selectedPieceIds.clear();
-        }
+        this.selectedPieceIds.clear();
         this.selectedPieceIds.add(pieceId);
-        this.updateInspectorUI();
-        this.renderSelectionOutlines();
-        this.setMobileTab('inspector'); // No mobile: auto-muda para a aba Inspetor
+        this.renderSelectionHighlights();
+        this.showBalloonPill();
 
-        // Inicia arrasto com coordenadas SVG fiéis via matriz CTM
         this.isDragging = true;
         this.dragPointerId = e.pointerId;
 
-        const ctm = canvas.getScreenCTM();
-        if (ctm) {
-          const pt = canvas.createSVGPoint();
-          pt.x = e.clientX;
-          pt.y = e.clientY;
-          const svgPt = pt.matrixTransform(ctm.inverse());
-          this.dragStartSvgX = svgPt.x;
-          this.dragStartSvgY = svgPt.y;
-        } else {
-          this.dragStartSvgX = e.clientX;
-          this.dragStartSvgY = e.clientY;
-        }
+        const svgPt = this.screenToSvgCoordinates(e.clientX, e.clientY);
+        this.dragStartSvgX = svgPt.x;
+        this.dragStartSvgY = svgPt.y;
 
         this.dragPieceInitialPositions.clear();
         this.selectedPieceIds.forEach((id) => {
@@ -687,47 +796,70 @@ export class BalloonStudioModal {
           canvas.setPointerCapture(e.pointerId);
         } catch (_) {}
       } else {
-        // Clicou no fundo do canvas: desseleciona
+        // Clicou no fundo do canvas
         this.selectedPieceIds.clear();
-        this.updateInspectorUI();
-        this.renderSelectionOutlines();
+        this.renderSelectionHighlights();
+        this.hideBalloonPill();
       }
     });
 
     canvas.addEventListener('pointermove', (e: PointerEvent) => {
-      if (!this.isDragging || (this.dragPointerId !== null && e.pointerId !== this.dragPointerId)) return;
-
-      let dx = 0;
-      let dy = 0;
-
-      const ctm = canvas.getScreenCTM();
-      if (ctm) {
-        const pt = canvas.createSVGPoint();
-        pt.x = e.clientX;
-        pt.y = e.clientY;
-        const svgPt = pt.matrixTransform(ctm.inverse());
-        dx = svgPt.x - this.dragStartSvgX;
-        dy = svgPt.y - this.dragStartSvgY;
-      } else {
-        dx = e.clientX - this.dragStartSvgX;
-        dy = e.clientY - this.dragStartSvgY;
+      if (this.activePointers.has(e.pointerId)) {
+        this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       }
 
-      // Atualiza coordenadas dos balões selecionados
-      this.selectedPieceIds.forEach((id) => {
-        const init = this.dragPieceInitialPositions.get(id);
-        const p = this.pieces.find((x) => x.id === id);
-        if (init && p) {
-          p.x = Math.round(init.x + dx);
-          p.y = Math.round(init.y + dy);
-        }
-      });
+      // Gesto de pinça com 2 dedos
+      if (this.activePointers.size >= 2 && this.isPinching) {
+        const pts = Array.from(this.activePointers.values());
+        const currentDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+        const scale = currentDist / this.pinchStartDist;
+        this.zoomLevel = Math.max(0.5, Math.min(3.5, this.pinchStartZoom * scale));
 
-      this.renderCanvas(false); // Atualização rápida sem salvar histórico a cada pixel
+        const currentMid = {
+          x: (pts[0].x + pts[1].x) / 2,
+          y: (pts[0].y + pts[1].y) / 2
+        };
+        const dx = currentMid.x - this.pinchStartMidpoint.x;
+        const dy = currentMid.y - this.pinchStartMidpoint.y;
+        const svgScale = (this.baseViewBox.width / this.zoomLevel) / (canvas.clientWidth || 400);
+
+        this.panOffset.x = this.pinchStartPan.x - dx * svgScale;
+        this.panOffset.y = this.pinchStartPan.y - dy * svgScale;
+
+        this.applyViewport();
+        return;
+      }
+
+      // Arraste de peça com 1 único dedo
+      if (this.isDragging && e.pointerId === this.dragPointerId && this.activePointers.size === 1) {
+        const svgPt = this.screenToSvgCoordinates(e.clientX, e.clientY);
+        const dx = svgPt.x - this.dragStartSvgX;
+        const dy = svgPt.y - this.dragStartSvgY;
+
+        this.selectedPieceIds.forEach((id) => {
+          const init = this.dragPieceInitialPositions.get(id);
+          const p = this.pieces.find((x) => x.id === id);
+          if (init && p) {
+            p.x = Math.round(init.x + dx);
+            p.y = Math.round(init.y + dy);
+          }
+        });
+
+        this.renderCanvas(false);
+        this.updateBalloonPillPosition();
+      }
     });
 
     const onPointerEnd = (e: PointerEvent) => {
-      if (this.isDragging && (this.dragPointerId === null || e.pointerId === this.dragPointerId)) {
+      this.activePointers.delete(e.pointerId);
+
+      if (this.activePointers.size < 2 && this.isPinching) {
+        this.isPinching = false;
+        // Cooldown de 240ms pós-pinça
+        this.multiTouchCooldown = Date.now() + 240;
+      }
+
+      if (this.isDragging && e.pointerId === this.dragPointerId) {
         this.isDragging = false;
         this.dragPointerId = null;
         try {
@@ -736,367 +868,523 @@ export class BalloonStudioModal {
           }
         } catch (_) {}
         this.saveHistory();
-        this.renderCanvas();
+        this.renderCanvas(true);
+        this.updateBalloonPillPosition();
       }
     };
 
     canvas.addEventListener('pointerup', onPointerEnd);
     canvas.addEventListener('pointercancel', onPointerEnd);
+
+    // Zoom por scroll de mouse no desktop
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 1.12 : 0.88;
+      this.zoomLevel = Math.max(0.5, Math.min(3.5, this.zoomLevel * delta));
+      this.applyViewport();
+    }, { passive: false });
   }
 
-  // Abre o Estúdio com um template pré-carregado
-  public open(
-    templateId = 'modelo-arco-l-luxo',
-    callbacks?: { onInsert?: (item: PresetItem) => void; onSaved?: (item: PresetItem) => void }
-  ): void {
-    this.createDomStructure();
-    if (!this.overlayEl) return;
-
-    this.onInsertCallback = callbacks?.onInsert;
-    this.onSavedCallback = callbacks?.onSaved;
-
-    this.overlayEl.style.display = 'flex';
-    document.body.classList.add('bs-studio-open');
-
-    // Carrega o modelo inicial
-    this.loadTemplate(templateId);
-  }
-
-  public close(): void {
-    if (this.overlayEl) {
-      this.overlayEl.style.display = 'none';
-      document.body.classList.remove('bs-studio-open');
+  // Converte coordenadas da tela para o espaço SVG real
+  private screenToSvgCoordinates(clientX: number, clientY: number): { x: number; y: number } {
+    if (!this.canvasSvgEl) return { x: 0, y: 0 };
+    const ctm = this.canvasSvgEl.getScreenCTM();
+    if (ctm) {
+      const pt = this.canvasSvgEl.createSVGPoint();
+      pt.x = clientX;
+      pt.y = clientY;
+      const svgPt = pt.matrixTransform(ctm.inverse());
+      return { x: Math.round(svgPt.x), y: Math.round(svgPt.y) };
     }
+    return { x: clientX, y: clientY };
   }
 
-  public isOpen(): boolean {
-    return this.overlayEl?.style.display === 'flex';
-  }
+  // ----------------------------------------------------------------------
+  // RENDERIZAÇÃO DO CANVAS
+  // ----------------------------------------------------------------------
 
-  // Carrega um dos 10 templates pré-definidos
-  public loadTemplate(templateId: string): void {
-    const tmpl = BALLOON_STUDIO_TEMPLATES.find((t) => t.id === templateId) || BALLOON_STUDIO_TEMPLATES[0];
-    this.selectedTemplateId = tmpl.id;
-
-    // Clona peças e paleta
-    this.pieces = JSON.parse(JSON.stringify(tmpl.pieces));
-    this.palette = JSON.parse(JSON.stringify(tmpl.palette));
-
-    // Atualiza controles na tela
-    this.syncPaletteSwatches();
-
-    const select = document.getElementById('bs-select-template') as HTMLSelectElement | null;
-    if (select) select.value = tmpl.id;
-
-    this.selectedPieceIds.clear();
-    this.history = [];
-    this.historyIndex = -1;
-    this.saveHistory();
-
-    this.renderCanvas();
-    this.renderGhostGuide();
-    this.updateInspectorUI();
-  }
-
-  // Atualiza as amostras de cores na barra lateral
-  private syncPaletteSwatches(): void {
-    ['A', 'B', 'C', 'D'].forEach((slot) => {
-      const col = (this.palette as any)[slot];
-      const dot = document.getElementById(`bs-slot-dot-${slot}`);
-      const input = document.getElementById(`bs-slot-color-${slot}`) as HTMLInputElement | null;
-      if (dot) dot.style.background = col;
-      if (input) input.value = col;
-    });
-  }
-
-  // Atualiza a cor de um slot vinculado (atualiza TODOS os balões vinculados imediatamente)
-  private updateSlotColor(slot: BalloonSlot, newColor: string): void {
-    (this.palette as any)[slot] = newColor;
-    const dot = document.getElementById(`bs-slot-dot-${slot}`);
-    if (dot) dot.style.background = newColor;
-
-    this.saveHistory();
-    this.renderCanvas();
-  }
-
-  // Aplica uma paleta completa pronta
-  private applyPalettePreset(palette: BalloonPaletteConfig): void {
-    this.palette = { ...palette };
-    this.syncPaletteSwatches();
-    this.saveHistory();
-    this.renderCanvas();
-  }
-
-  // Adiciona 1 balão no centro visual do arranjo
-  private addSingleBalloon(): void {
-    const center = this.getArrangementCenter();
-    const newPiece: BalloonPiece = {
-      id: 'p-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
-      x: center.x,
-      y: center.y,
-      sizeInches: this.currentToolSize,
-      slot: this.currentToolSlot,
-      finish: this.currentToolFinish
-    };
-
-    this.pieces.push(newPiece);
-    this.selectedPieceIds.clear();
-    this.selectedPieceIds.add(newPiece.id);
-
-    this.saveHistory();
-    this.renderCanvas();
-    this.updateInspectorUI();
-  }
-
-  // Adiciona um Cluster Quad profissional (4 balões interligados)
-  private addClusterQuad(): void {
-    const center = this.getArrangementCenter();
-    const d = 26; // Deslocamento dos 4 balões
-    const baseId = Date.now();
-
-    const quadPieces: BalloonPiece[] = [
-      {
-        id: `quad-${baseId}-1`,
-        x: center.x - d,
-        y: center.y - d,
-        sizeInches: this.currentToolSize,
-        slot: 'A',
-        finish: this.currentToolFinish
-      },
-      {
-        id: `quad-${baseId}-2`,
-        x: center.x + d,
-        y: center.y - d,
-        sizeInches: this.currentToolSize,
-        slot: 'B',
-        finish: this.currentToolFinish
-      },
-      {
-        id: `quad-${baseId}-3`,
-        x: center.x - d,
-        y: center.y + d,
-        sizeInches: this.currentToolSize,
-        slot: 'C',
-        finish: this.currentToolFinish
-      },
-      {
-        id: `quad-${baseId}-4`,
-        x: center.x + d,
-        y: center.y + d,
-        sizeInches: this.currentToolSize,
-        slot: 'D',
-        finish: this.currentToolFinish
-      }
-    ];
-
-    this.pieces.push(...quadPieces);
-    this.selectedPieceIds.clear();
-    quadPieces.forEach((p) => this.selectedPieceIds.add(p.id));
-
-    this.saveHistory();
-    this.renderCanvas();
-    this.updateInspectorUI();
-  }
-
-  // Adiciona um tufo de acabamento para fendas (3x mini balões de 5")
-  private addCreviceTrio(): void {
-    const center = this.getArrangementCenter();
-    const baseId = Date.now();
-
-    const trioPieces: BalloonPiece[] = [
-      {
-        id: `trio-${baseId}-1`,
-        x: center.x,
-        y: center.y - 10,
-        sizeInches: 5,
-        slot: 'A',
-        finish: 'satin'
-      },
-      {
-        id: `trio-${baseId}-2`,
-        x: center.x - 10,
-        y: center.y + 6,
-        sizeInches: 5,
-        slot: 'B',
-        finish: 'satin'
-      },
-      {
-        id: `trio-${baseId}-3`,
-        x: center.x + 10,
-        y: center.y + 6,
-        sizeInches: 5,
-        slot: 'C',
-        finish: 'chrome'
-      }
-    ];
-
-    this.pieces.push(...trioPieces);
-    this.selectedPieceIds.clear();
-    trioPieces.forEach((p) => this.selectedPieceIds.add(p.id));
-
-    this.saveHistory();
-    this.renderCanvas();
-    this.updateInspectorUI();
-  }
-
-  // Ponto central de apoio para novas adições
-  private getArrangementCenter(): { x: number; y: number } {
-    if (this.pieces.length === 0) return { x: 180, y: 180 };
-    let sx = 0, sy = 0;
-    this.pieces.forEach((p) => {
-      sx += p.x;
-      sy += p.y;
-    });
-    return {
-      x: Math.round(sx / this.pieces.length),
-      y: Math.round(sy / this.pieces.length)
-    };
-  }
-
-  // Renderiza todo o conteúdo do canvas SVG
-  private renderCanvas(updateStats = true): void {
+  private renderCanvas(updateDimensions = true): void {
     const balloonsLayer = document.getElementById('bs-balloons-layer');
     const defsLayer = document.getElementById('bs-svg-defs');
     if (!balloonsLayer || !defsLayer || !this.canvasSvgEl) return;
 
-    // Renderiza SVG
-    const { svg, widthCm, heightCm, viewBox, stats } = renderArrangementSvg(this.pieces, this.palette, {
+    // Renderiza o SVG com ordenação de profundidade física automática (24"/18" no fundo, 5" na frente)
+    const { svg, widthCm, heightCm, stats } = renderArrangementSvg(this.pieces, this.palette, {
       hasFloorShadow: true
     });
 
-    // Atualiza atributos do canvas
-    this.canvasSvgEl.setAttribute('viewBox', viewBox);
-
-    // Injeta defs e conteúdo
+    // Injeta defs e nós SVG
     const parser = new DOMParser();
     const doc = parser.parseFromString(svg, 'image/svg+xml');
 
     const newDefs = doc.querySelector('defs');
     if (newDefs) defsLayer.innerHTML = newDefs.innerHTML;
 
-    // Constrói nós dos balões
     const pieceElements = Array.from(doc.querySelectorAll('.balloon-piece'));
     balloonsLayer.innerHTML = '';
     pieceElements.forEach((el) => {
       balloonsLayer.appendChild(el);
     });
 
-    if (updateStats) {
-      // Atualiza badge de dimensões
-      const dimBadge = document.getElementById('bs-dimension-badge');
-      if (dimBadge) dimBadge.textContent = `${widthCm} cm × ${heightCm} cm`;
+    if (updateDimensions) {
+      const dimBadge = document.getElementById('bs-chip-dimension');
+      if (dimBadge) dimBadge.textContent = `${widthCm} × ${heightCm} cm`;
 
-      // Atualiza badge do contador
-      const counterLabel = document.getElementById('bs-counter-label');
-      if (counterLabel) counterLabel.textContent = `${stats.totalCount} balões`;
+      const countLabel = document.getElementById('bs-chip-count-label');
+      if (countLabel) countLabel.textContent = `${stats.totalCount} balões`;
 
-      this.renderShoppingContent(stats);
+      const emptyState = document.getElementById('bs-canvas-empty-state');
+      if (emptyState) emptyState.style.display = this.pieces.length === 0 ? 'flex' : 'none';
     }
 
-    this.renderSelectionOutlines();
+    this.renderSelectionHighlights();
   }
 
-  // Desenha os contornos de seleção nos balões ativos
-  private renderSelectionOutlines(): void {
-    const selLayer = document.getElementById('bs-selection-layer');
-    if (!selLayer) return;
-    selLayer.innerHTML = '';
+  // Desenha anel de destaque dourado sutil no balão selecionado
+  private renderSelectionHighlights(): void {
+    const layer = document.getElementById('bs-highlight-layer');
+    if (!layer) return;
 
+    if (this.selectedPieceIds.size === 0) {
+      layer.innerHTML = '';
+      return;
+    }
+
+    let h = '';
     this.selectedPieceIds.forEach((id) => {
       const p = this.pieces.find((x) => x.id === id);
       if (p) {
         const r = (BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28) + 3;
-        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        circle.setAttribute('cx', String(p.x));
-        circle.setAttribute('cy', String(p.y));
-        circle.setAttribute('r', String(r));
-        circle.setAttribute('fill', 'none');
-        circle.setAttribute('stroke', '#38bdf8');
-        circle.setAttribute('stroke-width', '2.5');
-        circle.setAttribute('stroke-dasharray', '5 3');
-        circle.setAttribute('opacity', '0.9');
-        selLayer.appendChild(circle);
+        h += `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="none" stroke="#B58938" stroke-width="2.5" stroke-dasharray="4 3" opacity="0.95"/>`;
       }
+    });
+    layer.innerHTML = h;
+  }
+
+  // ----------------------------------------------------------------------
+  // PÍLULA FLUTUANTE DO BALÃO SELECIONADO
+  // ----------------------------------------------------------------------
+
+  private getActiveSelectedPiece(): BalloonPiece | undefined {
+    if (this.selectedPieceIds.size === 0) return undefined;
+    const firstId = Array.from(this.selectedPieceIds)[0];
+    return this.pieces.find((p) => p.id === firstId);
+  }
+
+  private showBalloonPill(): void {
+    const pill = document.getElementById('bs-floating-balloon-pill');
+    const p = this.getActiveSelectedPiece();
+    if (!pill || !p) return;
+
+    const colorDot = document.getElementById('bs-pill-swatch-dot');
+    const colorName = document.getElementById('bs-pill-color-name');
+    const sizeText = document.getElementById('bs-pill-size-text');
+
+    const slotHex = (this.palette as any)[p.slot] || '#c97a8e';
+    const slotFriendlyName = this.palette.names?.[p.slot as 'A' | 'B' | 'C' | 'D'] || `Cor ${p.slot}`;
+
+    if (colorDot) colorDot.style.background = slotHex;
+    if (colorName) colorName.textContent = slotFriendlyName;
+    if (sizeText) sizeText.textContent = `${p.sizeInches}"`;
+
+    pill.style.display = 'flex';
+    this.updateBalloonPillPosition();
+  }
+
+  private hideBalloonPill(): void {
+    const pill = document.getElementById('bs-floating-balloon-pill');
+    if (pill) pill.style.display = 'none';
+  }
+
+  private updateBalloonPillPosition(): void {
+    const pill = document.getElementById('bs-floating-balloon-pill');
+    const p = this.getActiveSelectedPiece();
+    if (!pill || !p || !this.canvasSvgEl || pill.style.display === 'none') return;
+
+    const r = BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28;
+    const pt = this.canvasSvgEl.createSVGPoint();
+    pt.x = p.x;
+    pt.y = p.y - r - 8;
+
+    const ctm = this.canvasSvgEl.getScreenCTM();
+    if (ctm) {
+      const screenPt = pt.matrixTransform(ctm);
+      const containerRect = document.getElementById('bs-canvas-container')?.getBoundingClientRect();
+      if (containerRect) {
+        pill.style.left = `${screenPt.x - containerRect.left}px`;
+        pill.style.top = `${screenPt.y - containerRect.top}px`;
+      }
+    }
+  }
+
+  // ----------------------------------------------------------------------
+  // FAIXA DA PALETA (CORES DA FESTA COM NOMES REAIS E ACABAMENTOS)
+  // ----------------------------------------------------------------------
+
+  private syncPaletteSwatches(): void {
+    const container = document.getElementById('bs-swatches-container');
+    if (!container) return;
+
+    const slots: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D'];
+    container.innerHTML = slots.map((s) => {
+      const hex = (this.palette as any)[s] || '#ffffff';
+      const name = this.palette.names?.[s] || `Cor ${s}`;
+      const fin = this.palette.finishes?.[s] || 'satin';
+      const activeClass = this.activeColorSlot === s ? 'active' : '';
+
+      return `
+        <div class="bs-palette-swatch ${activeClass}" data-slot="${s}" title="Slot ${s} (${name})">
+          <span class="bs-swatch-circle" style="background:${hex}"></span>
+          <span class="bs-swatch-name">${name}</span>
+        </div>
+      `;
+    }).join('');
+
+    container.querySelectorAll('.bs-palette-swatch').forEach((sw) => {
+      sw.addEventListener('click', (e) => {
+        const slot = (e.currentTarget as HTMLElement).dataset.slot as BalloonSlot;
+        if (slot) {
+          this.activeColorSlot = slot;
+          this.openColorSheet(slot);
+          this.syncPaletteSwatches();
+        }
+      });
     });
   }
 
-  // Renderiza silhueta de gabarito fantasma semi-transparente no fundo
-  private renderGhostGuide(): void {
-    const layer = document.getElementById('bs-ghost-guide-layer');
-    if (!layer) return;
-    layer.innerHTML = '';
+  private openColorSheet(slot: BalloonSlot): void {
+    this.editingColorSlot = slot;
+    const titleEl = document.getElementById('bs-color-sheet-title');
+    const currentName = this.palette.names?.[slot as 'A' | 'B' | 'C' | 'D'] || `Slot ${slot}`;
+    if (titleEl) titleEl.textContent = `Editar ${currentName} (${slot})`;
 
-    if (this.currentGhostGuide === 'none') return;
+    const currentFin = this.palette.finishes?.[slot as 'A' | 'B' | 'C' | 'D'] || 'satin';
+    this.overlayEl?.querySelectorAll('.bs-finish-btn-chip').forEach((c) => {
+      c.classList.toggle('active', (c as HTMLElement).dataset.finish === currentFin);
+    });
 
-    let guideSvg = '';
-    if (this.currentGhostGuide === 'roman') {
-      // Painel Romano (Arco superior)
-      guideSvg = `
-        <path d="M 40 430 L 40 180 A 100 100 0 0 1 240 180 L 240 430" fill="none" stroke="#64748b" stroke-width="2.5" stroke-dasharray="6 4" opacity="0.45"/>
-        <text x="140" y="240" fill="#94a3b8" font-size="14" text-anchor="middle" opacity="0.6">Painel Romano (100x200cm)</text>
-      `;
-    } else if (this.currentGhostGuide === 'round') {
-      // Painel Redondo (150cm)
-      guideSvg = `
-        <circle cx="150" cy="180" r="130" fill="none" stroke="#64748b" stroke-width="2.5" stroke-dasharray="6 4" opacity="0.45"/>
-        <line x1="150" y1="310" x2="150" y2="430" stroke="#64748b" stroke-width="2.5" stroke-dasharray="6 4" opacity="0.45"/>
-        <text x="150" y="185" fill="#94a3b8" font-size="14" text-anchor="middle" opacity="0.6">Painel Redondo (150cm)</text>
-      `;
-    } else if (this.currentGhostGuide === 'table') {
-      // Mesa Tradicional
-      guideSvg = `
-        <rect x="50" y="260" width="220" height="150" rx="6" fill="none" stroke="#64748b" stroke-width="2.5" stroke-dasharray="6 4" opacity="0.45"/>
-        <text x="160" y="340" fill="#94a3b8" font-size="14" text-anchor="middle" opacity="0.6">Mesa de Bolo (150cm)</text>
-      `;
-    }
+    const customInput = document.getElementById('bs-custom-color-input') as HTMLInputElement | null;
+    if (customInput) customInput.value = (this.palette as any)[slot] || '#c97a8e';
 
-    layer.innerHTML = guideSvg;
+    this.toggleSheet('bs-color-sheet', true);
   }
 
-  // Atualiza painel do Inspetor lateral direito
-  private updateInspectorUI(): void {
-    const content = document.getElementById('bs-inspector-content');
-    const empty = document.getElementById('bs-inspector-empty');
-    const badge = document.getElementById('bs-selection-count-badge');
+  private updateSlotColorAndName(slot: BalloonSlot, hex: string, name: string): void {
+    (this.palette as any)[slot] = hex;
+    if (!this.palette.names) this.palette.names = { A: '', B: '', C: '', D: '' };
+    this.palette.names[slot as 'A' | 'B' | 'C' | 'D'] = name;
 
-    if (!content || !empty || !badge) return;
+    this.saveHistory();
+    this.renderCanvas();
+    this.syncPaletteSwatches();
+    this.showBalloonPill();
+  }
 
-    const count = this.selectedPieceIds.size;
-    const tabIndicator = document.getElementById('bs-tab-insp-indicator');
-    if (tabIndicator) tabIndicator.style.display = count > 0 ? 'inline-block' : 'none';
+  private updateSlotFinish(slot: BalloonSlot, finish: BalloonFinish): void {
+    if (!this.palette.finishes) this.palette.finishes = { A: 'satin', B: 'satin', C: 'chrome', D: 'matte' };
+    this.palette.finishes[slot as 'A' | 'B' | 'C' | 'D'] = finish;
 
-    if (count === 0) {
-      content.style.display = 'none';
-      empty.style.display = 'block';
-      badge.textContent = 'Nenhum selecionado';
-    } else {
-      content.style.display = 'block';
-      empty.style.display = 'none';
-      badge.textContent = count === 1 ? '1 balão selecionado' : `${count} balões selecionados`;
+    // Atualiza o acabamento de todas as peças pertencentes a esta família
+    this.pieces.forEach((p) => {
+      if (p.slot === slot) p.finish = finish;
+    });
 
-      // Se 1 balão estiver selecionado, sincroniza os botões ativos do inspetor
-      if (count === 1) {
-        const id = Array.from(this.selectedPieceIds)[0];
-        const piece = this.pieces.find((p) => p.id === id);
-        if (piece) {
-          // Slot
-          this.overlayEl?.querySelectorAll('.bs-insp-slot-btn').forEach((btn) => {
-            btn.classList.toggle('active', (btn as HTMLElement).dataset.slot === piece.slot);
-          });
-          // Tamanho
-          this.overlayEl?.querySelectorAll('.bs-insp-size-btn').forEach((btn) => {
-            btn.classList.toggle('active', Number((btn as HTMLElement).dataset.size) === piece.sizeInches);
-          });
-          // Acabamento
-          this.overlayEl?.querySelectorAll('.bs-insp-fin-btn').forEach((btn) => {
-            btn.classList.toggle('active', (btn as HTMLElement).dataset.finish === piece.finish);
-          });
-        }
+    this.saveHistory();
+    this.renderCanvas();
+    this.syncPaletteSwatches();
+  }
+
+  // ----------------------------------------------------------------------
+  // DOCK DE 3 ABAS: MODELOS & FORMA, CORES, RETOQUES
+  // ----------------------------------------------------------------------
+
+  private setBottomTab(tab: 'forma' | 'cores' | 'retoques'): void {
+    this.activeBottomTab = tab;
+    this.overlayEl?.querySelectorAll('.bs-dock-tab').forEach((b) => {
+      const btn = b as HTMLElement;
+      btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+    this.renderTabActivePanel();
+  }
+
+  private renderTabActivePanel(): void {
+    const panel = document.getElementById('bs-tab-active-panel');
+    if (!panel) return;
+
+    if (this.activeBottomTab === 'forma') {
+      panel.innerHTML = `
+        <div class="bs-panel-forma">
+          <div class="bs-label-row">
+            <span>Volume do Arranjo:</span>
+            <em>${this.currentVolumeLevel === 'enxuto' ? 'Enxuto' : (this.currentVolumeLevel === 'cheio' ? 'Super Cheio' : 'Padrão')}</em>
+          </div>
+          <div class="bs-segmented-control">
+            <button class="bs-seg-btn ${this.currentVolumeLevel === 'enxuto' ? 'active' : ''}" data-volume="enxuto">Enxuto</button>
+            <button class="bs-seg-btn ${this.currentVolumeLevel === 'padrao' ? 'active' : ''}" data-volume="padrao">Padrão</button>
+            <button class="bs-seg-btn ${this.currentVolumeLevel === 'cheio' ? 'active' : ''}" data-volume="cheio">Super Cheio</button>
+          </div>
+
+          <div class="bs-actions-forma-grid">
+            <button id="bs-btn-forma-mirror" class="bs-btn-action-forma">
+              <span>⇄ Inverter</span>
+            </button>
+            <button id="bs-btn-forma-variar" class="bs-btn-action-forma" title="Sorteia variações de cores e harmonia">
+              <span>🎲 Variar</span>
+            </button>
+            <button id="bs-btn-forma-trocar" class="bs-btn-action-forma">
+              <span>✦ Trocar Base</span>
+            </button>
+          </div>
+        </div>
+      `;
+
+      panel.querySelectorAll('.bs-seg-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const vol = (e.currentTarget as HTMLElement).dataset.volume as any;
+          if (vol) this.setVolumeLevel(vol);
+        });
+      });
+
+      document.getElementById('bs-btn-forma-mirror')?.addEventListener('click', () => this.mirrorArrangement());
+      document.getElementById('bs-btn-forma-variar')?.addEventListener('click', () => this.variateColorsAndSizes());
+      document.getElementById('bs-btn-forma-trocar')?.addEventListener('click', () => this.setScreen('gallery'));
+      return;
+    }
+
+    if (this.activeBottomTab === 'cores') {
+      panel.innerHTML = `
+        <div class="bs-panel-cores">
+          <div class="bs-label-row">
+            <span>Paletas da Festa:</span>
+            <em>Toque para aplicar</em>
+          </div>
+          <div class="bs-palettes-hscroll">
+            ${STUDIO_PALETTE_PRESETS.map((p) => `
+              <div class="bs-preset-card ${p.id === this.palette.name ? 'active' : ''}" data-preset-id="${p.id}">
+                <div class="bs-preset-dots">
+                  <i style="background:${p.palette.A}"></i>
+                  <i style="background:${p.palette.B}"></i>
+                  <i style="background:${p.palette.C}"></i>
+                  <i style="background:${p.palette.D}"></i>
+                </div>
+                <span>${p.name}</span>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="bs-label-row" style="margin-top:4px">
+            <span>Modo de Distribuição das Cores:</span>
+          </div>
+          <div class="bs-segmented-control">
+            <button class="bs-seg-btn ${this.currentDistributionMode === 'mesclado' ? 'active' : ''}" data-mode="mesclado">Mesclado</button>
+            <button class="bs-seg-btn ${this.currentDistributionMode === 'degrade' ? 'active' : ''}" data-mode="degrade">Degradê</button>
+            <button class="bs-seg-btn ${this.currentDistributionMode === 'blocos' ? 'active' : ''}" data-mode="blocos">Blocos</button>
+          </div>
+        </div>
+      `;
+
+      panel.querySelectorAll('.bs-preset-card').forEach((card) => {
+        card.addEventListener('click', (e) => {
+          const id = (e.currentTarget as HTMLElement).dataset.presetId;
+          const preset = STUDIO_PALETTE_PRESETS.find((p) => p.id === id);
+          if (preset) this.applyPalettePreset(preset.palette);
+        });
+      });
+
+      panel.querySelectorAll('.bs-seg-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const mode = (e.currentTarget as HTMLElement).dataset.mode as any;
+          if (mode) this.setDistributionMode(mode);
+        });
+      });
+      return;
+    }
+
+    if (this.activeBottomTab === 'retoques') {
+      panel.innerHTML = `
+        <div class="bs-panel-retoques">
+          <div class="bs-label-row">
+            <span>Ferramenta de Toque:</span>
+            <em>Toque direto no arco</em>
+          </div>
+          <div class="bs-tools-grid">
+            <div class="bs-tool-card ${this.activeTouchTool === 'adjust' ? 'active' : ''}" data-tool="adjust">
+              <span class="bs-tool-card-icon">👆</span>
+              <span>Ajustar</span>
+            </div>
+            <div class="bs-tool-card ${this.activeTouchTool === 'base-balloon' ? 'active' : ''}" data-tool="base-balloon">
+              <span class="bs-tool-card-icon">⚪</span>
+              <span>Balão 12"</span>
+            </div>
+            <div class="bs-tool-card ${this.activeTouchTool === 'light-point' ? 'active' : ''}" data-tool="light-point">
+              <span class="bs-tool-card-icon">✨</span>
+              <span>Ponto 5"</span>
+            </div>
+            <div class="bs-tool-card ${this.activeTouchTool === 'big-balloon' ? 'active' : ''}" data-tool="big-balloon">
+              <span class="bs-tool-card-icon">🎈</span>
+              <span>Big 18"</span>
+            </div>
+            <div class="bs-tool-card ${this.activeTouchTool === 'cluster-quad' ? 'active' : ''}" data-tool="cluster-quad">
+              <span class="bs-tool-card-icon">🫧</span>
+              <span>Cluster 4x</span>
+            </div>
+            <div class="bs-tool-card ${this.activeTouchTool === 'eraser' ? 'active' : ''}" data-tool="eraser">
+              <span class="bs-tool-card-icon">🧽</span>
+              <span>Apagar</span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      panel.querySelectorAll('.bs-tool-card').forEach((card) => {
+        card.addEventListener('click', (e) => {
+          const tool = (e.currentTarget as HTMLElement).dataset.tool as any;
+          if (tool) this.setActiveTouchTool(tool);
+        });
+      });
+    }
+  }
+
+  // ----------------------------------------------------------------------
+  // AÇÕES DO ARRANJO: INVERTER, VARIAR, VOLUME, FERRAMENTAS
+  // ----------------------------------------------------------------------
+
+  private mirrorArrangement(): void {
+    if (this.pieces.length === 0) return;
+    this.pieces = mirrorArrangementHorizontal(this.pieces);
+    this.baseTemplatePieces = mirrorArrangementHorizontal(this.baseTemplatePieces);
+    this.saveHistory();
+    this.renderCanvas();
+    this.updateBalloonPillPosition();
+  }
+
+  private variateColorsAndSizes(): void {
+    this.pieces = variateArrangement(this.pieces);
+    this.saveHistory();
+    this.renderCanvas();
+  }
+
+  private setVolumeLevel(volume: 'enxuto' | 'padrao' | 'cheio'): void {
+    this.currentVolumeLevel = volume;
+    if (this.baseTemplatePieces.length > 0) {
+      this.pieces = applyVolumeLevel(this.baseTemplatePieces, volume);
+      this.saveHistory();
+      this.renderCanvas();
+    }
+    this.renderTabActivePanel();
+  }
+
+  private setDistributionMode(mode: 'mesclado' | 'degrade' | 'blocos'): void {
+    this.currentDistributionMode = mode;
+    this.pieces = distributeColors(this.pieces, mode);
+    this.saveHistory();
+    this.renderCanvas();
+    this.renderTabActivePanel();
+  }
+
+  private setActiveTouchTool(tool: 'adjust' | 'base-balloon' | 'light-point' | 'big-balloon' | 'cluster-quad' | 'eraser'): void {
+    this.activeTouchTool = tool;
+    const banner = document.getElementById('bs-tool-active-banner');
+    const text = document.getElementById('bs-tool-banner-text');
+
+    if (banner && text) {
+      if (tool === 'adjust') {
+        banner.style.display = 'none';
+      } else {
+        banner.style.display = 'block';
+        if (tool === 'base-balloon') text.textContent = '⚪ Toque para adicionar um balão de 12"';
+        else if (tool === 'light-point') text.textContent = '✨ Toque no arco para encaixar um ponto de luz de 5"';
+        else if (tool === 'big-balloon') text.textContent = '🎈 Toque para adicionar um Big Balloon de 18"';
+        else if (tool === 'cluster-quad') text.textContent = '🫧 Toque para adicionar um cluster de 4 balões';
+        else if (tool === 'eraser') text.textContent = '🧽 Toque em qualquer balão para apagar';
       }
     }
+    this.renderTabActivePanel();
   }
 
-  // Altera slot dos balões selecionados
+  // Inserção direta de balão base 12"
+  private insertBaseBalloonAt(x: number, y: number): void {
+    const newPiece: BalloonPiece = {
+      id: `base-${Date.now()}`,
+      x,
+      y,
+      sizeInches: 12,
+      slot: this.activeColorSlot,
+      finish: this.palette.finishes?.[this.activeColorSlot as 'A' | 'B' | 'C' | 'D'] || 'satin'
+    };
+    this.pieces.push(newPiece);
+    this.selectedPieceIds.clear();
+    this.selectedPieceIds.add(newPiece.id);
+
+    this.saveHistory();
+    this.renderCanvas();
+    this.showBalloonPill();
+  }
+
+  // Inserção direta de cluster quad (4 balões de 10")
+  private insertClusterAt(x: number, y: number): void {
+    const r = 24;
+    const baseId = Date.now();
+    const clusterPieces: BalloonPiece[] = [
+      { id: `c-${baseId}-1`, x: x - r, y: y - r, sizeInches: 10, slot: 'A', finish: this.palette.finishes?.A || 'satin' },
+      { id: `c-${baseId}-2`, x: x + r, y: y - r, sizeInches: 10, slot: 'B', finish: this.palette.finishes?.B || 'satin' },
+      { id: `c-${baseId}-3`, x: x - r, y: y + r, sizeInches: 10, slot: 'C', finish: this.palette.finishes?.C || 'chrome' },
+      { id: `c-${baseId}-4`, x: x + r, y: y + r, sizeInches: 10, slot: 'D', finish: this.palette.finishes?.D || 'matte' },
+    ];
+    this.pieces.push(...clusterPieces);
+    this.selectedPieceIds.clear();
+    this.selectedPieceIds.add(clusterPieces[0].id);
+
+    this.saveHistory();
+    this.renderCanvas();
+    this.showBalloonPill();
+  }
+
+  // Inserção direta no ponto clicado
+  private insertPointOfLightAt(x: number, y: number): void {
+    const newPiece: BalloonPiece = {
+      id: `light-${Date.now()}`,
+      x,
+      y,
+      sizeInches: 5,
+      slot: this.activeColorSlot,
+      finish: this.palette.finishes?.[this.activeColorSlot as 'A' | 'B' | 'C' | 'D'] || 'chrome'
+    };
+    this.pieces.push(newPiece);
+    this.selectedPieceIds.clear();
+    this.selectedPieceIds.add(newPiece.id);
+
+    this.saveHistory();
+    this.renderCanvas();
+    this.showBalloonPill();
+  }
+
+  private insertBigBalloonAt(x: number, y: number): void {
+    const newPiece: BalloonPiece = {
+      id: `big-${Date.now()}`,
+      x,
+      y,
+      sizeInches: 18,
+      slot: this.activeColorSlot,
+      finish: this.palette.finishes?.[this.activeColorSlot as 'A' | 'B' | 'C' | 'D'] || 'satin'
+    };
+    this.pieces.push(newPiece);
+    this.selectedPieceIds.clear();
+    this.selectedPieceIds.add(newPiece.id);
+
+    this.saveHistory();
+    this.renderCanvas();
+    this.showBalloonPill();
+  }
+
+  private deletePieceById(id: string): void {
+    this.pieces = this.pieces.filter((p) => p.id !== id);
+    this.selectedPieceIds.delete(id);
+    this.saveHistory();
+    this.renderCanvas();
+    this.hideBalloonPill();
+  }
+
   private setSelectedPieceSlot(slot: BalloonSlot): void {
     this.selectedPieceIds.forEach((id) => {
       const p = this.pieces.find((x) => x.id === id);
@@ -1104,10 +1392,9 @@ export class BalloonStudioModal {
     });
     this.saveHistory();
     this.renderCanvas();
-    this.updateInspectorUI();
+    this.showBalloonPill();
   }
 
-  // Altera tamanho dos balões selecionados
   private setSelectedPieceSize(size: BalloonSizeInches): void {
     this.selectedPieceIds.forEach((id) => {
       const p = this.pieces.find((x) => x.id === id);
@@ -1115,99 +1402,344 @@ export class BalloonStudioModal {
     });
     this.saveHistory();
     this.renderCanvas();
-    this.updateInspectorUI();
+    this.showBalloonPill();
   }
 
-  // Altera acabamento dos balões selecionados
-  private setSelectedPieceFinish(finish: BalloonFinish): void {
-    this.selectedPieceIds.forEach((id) => {
-      const p = this.pieces.find((x) => x.id === id);
-      if (p) p.finish = finish;
-    });
-    this.saveHistory();
-    this.renderCanvas();
-    this.updateInspectorUI();
-  }
-
-  // Controle de camadas (Z-Index)
-  private changeZIndex(action: 'front' | 'back' | 'forward' | 'backward'): void {
-    if (this.selectedPieceIds.size === 0) return;
-
-    const selected = this.pieces.filter((p) => this.selectedPieceIds.has(p.id));
-    const unselected = this.pieces.filter((p) => !this.selectedPieceIds.has(p.id));
-
-    if (action === 'front') {
-      this.pieces = [...unselected, ...selected];
-    } else if (action === 'back') {
-      this.pieces = [...selected, ...unselected];
-    } else if (action === 'forward') {
-      // Avança 1 posição
-      for (let i = this.pieces.length - 2; i >= 0; i--) {
-        if (this.selectedPieceIds.has(this.pieces[i].id) && !this.selectedPieceIds.has(this.pieces[i + 1].id)) {
-          const temp = this.pieces[i];
-          this.pieces[i] = this.pieces[i + 1];
-          this.pieces[i + 1] = temp;
-        }
-      }
-    } else if (action === 'backward') {
-      // Recua 1 posição
-      for (let i = 1; i < this.pieces.length; i++) {
-        if (this.selectedPieceIds.has(this.pieces[i].id) && !this.selectedPieceIds.has(this.pieces[i - 1].id)) {
-          const temp = this.pieces[i];
-          this.pieces[i] = this.pieces[i - 1];
-          this.pieces[i - 1] = temp;
-        }
-      }
-    }
-
-    this.saveHistory();
-    this.renderCanvas();
-  }
-
-  // Duplicar balões selecionados
   private duplicateSelected(): void {
-    if (this.selectedPieceIds.size === 0) return;
-
-    const newIds = new Set<string>();
-    const clones: BalloonPiece[] = [];
-
-    this.selectedPieceIds.forEach((id) => {
-      const p = this.pieces.find((x) => x.id === id);
-      if (p) {
-        const newId = 'p-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
-        clones.push({
-          ...JSON.parse(JSON.stringify(p)),
-          id: newId,
-          x: p.x + 22,
-          y: p.y + 22
-        });
-        newIds.add(newId);
-      }
-    });
-
-    this.pieces.push(...clones);
-    this.selectedPieceIds = newIds;
+    const p = this.getActiveSelectedPiece();
+    if (!p) return;
+    const newPiece: BalloonPiece = {
+      ...JSON.parse(JSON.stringify(p)),
+      id: `dup-${Date.now()}`,
+      x: p.x + 14,
+      y: p.y + 14
+    };
+    this.pieces.push(newPiece);
+    this.selectedPieceIds.clear();
+    this.selectedPieceIds.add(newPiece.id);
 
     this.saveHistory();
     this.renderCanvas();
-    this.updateInspectorUI();
+    this.showBalloonPill();
   }
 
-  // Deletar balões selecionados
   private deleteSelected(): void {
     if (this.selectedPieceIds.size === 0) return;
-
     this.pieces = this.pieces.filter((p) => !this.selectedPieceIds.has(p.id));
     this.selectedPieceIds.clear();
 
     this.saveHistory();
     this.renderCanvas();
-    this.updateInspectorUI();
+    this.hideBalloonPill();
   }
 
-  // Histórico de alterações (Undo / Redo)
+  // ----------------------------------------------------------------------
+  // COMEÇAR DO ZERO & CARREGAR TEMPLATES
+  // ----------------------------------------------------------------------
+
+  private startFromScratch(): void {
+    this.arrangementTitle = 'Novo Arranjo';
+    const el = document.getElementById('bs-editor-current-title');
+    if (el) el.textContent = this.arrangementTitle;
+
+    // Inicia com um cluster base acolhedor de 4 balões no centro
+    this.pieces = [
+      { id: 'c1', x: 230, y: 230, sizeInches: 18, slot: 'A', finish: 'satin' },
+      { id: 'c2', x: 260, y: 220, sizeInches: 12, slot: 'B', finish: 'satin' },
+      { id: 'c3', x: 240, y: 250, sizeInches: 12, slot: 'C', finish: 'chrome' },
+      { id: 'c4', x: 270, y: 250, sizeInches: 10, slot: 'D', finish: 'matte' },
+      { id: 'c5', x: 252, y: 236, sizeInches: 5, slot: 'C', finish: 'chrome' }
+    ];
+    this.baseTemplatePieces = JSON.parse(JSON.stringify(this.pieces));
+    this.selectedPieceIds.clear();
+    this.history = [];
+    this.historyIndex = -1;
+    this.saveHistory();
+
+    this.setScreen('editor');
+    this.computeBaseViewBox();
+  }
+
+  public loadTemplate(templateId: string): void {
+    const tmpl = BALLOON_STUDIO_TEMPLATES.find((t) => t.id === templateId) || BALLOON_STUDIO_TEMPLATES[0];
+    this.selectedTemplateId = tmpl.id;
+    this.arrangementTitle = tmpl.name;
+
+    const titleEl = document.getElementById('bs-editor-current-title');
+    if (titleEl) titleEl.textContent = this.arrangementTitle;
+
+    this.pieces = JSON.parse(JSON.stringify(tmpl.pieces));
+    this.baseTemplatePieces = JSON.parse(JSON.stringify(tmpl.pieces));
+    this.palette = JSON.parse(JSON.stringify(tmpl.palette));
+
+    // Garante nomes amigáveis em português
+    if (!this.palette.names) {
+      this.palette.names = { A: 'Rosa Quartzo', B: 'Blush Suave', C: 'Ouro Cromo', D: 'Branco Neve' };
+    }
+    if (!this.palette.finishes) {
+      this.palette.finishes = { A: 'satin', B: 'satin', C: 'chrome', D: 'matte' };
+    }
+
+    this.selectedPieceIds.clear();
+    this.history = [];
+    this.historyIndex = -1;
+    this.saveHistory();
+
+    this.computeBaseViewBox();
+  }
+
+  private applyPalettePreset(newPalette: BalloonPaletteConfig): void {
+    this.palette = JSON.parse(JSON.stringify(newPalette));
+    this.saveHistory();
+    this.renderCanvas();
+    this.syncPaletteSwatches();
+  }
+
+  // ----------------------------------------------------------------------
+  // GAVETAS: SHOPPING LIST & CONCLUIR
+  // ----------------------------------------------------------------------
+
+  private toggleSheet(sheetId: string, show: boolean): void {
+    const sheet = document.getElementById(sheetId);
+    if (sheet) sheet.style.display = show ? 'flex' : 'none';
+  }
+
+  private openShoppingModal(): void {
+    this.renderShoppingContent();
+    this.toggleSheet('bs-shopping-modal', true);
+  }
+
+  private renderShoppingContent(): void {
+    const container = document.getElementById('bs-materials-list-container');
+    if (!container) return;
+
+    const stats = calculateArrangementStats(this.pieces, this.palette);
+    const mult = this.includeSpareBalloons ? 1.10 : 1.0;
+    const totalCount = Math.ceil(stats.totalCount * mult);
+
+    const totalEl = document.getElementById('bs-stat-total-balloons');
+    if (totalEl) totalEl.textContent = `${totalCount}`;
+
+    const metersEl = document.getElementById('bs-stat-meters-frame');
+    const estimatedMeters = Math.max(1, Math.round((stats.widthCm + stats.heightCm) * 0.012 * 10) / 10);
+    if (metersEl) metersEl.textContent = `~${estimatedMeters} m`;
+
+    const timeEl = document.getElementById('bs-stat-estimated-time');
+    const hours = Math.round((totalCount / 60) * 10) / 10;
+    if (timeEl) timeEl.textContent = `~${hours}h`;
+
+    const slots: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D'];
+    const finishLabel: Record<BalloonFinish, string> = {
+      satin: 'Cetim',
+      matte: 'Fosco',
+      chrome: 'Cromado',
+      crystal: 'Cristal',
+      glitter: 'Glitter'
+    };
+
+    container.innerHTML = slots.map((s) => {
+      const hex = (this.palette as any)[s] || '#ffffff';
+      const name = this.palette.names?.[s] || `Cor ${s}`;
+      const fin = this.palette.finishes?.[s] || 'satin';
+
+      const piecesOfSlot = this.pieces.filter((p) => p.slot === s);
+      if (piecesOfSlot.length === 0) return '';
+
+      const countsBySize: Record<BalloonSizeInches, number> = { 5: 0, 10: 0, 12: 0, 18: 0, 24: 0 };
+      piecesOfSlot.forEach((p) => {
+        countsBySize[p.sizeInches]++;
+      });
+
+      const sizesBadges = ([18, 12, 10, 5] as BalloonSizeInches[])
+        .filter((sz) => countsBySize[sz] > 0)
+        .map((sz) => {
+          const qty = Math.ceil(countsBySize[sz] * mult);
+          return `<span class="bs-size-badge">${sz}" · <u>${qty}</u></span>`;
+        })
+        .join('');
+
+      return `
+        <div class="bs-material-row">
+          <span class="bs-material-dot" style="background:${hex}"></span>
+          <div class="bs-material-info">
+            <b class="bs-material-name">${name}</b>
+            <span class="bs-material-finish">${finishLabel[fin]}</span>
+          </div>
+          <div class="bs-material-sizes">
+            ${sizesBadges}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  private generateShoppingListPlainText(): string {
+    const stats = calculateArrangementStats(this.pieces, this.palette);
+    const mult = this.includeSpareBalloons ? 1.10 : 1.0;
+    const totalCount = Math.ceil(stats.totalCount * mult);
+    const estimatedMeters = Math.max(1, Math.round((stats.widthCm + stats.heightCm) * 0.012 * 10) / 10);
+
+    let text = `🎈 *${this.arrangementTitle}*\n`;
+    text += `Medidas: ${stats.widthCm} cm × ${stats.heightCm} cm\n`;
+    text += `Total: ${totalCount} balões ${this.includeSpareBalloons ? '(inclui 10% de reserva)' : ''}\n\n`;
+
+    const slots: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D'];
+    const finishLabel: Record<BalloonFinish, string> = {
+      satin: 'Cetim',
+      matte: 'Fosco',
+      chrome: 'Cromado',
+      crystal: 'Cristal',
+      glitter: 'Glitter'
+    };
+
+    slots.forEach((s) => {
+      const name = this.palette.names?.[s] || `Cor ${s}`;
+      const fin = this.palette.finishes?.[s] || 'satin';
+      const piecesOfSlot = this.pieces.filter((p) => p.slot === s);
+      if (piecesOfSlot.length === 0) return;
+
+      const countsBySize: Record<BalloonSizeInches, number> = { 5: 0, 10: 0, 12: 0, 18: 0, 24: 0 };
+      piecesOfSlot.forEach((p) => countsBySize[p.sizeInches]++);
+
+      const sizesStr = ([18, 12, 10, 5] as BalloonSizeInches[])
+        .filter((sz) => countsBySize[sz] > 0)
+        .map((sz) => `${sz}" × ${Math.ceil(countsBySize[sz] * mult)}`)
+        .join(' · ');
+
+      text += `• *${name}* (${finishLabel[fin]}): ${sizesStr}\n`;
+    });
+
+    text += `\nEstrutura / Fita: ~${estimatedMeters} m\n`;
+    text += `Gerado no Decoraly`;
+    return text;
+  }
+
+  private async copyShoppingListText(): Promise<void> {
+    const text = this.generateShoppingListPlainText();
+    try {
+      await navigator.clipboard.writeText(text);
+      const btn = document.getElementById('bs-btn-copy-shopping-text');
+      if (btn) {
+        btn.textContent = '✓ Copiado com Sucesso!';
+        setTimeout(() => {
+          btn.textContent = '📋 Copiar Lista';
+        }, 2000);
+      }
+    } catch (_) {
+      alert(text);
+    }
+  }
+
+  private shareOnWhatsApp(): void {
+    const text = this.generateShoppingListPlainText();
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  }
+
+  private openConcludeModal(): void {
+    const previewBox = document.getElementById('bs-conclude-preview-box');
+    const inputName = document.getElementById('bs-input-arrangement-name') as HTMLInputElement | null;
+    const linkCount = document.getElementById('bs-link-count');
+
+    if (inputName) inputName.value = this.arrangementTitle;
+    if (linkCount) linkCount.textContent = `${this.pieces.length}`;
+
+    if (previewBox) {
+      const { svg } = renderArrangementSvg(this.pieces, this.palette, { pad: 20, hasFloorShadow: true });
+      previewBox.innerHTML = svg;
+    }
+
+    this.toggleSheet('bs-conclude-modal', true);
+  }
+
+  private async concludeSave(insertIntoScene: boolean): Promise<void> {
+    const inputName = document.getElementById('bs-input-arrangement-name') as HTMLInputElement | null;
+    const finalName = inputName?.value.trim() || this.arrangementTitle;
+
+    // Renderiza SVG final recortado com precisão
+    const { svg, widthCm, heightCm } = renderArrangementSvg(this.pieces, this.palette, {
+      pad: 12,
+      hasFloorShadow: false
+    });
+
+    // Converte para imagem PNG com transparência
+    const imgDataUrl = await this.svgToPngDataUrl(svg);
+
+    let savedItem: PresetItem;
+    try {
+      savedItem = await addCustomItem({
+        name: finalName,
+        category: 'baloes',
+        type: 'generic',
+        widthCm,
+        heightCm,
+        previewUrl: imgDataUrl,
+        isCustom: true,
+        stockQuantity: 1,
+        rentalPrice: 0
+      });
+    } catch (err) {
+      console.error('Erro ao salvar no IndexedDB:', err);
+      savedItem = {
+        id: `custom-baloes-${Date.now()}`,
+        name: finalName,
+        category: 'baloes',
+        type: 'generic',
+        widthCm,
+        heightCm,
+        previewUrl: imgDataUrl,
+        isCustom: true,
+        stockQuantity: 1,
+        rentalPrice: 0,
+        createdAt: Date.now()
+      };
+    }
+
+    this.toggleSheet('bs-conclude-modal', false);
+    this.close();
+
+    if (insertIntoScene && this.onInsertCallback) {
+      this.onInsertCallback(savedItem);
+    } else if (this.onSavedCallback) {
+      this.onSavedCallback(savedItem);
+    }
+  }
+
+  private svgToPngDataUrl(svgStr: string): Promise<string> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.min(1400, Math.max(img.width * 2, 800));
+        canvas.height = Math.round(canvas.width * (img.height / img.width));
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const pngUrl = canvas.toDataURL('image/png');
+          URL.revokeObjectURL(url);
+          resolve(pngUrl);
+          return;
+        }
+        resolve(arrangementSvgToDataUrl(svgStr));
+      };
+
+      img.onerror = () => {
+        resolve(arrangementSvgToDataUrl(svgStr));
+      };
+
+      img.src = url;
+    });
+  }
+
+  // ----------------------------------------------------------------------
+  // HISTÓRICO UNDO / REDO
+  // ----------------------------------------------------------------------
+
   private saveHistory(): void {
-    // Trunca histórico se estive no meio
     if (this.historyIndex < this.history.length - 1) {
       this.history = this.history.slice(0, this.historyIndex + 1);
     }
@@ -1225,9 +1757,9 @@ export class BalloonStudioModal {
       const state = this.history[this.historyIndex];
       this.pieces = JSON.parse(JSON.stringify(state.pieces));
       this.palette = JSON.parse(JSON.stringify(state.palette));
-      this.syncPaletteSwatches();
       this.renderCanvas();
-      this.updateInspectorUI();
+      this.syncPaletteSwatches();
+      this.showBalloonPill();
     }
   }
 
@@ -1237,137 +1769,42 @@ export class BalloonStudioModal {
       const state = this.history[this.historyIndex];
       this.pieces = JSON.parse(JSON.stringify(state.pieces));
       this.palette = JSON.parse(JSON.stringify(state.palette));
-      this.syncPaletteSwatches();
       this.renderCanvas();
-      this.updateInspectorUI();
+      this.syncPaletteSwatches();
+      this.showBalloonPill();
     }
   }
 
-  // Renderiza a lista de compras de balões (detalhada e limpa)
-  private renderShoppingContent(stats: ArrangementStats): void {
-    const container = document.getElementById('bs-shopping-content');
-    if (!container) return;
+  // ----------------------------------------------------------------------
+  // API PÚBLICA
+  // ----------------------------------------------------------------------
 
-    container.innerHTML = `
-      <div class="bs-shop-summary">
-        <div class="bs-shop-total">
-          <span class="bs-shop-total-num">${stats.totalCount}</span>
-          <span class="bs-shop-total-desc">Balões no Total</span>
-        </div>
-        <div class="bs-shop-dim">
-          <span class="bs-shop-dim-val">${stats.widthCm} × ${stats.heightCm} cm</span>
-          <span class="bs-shop-dim-desc">Dimensões Estimadas</span>
-        </div>
-      </div>
+  public open(
+    templateId = 'modelo-arco-l-luxo',
+    callbacks?: { onInsert?: (item: PresetItem) => void; onSaved?: (item: PresetItem) => void }
+  ): void {
+    this.createDomStructure();
+    if (!this.overlayEl) return;
 
-      <div class="bs-shop-section">
-        <h4 class="bs-shop-subtitle">Contagem por Tamanho (Polegadas)</h4>
-        <div class="bs-shop-list">
-          <div class="bs-shop-row">
-            <span>24" (Gigante / Big Balloon)</span>
-            <strong>${stats.bySize[24]} un</strong>
-          </div>
-          <div class="bs-shop-row">
-            <span>18" (Grande / Statement)</span>
-            <strong>${stats.bySize[18]} un</strong>
-          </div>
-          <div class="bs-shop-row">
-            <span>12" (Padrão de Arco)</span>
-            <strong>${stats.bySize[12]} un</strong>
-          </div>
-          <div class="bs-shop-row">
-            <span>10" (Pequeno de Transição)</span>
-            <strong>${stats.bySize[10]} un</strong>
-          </div>
-          <div class="bs-shop-row">
-            <span>5" (Mini de Acabamento)</span>
-            <strong>${stats.bySize[5]} un</strong>
-          </div>
-        </div>
-      </div>
+    this.onInsertCallback = callbacks?.onInsert;
+    this.onSavedCallback = callbacks?.onSaved;
 
-      <div class="bs-shop-section">
-        <h4 class="bs-shop-subtitle">Contagem por Cor / Slot</h4>
-        <div class="bs-shop-list">
-          <div class="bs-shop-row">
-            <span class="bs-shop-slot-name"><span class="bs-shop-dot" style="background:${this.palette.A}"></span> Slot A (Principal)</span>
-            <strong>${stats.bySlot.A} un</strong>
-          </div>
-          <div class="bs-shop-row">
-            <span class="bs-shop-slot-name"><span class="bs-shop-dot" style="background:${this.palette.B}"></span> Slot B (Secundária)</span>
-            <strong>${stats.bySlot.B} un</strong>
-          </div>
-          <div class="bs-shop-row">
-            <span class="bs-shop-slot-name"><span class="bs-shop-dot" style="background:${this.palette.C}"></span> Slot C (Destaque)</span>
-            <strong>${stats.bySlot.C} un</strong>
-          </div>
-          <div class="bs-shop-row">
-            <span class="bs-shop-slot-name"><span class="bs-shop-dot" style="background:${this.palette.D}"></span> Slot D (Base)</span>
-            <strong>${stats.bySlot.D} un</strong>
-          </div>
-        </div>
-      </div>
+    this.overlayEl.style.display = 'flex';
+    document.body.classList.add('bs-studio-open');
 
-      <div class="bs-shop-section">
-        <h4 class="bs-shop-subtitle">Contagem por Acabamento</h4>
-        <div class="bs-shop-list">
-          <div class="bs-shop-row"><span>Acetinado</span><strong>${stats.byFinish.satin} un</strong></div>
-          <div class="bs-shop-row"><span>Fosco (Matte)</span><strong>${stats.byFinish.matte} un</strong></div>
-          <div class="bs-shop-row"><span>Cromado / Metálico</span><strong>${stats.byFinish.chrome} un</strong></div>
-          <div class="bs-shop-row"><span>Cristal Transparente</span><strong>${stats.byFinish.crystal} un</strong></div>
-          <div class="bs-shop-row"><span>Cristal com Glitter ✨</span><strong>${stats.byFinish.glitter} un</strong></div>
-        </div>
-      </div>
-    `;
+    // Abre na Galeria Inicial
+    this.setScreen('gallery');
   }
 
-  private toggleShoppingModal(show: boolean): void {
-    const modal = document.getElementById('bs-shopping-modal');
-    if (modal) modal.style.display = show ? 'flex' : 'none';
+  public close(): void {
+    if (this.overlayEl) {
+      this.overlayEl.style.display = 'none';
+      document.body.classList.remove('bs-studio-open');
+      this.hideBalloonPill();
+    }
   }
 
-  // Salva a composição como elemento do acervo ("Meus Elementos")
-  public async saveToCustomElements(insertDirectly = false): Promise<PresetItem | null> {
-    if (this.pieces.length === 0) {
-      alert('Adicione pelo menos um balão antes de salvar.');
-      return null;
-    }
-
-    const defaultName =
-      BALLOON_STUDIO_TEMPLATES.find((t) => t.id === this.selectedTemplateId)?.name || 'Meu Arranjo de Balões';
-
-    const itemName = prompt('Nome do seu Arranjo de Balões:', defaultName);
-    if (!itemName) return null;
-
-    const { svg, widthCm, heightCm } = renderArrangementSvg(this.pieces, this.palette, {
-      hasFloorShadow: true
-    });
-    const previewUrl = arrangementSvgToDataUrl(svg);
-
-    const newItem = await addCustomItem({
-      name: itemName,
-      category: 'baloes',
-      type: 'balloon_arch',
-      widthCm,
-      heightCm,
-      previewUrl,
-      isCustom: true,
-      stockQuantity: 1,
-      rentalPrice: Math.round(widthCm * 0.75),
-      modularColors: [this.palette.A, this.palette.B, this.palette.C, this.palette.D]
-    });
-
-    if (this.onSavedCallback) {
-      this.onSavedCallback(newItem);
-    }
-
-    if (insertDirectly && this.onInsertCallback) {
-      this.onInsertCallback(newItem);
-      this.close();
-    } else {
-      alert(`Arranjo "${itemName}" salvo com sucesso em Meus Elementos!`);
-    }
-
-    return newItem;
+  public isOpen(): boolean {
+    return this.overlayEl?.style.display === 'flex';
   }
 }

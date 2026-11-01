@@ -23,6 +23,8 @@ export interface BalloonPaletteConfig {
   C: string;
   D: string;
   name?: string;
+  names?: Record<'A' | 'B' | 'C' | 'D', string>;
+  finishes?: Record<'A' | 'B' | 'C' | 'D', BalloonFinish>;
 }
 
 export interface ArrangementStats {
@@ -92,57 +94,148 @@ export function isLightColor(hex: string): boolean {
   return (r * 0.299 + g * 0.587 + b * 0.114) > 220;
 }
 
-// Paletas Prontas Populares de Inspiração para o Estúdio
+// Catálogo de Cores da Moda para Balões de Festa no Brasil
+export interface FashionColor {
+  name: string;
+  hex: string;
+  category: 'Rosas & Blush' | 'Azuis & Celestes' | 'Terrosos & Boho' | 'Verdes' | 'Neutros & Básicos' | 'Metálicos' | 'Doces & Candy';
+}
+
+export const FASHION_BALLOON_COLORS: FashionColor[] = [
+  // Rosas & Blush
+  { name: 'Rosa Quartzo', hex: '#c97a8e', category: 'Rosas & Blush' },
+  { name: 'Blush Suave', hex: '#f7dbe1', category: 'Rosas & Blush' },
+  { name: 'Rosa Bebê', hex: '#fbcfe8', category: 'Rosas & Blush' },
+  { name: 'Pink Chic', hex: '#ec4899', category: 'Rosas & Blush' },
+  { name: 'Marsala Nobre', hex: '#831843', category: 'Rosas & Blush' },
+  // Azuis & Celestes
+  { name: 'Azul Bebê', hex: '#bfdbfe', category: 'Azuis & Celestes' },
+  { name: 'Azul Celeste', hex: '#60a5fa', category: 'Azuis & Celestes' },
+  { name: 'Azul Royal', hex: '#1d4ed8', category: 'Azuis & Celestes' },
+  { name: 'Azul Marinho', hex: '#1e3a8a', category: 'Azuis & Celestes' },
+  // Terrosos & Boho
+  { name: 'Terracota', hex: '#c2410c', category: 'Terrosos & Boho' },
+  { name: 'Caramelo Nude', hex: '#d97706', category: 'Terrosos & Boho' },
+  { name: 'Areia Macaron', hex: '#fed7aa', category: 'Terrosos & Boho' },
+  { name: 'Mostarda Vintage', hex: '#eab308', category: 'Terrosos & Boho' },
+  // Verdes
+  { name: 'Verde Eucalipto', hex: '#52796f', category: 'Verdes' },
+  { name: 'Verde Oliva', hex: '#4d6b2c', category: 'Verdes' },
+  { name: 'Menta Pastel', hex: '#a7f3d0', category: 'Verdes' },
+  { name: 'Verde Floresta', hex: '#166534', category: 'Verdes' },
+  // Neutros & Básicos
+  { name: 'Branco Neve', hex: '#ffffff', category: 'Neutros & Básicos' },
+  { name: 'Off-White Pérola', hex: '#fdfbf7', category: 'Neutros & Básicos' },
+  { name: 'Cinza Prata', hex: '#cbd5e1', category: 'Neutros & Básicos' },
+  { name: 'Preto Noite', hex: '#18181b', category: 'Neutros & Básicos' },
+  // Metálicos
+  { name: 'Ouro Nobre', hex: '#d4af37', category: 'Metálicos' },
+  { name: 'Rose Gold', hex: '#b76e79', category: 'Metálicos' },
+  { name: 'Cobre Brilhante', hex: '#b45309', category: 'Metálicos' },
+  { name: 'Prata Espelhada', hex: '#e2e8f0', category: 'Metálicos' },
+  // Doces & Candy
+  { name: 'Lilás Lavanda', hex: '#d8b4fe', category: 'Doces & Candy' },
+  { name: 'Amarelo Candy', hex: '#fef08a', category: 'Doces & Candy' },
+  { name: 'Tiffany Suave', hex: '#14b8a6', category: 'Doces & Candy' }
+];
+
+// Paletas Prontas Populares de Inspiração para o Estúdio com Nomes e Acabamentos
 export const STUDIO_PALETTE_PRESETS: { id: string; name: string; palette: BalloonPaletteConfig }[] = [
   {
     id: 'rose-gold-blush',
     name: 'Rose Gold, Blush & Pérola',
-    palette: { A: '#c97a8e', B: '#f7dbe1', C: '#d4af37', D: '#ffffff' }
+    palette: {
+      A: '#c97a8e',
+      B: '#f7dbe1',
+      C: '#d4af37',
+      D: '#ffffff',
+      names: { A: 'Rosa Quartzo', B: 'Blush Suave', C: 'Ouro Cromo', D: 'Branco Neve' },
+      finishes: { A: 'satin', B: 'satin', C: 'chrome', D: 'matte' }
+    }
   },
   {
     id: 'candy-colors',
     name: 'Candy Colors Pastel',
-    palette: { A: '#f8b4d9', B: '#d8b4fe', C: '#93c5fd', D: '#fef08a' }
+    palette: {
+      A: '#f8b4d9',
+      B: '#d8b4fe',
+      C: '#93c5fd',
+      D: '#fef08a',
+      names: { A: 'Rosa Doce', B: 'Lilás Mágico', C: 'Azul Céu', D: 'Amarelo Sol' },
+      finishes: { A: 'matte', B: 'matte', C: 'satin', D: 'matte' }
+    }
   },
   {
     id: 'safari-chic',
     name: 'Safari & Floresta Chic',
-    palette: { A: '#4d6b2c', B: '#85512b', C: '#c59a3f', D: '#f7eed7' }
-  },
-  {
-    id: 'glamour-ouro-preto',
-    name: 'Dourado Glamour & Preto',
-    palette: { A: '#0f172a', B: '#d4af37', C: '#ffffff', D: '#334155' }
-  },
-  {
-    id: 'azul-real-prata',
-    name: 'Azul Real, Celeste & Prata',
-    palette: { A: '#1e40af', B: '#60a5fa', C: '#cbd5e1', D: '#ffffff' }
-  },
-  {
-    id: 'cha-revelacao',
-    name: 'Chá Revelação Baby',
-    palette: { A: '#f472b6', B: '#38bdf8', C: '#ffffff', D: '#d4af37' }
+    palette: {
+      A: '#4d6b2c',
+      B: '#85512b',
+      C: '#c59a3f',
+      D: '#f7eed7',
+      names: { A: 'Verde Oliva', B: 'Caramelo', C: 'Ouro Velho', D: 'Areia Nude' },
+      finishes: { A: 'matte', B: 'matte', C: 'chrome', D: 'satin' }
+    }
   },
   {
     id: 'boho-terracota',
     name: 'Boho Terracota & Nude',
-    palette: { A: '#c2410c', B: '#d97706', C: '#fed7aa', D: '#fdfbf7' }
+    palette: {
+      A: '#c2410c',
+      B: '#d97706',
+      C: '#fed7aa',
+      D: '#fdfbf7',
+      names: { A: 'Terracota', B: 'Caramelo Boho', C: 'Nude Macaron', D: 'Off-White' },
+      finishes: { A: 'matte', B: 'matte', C: 'matte', D: 'satin' }
+    }
   },
   {
-    id: 'sereia-magica',
-    name: 'Sereia, Lilás & Tiffany',
-    palette: { A: '#9333ea', B: '#14b8a6', C: '#f472b6', D: '#e0e7ff' }
+    id: 'azul-real-prata',
+    name: 'Azul Real, Celeste & Prata',
+    palette: {
+      A: '#1e40af',
+      B: '#60a5fa',
+      C: '#cbd5e1',
+      D: '#ffffff',
+      names: { A: 'Azul Real', B: 'Azul Celeste', C: 'Prata Espelho', D: 'Branco Neve' },
+      finishes: { A: 'satin', B: 'satin', C: 'chrome', D: 'matte' }
+    }
   },
   {
-    id: 'vermelho-luxo',
-    name: 'Vermelho Luxo & Ouro',
-    palette: { A: '#dc2626', B: '#eab308', C: '#fecaca', D: '#ffffff' }
+    id: 'cha-revelacao',
+    name: 'Chá Revelação Baby',
+    palette: {
+      A: '#f472b6',
+      B: '#38bdf8',
+      C: '#ffffff',
+      D: '#d4af37',
+      names: { A: 'Rosa Bebê', B: 'Azul Bebê', C: 'Branco Neve', D: 'Ouro Nobre' },
+      finishes: { A: 'satin', B: 'satin', C: 'matte', D: 'chrome' }
+    }
   },
   {
     id: 'verde-eucalipto',
     name: 'Verde Eucalipto & Pérola',
-    palette: { A: '#52796f', B: '#84a98c', C: '#d4af37', D: '#f8fafc' }
+    palette: {
+      A: '#52796f',
+      B: '#84a98c',
+      C: '#d4af37',
+      D: '#f8fafc',
+      names: { A: 'Eucalipto', B: 'Sálvia Suave', C: 'Ouro Cromo', D: 'Pérola' },
+      finishes: { A: 'matte', B: 'matte', C: 'chrome', D: 'satin' }
+    }
+  },
+  {
+    id: 'glamour-ouro-preto',
+    name: 'Dourado Glamour & Preto',
+    palette: {
+      A: '#18181b',
+      B: '#d4af37',
+      C: '#ffffff',
+      D: '#3f3f46',
+      names: { A: 'Preto Noite', B: 'Ouro Nobre', C: 'Branco Neve', D: 'Chumbo' },
+      finishes: { A: 'matte', B: 'chrome', C: 'satin', D: 'matte' }
+    }
   }
 ];
 
@@ -246,7 +339,10 @@ export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPalet
   const ry = r * 1.03;
 
   const effectiveSlot = (slot === 'custom' || !slot) ? 'A' : slot;
-  const gradId = finish === 'glitter' ? `grad_crystal_${effectiveSlot}` : `grad_${finish}_${effectiveSlot}`;
+  const effectiveFinish: BalloonFinish = (slot && slot !== 'custom' && palette.finishes && palette.finishes[slot])
+    ? palette.finishes[slot]
+    : finish;
+  const gradId = effectiveFinish === 'glitter' ? `grad_crystal_${effectiveSlot}` : `grad_${effectiveFinish}_${effectiveSlot}`;
 
   const gx = x - rx * 0.24;
   const gy = y - ry * 0.26;
@@ -257,10 +353,10 @@ export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPalet
   const dotR = Math.max(1, r * 0.055);
 
   let interior = '';
-  const isCrystalOrGlitter = finish === 'crystal' || finish === 'glitter';
+  const isCrystalOrGlitter = effectiveFinish === 'crystal' || effectiveFinish === 'glitter';
   const filterAttr = isCrystalOrGlitter ? '' : 'filter="url(#balloonShadow)"';
 
-  if (finish === 'glitter') {
+  if (effectiveFinish === 'glitter') {
     const glt = glitterColor || palette.C || '#d4af37';
     const gltLight = adjustColorBrightness(glt, 0.45);
     const gltDark = adjustColorBrightness(glt, -0.3);
@@ -296,8 +392,8 @@ export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPalet
   }
 
   const isMini = sizeInches === 5;
-  const isMatte = finish === 'matte';
-  const isChrome = finish === 'chrome';
+  const isMatte = effectiveFinish === 'matte';
+  const isChrome = effectiveFinish === 'chrome';
   const glareGrad = isChrome ? 'url(#glare_chrome)' : 'url(#glare_soft)';
 
   return `
@@ -314,7 +410,7 @@ export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPalet
 }
 
 // Calcula estatísticas inteligentes (lista de compras) da composição
-export function calculateArrangementStats(pieces: BalloonPiece[]): ArrangementStats {
+export function calculateArrangementStats(pieces: BalloonPiece[], palette?: BalloonPaletteConfig): ArrangementStats {
   const bySize: Record<BalloonSizeInches, number> = { 5: 0, 10: 0, 12: 0, 18: 0, 24: 0 };
   const bySlot: Record<BalloonSlot, number> = { A: 0, B: 0, C: 0, D: 0, custom: 0 };
   const byFinish: Record<BalloonFinish, number> = { satin: 0, matte: 0, chrome: 0, crystal: 0, glitter: 0 };
@@ -328,9 +424,13 @@ export function calculateArrangementStats(pieces: BalloonPiece[]): ArrangementSt
     if (p.y - r < minY) minY = p.y - r;
     if (p.y + r > maxY) maxY = p.y + r;
 
+    const effFin: BalloonFinish = (p.slot && p.slot !== 'custom' && palette?.finishes && palette.finishes[p.slot])
+      ? palette.finishes[p.slot]
+      : p.finish;
+
     bySize[p.sizeInches] = (bySize[p.sizeInches] || 0) + 1;
     bySlot[p.slot] = (bySlot[p.slot] || 0) + 1;
-    byFinish[p.finish] = (byFinish[p.finish] || 0) + 1;
+    byFinish[effFin] = (byFinish[effFin] || 0) + 1;
   }
 
   const bw = isFinite(minX) ? (maxX - minX + 40) : 0;
@@ -344,6 +444,138 @@ export function calculateArrangementStats(pieces: BalloonPiece[]): ArrangementSt
     widthCm: Math.round(bw * CM_PER_PIXEL),
     heightCm: Math.round(bh * CM_PER_PIXEL)
   };
+}
+
+// Ordena balões por profundidade física automática (24" e 18" no fundo, 12"/10" no meio, 5" na frente)
+export function sortPiecesByDepth(pieces: BalloonPiece[]): BalloonPiece[] {
+  const sizeWeight: Record<BalloonSizeInches, number> = {
+    24: 0,
+    18: 1,
+    12: 2,
+    10: 3,
+    5: 4
+  };
+  return [...pieces].sort((a, b) => {
+    const wa = sizeWeight[a.sizeInches] ?? 2;
+    const wb = sizeWeight[b.sizeInches] ?? 2;
+    if (wa !== wb) return wa - wb;
+    return a.y - b.y;
+  });
+}
+
+// Inverte o arranjo horizontalmente (espelhar L para esquerda/direita)
+export function mirrorArrangementHorizontal(pieces: BalloonPiece[]): BalloonPiece[] {
+  if (pieces.length === 0) return [];
+  let minX = Infinity, maxX = -Infinity;
+  pieces.forEach((p) => {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+  });
+  const midX = (minX + maxX) / 2;
+  return pieces.map((p) => ({
+    ...p,
+    x: Math.round(midX - (p.x - midX))
+  }));
+}
+
+// Distribui as cores da paleta no arranjo conforme o modo escolhido
+export function distributeColors(
+  pieces: BalloonPiece[],
+  mode: 'mesclado' | 'degrade' | 'blocos'
+): BalloonPiece[] {
+  if (pieces.length === 0) return [];
+  const slots: BalloonSlot[] = ['A', 'B', 'C', 'D'];
+  const total = pieces.length;
+
+  if (mode === 'degrade') {
+    const sortedIndices = pieces
+      .map((p, idx) => ({ idx, val: p.x * 0.7 + p.y }))
+      .sort((a, b) => a.val - b.val);
+
+    const result = [...pieces];
+    sortedIndices.forEach(({ idx }, i) => {
+      const ratio = i / Math.max(1, total - 1);
+      let s: BalloonSlot = 'A';
+      if (ratio < 0.35) s = 'A';
+      else if (ratio < 0.65) s = 'B';
+      else if (ratio < 0.85) s = 'C';
+      else s = 'D';
+      result[idx] = { ...result[idx], slot: s };
+    });
+    return result;
+  }
+
+  if (mode === 'blocos') {
+    const blockSize = Math.max(3, Math.round(total / 6));
+    return pieces.map((p, i) => {
+      const blockIdx = Math.floor(i / blockSize) % 4;
+      return { ...p, slot: slots[blockIdx] };
+    });
+  }
+
+  // Mesclado
+  const weights = [0.40, 0.30, 0.18, 0.12];
+  return pieces.map((p, i) => {
+    const hash = Math.abs(Math.sin(p.x * 12.9898 + p.y * 78.233 + i) * 43758.5453) % 1;
+    let acc = 0;
+    let chosen: BalloonSlot = 'A';
+    for (let s = 0; s < 4; s++) {
+      acc += weights[s];
+      if (hash <= acc) {
+        chosen = slots[s];
+        break;
+      }
+    }
+    return { ...p, slot: chosen };
+  });
+}
+
+// Variação orgânica com semente nova mantendo a integridade do modelo
+export function variateArrangement(pieces: BalloonPiece[]): BalloonPiece[] {
+  if (pieces.length === 0) return [];
+  const slots: BalloonSlot[] = ['A', 'B', 'C', 'D'];
+  return pieces.map((p) => {
+    let slot = p.slot;
+    if (Math.random() < 0.38) {
+      slot = slots[Math.floor(Math.random() * slots.length)];
+    }
+    const jx = Math.round((Math.random() - 0.5) * 6);
+    const jy = Math.round((Math.random() - 0.5) * 6);
+    return {
+      ...p,
+      x: p.x + jx,
+      y: p.y + jy,
+      slot
+    };
+  });
+}
+
+// Ajusta a densidade do volume do arranjo (Enxuto / Padrão / Super Cheio)
+export function applyVolumeLevel(
+  templatePieces: BalloonPiece[],
+  volume: 'enxuto' | 'padrao' | 'cheio'
+): BalloonPiece[] {
+  if (volume === 'padrao') return JSON.parse(JSON.stringify(templatePieces));
+
+  if (volume === 'enxuto') {
+    return templatePieces.filter((_, idx) => idx % 4 !== 3);
+  }
+
+  // 'cheio'
+  const extra: BalloonPiece[] = [];
+  const baseId = Date.now();
+  for (let i = 0; i < templatePieces.length; i += 3) {
+    const p = templatePieces[i];
+    extra.push({
+      id: `vol-${baseId}-${i}`,
+      x: p.x + Math.round(Math.sin(i) * 16),
+      y: p.y + Math.round(Math.cos(i) * 16),
+      sizeInches: p.sizeInches === 18 ? 10 : 5,
+      slot: p.slot,
+      finish: p.finish
+    });
+  }
+  return [...templatePieces, ...extra];
 }
 
 // Renderiza o SVG completo da montagem recortado com precisão
@@ -388,7 +620,9 @@ export function renderArrangementSvg(
     svg += `<ellipse cx="${(minX + maxX) / 2}" cy="${floorY}" rx="${(maxX - minX) * 0.40}" ry="12" fill="#0f172a" opacity="0.22" filter="url(#floorShadowBlur)"/>`;
   }
 
-  for (const p of pieces) {
+  // Ordena por profundidade física automática (maiores atrás, pontos de luz 5" na frente)
+  const sortedPieces = sortPiecesByDepth(pieces);
+  for (const p of sortedPieces) {
     svg += renderBalloonPieceSvg(p, palette);
   }
 

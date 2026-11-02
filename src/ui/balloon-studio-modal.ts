@@ -99,6 +99,8 @@ export class BalloonStudioModal {
   private panStartClient = { x: 0, y: 0 };
   private panStartPan = { x: 0, y: 0 };
   private quickBarPreviewTimer: number | null = null;
+  private multiSelectToggleCandidate: string | null = null;
+  private hasMovedDrag: boolean = false;
 
   // Viewport e Zoom Controlado EXCLUSIVAMENTE por Pinça (Estável, sem pular ao arrastar balões)
   private baseViewBox = { x: 0, y: 0, width: 600, height: 600 };
@@ -1032,7 +1034,23 @@ export class BalloonStudioModal {
       const target = e.target as SVGElement;
       const pieceGroup = target.closest('.balloon-piece') as SVGElement | null;
 
-      // Execução conforme a ferramenta ativa
+      // Execução conforme a ferramenta ativa:
+      // 1. Mover a Tela (Pan com 1 dedo ou mouse)
+      if (this.activeTouchTool === 'pan') {
+        this.isPanningWithTool = true;
+        this.panPointerId = e.pointerId;
+        this.panStartClient = { x: e.clientX, y: e.clientY };
+        this.panStartPan = { ...this.panOffset };
+        this.hideBalloonPill();
+        const container = document.getElementById('bs-canvas-container');
+        if (container) container.classList.add('is-panning');
+        try {
+          canvas.setPointerCapture(e.pointerId);
+        } catch (_) {}
+        return;
+      }
+
+      // 2. Apagar
       if (this.activeTouchTool === 'eraser') {
         if (pieceGroup) {
           const pieceId = pieceGroup.id.replace('piece-', '');
@@ -1041,6 +1059,7 @@ export class BalloonStudioModal {
         return;
       }
 
+      // 3. Inserção de Peças
       if (this.activeTouchTool === 'balloon-5' || this.activeTouchTool === 'light-point') {
         const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
         this.insertSingleBalloonAt(svgCoords.x, svgCoords.y, 5);
@@ -1096,11 +1115,54 @@ export class BalloonStudioModal {
         return;
       }
 
-      // Ferramenta 'adjust' (padrão)
+      // 4. Modo Múltiplos (Seleção Múltipla acumulativa e arrasto de grupo)
+      if (this.activeTouchTool === 'multi-select') {
+        if (pieceGroup) {
+          const pieceId = pieceGroup.id.replace('piece-', '');
+          if (this.selectedPieceIds.has(pieceId)) {
+            this.multiSelectToggleCandidate = pieceId;
+          } else {
+            this.selectedPieceIds.add(pieceId);
+            this.multiSelectToggleCandidate = null;
+          }
+          this.hasMovedDrag = false;
+
+          this.renderSelectionHighlights();
+          this.showBalloonPill();
+
+          this.isDragging = true;
+          this.dragPointerId = e.pointerId;
+
+          const svgPt = this.screenToSvgCoordinates(e.clientX, e.clientY);
+          this.dragStartSvgX = svgPt.x;
+          this.dragStartSvgY = svgPt.y;
+
+          this.dragPieceInitialPositions.clear();
+          this.selectedPieceIds.forEach((id) => {
+            const p = this.pieces.find((x) => x.id === id);
+            if (p) this.dragPieceInitialPositions.set(id, { x: p.x, y: p.y });
+          });
+
+          try {
+            canvas.setPointerCapture(e.pointerId);
+          } catch (_) {}
+        } else {
+          // Tocou no fundo no modo múltiplos: limpa a seleção
+          this.selectedPieceIds.clear();
+          this.renderSelectionHighlights();
+          this.hideBalloonPill();
+        }
+        return;
+      }
+
+      // 5. Modo Ajustar (Padrão: move peça ou grupo inteiro se já estiver selecionado)
       if (pieceGroup) {
         const pieceId = pieceGroup.id.replace('piece-', '');
-        this.selectedPieceIds.clear();
-        this.selectedPieceIds.add(pieceId);
+        // Se a peça já estiver no grupo de selecionados (ex: cluster recém inserido ou seleção anterior), mantém o grupo!
+        if (!this.selectedPieceIds.has(pieceId)) {
+          this.selectedPieceIds.clear();
+          this.selectedPieceIds.add(pieceId);
+        }
         this.renderSelectionHighlights();
         this.showBalloonPill();
 
@@ -1133,6 +1195,19 @@ export class BalloonStudioModal {
         this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       }
 
+      // Mover Tela com a ferramenta 'pan' (1 dedo ou mouse)
+      if (this.isPanningWithTool && e.pointerId === this.panPointerId && this.activePointers.size === 1) {
+        const dx = e.clientX - this.panStartClient.x;
+        const dy = e.clientY - this.panStartClient.y;
+        const svgScale = (this.baseViewBox.width / this.zoomLevel) / (canvas.clientWidth || 400);
+
+        this.panOffset.x = this.panStartPan.x - dx * svgScale;
+        this.panOffset.y = this.panStartPan.y - dy * svgScale;
+
+        this.applyViewport();
+        return;
+      }
+
       // Gesto de pinça com 2 dedos
       if (this.activePointers.size >= 2 && this.isPinching) {
         const pts = Array.from(this.activePointers.values());
@@ -1155,11 +1230,15 @@ export class BalloonStudioModal {
         return;
       }
 
-      // Arraste de peça com 1 único dedo
+      // Arraste de peças (individual ou grupo selecionado) com 1 único dedo
       if (this.isDragging && e.pointerId === this.dragPointerId && this.activePointers.size === 1) {
         const svgPt = this.screenToSvgCoordinates(e.clientX, e.clientY);
         const dx = svgPt.x - this.dragStartSvgX;
         const dy = svgPt.y - this.dragStartSvgY;
+
+        if (Math.hypot(dx, dy) > 3) {
+          this.hasMovedDrag = true;
+        }
 
         this.selectedPieceIds.forEach((id) => {
           const init = this.dragPieceInitialPositions.get(id);
@@ -1178,6 +1257,19 @@ export class BalloonStudioModal {
     const onPointerEnd = (e: PointerEvent) => {
       this.activePointers.delete(e.pointerId);
 
+      // Finaliza pan da ferramenta 'pan'
+      if (this.isPanningWithTool && e.pointerId === this.panPointerId) {
+        this.isPanningWithTool = false;
+        this.panPointerId = -1;
+        const container = document.getElementById('bs-canvas-container');
+        if (container) container.classList.remove('is-panning');
+        try {
+          if (canvas.hasPointerCapture(e.pointerId)) {
+            canvas.releasePointerCapture(e.pointerId);
+          }
+        } catch (_) {}
+      }
+
       if (this.activePointers.size < 2 && this.isPinching) {
         this.isPinching = false;
         // Cooldown de 240ms pós-pinça
@@ -1185,6 +1277,19 @@ export class BalloonStudioModal {
       }
 
       if (this.isDragging && e.pointerId === this.dragPointerId) {
+        // No modo múltiplos, se tocou em uma peça já selecionada sem arrastar, desmarca ela
+        if (this.activeTouchTool === 'multi-select' && !this.hasMovedDrag && this.multiSelectToggleCandidate) {
+          this.selectedPieceIds.delete(this.multiSelectToggleCandidate);
+          this.multiSelectToggleCandidate = null;
+        }
+
+        this.renderSelectionHighlights();
+        if (this.selectedPieceIds.size === 0) {
+          this.hideBalloonPill();
+        } else {
+          this.showBalloonPill();
+        }
+
         this.isDragging = false;
         this.dragPointerId = null;
         try {
@@ -1192,14 +1297,19 @@ export class BalloonStudioModal {
             canvas.releasePointerCapture(e.pointerId);
           }
         } catch (_) {}
-        this.saveHistory();
-        this.renderCanvas(true);
-        this.updateBalloonPillPosition();
+
+        if (this.hasMovedDrag) {
+          this.saveHistory();
+          this.renderCanvas(true);
+          this.updateBalloonPillPosition();
+        }
       }
     };
 
     canvas.addEventListener('pointerup', onPointerEnd);
     canvas.addEventListener('pointercancel', onPointerEnd);
+    window.addEventListener('pointerup', onPointerEnd);
+    window.addEventListener('pointercancel', onPointerEnd);
 
     // Zoom por scroll de mouse no desktop
     canvas.addEventListener('wheel', (e) => {
@@ -2054,6 +2164,22 @@ export class BalloonStudioModal {
 
   private setActiveTouchTool(tool: 'adjust' | 'multi-select' | 'pan' | 'eraser' | 'balloon-5' | 'balloon-7' | 'balloon-10' | 'balloon-12' | 'balloon-18' | 'balloon-24' | 'cluster-quad' | 'cluster-trio' | 'base-balloon' | 'light-point' | 'big-balloon'): void {
     this.activeTouchTool = tool;
+
+    // Limpa ponteiros órfãos para evitar travamento de toque
+    this.activePointers.clear();
+    this.isPanningWithTool = false;
+    this.isDragging = false;
+    this.isPinching = false;
+    this.multiSelectToggleCandidate = null;
+
+    // Atualiza classes do container do canvas para o cursor correto
+    const container = document.getElementById('bs-canvas-container');
+    if (container) {
+      container.classList.toggle('tool-pan', tool === 'pan');
+      container.classList.toggle('tool-multiselect', tool === 'multi-select');
+      container.classList.toggle('tool-eraser', tool === 'eraser');
+      container.classList.remove('is-panning');
+    }
 
     // Atualiza destaque na barra de ações rápidas
     const btnAdjust = document.getElementById('bs-quick-btn-adjust');

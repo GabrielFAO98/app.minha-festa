@@ -17,6 +17,7 @@ import {
   variateArrangement,
   applyVolumeLevel,
   adjustColorBrightness,
+  getFriendlyColorName,
   type BalloonPiece,
   type BalloonPaletteConfig,
   type BalloonSizeInches,
@@ -861,7 +862,7 @@ export class BalloonStudioModal {
     const customColorInput = document.getElementById('bs-custom-color-input') as HTMLInputElement | null;
     customColorInput?.addEventListener('input', (e) => {
       const hex = (e.target as HTMLInputElement).value;
-      if (hex) this.updateSlotColorAndName(this.editingColorSlot, hex, 'Cor Customizada');
+      if (hex) this.updateSlotColorAndName(this.editingColorSlot, hex, getFriendlyColorName(hex));
     });
 
     // 8. Eventos de Canvas: Pinch-to-zoom com multi-touch guard e arrasto de balões
@@ -898,8 +899,16 @@ export class BalloonStudioModal {
     if (screen === 'editor') {
       this.renderCanvas();
       this.syncPaletteSwatches();
-      this.renderTabActivePanel();
+      // Não reabre menus automaticamente; apenas renderiza se a gaveta estiver explicitamente aberta
+      if (this.isBottomDrawerOpen) {
+        this.renderTabActivePanel();
+      } else {
+        const panel = document.getElementById('bs-tab-active-panel');
+        if (panel) panel.style.display = 'none';
+      }
     } else if (screen === 'gallery') {
+      this.closeBottomDrawer();
+      this.closeAllSheets();
       this.renderSavedArrangements();
     }
   }
@@ -1388,7 +1397,7 @@ export class BalloonStudioModal {
       const coverUrl = this.palette.covers?.[s];
       const name = hasCover
         ? (this.palette.coverNames?.[s] || `Capa ${s}`)
-        : (this.palette.names?.[s] || `Cor ${s}`);
+        : (this.palette.names?.[s] || getFriendlyColorName(hex));
       const activeClass = this.activeColorSlot === s ? 'active' : '';
 
       const circleStyle = hasCover
@@ -1422,7 +1431,8 @@ export class BalloonStudioModal {
   private async openColorSheet(slot: BalloonSlot): Promise<void> {
     this.editingColorSlot = slot;
     const titleEl = document.getElementById('bs-color-sheet-title');
-    const currentName = this.palette.names?.[slot as 'A' | 'B' | 'C' | 'D' | 'E'] || `Cor ${slot}`;
+    const hex = (this.palette as any)[slot] || '#c97a8e';
+    const currentName = this.palette.names?.[slot as 'A' | 'B' | 'C' | 'D' | 'E'] || getFriendlyColorName(hex);
     if (titleEl) titleEl.textContent = `Editar Família ${slot} (${currentName})`;
 
     const currentFin = this.palette.finishes?.[slot as 'A' | 'B' | 'C' | 'D' | 'E'] || 'satin';
@@ -1563,7 +1573,7 @@ export class BalloonStudioModal {
   private updateSlotColorAndName(slot: BalloonSlot, hex: string, name: string): void {
     (this.palette as any)[slot] = hex;
     if (!this.palette.names) this.palette.names = { A: '', B: '', C: '', D: '', E: '' };
-    this.palette.names[slot as 'A' | 'B' | 'C' | 'D' | 'E'] = name;
+    this.palette.names[slot as 'A' | 'B' | 'C' | 'D' | 'E'] = name || getFriendlyColorName(hex);
 
     // Se tinha capa associada, desativa para usar a cor selecionada
     if (this.palette.covers && this.palette.covers[slot]) {
@@ -1589,6 +1599,9 @@ export class BalloonStudioModal {
     this.saveHistory();
     this.renderCanvas();
     this.syncPaletteSwatches();
+    if (this.isBottomDrawerOpen) {
+      this.renderTabActivePanel();
+    }
   }
 
   // ----------------------------------------------------------------------
@@ -1603,11 +1616,19 @@ export class BalloonStudioModal {
     }
   }
 
+  public closeAllSheets(): void {
+    const sheets = ['bs-color-sheet', 'bs-append-model-sheet', 'bs-shopping-modal', 'bs-conclude-modal'];
+    sheets.forEach((id) => this.toggleSheet(id, false));
+  }
+
   public closeBottomDrawer(): void {
     this.isBottomDrawerOpen = false;
     this.overlayEl?.querySelectorAll('.bs-dock-tab').forEach((b) => b.classList.remove('active'));
     const panel = document.getElementById('bs-tab-active-panel');
-    if (panel) panel.style.display = 'none';
+    if (panel) {
+      panel.style.display = 'none';
+      panel.innerHTML = '';
+    }
 
     const strip = document.getElementById('bs-palette-strip-bar');
     if (strip) strip.style.display = 'none';
@@ -1683,7 +1704,7 @@ export class BalloonStudioModal {
               const coverUrl = this.palette.covers?.[s];
               const name = hasCover
                 ? (this.palette.coverNames?.[s] || `Capa ${s}`)
-                : (this.palette.names?.[s] || `Cor ${s}`);
+                : (this.palette.names?.[s] || getFriendlyColorName(hex));
               const fin = this.palette.finishes?.[s] || 'satin';
               const badgeText = hasCover ? 'Capa / Estampa' : finishLabels[fin];
               const roleText = slotRoles[s];
@@ -1896,9 +1917,9 @@ export class BalloonStudioModal {
 
           <!-- 2. Ações do Arranjo (Botões amplos, sem quebras nem corte) -->
           <div class="bs-ajustes-actions" style="margin-top:12px">
-            <button id="bs-btn-forma-append-model" class="bs-btn-ajuste-full" title="Somar um modelo ao arranjo atual">
+            <button id="bs-btn-forma-append-model" class="bs-btn-ajuste-full" title="Somar outro modelo ao arranjo atual">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              <span>Adicionar Arranjo Modelo</span>
+              <span>Adicionar Modelo</span>
             </button>
             <button id="bs-btn-forma-variar" class="bs-btn-ajuste-full bs-btn-ajuste-secondary" title="Sortear novas posições e mesclas de cores">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
@@ -2283,10 +2304,29 @@ export class BalloonStudioModal {
   // ----------------------------------------------------------------------
 
   private startFromScratch(): void {
+    this.closeBottomDrawer();
+    this.closeAllSheets();
     this.arrangementTitle = 'Novo Arranjo';
     this.hasCustomName = false;
     const el = document.getElementById('bs-editor-current-title');
     if (el) el.textContent = this.arrangementTitle;
+
+    this.palette = {
+      A: '#c97a8e',
+      B: '#f7dbe1',
+      C: '#d4af37',
+      D: '#ffffff',
+      E: '#fdfbf7',
+      names: {
+        A: 'Rosa Quartzo',
+        B: 'Blush Suave',
+        C: 'Ouro Nobre',
+        D: 'Branco Neve',
+        E: 'Pérola'
+      },
+      finishes: { A: 'satin', B: 'satin', C: 'chrome', D: 'matte', E: 'satin' }
+    };
+    this.activeColorCount = 4;
 
     // Inicia com um cluster base de apoio
     this.pieces = [
@@ -2322,10 +2362,24 @@ export class BalloonStudioModal {
     this.activeColorCount = this.palette.colorCount || 4;
     if (!this.palette.E) this.palette.E = '#ffffff';
 
-    // Garante nomes amigáveis em português
+    // Garante nomes amigáveis fiéis às cores do modelo escolhido
     if (!this.palette.names) {
-      this.palette.names = { A: 'Rosa Quartzo', B: 'Blush Suave', C: 'Ouro Cromo', D: 'Branco Neve', E: 'Pérola' };
+      this.palette.names = {
+        A: getFriendlyColorName(this.palette.A),
+        B: getFriendlyColorName(this.palette.B),
+        C: getFriendlyColorName(this.palette.C),
+        D: getFriendlyColorName(this.palette.D),
+        E: getFriendlyColorName(this.palette.E || '#ffffff')
+      };
+    } else {
+      const slots: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
+      slots.forEach((s) => {
+        if (!this.palette.names![s]) {
+          this.palette.names![s] = getFriendlyColorName((this.palette as any)[s] || '#ffffff');
+        }
+      });
     }
+
     if (!this.palette.finishes) {
       this.palette.finishes = { A: 'satin', B: 'satin', C: 'chrome', D: 'matte', E: 'satin' };
     }
@@ -2333,22 +2387,43 @@ export class BalloonStudioModal {
     this.selectedPieceIds.clear();
     this.history = [];
     this.historyIndex = -1;
-        this.currentVolumeLevel = 'padrao';
+    this.currentVolumeLevel = 'padrao';
     this.hasConfirmedVariar = false;
     this.saveHistory();
+
+    // Fecha qualquer gaveta ou menu que estivesse aberto anteriormente!
+    this.closeBottomDrawer();
+    this.closeAllSheets();
 
     this.computeBaseViewBox();
     this.renderCanvas();
     this.syncPaletteSwatches();
-        this.renderTabActivePanel();
   }
 
   private applyPalettePreset(newPalette: BalloonPaletteConfig): void {
     this.palette = JSON.parse(JSON.stringify(newPalette));
+    if (!this.palette.names) {
+      this.palette.names = {
+        A: getFriendlyColorName(this.palette.A),
+        B: getFriendlyColorName(this.palette.B),
+        C: getFriendlyColorName(this.palette.C),
+        D: getFriendlyColorName(this.palette.D),
+        E: getFriendlyColorName(this.palette.E || '#ffffff')
+      };
+    } else {
+      const slots: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
+      slots.forEach((s) => {
+        if (!this.palette.names![s]) {
+          this.palette.names![s] = getFriendlyColorName((this.palette as any)[s] || '#ffffff');
+        }
+      });
+    }
     this.saveHistory();
     this.renderCanvas();
     this.syncPaletteSwatches();
-    this.renderTabActivePanel();
+    if (this.isBottomDrawerOpen) {
+      this.renderTabActivePanel();
+    }
   }
 
   // ----------------------------------------------------------------------
@@ -2788,6 +2863,8 @@ export class BalloonStudioModal {
     this.createDomStructure();
     if (!this.overlayEl) return;
 
+    this.closeBottomDrawer();
+    this.closeAllSheets();
     this.openedFromScenario = Boolean(options?.fromScenario);
     this.onInsertCallback = options?.onInsert;
     this.onSavedCallback = options?.onSaved;
@@ -2821,6 +2898,8 @@ export class BalloonStudioModal {
   }
 
   public loadBalloonProject(proj: ProjectData): void {
+    this.closeBottomDrawer();
+    this.closeAllSheets();
     this.currentBalloonProjectId = proj.id;
     this.arrangementTitle = proj.title || 'Arranjo de Balões';
     this.hasCustomName = Boolean(proj.title && proj.title !== 'Novo Arranjo');
@@ -2833,6 +2912,23 @@ export class BalloonStudioModal {
       this.currentDistributionMode = (proj.balloonData.distributionMode as any) || 'mesclado';
       this.currentVolumeLevel = (proj.balloonData.volumeLevel as any) || 'padrao';
       this.selectedTemplateId = proj.balloonData.selectedTemplateId || '';
+
+      if (!this.palette.names) {
+        this.palette.names = {
+          A: getFriendlyColorName(this.palette.A),
+          B: getFriendlyColorName(this.palette.B),
+          C: getFriendlyColorName(this.palette.C),
+          D: getFriendlyColorName(this.palette.D),
+          E: getFriendlyColorName(this.palette.E || '#ffffff')
+        };
+      } else {
+        const slots: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
+        slots.forEach((s) => {
+          if (!this.palette.names![s]) {
+            this.palette.names![s] = getFriendlyColorName((this.palette as any)[s] || '#ffffff');
+          }
+        });
+      }
     }
 
     this.hasEverBeenSaved = true;

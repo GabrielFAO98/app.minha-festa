@@ -114,38 +114,74 @@ export const FASHION_BALLOON_COLORS: FashionColor[] = [
   { name: 'Rosa Quartzo', hex: '#c97a8e', category: 'Rosas & Blush' },
   { name: 'Blush Suave', hex: '#f7dbe1', category: 'Rosas & Blush' },
   { name: 'Rosa Bebê', hex: '#fbcfe8', category: 'Rosas & Blush' },
+  { name: 'Rosa Doce', hex: '#f8b4d9', category: 'Rosas & Blush' },
+  { name: 'Rosa Chic', hex: '#f472b6', category: 'Rosas & Blush' },
   { name: 'Pink Chic', hex: '#ec4899', category: 'Rosas & Blush' },
   { name: 'Marsala Nobre', hex: '#831843', category: 'Rosas & Blush' },
   // Azuis & Celestes
   { name: 'Azul Bebê', hex: '#bfdbfe', category: 'Azuis & Celestes' },
+  { name: 'Azul Céu', hex: '#93c5fd', category: 'Azuis & Celestes' },
   { name: 'Azul Celeste', hex: '#60a5fa', category: 'Azuis & Celestes' },
-  { name: 'Azul Royal', hex: '#1d4ed8', category: 'Azuis & Celestes' },
+  { name: 'Azul Turquesa', hex: '#38bdf8', category: 'Azuis & Celestes' },
+  { name: 'Azul Royal', hex: '#1e40af', category: 'Azuis & Celestes' },
   { name: 'Azul Marinho', hex: '#1e3a8a', category: 'Azuis & Celestes' },
   // Terrosos & Boho
   { name: 'Terracota', hex: '#c2410c', category: 'Terrosos & Boho' },
+  { name: 'Caramelo', hex: '#85512b', category: 'Terrosos & Boho' },
   { name: 'Caramelo Nude', hex: '#d97706', category: 'Terrosos & Boho' },
   { name: 'Areia Macaron', hex: '#fed7aa', category: 'Terrosos & Boho' },
+  { name: 'Areia Nude', hex: '#f7eed7', category: 'Terrosos & Boho' },
   { name: 'Mostarda Vintage', hex: '#eab308', category: 'Terrosos & Boho' },
   // Verdes
   { name: 'Verde Eucalipto', hex: '#52796f', category: 'Verdes' },
+  { name: 'Sálvia Suave', hex: '#84a98c', category: 'Verdes' },
   { name: 'Verde Oliva', hex: '#4d6b2c', category: 'Verdes' },
   { name: 'Menta Pastel', hex: '#a7f3d0', category: 'Verdes' },
   { name: 'Verde Floresta', hex: '#166534', category: 'Verdes' },
   // Neutros & Básicos
   { name: 'Branco Neve', hex: '#ffffff', category: 'Neutros & Básicos' },
   { name: 'Off-White Pérola', hex: '#fdfbf7', category: 'Neutros & Básicos' },
+  { name: 'Off-White', hex: '#f8fafc', category: 'Neutros & Básicos' },
   { name: 'Cinza Prata', hex: '#cbd5e1', category: 'Neutros & Básicos' },
+  { name: 'Cinza Grafite', hex: '#71717a', category: 'Neutros & Básicos' },
   { name: 'Preto Noite', hex: '#18181b', category: 'Neutros & Básicos' },
   // Metálicos
   { name: 'Ouro Nobre', hex: '#d4af37', category: 'Metálicos' },
+  { name: 'Ouro Velho', hex: '#c59a3f', category: 'Metálicos' },
   { name: 'Rose Gold', hex: '#b76e79', category: 'Metálicos' },
   { name: 'Cobre Brilhante', hex: '#b45309', category: 'Metálicos' },
-  { name: 'Prata Espelhada', hex: '#e2e8f0', category: 'Metálicos' },
+  { name: 'Prata Espelho', hex: '#e2e8f0', category: 'Metálicos' },
   // Doces & Candy
   { name: 'Lilás Lavanda', hex: '#d8b4fe', category: 'Doces & Candy' },
+  { name: 'Lilás Mágico', hex: '#c084fc', category: 'Doces & Candy' },
   { name: 'Amarelo Candy', hex: '#fef08a', category: 'Doces & Candy' },
   { name: 'Tiffany Suave', hex: '#14b8a6', category: 'Doces & Candy' }
 ];
+
+export function getFriendlyColorName(hex: string): string {
+  if (!hex) return 'Cor Personalizada';
+  const clean = hex.toLowerCase().trim();
+  const exact = FASHION_BALLOON_COLORS.find(c => c.hex.toLowerCase() === clean);
+  if (exact) return exact.name;
+
+  const { r: r1, g: g1, b: b1 } = hexToRgb(clean);
+  let closestName = 'Cor Personalizada';
+  let minDistance = Infinity;
+
+  for (const c of FASHION_BALLOON_COLORS) {
+    const { r: r2, g: g2, b: b2 } = hexToRgb(c.hex);
+    const dr = r1 - r2;
+    const dg = g1 - g2;
+    const db = b1 - b2;
+    const dist = dr * dr * 0.3 + dg * dg * 0.59 + db * db * 0.11;
+    if (dist < minDistance) {
+      minDistance = dist;
+      closestName = c.name;
+    }
+  }
+
+  return closestName;
+}
 
 // Paletas Prontas Populares de Inspiração para o Estúdio com Nomes e Acabamentos
 export const STUDIO_PALETTE_PRESETS: { id: string; name: string; palette: BalloonPaletteConfig }[] = [
@@ -690,7 +726,7 @@ export const BALLOON_STUDIO_TEMPLATES: BalloonModelTemplate[] = [
     id: "modelo-arco-l-luxo",
     name: "Arco Orgânico em L Luxo",
     description: "Cotovelo com Big Balloon de 24\", coluna sinuosa com balões de 18\", cristais com glitter e tufos de acabamento.",
-    palette: {"A":"#c97a8e","B":"#f7dbe1","C":"#d4af37","D":"#ffffff"},
+    palette: {"A":"#c97a8e","B":"#f7dbe1","C":"#d4af37","D":"#ffffff","names":{"A":"Rosa Quartzo","B":"Blush Suave","C":"Ouro Nobre","D":"Branco Neve","E":"Pérola"},"finishes":{"A":"satin","B":"satin","C":"chrome","D":"matte","E":"satin"}},
     defaultWidthCm: 180,
     defaultHeightCm: 230,
     pieces: [
@@ -778,7 +814,7 @@ export const BALLOON_STUDIO_TEMPLATES: BalloonModelTemplate[] = [
     id: "modelo-cascata-romana",
     name: "Cascata Romana em S",
     description: "Arranjo fluido descendo em curva orgânica elegante pelo topo e lateral do painel romano.",
-    palette: {"A":"#4d6b2c","B":"#85512b","C":"#c59a3f","D":"#f7eed7"},
+    palette: {"A":"#4d6b2c","B":"#85512b","C":"#c59a3f","D":"#f7eed7","names":{"A":"Verde Oliva","B":"Caramelo","C":"Ouro Velho","D":"Areia Nude","E":"Branco Neve"},"finishes":{"A":"matte","B":"matte","C":"chrome","D":"satin","E":"satin"}},
     defaultWidthCm: 140,
     defaultHeightCm: 220,
     pieces: [
@@ -841,7 +877,7 @@ export const BALLOON_STUDIO_TEMPLATES: BalloonModelTemplate[] = [
     id: "modelo-demi-arco",
     name: "Demi-Arco Desconstruído",
     description: "Semi-arco moderno que contorna 60% do painel com base volumosa no chão e caimento leve no topo.",
-    palette: {"A":"#f8b4d9","B":"#d8b4fe","C":"#93c5fd","D":"#fef08a"},
+    palette: {"A":"#f8b4d9","B":"#d8b4fe","C":"#93c5fd","D":"#fef08a","names":{"A":"Rosa Doce","B":"Lilás Mágico","C":"Azul Céu","D":"Amarelo Candy","E":"Branco Neve"},"finishes":{"A":"matte","B":"matte","C":"satin","D":"matte","E":"satin"}},
     defaultWidthCm: 190,
     defaultHeightCm: 210,
     pieces: [
@@ -921,7 +957,7 @@ export const BALLOON_STUDIO_TEMPLATES: BalloonModelTemplate[] = [
     id: "modelo-guirlanda-suspensa",
     name: "Guirlanda Orgânica Suspensa",
     description: "Faixa orgânica horizontal perfeita para topo de boiserie, mesas ou painéis retangulares.",
-    palette: {"A":"#1e40af","B":"#60a5fa","C":"#cbd5e1","D":"#ffffff"},
+    palette: {"A":"#1e40af","B":"#60a5fa","C":"#cbd5e1","D":"#ffffff","names":{"A":"Azul Royal","B":"Azul Celeste","C":"Prata Espelho","D":"Branco Neve","E":"Azul Bebê"},"finishes":{"A":"satin","B":"satin","C":"chrome","D":"matte","E":"satin"}},
     defaultWidthCm: 240,
     defaultHeightCm: 90,
     pieces: [
@@ -986,7 +1022,7 @@ export const BALLOON_STUDIO_TEMPLATES: BalloonModelTemplate[] = [
     id: "modelo-cluster-chao",
     name: "Cluster Orgânico de Chão",
     description: "Arranjo de chão poente de alto impacto com base em balão de 24\" e camadas de acabamento.",
-    palette: {"A":"#c2410c","B":"#fed7aa","C":"#eab308","D":"#ffffff"},
+    palette: {"A":"#c2410c","B":"#fed7aa","C":"#eab308","D":"#ffffff","names":{"A":"Terracota","B":"Areia Macaron","C":"Mostarda Vintage","D":"Branco Neve","E":"Caramelo"},"finishes":{"A":"matte","B":"matte","C":"chrome","D":"matte","E":"satin"}},
     defaultWidthCm: 150,
     defaultHeightCm: 110,
     pieces: [
@@ -1043,7 +1079,7 @@ export const BALLOON_STUDIO_TEMPLATES: BalloonModelTemplate[] = [
     id: "modelo-totem-coluna",
     name: "Totem Orgânico / Coluna Moderna",
     description: "Coluna vertical esguia com curvas orgânicas para lateral de mesas ou entrada do evento.",
-    palette: {"A":"#18181b","B":"#d4af37","C":"#ffffff","D":"#71717a"},
+    palette: {"A":"#18181b","B":"#d4af37","C":"#ffffff","D":"#71717a","names":{"A":"Preto Noite","B":"Ouro Nobre","C":"Branco Neve","D":"Cinza Grafite","E":"Prata Espelho"},"finishes":{"A":"matte","B":"chrome","C":"satin","D":"matte","E":"chrome"}},
     defaultWidthCm: 100,
     defaultHeightCm: 220,
     pieces: [
@@ -1100,7 +1136,7 @@ export const BALLOON_STUDIO_TEMPLATES: BalloonModelTemplate[] = [
     id: "modelo-arco-duplo",
     name: "Arco Orgânico Bicolor",
     description: "Harmonia contemporânea em blocos orgânicos contrastantes com transição elegante.",
-    palette: {"A":"#c2410c","B":"#fed7aa","C":"#d4af37","D":"#ffffff"},
+    palette: {"A":"#c2410c","B":"#fed7aa","C":"#d4af37","D":"#ffffff","names":{"A":"Terracota","B":"Nude Macaron","C":"Ouro Nobre","D":"Branco Neve","E":"Cobre"},"finishes":{"A":"matte","B":"matte","C":"chrome","D":"matte","E":"chrome"}},
     defaultWidthCm: 180,
     defaultHeightCm: 220,
     pieces: [
@@ -1181,7 +1217,7 @@ export const BALLOON_STUDIO_TEMPLATES: BalloonModelTemplate[] = [
     id: "modelo-moldura-redonda",
     name: "Moldura para Painel Redondo 270°",
     description: "Arco escultural que abraça 3/4 da circunferência do painel redondo de 150cm a 180cm.",
-    palette: {"A":"#f472b6","B":"#38bdf8","C":"#ffffff","D":"#d4af37"},
+    palette: {"A":"#f472b6","B":"#38bdf8","C":"#ffffff","D":"#d4af37","names":{"A":"Rosa Chic","B":"Azul Turquesa","C":"Branco Neve","D":"Ouro Nobre","E":"Pérola"},"finishes":{"A":"satin","B":"satin","C":"matte","D":"chrome","E":"satin"}},
     defaultWidthCm: 210,
     defaultHeightCm: 210,
     pieces: [
@@ -1280,7 +1316,7 @@ export const BALLOON_STUDIO_TEMPLATES: BalloonModelTemplate[] = [
     id: "modelo-cascata-mesa",
     name: "Cascata Mesa Cilindro & Chão",
     description: "Enfeite dinâmico que nasce no topo da mesa cilindro e escorre organicamente até o chão.",
-    palette: {"A":"#52796f","B":"#84a98c","C":"#d4af37","D":"#f8fafc"},
+    palette: {"A":"#52796f","B":"#84a98c","C":"#d4af37","D":"#f8fafc","names":{"A":"Verde Eucalipto","B":"Sálvia Suave","C":"Ouro Nobre","D":"Off-White Pérola","E":"Branco Neve"},"finishes":{"A":"matte","B":"matte","C":"chrome","D":"satin","E":"satin"}},
     defaultWidthCm: 120,
     defaultHeightCm: 170,
     pieces: [
@@ -1339,7 +1375,7 @@ export const BALLOON_STUDIO_TEMPLATES: BalloonModelTemplate[] = [
     id: "modelo-nuvem-suspensa",
     name: "Nuvem Orgânica Suspensa",
     description: "Composição aérea macia e volumosa com efeito visual fofo de nuvem de balões.",
-    palette: {"A":"#f8b4d9","B":"#d8b4fe","C":"#93c5fd","D":"#fef08a"},
+    palette: {"A":"#f8b4d9","B":"#d8b4fe","C":"#93c5fd","D":"#fef08a","names":{"A":"Rosa Doce","B":"Lilás Mágico","C":"Azul Céu","D":"Amarelo Candy","E":"Branco Neve"},"finishes":{"A":"matte","B":"matte","C":"satin","D":"matte","E":"satin"}},
     defaultWidthCm: 190,
     defaultHeightCm: 120,
     pieces: [

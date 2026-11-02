@@ -1,7 +1,7 @@
 // Motor de Criação, Renderização e Cálculo de Balões Orgânicos
 // Padrão de Alto Nível para Decoração de Festas Profissionais
 
-export type BalloonSizeInches = 5 | 10 | 12 | 18 | 24;
+export type BalloonSizeInches = 5 | 7 | 10 | 12 | 18 | 24;
 export type BalloonFinish = 'satin' | 'matte' | 'chrome' | 'crystal' | 'glitter';
 export type BalloonSlot = 'A' | 'B' | 'C' | 'D' | 'E' | 'custom';
 
@@ -56,6 +56,7 @@ export interface BalloonModelTemplate {
 // Conversão de polegadas para raio no canvas
 export const BALLOON_SIZE_RADIUS_MAP: Record<BalloonSizeInches, number> = {
   5: 12,   // ~12.5cm
+  7: 17,   // ~17.5cm
   10: 23,  // ~25cm
   12: 28,  // ~30cm
   18: 42,  // ~45cm
@@ -441,7 +442,7 @@ export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPalet
 
 // Calcula estatísticas inteligentes (lista de compras) da composição
 export function calculateArrangementStats(pieces: BalloonPiece[], palette?: BalloonPaletteConfig): ArrangementStats {
-  const bySize: Record<BalloonSizeInches, number> = { 5: 0, 10: 0, 12: 0, 18: 0, 24: 0 };
+  const bySize: Record<BalloonSizeInches, number> = { 5: 0, 7: 0, 10: 0, 12: 0, 18: 0, 24: 0 };
   const bySlot: Record<BalloonSlot, number> = { A: 0, B: 0, C: 0, D: 0, E: 0, custom: 0 };
   const byFinish: Record<BalloonFinish, number> = { satin: 0, matte: 0, chrome: 0, crystal: 0, glitter: 0 };
 

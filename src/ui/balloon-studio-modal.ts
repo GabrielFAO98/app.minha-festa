@@ -61,6 +61,7 @@ export class BalloonStudioModal {
     | 'adjust'
     | 'eraser'
     | 'balloon-5'
+    | 'balloon-7'
     | 'balloon-10'
     | 'balloon-12'
     | 'balloon-18'
@@ -645,7 +646,7 @@ export class BalloonStudioModal {
     });
 
     document.getElementById('bs-pill-size-btn')?.addEventListener('click', () => {
-      const sizes: BalloonSizeInches[] = [5, 10, 12, 18, 24];
+      const sizes: BalloonSizeInches[] = [5, 7, 10, 12, 18, 24];
       const p = this.getActiveSelectedPiece();
       const currentSize = p?.sizeInches || 12;
       const nextIdx = (sizes.indexOf(currentSize) + 1) % sizes.length;
@@ -934,6 +935,12 @@ export class BalloonStudioModal {
       if (this.activeTouchTool === 'balloon-5' || this.activeTouchTool === 'light-point') {
         const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
         this.insertSingleBalloonAt(svgCoords.x, svgCoords.y, 5);
+        return;
+      }
+
+      if (this.activeTouchTool === 'balloon-7') {
+        const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
+        this.insertSingleBalloonAt(svgCoords.x, svgCoords.y, 7);
         return;
       }
 
@@ -1523,12 +1530,9 @@ export class BalloonStudioModal {
 
       panel.innerHTML = `
         <div class="bs-panel-cores">
-          <!-- Topo: Título da seção + Seletor de Quantidade de Cores -->
+                    <!-- Topo: Título da seção + Seletor de Quantidade de Cores -->
           <div class="bs-cores-header-row">
-            <div class="bs-cores-title-box">
-              <span class="bs-cores-main-title">Cores do Arranjo</span>
-              <span class="bs-cores-subtitle">Toque no card para editar tom, acabamento ou estampa</span>
-            </div>
+            <span class="bs-cores-main-title">Cores do Arranjo</span>
             <div class="bs-color-count-chips" id="bs-color-count-selector">
               <button class="bs-count-chip ${this.activeColorCount === 2 ? 'active' : ''}" data-color-count="2" title="2 Cores">2</button>
               <button class="bs-count-chip ${this.activeColorCount === 3 ? 'active' : ''}" data-color-count="3" title="3 Cores">3</button>
@@ -1537,8 +1541,8 @@ export class BalloonStudioModal {
             </div>
           </div>
 
-          <!-- Grade dos Cards de Famílias de Cores / Capas Vinculadas (2 colunas) -->
-          <div class="bs-color-family-grid">
+          <!-- Lista de Cores do Arranjo (1 coluna fluida, 100% legível em qualquer tela) -->
+          <div class="bs-color-slots-list">
             ${activeSlots.map((s) => {
               const hex = (this.palette as any)[s] || (s === 'E' ? '#f8fafc' : '#d4af37');
               const hasCover = Boolean(this.palette.covers && this.palette.covers[s]);
@@ -1547,7 +1551,7 @@ export class BalloonStudioModal {
                 ? (this.palette.coverNames?.[s] || `Capa ${s}`)
                 : (this.palette.names?.[s] || `Cor ${s}`);
               const fin = this.palette.finishes?.[s] || 'satin';
-              const badgeText = hasCover ? 'Estampa' : finishLabels[fin];
+              const badgeText = hasCover ? 'Capa / Estampa' : finishLabels[fin];
               const roleText = slotRoles[s];
 
               const ballStyle = hasCover
@@ -1555,16 +1559,16 @@ export class BalloonStudioModal {
                 : `background: radial-gradient(circle at 35% 32%, #FFFFFF 0%, ${hex} 55%, ${adjustColorBrightness(hex, -0.3)} 100%); border: 2px solid #FFFFFF; box-shadow: 0 2px 6px rgba(0,0,0,0.18);`;
 
               return `
-                <div class="bs-color-family-card ${this.activeColorSlot === s ? 'active' : ''}" data-slot="${s}" title="Editar ${roleText}">
+                <div class="bs-color-slot-row bs-color-family-card ${this.activeColorSlot === s ? 'active' : ''}" data-slot="${s}" title="Editar ${roleText}">
                   <div class="bs-color-swatch-ball" style="${ballStyle}"></div>
-                  <div class="bs-color-card-info">
-                    <div class="bs-color-card-top">
-                      <strong class="bs-color-card-name">${name}</strong>
-                      <span class="bs-color-card-badge">${badgeText}</span>
+                  <div class="bs-color-slot-details">
+                    <div class="bs-color-slot-title-line">
+                      <strong class="bs-color-slot-name">${name}</strong>
+                      <span class="bs-color-slot-badge">${badgeText}</span>
                     </div>
-                    <span class="bs-color-card-role">${roleText}</span>
+                    <span class="bs-color-slot-role">${roleText}</span>
                   </div>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="bs-color-card-arrow"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="bs-color-slot-arrow"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </div>
               `;
             }).join('')}
@@ -1647,97 +1651,95 @@ export class BalloonStudioModal {
       panel.innerHTML = `
         <div class="bs-panel-incluir">
           <div class="bs-label-row">
-            <span>Adicionar Peças ao Arranjo:</span>
-            <em>Toque para posicionar ou clique em Inserir</em>
+            <span>Toque na peça para adicionar:</span>
+            <em>Balões e clusters prontos</em>
           </div>
           <div class="bs-elements-catalog-grid">
             <!-- 5 polegadas -->
-            <div class="bs-element-card ${this.activeTouchTool === 'balloon-5' ? 'active' : ''}" data-tool="balloon-5">
+            <div class="bs-element-card" data-tool="balloon-5" data-type="balloon-5">
               <div class="bs-elem-thumb-balloon bs-size-5"></div>
               <div class="bs-elem-info">
                 <strong class="bs-elem-title">5" Detalhe</strong>
                 <span class="bs-elem-sub">Ponto de luz</span>
               </div>
-              <button class="bs-elem-btn-insert-now" data-action="insert-center" data-type="balloon-5">+ Inserir</button>
+            </div>
+
+            <!-- 7 polegadas -->
+            <div class="bs-element-card" data-tool="balloon-7" data-type="balloon-7">
+              <div class="bs-elem-thumb-balloon bs-size-7"></div>
+              <div class="bs-elem-info">
+                <strong class="bs-elem-title">7" Mini</strong>
+                <span class="bs-elem-sub">Transição</span>
+              </div>
             </div>
 
             <!-- 10 polegadas -->
-            <div class="bs-element-card ${this.activeTouchTool === 'balloon-10' ? 'active' : ''}" data-tool="balloon-10">
+            <div class="bs-element-card" data-tool="balloon-10" data-type="balloon-10">
               <div class="bs-elem-thumb-balloon bs-size-10"></div>
               <div class="bs-elem-info">
                 <strong class="bs-elem-title">10" Médio</strong>
                 <span class="bs-elem-sub">Preenchimento</span>
               </div>
-              <button class="bs-elem-btn-insert-now" data-action="insert-center" data-type="balloon-10">+ Inserir</button>
             </div>
 
             <!-- 12 polegadas -->
-            <div class="bs-element-card ${this.activeTouchTool === 'balloon-12' ? 'active' : ''}" data-tool="balloon-12">
+            <div class="bs-element-card" data-tool="balloon-12" data-type="balloon-12">
               <div class="bs-elem-thumb-balloon bs-size-12"></div>
               <div class="bs-elem-info">
                 <strong class="bs-elem-title">12" Padrão</strong>
                 <span class="bs-elem-sub">Volume base</span>
               </div>
-              <button class="bs-elem-btn-insert-now" data-action="insert-center" data-type="balloon-12">+ Inserir</button>
             </div>
 
             <!-- 18 polegadas -->
-            <div class="bs-element-card ${this.activeTouchTool === 'balloon-18' ? 'active' : ''}" data-tool="balloon-18">
+            <div class="bs-element-card" data-tool="balloon-18" data-type="balloon-18">
               <div class="bs-elem-thumb-balloon bs-size-18"></div>
               <div class="bs-elem-info">
                 <strong class="bs-elem-title">18" Destaque</strong>
                 <span class="bs-elem-sub">Volume forte</span>
               </div>
-              <button class="bs-elem-btn-insert-now" data-action="insert-center" data-type="balloon-18">+ Inserir</button>
             </div>
 
             <!-- 24 polegadas -->
-            <div class="bs-element-card ${this.activeTouchTool === 'balloon-24' ? 'active' : ''}" data-tool="balloon-24">
+            <div class="bs-element-card" data-tool="balloon-24" data-type="balloon-24">
               <div class="bs-elem-thumb-balloon bs-size-24"></div>
               <div class="bs-elem-info">
                 <strong class="bs-elem-title">24" Gigante</strong>
                 <span class="bs-elem-sub">Big Balloon</span>
               </div>
-              <button class="bs-elem-btn-insert-now" data-action="insert-center" data-type="balloon-24">+ Inserir</button>
             </div>
 
             <!-- Cluster Quad -->
-            <div class="bs-element-card ${this.activeTouchTool === 'cluster-quad' ? 'active' : ''}" data-tool="cluster-quad">
+            <div class="bs-element-card" data-tool="cluster-quad" data-type="cluster-quad">
               <div class="bs-elem-thumb-cluster"><i></i><i></i><i></i><i></i></div>
               <div class="bs-elem-info">
                 <strong class="bs-elem-title">Cluster 4x</strong>
                 <span class="bs-elem-sub">Quad agrupado</span>
               </div>
-              <button class="bs-elem-btn-insert-now" data-action="insert-center" data-type="cluster-quad">+ Inserir</button>
             </div>
 
             <!-- Tufo Trio -->
-            <div class="bs-element-card ${this.activeTouchTool === 'cluster-trio' ? 'active' : ''}" data-tool="cluster-trio">
+            <div class="bs-element-card" data-tool="cluster-trio" data-type="cluster-trio">
               <div class="bs-elem-thumb-trio"><i></i><i></i><i></i></div>
               <div class="bs-elem-info">
                 <strong class="bs-elem-title">Tufo 3x</strong>
                 <span class="bs-elem-sub">Trio mini 5"</span>
               </div>
-              <button class="bs-elem-btn-insert-now" data-action="insert-center" data-type="cluster-trio">+ Inserir</button>
             </div>
           </div>
         </div>
       `;
 
-      // Botão direto de inserção no centro do canvas
-      panel.querySelectorAll('.bs-elem-btn-insert-now').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const type = (e.currentTarget as HTMLElement).dataset.type as any;
-          if (type) this.insertPieceAtCenter(type);
-        });
-      });
-
-      // Clique no card arma inserção single-shot no canvas
+      // Clique direto no card: insere a peça imediatamente no centro do cenário
       panel.querySelectorAll('.bs-element-card').forEach((card) => {
         card.addEventListener('click', (e) => {
-          const tool = (e.currentTarget as HTMLElement).dataset.tool as any;
-          if (tool) this.setActiveTouchTool(tool);
+          const el = e.currentTarget as HTMLElement;
+          const type = el.dataset.type as any;
+          if (type) {
+            this.insertPieceAtCenter(type);
+            el.classList.add('bs-card-pulse');
+            setTimeout(() => el.classList.remove('bs-card-pulse'), 250);
+          }
         });
       });
       return;
@@ -1801,15 +1803,15 @@ export class BalloonStudioModal {
             <button class="bs-seg-btn ${this.currentVolumeLevel === 'cheio' ? 'active' : ''}" data-volume="cheio">Super Cheio</button>
           </div>
 
-          <!-- 3. Ações: Variar & Adicionar Arranjo Modelo -->
-          <div class="bs-actions-forma-grid" style="margin-top:12px">
-            <button id="bs-btn-forma-variar" class="bs-btn-action-forma" title="Sortear novas posições e mesclas de cores">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
-              <span>Variar</span>
-            </button>
-            <button id="bs-btn-forma-append-model" class="bs-btn-action-forma" title="Somar um modelo ao arranjo atual">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <!-- 3. Ações do Arranjo (Botões amplos, sem quebras nem corte) -->
+          <div class="bs-ajustes-actions" style="margin-top:10px">
+            <button id="bs-btn-forma-append-model" class="bs-btn-ajuste-full" title="Somar um modelo ao arranjo atual">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
               <span>Adicionar Arranjo Modelo</span>
+            </button>
+            <button id="bs-btn-forma-variar" class="bs-btn-ajuste-full bs-btn-ajuste-secondary" title="Sortear novas posições e mesclas de cores">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+              <span>Variar Arranjo</span>
             </button>
           </div>
         </div>
@@ -1946,7 +1948,7 @@ export class BalloonStudioModal {
   }
 
   // Atualiza a ferramenta ativa com feedback visual claro e destaque na quick bar
-  private setActiveTouchTool(tool: 'adjust' | 'eraser' | 'balloon-5' | 'balloon-10' | 'balloon-12' | 'balloon-18' | 'balloon-24' | 'cluster-quad' | 'cluster-trio' | 'base-balloon' | 'light-point' | 'big-balloon'): void {
+  private setActiveTouchTool(tool: 'adjust' | 'eraser' | 'balloon-5' | 'balloon-7' | 'balloon-10' | 'balloon-12' | 'balloon-18' | 'balloon-24' | 'cluster-quad' | 'cluster-trio' | 'base-balloon' | 'light-point' | 'big-balloon'): void {
     this.activeTouchTool = tool;
 
     // Atualiza destaque na barra de ações rápidas: apenas ajustar ou apagar fica destacado
@@ -2110,7 +2112,7 @@ export class BalloonStudioModal {
   }
 
   // Inserção no centro do canvas (usada pelo botão + Inserir)
-  private insertPieceAtCenter(type: 'balloon-5' | 'balloon-10' | 'balloon-12' | 'balloon-18' | 'balloon-24' | 'cluster-quad' | 'cluster-trio'): void {
+  private insertPieceAtCenter(type: 'balloon-5' | 'balloon-7' | 'balloon-10' | 'balloon-12' | 'balloon-18' | 'balloon-24' | 'cluster-quad' | 'cluster-trio'): void {
     const cx = this.baseViewBox.x + this.baseViewBox.width / 2 + this.panOffset.x;
     const cy = this.baseViewBox.y + this.baseViewBox.height / 2 + this.panOffset.y;
 
@@ -2119,7 +2121,7 @@ export class BalloonStudioModal {
     } else if (type === 'cluster-trio') {
       this.insertClusterTrioAt(cx, cy);
     } else {
-      const size = type === 'balloon-5' ? 5 : type === 'balloon-10' ? 10 : type === 'balloon-12' ? 12 : type === 'balloon-18' ? 18 : 24;
+      const size = type === 'balloon-5' ? 5 : type === 'balloon-7' ? 7 : type === 'balloon-10' ? 10 : type === 'balloon-12' ? 12 : type === 'balloon-18' ? 18 : 24;
       this.insertSingleBalloonAt(cx, cy, size as BalloonSizeInches);
     }
   }
@@ -2387,12 +2389,12 @@ export class BalloonStudioModal {
       const piecesOfSlot = this.pieces.filter((p) => p.slot === s);
       if (piecesOfSlot.length === 0) return '';
 
-      const countsBySize: Record<BalloonSizeInches, number> = { 5: 0, 10: 0, 12: 0, 18: 0, 24: 0 };
+      const countsBySize: Record<BalloonSizeInches, number> = { 5: 0, 7: 0, 10: 0, 12: 0, 18: 0, 24: 0 };
       piecesOfSlot.forEach((p) => {
         countsBySize[p.sizeInches]++;
       });
 
-      const sizesBadges = ([18, 12, 10, 5] as BalloonSizeInches[])
+      const sizesBadges = ([24, 18, 12, 10, 7, 5] as BalloonSizeInches[])
         .filter((sz) => countsBySize[sz] > 0)
         .map((sz) => {
           const qty = Math.ceil(countsBySize[sz] * mult);
@@ -2440,10 +2442,10 @@ export class BalloonStudioModal {
       const piecesOfSlot = this.pieces.filter((p) => p.slot === s);
       if (piecesOfSlot.length === 0) return;
 
-      const countsBySize: Record<BalloonSizeInches, number> = { 5: 0, 10: 0, 12: 0, 18: 0, 24: 0 };
+      const countsBySize: Record<BalloonSizeInches, number> = { 5: 0, 7: 0, 10: 0, 12: 0, 18: 0, 24: 0 };
       piecesOfSlot.forEach((p) => countsBySize[p.sizeInches]++);
 
-      const sizesStr = ([18, 12, 10, 5] as BalloonSizeInches[])
+      const sizesStr = ([24, 18, 12, 10, 7, 5] as BalloonSizeInches[])
         .filter((sz) => countsBySize[sz] > 0)
         .map((sz) => `${sz}" × ${Math.ceil(countsBySize[sz] * mult)}`)
         .join(' · ');

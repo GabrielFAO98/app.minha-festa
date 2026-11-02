@@ -9,6 +9,9 @@ import {
   renderArrangementSvg,
   arrangementSvgToDataUrl,
   calculateArrangementStats,
+  generateStudioDefs,
+  renderBalloonPieceSvg,
+  sortPiecesByDepth,
   mirrorArrangementHorizontal,
   distributeColors,
   variateArrangement,
@@ -149,7 +152,7 @@ export class BalloonStudioModal {
             <!-- GRID DOS 10 MODELOS REALISTAS (SEM TAGS) -->
             <div class="bs-gallery-grid" id="bs-gallery-templates-grid">
               ${BALLOON_STUDIO_TEMPLATES.map((tmpl) => {
-                const { svg } = renderArrangementSvg(tmpl.pieces, tmpl.palette, { pad: 16, hasFloorShadow: false });
+                const { svg } = renderArrangementSvg(tmpl.pieces, tmpl.palette, { pad: 16, hasFloorShadow: false, idPrefix: `gal-${tmpl.id}-` });
                 return `
                   <div class="bs-template-card" data-template-id="${tmpl.id}">
                     <div class="bs-card-thumb">
@@ -904,27 +907,40 @@ export class BalloonStudioModal {
   // ----------------------------------------------------------------------
 
   private renderCanvas(updateDimensions = true): void {
-    const balloonsLayer = document.getElementById('bs-balloons-layer');
-    const defsLayer = document.getElementById('bs-svg-defs');
-    if (!balloonsLayer || !defsLayer || !this.canvasSvgEl) return;
+    if (!this.canvasSvgEl) return;
 
-    // Renderiza o SVG com ordenação de profundidade física automática (24"/18" no fundo, 5" na frente)
-    const { svg, widthCm, heightCm, stats } = renderArrangementSvg(this.pieces, this.palette, {
-      hasFloorShadow: true
+    const { widthCm, heightCm, stats } = renderArrangementSvg(this.pieces, this.palette, {
+      hasFloorShadow: true,
+      idPrefix: 'bs-cv-'
     });
 
-    // Injeta defs e nós SVG
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(svg, 'image/svg+xml');
+    const defs = generateStudioDefs(this.palette, 'bs-cv-');
+    const sortedPieces = sortPiecesByDepth(this.pieces);
+    let piecesHtml = '';
+    for (const p of sortedPieces) {
+      piecesHtml += renderBalloonPieceSvg(p, this.palette, 'bs-cv-');
+    }
 
-    const newDefs = doc.querySelector('defs');
-    if (newDefs) defsLayer.innerHTML = newDefs.innerHTML;
+    let floorShadow = '';
+    if (this.pieces.length > 0) {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (const p of this.pieces) {
+        const r = BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28;
+        if (p.x - r < minX) minX = p.x - r;
+        if (p.x + r > maxX) maxX = p.x + r;
+        if (p.y - r < minY) minY = p.y - r;
+        if (p.y + r > maxY) maxY = p.y + r;
+      }
+      const floorY = maxY + 6;
+      floorShadow = `<ellipse cx="${(minX + maxX) / 2}" cy="${floorY}" rx="${(maxX - minX) * 0.40}" ry="12" fill="#0f172a" opacity="0.22" filter="url(#bs-cv-floorShadowBlur)"/>`;
+    }
 
-    const pieceElements = Array.from(doc.querySelectorAll('.balloon-piece'));
-    balloonsLayer.innerHTML = '';
-    pieceElements.forEach((el) => {
-      balloonsLayer.appendChild(el);
-    });
+    this.canvasSvgEl.innerHTML = `
+      <defs id="bs-svg-defs">${defs}</defs>
+      ${floorShadow}
+      <g id="bs-balloons-layer">${piecesHtml}</g>
+      <g id="bs-highlight-layer"></g>
+    `;
 
     if (updateDimensions) {
       const dimBadge = document.getElementById('bs-chip-dimension');
@@ -1486,6 +1502,9 @@ export class BalloonStudioModal {
     this.saveHistory();
 
     this.computeBaseViewBox();
+    this.renderCanvas();
+    this.syncPaletteSwatches();
+    this.renderTabActivePanel();
   }
 
   private applyPalettePreset(newPalette: BalloonPaletteConfig): void {
@@ -1645,7 +1664,7 @@ export class BalloonStudioModal {
     if (linkCount) linkCount.textContent = `${this.pieces.length}`;
 
     if (previewBox) {
-      const { svg } = renderArrangementSvg(this.pieces, this.palette, { pad: 20, hasFloorShadow: true });
+      const { svg } = renderArrangementSvg(this.pieces, this.palette, { pad: 20, hasFloorShadow: true, idPrefix: "bs-concl-" });
       previewBox.innerHTML = svg;
     }
 

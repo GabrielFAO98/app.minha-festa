@@ -241,20 +241,20 @@ export const STUDIO_PALETTE_PRESETS: { id: string; name: string; palette: Balloo
 ];
 
 // Gera definições SVG (filtros de sombra e gradientes de cada acabamento)
-export function generateStudioDefs(palette: BalloonPaletteConfig): string {
+export function generateStudioDefs(palette: BalloonPaletteConfig, idPrefix: string = ""): string {
   let defs = `
-    <filter id="balloonShadow" x="-25%" y="-25%" width="150%" height="150%">
+    <filter id="${idPrefix}balloonShadow" x="-25%" y="-25%" width="150%" height="150%">
       <feDropShadow dx="1.6" dy="3.6" stdDeviation="3.2" flood-color="#090d16" flood-opacity="0.22"/>
     </filter>
-    <filter id="floorShadowBlur" x="-30%" y="-30%" width="160%" height="160%">
+    <filter id="${idPrefix}floorShadowBlur" x="-30%" y="-30%" width="160%" height="160%">
       <feGaussianBlur stdDeviation="6"/>
     </filter>
-    <radialGradient id="glare_soft" cx="50%" cy="50%" r="50%">
+    <radialGradient id="${idPrefix}glare_soft" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
       <stop offset="65%" stop-color="#ffffff" stop-opacity="0.10"/>
       <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="glare_chrome" cx="45%" cy="40%" r="55%">
+    <radialGradient id="${idPrefix}glare_chrome" cx="45%" cy="40%" r="55%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85"/>
       <stop offset="40%" stop-color="#ffffff" stop-opacity="0.35"/>
       <stop offset="75%" stop-color="#ffffff" stop-opacity="0.05"/>
@@ -274,7 +274,7 @@ export function generateStudioDefs(palette: BalloonPaletteConfig): string {
     const satDeep = isLight ? '#94a3b8' : adjustColorBrightness(hex, -0.38);
 
     defs += `
-    <radialGradient id="grad_satin_${slot}" cx="38%" cy="34%" r="65%" fx="32%" fy="28%">
+    <radialGradient id="${idPrefix}grad_satin_${slot}" cx="38%" cy="34%" r="65%" fx="32%" fy="28%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity="${isLight ? 0.95 : 0.75}"/>
       <stop offset="16%" stop-color="${satLight}"/>
       <stop offset="52%" stop-color="${satMid}"/>
@@ -290,7 +290,7 @@ export function generateStudioDefs(palette: BalloonPaletteConfig): string {
     const matDeep = isLight ? '#94a3b8' : adjustColorBrightness(hex, -0.28);
 
     defs += `
-    <radialGradient id="grad_matte_${slot}" cx="40%" cy="36%" r="68%" fx="36%" fy="32%">
+    <radialGradient id="${idPrefix}grad_matte_${slot}" cx="40%" cy="36%" r="68%" fx="36%" fy="32%">
       <stop offset="0%" stop-color="${matLight}" stop-opacity="0.9"/>
       <stop offset="35%" stop-color="${matMid}"/>
       <stop offset="80%" stop-color="${matShadow}"/>
@@ -306,7 +306,7 @@ export function generateStudioDefs(palette: BalloonPaletteConfig): string {
     const chrRim = adjustColorBrightness(hex, 0.25);
 
     defs += `
-    <radialGradient id="grad_chrome_${slot}" cx="36%" cy="30%" r="70%" fx="30%" fy="24%">
+    <radialGradient id="${idPrefix}grad_chrome_${slot}" cx="36%" cy="30%" r="70%" fx="30%" fy="24%">
       <stop offset="0%" stop-color="${chrHighlight}" stop-opacity="0.95"/>
       <stop offset="15%" stop-color="${chrBright}"/>
       <stop offset="42%" stop-color="${chrMid}"/>
@@ -318,7 +318,7 @@ export function generateStudioDefs(palette: BalloonPaletteConfig): string {
 
     // 4. CRYSTAL
     defs += `
-    <radialGradient id="grad_crystal_${slot}" cx="35%" cy="32%" r="68%" fx="28%" fy="24%">
+    <radialGradient id="${idPrefix}grad_crystal_${slot}" cx="35%" cy="32%" r="68%" fx="28%" fy="24%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity="0.75"/>
       <stop offset="12%" stop-color="#ffffff" stop-opacity="0.10"/>
       <stop offset="60%" stop-color="${hex}" stop-opacity="0.04"/>
@@ -333,7 +333,7 @@ export function generateStudioDefs(palette: BalloonPaletteConfig): string {
 }
 
 // Renderiza uma peça de balão individual
-export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPaletteConfig): string {
+export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPaletteConfig, idPrefix: string = ""): string {
   const { x, y, sizeInches = 12, slot = 'A', finish = 'satin', glitterColor = '#d4af37' } = piece;
   const r = BALLOON_SIZE_RADIUS_MAP[sizeInches] || 28;
   const rx = r * 0.97;
@@ -343,7 +343,7 @@ export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPalet
   const effectiveFinish: BalloonFinish = (slot && slot !== 'custom' && palette.finishes && palette.finishes[slot])
     ? palette.finishes[slot]
     : finish;
-  const gradId = effectiveFinish === 'glitter' ? `grad_crystal_${effectiveSlot}` : `grad_${effectiveFinish}_${effectiveSlot}`;
+  const gradId = effectiveFinish === 'glitter' ? `${idPrefix}grad_crystal_${effectiveSlot}` : `${idPrefix}grad_${effectiveFinish}_${effectiveSlot}`;
 
   const gx = x - rx * 0.24;
   const gy = y - ry * 0.26;
@@ -355,7 +355,7 @@ export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPalet
 
   let interior = '';
   const isCrystalOrGlitter = effectiveFinish === 'crystal' || effectiveFinish === 'glitter';
-  const filterAttr = isCrystalOrGlitter ? '' : 'filter="url(#balloonShadow)"';
+  const filterAttr = isCrystalOrGlitter ? '' : `filter="url(#${idPrefix}balloonShadow)"`;
 
   if (effectiveFinish === 'glitter') {
     const glt = glitterColor || palette.C || '#d4af37';
@@ -395,7 +395,7 @@ export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPalet
   const isMini = sizeInches === 5;
   const isMatte = effectiveFinish === 'matte';
   const isChrome = effectiveFinish === 'chrome';
-  const glareGrad = isChrome ? 'url(#glare_chrome)' : 'url(#glare_soft)';
+  const glareGrad = isChrome ? `url(#${idPrefix}glare_chrome)` : `url(#${idPrefix}glare_soft)`;
 
   return `
   <g id="piece-${piece.id}" class="balloon-piece" ${filterAttr}>
@@ -586,7 +586,7 @@ export function applyVolumeLevel(
 export function renderArrangementSvg(
   pieces: BalloonPiece[],
   palette: BalloonPaletteConfig,
-  options: { pad?: number; hasFloorShadow?: boolean } = {}
+  options: { pad?: number; hasFloorShadow?: boolean; idPrefix?: string } = {}
 ): { svg: string; widthCm: number; heightCm: number; viewBox: string; stats: ArrangementStats } {
   if (pieces.length === 0) {
     return {
@@ -614,20 +614,21 @@ export function renderArrangementSvg(
   const bh = Math.ceil(maxY - minY + pad * 2);
   const viewBox = `${bx} ${by} ${bw} ${bh}`;
 
-  const defs = generateStudioDefs(palette);
+  const idPrefix = options.idPrefix || "";
+  const defs = generateStudioDefs(palette, idPrefix);
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="${bw}" height="${bh}">
     <defs>${defs}</defs>
   `;
 
   if (options.hasFloorShadow !== false) {
     const floorY = maxY + 6;
-    svg += `<ellipse cx="${(minX + maxX) / 2}" cy="${floorY}" rx="${(maxX - minX) * 0.40}" ry="12" fill="#0f172a" opacity="0.22" filter="url(#floorShadowBlur)"/>`;
+    svg += `<ellipse cx="${(minX + maxX) / 2}" cy="${floorY}" rx="${(maxX - minX) * 0.40}" ry="12" fill="#0f172a" opacity="0.22" filter="url(#${idPrefix}floorShadowBlur)"/>`;
   }
 
   // Ordena por profundidade física automática (maiores atrás, pontos de luz 5" na frente)
   const sortedPieces = sortPiecesByDepth(pieces);
   for (const p of sortedPieces) {
-    svg += renderBalloonPieceSvg(p, palette);
+    svg += renderBalloonPieceSvg(p, palette, idPrefix);
   }
 
   svg += `</svg>`;

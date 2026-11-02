@@ -283,11 +283,13 @@ export class BalloonStudioModal {
 
             <div class="bs-header-right-actions">
               <!-- Ação Principal de Saída -->
-              <button id="bs-btn-conclude-flow" class="bs-btn-conclude" title="Concluir e usar no cenário">
-                <span>Concluir</span>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
-                  <polyline points="9 18 15 12 9 6"></polyline>
+              <button id="bs-btn-conclude-flow" class="bs-btn-conclude" title="Salvar Arranjo">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
                 </svg>
+                <span>Salvar</span>
               </button>
             </div>
           </header>
@@ -595,7 +597,7 @@ export class BalloonStudioModal {
           <div class="bs-bottom-sheet">
             <div class="bs-sheet-grabber"></div>
             <div class="bs-sheet-header">
-              <h3 class="bs-sheet-title">Arranjo Concluído</h3>
+              <h3 class="bs-sheet-title">Salvar Arranjo</h3>
               <button id="bs-btn-close-conclude" class="bs-sheet-close">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
@@ -898,7 +900,7 @@ export class BalloonStudioModal {
         e.preventDefault();
         this.redo();
       } else if (e.key === 'Escape') {
-        this.close();
+        this.requestExit();
       }
     });
   }
@@ -2334,6 +2336,7 @@ export class BalloonStudioModal {
     }
 
     this.close();
+    this.onExitCallback?.();
     return false;
   }
 
@@ -2866,8 +2869,15 @@ export class BalloonStudioModal {
       console.warn('Erro ao salvar projeto de balão:', e);
     }
 
+    // Fecha a gaveta de salvamento sem sair do estúdio
     this.toggleSheet('bs-conclude-modal', false);
-    this.close();
+
+    // Atualiza o título na barra superior do estúdio
+    const titleEl = document.getElementById('bs-editor-current-title');
+    if (titleEl) titleEl.textContent = finalName;
+
+    this.isDirty = false;
+    this.showToast('Arranjo salvo com sucesso!');
 
     if (this.onSavedCallback) {
       this.onSavedCallback(savedItem);
@@ -3049,9 +3059,9 @@ export class BalloonStudioModal {
     this.closeBottomDrawer();
     this.closeAllSheets();
     this.openedFromScenario = Boolean(options?.fromScenario);
-    this.onInsertCallback = options?.onInsert;
-    this.onSavedCallback = options?.onSaved;
-    this.onExitCallback = options?.onExit;
+    if (options?.onInsert !== undefined) this.onInsertCallback = options.onInsert;
+    if (options?.onSaved !== undefined) this.onSavedCallback = options.onSaved;
+    if (options?.onExit !== undefined) this.onExitCallback = options.onExit;
 
     this.overlayEl.style.display = 'flex';
     document.body.classList.add('bs-studio-open');
@@ -3251,6 +3261,24 @@ export class BalloonStudioModal {
     } catch (err) {
       console.warn('Erro ao carregar arranjos salvos no estúdio:', err);
     }
+  }
+
+  private showToast(message: string): void {
+    let toast = document.getElementById('bs-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'bs-toast';
+      toast.className = 'bs-toast';
+      this.overlayEl?.appendChild(toast);
+    }
+    toast.innerHTML = `
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+      <span>${message}</span>
+    `;
+    toast.classList.add('visible');
+    setTimeout(() => toast?.classList.remove('visible'), 2600);
   }
 
   public close(): void {

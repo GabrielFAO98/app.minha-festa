@@ -2286,3 +2286,32 @@ input:checked + .bs-slider-round:before {
   flex-shrink: 0;
   opacity: 0.6;
 }
+
+/* Toast de Notificação do Estúdio de Balões */
+.bs-toast {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  background: rgba(28, 25, 23, 0.94);
+  color: #ffffff;
+  padding: 9px 18px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bs-toast.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}

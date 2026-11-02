@@ -1114,6 +1114,8 @@ body {
 /* 1. TELA: HOME (Menu Inicial) */
 .app-shell[data-screen="home"] .app-header,
 .app-shell[data-screen="home"] .app-stage-area,
+.app-shell[data-screen="home"] .studio-workspace,
+.app-shell[data-screen="home"] .bottom-dock,
 .app-shell[data-screen="home"] .dock-mobile,
 .app-shell[data-screen="home"] .desktop-sidebar-left,
 .app-shell[data-screen="home"] .desktop-sidebar-right,
@@ -1141,10 +1143,12 @@ body {
   display: flex !important;
 }
 
+.app-shell[data-screen="scenario"] .studio-workspace,
 .app-shell[data-screen="scenario"] .app-stage-area {
   display: flex !important;
 }
 
+.app-shell[data-screen="scenario"] .bottom-dock,
 .app-shell[data-screen="scenario"] .dock-mobile {
   display: flex !important;
 }
@@ -1152,6 +1156,8 @@ body {
 /* 3. TELA: PROJETOS SALVOS */
 .app-shell[data-screen="projects"] .app-header,
 .app-shell[data-screen="projects"] .app-stage-area,
+.app-shell[data-screen="projects"] .studio-workspace,
+.app-shell[data-screen="projects"] .bottom-dock,
 .app-shell[data-screen="projects"] .dock-mobile,
 .app-shell[data-screen="projects"] .desktop-sidebar-left,
 .app-shell[data-screen="projects"] .desktop-sidebar-right,
@@ -1171,6 +1177,8 @@ body {
 /* 4. TELA: ESTÚDIO DE BALÕES (Tela Primária e Independente) */
 .app-shell[data-screen="balloon-studio"] .app-header,
 .app-shell[data-screen="balloon-studio"] .app-stage-area,
+.app-shell[data-screen="balloon-studio"] .studio-workspace,
+.app-shell[data-screen="balloon-studio"] .bottom-dock,
 .app-shell[data-screen="balloon-studio"] .dock-mobile,
 .app-shell[data-screen="balloon-studio"] .desktop-sidebar-left,
 .app-shell[data-screen="balloon-studio"] .desktop-sidebar-right,

@@ -181,18 +181,25 @@ export class BalloonStudioModal {
               <h2 class="bs-gallery-title">Por onde vamos começar?</h2>
               <p class="bs-gallery-sub">Escolha uma base. Você ajusta tudo depois.</p>
             </div>
-
-            <!-- SEÇÃO: MEUS ARRANJOS SALVOS (DINÂMICO) -->
-            <div id="bs-saved-arrangements-section" class="bs-gallery-section" style="margin-bottom: 22px; display: none;">
-              <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px;">
-                <h3 style="font-family: var(--font-brand, 'Fredoka', sans-serif); font-size: 16px; font-weight: 600; color: var(--text-brand, #261613); margin: 0;">
-                  Meus Arranjos Salvos
-                </h3>
-                <span id="bs-saved-count-label" style="font-size: 12px; color: var(--text-muted, #78716C); font-weight: 500;">
-                  0 arranjos salvos
-                </span>
+            <!-- SEÇÃO: MEUS ARRANJOS SALVOS (DROPDOWN RETRÁTIL) -->
+            <div id="bs-saved-arrangements-section" class="bs-saved-dropdown-card" style="display: none;">
+              <button type="button" id="bs-saved-dropdown-toggle" class="bs-saved-dropdown-toggle" aria-expanded="false" title="Abrir ou fechar arranjos salvos">
+                <div class="bs-saved-dropdown-left">
+                  <span class="bs-saved-dropdown-icon">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                  </span>
+                  <span class="bs-saved-dropdown-title">Meus Arranjos Salvos</span>
+                  <span id="bs-saved-count-label" class="bs-saved-dropdown-badge">0 salvos</span>
+                </div>
+                <svg class="bs-saved-dropdown-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div id="bs-saved-dropdown-content" class="bs-saved-dropdown-content">
+                <div class="bs-gallery-grid" id="bs-saved-arrangements-grid" style="margin-top: 10px;"></div>
               </div>
-              <div class="bs-gallery-grid" id="bs-saved-arrangements-grid"></div>
             </div>
 
             <!-- CARD 1: COMEÇAR DO ZERO (EM PRIMEIRO LUGAR - SEM TAGS) -->
@@ -621,6 +628,16 @@ export class BalloonStudioModal {
     // Card de Começar do Zero (Em Primeiro Lugar)
     document.getElementById('bs-card-start-zero')?.addEventListener('click', () => {
       this.startFromScratch();
+    });
+
+    // Toggle do Dropdown 'Meus Arranjos Salvos'
+    document.getElementById('bs-saved-dropdown-toggle')?.addEventListener('click', () => {
+      const sectionEl = document.getElementById('bs-saved-arrangements-section');
+      const toggleBtn = document.getElementById('bs-saved-dropdown-toggle');
+      if (sectionEl) {
+        const isOpen = sectionEl.classList.toggle('is-open');
+        toggleBtn?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      }
     });
 
     // Cards dos 10 Modelos na Galeria
@@ -3074,6 +3091,7 @@ export class BalloonStudioModal {
     const sectionEl = document.getElementById('bs-saved-arrangements-section');
     const gridEl = document.getElementById('bs-saved-arrangements-grid');
     const countEl = document.getElementById('bs-saved-count-label');
+    const toggleBtn = document.getElementById('bs-saved-dropdown-toggle');
     if (!sectionEl || !gridEl) return;
 
     try {
@@ -3081,13 +3099,15 @@ export class BalloonStudioModal {
 
       if (savedProjects.length === 0) {
         sectionEl.style.display = 'none';
+        sectionEl.classList.remove('is-open');
+        toggleBtn?.setAttribute('aria-expanded', 'false');
         gridEl.innerHTML = '';
         return;
       }
 
       sectionEl.style.display = 'block';
       if (countEl) {
-        countEl.textContent = `${savedProjects.length} ${savedProjects.length === 1 ? 'arranjo salvo' : 'arranjos salvos'}`;
+        countEl.textContent = `${savedProjects.length} ${savedProjects.length === 1 ? 'salvo' : 'salvos'}`;
       }
 
       gridEl.innerHTML = '';

@@ -592,11 +592,8 @@ export class BalloonStudioModal {
                 <input type="text" id="bs-input-arrangement-name" class="bs-input-text" value="Arco Orgânico em L">
               </div>
 
-              <button id="bs-btn-confirm-insert-scene" class="bs-btn-conclude-insert">
-                Colocar no Cenário
-              </button>
-              <button id="bs-btn-confirm-save-only" class="bs-btn-conclude-saveonly">
-                Só Salvar em Meus Elementos
+              <button id="bs-btn-confirm-save-only" class="bs-btn-conclude-insert">
+                Salvar Arranjo
               </button>
 
               <span id="bs-link-view-shopping" class="bs-conclude-materials-link">
@@ -847,8 +844,7 @@ export class BalloonStudioModal {
     document.getElementById('bs-btn-copy-shopping-text')?.addEventListener('click', () => this.copyShoppingListText());
     document.getElementById('bs-btn-share-whatsapp')?.addEventListener('click', () => this.shareOnWhatsApp());
 
-    document.getElementById('bs-btn-confirm-insert-scene')?.addEventListener('click', () => this.concludeSave(true));
-    document.getElementById('bs-btn-confirm-save-only')?.addEventListener('click', () => this.concludeSave(false));
+    document.getElementById('bs-btn-confirm-save-only')?.addEventListener('click', () => this.concludeSave());
     document.getElementById('bs-link-view-shopping')?.addEventListener('click', () => {
       this.toggleSheet('bs-conclude-modal', false);
       this.openShoppingModal();
@@ -2726,7 +2722,7 @@ export class BalloonStudioModal {
     this.toggleSheet('bs-conclude-modal', true);
   }
 
-  private async concludeSave(insertIntoScene: boolean): Promise<void> {
+  private async concludeSave(): Promise<void> {
     const inputName = document.getElementById('bs-input-arrangement-name') as HTMLInputElement | null;
     const finalName = inputName?.value.trim() || this.arrangementTitle;
 
@@ -2769,12 +2765,35 @@ export class BalloonStudioModal {
       };
     }
 
+    this.arrangementTitle = finalName;
+    this.hasCustomName = true;
+    try {
+      if (!this.currentBalloonProjectId) {
+        this.currentBalloonProjectId = 'bal-' + Date.now();
+      }
+      await saveProject({
+        id: this.currentBalloonProjectId,
+        title: finalName,
+        projectType: 'balloon',
+        elements: [],
+        balloonData: {
+          pieces: JSON.parse(JSON.stringify(this.pieces)),
+          palette: JSON.parse(JSON.stringify(this.palette)),
+          distributionMode: this.currentDistributionMode,
+          volumeLevel: this.currentVolumeLevel,
+          selectedTemplateId: this.selectedTemplateId
+        },
+        thumbnailUrl: imgDataUrl
+      });
+      this.hasEverBeenSaved = true;
+    } catch (e) {
+      console.warn('Erro ao salvar projeto de balão:', e);
+    }
+
     this.toggleSheet('bs-conclude-modal', false);
     this.close();
 
-    if (insertIntoScene && this.onInsertCallback) {
-      this.onInsertCallback(savedItem);
-    } else if (this.onSavedCallback) {
+    if (this.onSavedCallback) {
       this.onSavedCallback(savedItem);
     }
   }
@@ -3016,12 +3035,6 @@ export class BalloonStudioModal {
     this.overlayEl.style.display = 'flex';
     document.body.classList.add('bs-studio-open');
     document.body.classList.add('screen-balloon-studio');
-
-    // Atualiza texto do botão no modal de concluir
-    const btnInsert = document.getElementById('bs-btn-confirm-insert-scene');
-    if (btnInsert) {
-      btnInsert.textContent = this.openedFromScenario ? 'Inserir no Cenário Atual' : 'Criar Cenário com este Arranjo';
-    }
 
     if (options?.projectToLoad) {
       this.loadBalloonProject(options.projectToLoad);

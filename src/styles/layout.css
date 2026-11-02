@@ -163,12 +163,6 @@ body {
   transform: translateY(0);
 }
 
-.btn-header-save-success {
-  background: rgba(34, 197, 94, 0.18) !important;
-  color: #16a34a !important;
-  border-color: rgba(34, 197, 94, 0.45) !important;
-  box-shadow: 0 0 12px rgba(34, 197, 94, 0.25);
-}
 
 .btn-header:disabled {
   opacity: 0.3 !important;

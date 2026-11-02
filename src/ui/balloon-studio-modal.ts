@@ -26,7 +26,7 @@ import {
   type ArrangementStats
 } from '../core/balloon-studio-engine';
 import { addCustomItem, getAllCovers, addCustomCover, saveProject, type CoverItemRecord } from '../core/db';
-import { RenameModal } from './rename-modal';
+import { renameModal } from './rename-modal';
 import type { ProjectData } from '../types';
 import { optimizeUserUploadedImage } from '../core/image-optimizer';
 import type { PresetItem } from '../types';
@@ -34,7 +34,7 @@ import type { PresetItem } from '../types';
 export class BalloonStudioModal {
   private overlayEl: HTMLElement | null = null;
   private canvasSvgEl: SVGSVGElement | null = null;
-  private renameModal: RenameModal = new RenameModal();
+  private hasCustomName = false;
 
   private currentBalloonProjectId: string | null = null;
   public hasEverBeenSaved = false;
@@ -621,6 +621,7 @@ export class BalloonStudioModal {
       const novo = prompt('Nome do arranjo:', this.arrangementTitle);
       if (novo && novo.trim()) {
         this.arrangementTitle = novo.trim();
+        this.hasCustomName = true;
         const el = document.getElementById('bs-editor-current-title');
         if (el) el.textContent = this.arrangementTitle;
       }
@@ -2215,6 +2216,7 @@ export class BalloonStudioModal {
 
   private startFromScratch(): void {
     this.arrangementTitle = 'Novo Arranjo';
+    this.hasCustomName = false;
     const el = document.getElementById('bs-editor-current-title');
     if (el) el.textContent = this.arrangementTitle;
 
@@ -2242,7 +2244,7 @@ export class BalloonStudioModal {
     const tmpl = BALLOON_STUDIO_TEMPLATES.find((t) => t.id === templateId) || BALLOON_STUDIO_TEMPLATES[0];
     this.selectedTemplateId = tmpl.id;
     this.arrangementTitle = tmpl.name;
-
+    this.hasCustomName = false;
     const titleEl = document.getElementById('bs-editor-current-title');
     if (titleEl) titleEl.textContent = this.arrangementTitle;
 
@@ -2651,8 +2653,18 @@ export class BalloonStudioModal {
       return true;
     }
 
-    // Se o projeto foi salvo automaticamente, pergunta se quer renomear
-    const result = await this.renameModal.prompt({
+    // Se o projeto já tem nome personalizado, salva em silêncio e sai direto SEM abrir o modal de renomear!
+    if (this.hasCustomName || (this.arrangementTitle && this.arrangementTitle !== 'Novo Arranjo' && this.arrangementTitle !== 'Arranjo de Balões')) {
+      if (this.isDirty) {
+        await this.performAutosave();
+      }
+      this.close();
+      this.onExitCallback?.();
+      return true;
+    }
+
+    // Se e somente se o projeto foi salvo automaticamente e ainda está com nome padrão 'Novo Arranjo', pergunta se quer renomear
+    const result = await renameModal.prompt({
       currentTitle: this.arrangementTitle,
       itemType: 'arranjo'
     });
@@ -2663,6 +2675,7 @@ export class BalloonStudioModal {
 
     if (result.action === 'rename' && result.title) {
       this.arrangementTitle = result.title;
+      this.hasCustomName = true;
       const titleEl = document.getElementById('bs-editor-current-title');
       if (titleEl) titleEl.textContent = this.arrangementTitle;
 
@@ -2683,6 +2696,8 @@ export class BalloonStudioModal {
           updatedAt: Date.now()
         });
       }
+    } else if (result.action === 'keep') {
+      this.hasCustomName = true;
     }
 
     this.close();
@@ -2739,6 +2754,7 @@ export class BalloonStudioModal {
   public loadBalloonProject(proj: ProjectData): void {
     this.currentBalloonProjectId = proj.id;
     this.arrangementTitle = proj.title || 'Arranjo de Balões';
+    this.hasCustomName = Boolean(proj.title && proj.title !== 'Novo Arranjo');
     const el = document.getElementById('bs-editor-current-title');
     if (el) el.textContent = this.arrangementTitle;
 

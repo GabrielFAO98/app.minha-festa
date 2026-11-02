@@ -9,7 +9,7 @@ import { BalloonModal } from './ui/balloon-modal';
 import { InventoryModal } from './ui/inventory-modal';
 import { ExportModal } from './ui/export-modal';
 import { ConfirmModal } from './ui/confirm-modal';
-import { RenameModal } from './ui/rename-modal';
+import { renameModal } from './ui/rename-modal';
 import { ProjectsModal } from './ui/projects-modal';
 import { DesktopStudio } from './ui/desktop-studio';
 import { HomeScreen } from './ui/home-screen';
@@ -28,8 +28,7 @@ async function bootstrap() {
 
   // 3. Inicializar Modais e Componentes de UI
   const confirmModal = new ConfirmModal();
-  const renameModal = new RenameModal();
-  const coverModal = new CoverModal(canvasEngine);
+    const coverModal = new CoverModal(canvasEngine);
   const balloonModal = new BalloonModal(canvasEngine);
   const exportModal = new ExportModal(canvasEngine);
   const projectsModal = new ProjectsModal(canvasEngine, confirmModal);
@@ -258,10 +257,9 @@ async function bootstrap() {
   });
 
   btnHeaderProjects?.addEventListener('click', async () => {
-    const canExit = await projectsModal.requestExit();
+    const canExit = await screenManager.navigateTo('projects');
     if (canExit) {
       projectsModal.openProjectsScreen(true);
-      screenManager.navigateTo('projects');
     }
   });
 
@@ -327,7 +325,7 @@ async function bootstrap() {
       screenManager.navigateTo('balloon-studio');
     },
     onBeforeExitToHome: async () => {
-      return await projectsModal.requestExit();
+      return true;
     },
     onReturnToHome: () => {
       screenManager.navigateTo('home');
@@ -402,10 +400,8 @@ async function bootstrap() {
 
     // 6. Se estiver no cenário, pede confirmação de saída com renomeação se houver alterações
     if (screenManager.activeScreen === 'scenario') {
-      const canExit = await projectsModal.requestExit();
-      if (canExit) {
-        screenManager.navigateTo('home');
-      } else {
+      const canExit = await screenManager.navigateTo('home');
+      if (!canExit) {
         history.pushState({ screen: 'scenario' }, '');
       }
       return;

@@ -2,16 +2,16 @@
 import { getAllProjects, saveProject, deleteProject } from '../core/db';
 import type { CanvasEngine } from '../core/canvas-engine';
 import type { ConfirmModal } from './confirm-modal';
-import { RenameModal } from './rename-modal';
+import { renameModal } from './rename-modal';
 import type { ProjectData } from '../types';
 
 export class ProjectsModal {
   canvasEngine: CanvasEngine;
   confirmModal: ConfirmModal;
-  renameModal: RenameModal;
 
   currentProjectId: string | null;
   currentProjectTitle: string;
+  hasCustomName = false;
   hasEverBeenSaved = false;
   isDirty = false;
   private autosaveTimer: any = null;
@@ -43,9 +43,9 @@ export class ProjectsModal {
   constructor(canvasEngine: CanvasEngine, confirmModal: ConfirmModal) {
     this.canvasEngine = canvasEngine;
     this.confirmModal = confirmModal;
-    this.renameModal = new RenameModal();
     this.currentProjectId = null;
     this.currentProjectTitle = 'Novo Cenário';
+    this.hasCustomName = false;
 
     // Tela Exclusiva
     this.projectsScreenEl = document.getElementById('projects-screen');
@@ -183,8 +183,16 @@ export class ProjectsModal {
       return true;
     }
 
-    // Se o projeto foi salvo automaticamente, pergunta se quer renomear
-    const result = await this.renameModal.prompt({
+    // Se o projeto já possui nome personalizado, salva em silêncio e sai direto SEM abrir o modal de renomear!
+    if (this.hasCustomName || (this.currentProjectTitle && this.currentProjectTitle !== 'Novo Cenário')) {
+      if (this.isDirty) {
+        await this.performAutosave();
+      }
+      return true;
+    }
+
+    // Se e somente se o projeto ainda estiver com o nome padrão 'Novo Cenário', pergunta se quer renomear
+    const result = await renameModal.prompt({
       currentTitle: this.currentProjectTitle,
       itemType: 'cenário'
     });
@@ -195,6 +203,7 @@ export class ProjectsModal {
 
     if (result.action === 'rename' && result.title) {
       this.currentProjectTitle = result.title;
+      this.hasCustomName = true;
       if (this.titleDisplay) {
         this.titleDisplay.textContent = this.currentProjectTitle;
       }
@@ -210,6 +219,8 @@ export class ProjectsModal {
           thumbnailUrl: this.canvasEngine.exportHDImage()
         });
       }
+    } else if (result.action === 'keep') {
+      this.hasCustomName = true;
     }
 
     return true; // Prossegue com a saída
@@ -411,6 +422,7 @@ export class ProjectsModal {
 
       this.currentProjectId = proj.id;
       this.currentProjectTitle = proj.title || 'Meu Cenário';
+      this.hasCustomName = Boolean(proj.title && proj.title !== 'Novo Cenário');
       this.hasEverBeenSaved = true;
       this.isDirty = false;
 
@@ -444,6 +456,7 @@ export class ProjectsModal {
     this.canvasEngine.clearScene();
     this.currentProjectId = null;
     this.currentProjectTitle = 'Novo Cenário';
+    this.hasCustomName = false;
     this.hasEverBeenSaved = false;
     this.isDirty = false;
 
@@ -539,6 +552,7 @@ export class ProjectsModal {
 
     this.currentProjectId = saved.id;
     this.currentProjectTitle = saved.title;
+    this.hasCustomName = Boolean(saved.title && saved.title !== 'Novo Cenário');
     this.hasEverBeenSaved = true;
 
     if (this.titleDisplay) {

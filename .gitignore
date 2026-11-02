@@ -3,3 +3,4 @@ dist
 .DS_Store
 *.local
 covers_inbox/_processados
+scratch/

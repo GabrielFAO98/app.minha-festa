@@ -113,12 +113,31 @@ export class BalloonStudioModal {
   private pinchStartMidpoint = { x: 0, y: 0 };
   private multiTouchCooldown = 0;
 
-  // Arraste de peças individuais com 1 único ponteiro
+  // Arraste de peças individuais com 1 único ponteiro (Otimizado com GPU transform)
   private isDragging = false;
   private dragPointerId: number | null = null;
   private dragStartSvgX = 0;
   private dragStartSvgY = 0;
+  private currentDragDx = 0;
+  private currentDragDy = 0;
+  private dragRafId: number | null = null;
+  private draggedDomElements: Element[] = [];
+  private highlightLayerEl: Element | null = null;
+  private cachedDefsKey = '';
+  private dragInverseCtm: DOMMatrix | SVGMatrix | null = null;
   private dragPieceInitialPositions: Map<string, { x: number; y: number }> = new Map();
+
+  private applyDragTransform(): void {
+    this.dragRafId = null;
+    if (!this.isDragging) return;
+    const transformStr = `translate(${this.currentDragDx} ${this.currentDragDy})`;
+    for (let i = 0; i < this.draggedDomElements.length; i++) {
+      this.draggedDomElements[i].setAttribute('transform', transformStr);
+    }
+    if (this.highlightLayerEl) {
+      this.highlightLayerEl.setAttribute('transform', transformStr);
+    }
+  }
 
   // Histórico Undo / Redo
   private history: { pieces: BalloonPiece[]; palette: BalloonPaletteConfig }[] = [];
@@ -996,6 +1015,20 @@ export class BalloonStudioModal {
         if (this.isDragging) {
           this.isDragging = false;
           this.dragPointerId = null;
+          this.dragInverseCtm = null;
+          if (this.dragRafId) {
+            cancelAnimationFrame(this.dragRafId);
+            this.dragRafId = null;
+          }
+          for (let i = 0; i < this.draggedDomElements.length; i++) {
+            this.draggedDomElements[i].removeAttribute('transform');
+          }
+          if (this.highlightLayerEl) {
+            this.highlightLayerEl.removeAttribute('transform');
+          }
+          this.draggedDomElements = [];
+          this.highlightLayerEl = null;
+
           // Reverte os balões para a posição original anterior ao toque acidental
           this.selectedPieceIds.forEach((id) => {
             const init = this.dragPieceInitialPositions.get(id);
@@ -1026,7 +1059,7 @@ export class BalloonStudioModal {
       if (Date.now() < this.multiTouchCooldown) return;
 
       const target = e.target as SVGElement;
-      const pieceGroup = target.closest('.balloon-piece') as SVGElement | null;
+      const pieceGroup = target.closest('.balloon-piece') as unknown as SVGElement | null;
 
       // Execução conforme a ferramenta ativa:
       // 1. Mover a Tela (Pan com 1 dedo ou mouse)
@@ -1127,15 +1160,26 @@ export class BalloonStudioModal {
           this.isDragging = true;
           this.dragPointerId = e.pointerId;
 
+          const ctm = this.canvasSvgEl?.getScreenCTM();
+          this.dragInverseCtm = ctm ? ctm.inverse() : null;
+
           const svgPt = this.screenToSvgCoordinates(e.clientX, e.clientY);
           this.dragStartSvgX = svgPt.x;
           this.dragStartSvgY = svgPt.y;
+          this.currentDragDx = 0;
+          this.currentDragDy = 0;
 
           this.dragPieceInitialPositions.clear();
+          this.draggedDomElements = [];
+          const balloonsLayer = document.getElementById('bs-balloons-layer');
           this.selectedPieceIds.forEach((id) => {
             const p = this.pieces.find((x) => x.id === id);
             if (p) this.dragPieceInitialPositions.set(id, { x: p.x, y: p.y });
+            const el = balloonsLayer ? balloonsLayer.querySelector('#piece-' + id) : document.getElementById('piece-' + id);
+            if (el) this.draggedDomElements.push(el);
           });
+          this.highlightLayerEl = document.getElementById('bs-highlight-layer');
+          this.hideBalloonPill();
 
           try {
             canvas.setPointerCapture(e.pointerId);
@@ -1163,15 +1207,26 @@ export class BalloonStudioModal {
         this.isDragging = true;
         this.dragPointerId = e.pointerId;
 
+        const ctm = this.canvasSvgEl?.getScreenCTM();
+        this.dragInverseCtm = ctm ? ctm.inverse() : null;
+
         const svgPt = this.screenToSvgCoordinates(e.clientX, e.clientY);
         this.dragStartSvgX = svgPt.x;
         this.dragStartSvgY = svgPt.y;
+        this.currentDragDx = 0;
+        this.currentDragDy = 0;
 
         this.dragPieceInitialPositions.clear();
+        this.draggedDomElements = [];
+        const balloonsLayer = document.getElementById('bs-balloons-layer');
         this.selectedPieceIds.forEach((id) => {
           const p = this.pieces.find((x) => x.id === id);
           if (p) this.dragPieceInitialPositions.set(id, { x: p.x, y: p.y });
+          const el = balloonsLayer ? balloonsLayer.querySelector('#piece-' + id) : document.getElementById('piece-' + id);
+          if (el) this.draggedDomElements.push(el);
         });
+        this.highlightLayerEl = document.getElementById('bs-highlight-layer');
+        this.hideBalloonPill();
 
         try {
           canvas.setPointerCapture(e.pointerId);
@@ -1224,7 +1279,7 @@ export class BalloonStudioModal {
         return;
       }
 
-      // Arraste de peças (individual ou grupo selecionado) com 1 único dedo
+      // Arraste de peças (individual ou grupo selecionado) com 1 único dedo (60/120fps via rAF transform)
       if (this.isDragging && e.pointerId === this.dragPointerId && this.activePointers.size === 1) {
         const svgPt = this.screenToSvgCoordinates(e.clientX, e.clientY);
         const dx = svgPt.x - this.dragStartSvgX;
@@ -1234,17 +1289,12 @@ export class BalloonStudioModal {
           this.hasMovedDrag = true;
         }
 
-        this.selectedPieceIds.forEach((id) => {
-          const init = this.dragPieceInitialPositions.get(id);
-          const p = this.pieces.find((x) => x.id === id);
-          if (init && p) {
-            p.x = Math.round(init.x + dx);
-            p.y = Math.round(init.y + dy);
-          }
-        });
+        this.currentDragDx = dx;
+        this.currentDragDy = dy;
 
-        this.renderCanvas(false);
-        this.updateBalloonPillPosition();
+        if (!this.dragRafId) {
+          this.dragRafId = requestAnimationFrame(() => this.applyDragTransform());
+        }
       }
     });
 
@@ -1271,21 +1321,30 @@ export class BalloonStudioModal {
       }
 
       if (this.isDragging && e.pointerId === this.dragPointerId) {
+        if (this.dragRafId) {
+          cancelAnimationFrame(this.dragRafId);
+          this.dragRafId = null;
+        }
+
+        // Remove transformações temporárias do arraste
+        for (let i = 0; i < this.draggedDomElements.length; i++) {
+          this.draggedDomElements[i].removeAttribute('transform');
+        }
+        if (this.highlightLayerEl) {
+          this.highlightLayerEl.removeAttribute('transform');
+        }
+        this.draggedDomElements = [];
+        this.highlightLayerEl = null;
+
         // No modo múltiplos, se tocou em uma peça já selecionada sem arrastar, desmarca ela
         if (this.activeTouchTool === 'multi-select' && !this.hasMovedDrag && this.multiSelectToggleCandidate) {
           this.selectedPieceIds.delete(this.multiSelectToggleCandidate);
           this.multiSelectToggleCandidate = null;
         }
 
-        this.renderSelectionHighlights();
-        if (this.selectedPieceIds.size === 0) {
-          this.hideBalloonPill();
-        } else {
-          this.showBalloonPill();
-        }
-
         this.isDragging = false;
         this.dragPointerId = null;
+        this.dragInverseCtm = null;
         try {
           if (canvas.hasPointerCapture(e.pointerId)) {
             canvas.releasePointerCapture(e.pointerId);
@@ -1293,9 +1352,25 @@ export class BalloonStudioModal {
         } catch (_) {}
 
         if (this.hasMovedDrag) {
+          // Atualiza as posições finais consolidadas das peças movidas
+          this.selectedPieceIds.forEach((id) => {
+            const init = this.dragPieceInitialPositions.get(id);
+            const p = this.pieces.find((x) => x.id === id);
+            if (init && p) {
+              p.x = Math.round(init.x + this.currentDragDx);
+              p.y = Math.round(init.y + this.currentDragDy);
+            }
+          });
+
           this.saveHistory();
           this.renderCanvas(true);
-          this.updateBalloonPillPosition();
+        }
+
+        this.renderSelectionHighlights();
+        if (this.selectedPieceIds.size === 0) {
+          this.hideBalloonPill();
+        } else {
+          this.showBalloonPill();
         }
       }
     };
@@ -1316,6 +1391,13 @@ export class BalloonStudioModal {
 
   // Converte coordenadas da tela para o espaço SVG real
   private screenToSvgCoordinates(clientX: number, clientY: number): { x: number; y: number } {
+    if (this.isDragging && this.dragInverseCtm) {
+      const inv = this.dragInverseCtm;
+      return {
+        x: Math.round(inv.a * clientX + inv.c * clientY + inv.e),
+        y: Math.round(inv.b * clientX + inv.d * clientY + inv.f)
+      };
+    }
     if (!this.canvasSvgEl) return { x: 0, y: 0 };
     const ctm = this.canvasSvgEl.getScreenCTM();
     if (ctm) {
@@ -1335,29 +1417,42 @@ export class BalloonStudioModal {
   private renderCanvas(updateDimensions = true): void {
     if (!this.canvasSvgEl) return;
 
-    // Sombra do chão desativada permanentemente
-    const { widthCm, heightCm, stats } = renderArrangementSvg(this.pieces, this.palette, {
-      hasFloorShadow: false,
-      idPrefix: 'bs-cv-'
-    });
-
-    const defs = generateStudioDefs(this.palette, 'bs-cv-');
-    const sortedPieces = sortPiecesByDepth(this.pieces);
-    let piecesHtml = '';
-    for (const p of sortedPieces) {
-      piecesHtml += renderBalloonPieceSvg(p, this.palette, 'bs-cv-');
+    // Cache da camada <defs> (apenas recria quando a paleta/acabamentos sofrem alteração)
+    const paletteKey = JSON.stringify(this.palette);
+    const defsEl = document.getElementById('bs-svg-defs');
+    if (!defsEl || this.cachedDefsKey !== paletteKey) {
+      const defs = generateStudioDefs(this.palette, 'bs-cv-');
+      this.cachedDefsKey = paletteKey;
+      if (defsEl) {
+        defsEl.innerHTML = defs;
+      }
     }
 
-    this.canvasSvgEl.innerHTML = `
-      <defs id="bs-svg-defs">${defs}</defs>
-      <g id="bs-backdrop-sketch-layer"></g>
-      <g id="bs-balloons-layer">${piecesHtml}</g>
-      <g id="bs-highlight-layer"></g>
-    `;
+    const sortedPieces = sortPiecesByDepth(this.pieces);
+    let piecesHtml = '';
+    for (let i = 0; i < sortedPieces.length; i++) {
+      piecesHtml += renderBalloonPieceSvg(sortedPieces[i], this.palette, 'bs-cv-');
+    }
+
+    // Se a estrutura de camadas já existe no DOM, atualiza apenas o conteúdo de balões sem destruir a árvore
+    const balloonsLayer = document.getElementById('bs-balloons-layer');
+    if (balloonsLayer && defsEl) {
+      balloonsLayer.innerHTML = piecesHtml;
+    } else {
+      const defs = generateStudioDefs(this.palette, 'bs-cv-');
+      this.cachedDefsKey = paletteKey;
+      this.canvasSvgEl.innerHTML = `
+        <defs id="bs-svg-defs">${defs}</defs>
+        <g id="bs-backdrop-sketch-layer"></g>
+        <g id="bs-balloons-layer">${piecesHtml}</g>
+        <g id="bs-highlight-layer"></g>
+      `;
+    }
     
     if (updateDimensions) {
+      const stats = calculateArrangementStats(this.pieces, this.palette);
       const dimBadge = document.getElementById('bs-chip-dimension');
-      if (dimBadge) dimBadge.textContent = `${widthCm} × ${heightCm} cm`;
+      if (dimBadge) dimBadge.textContent = `${stats.widthCm} × ${stats.heightCm} cm`;
 
       const countLabel = document.getElementById('bs-chip-count-label');
       if (countLabel) countLabel.textContent = `${stats.totalCount} balões`;

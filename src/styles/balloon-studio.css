@@ -1374,3 +1374,264 @@ input:checked + .bs-slider-round:before {
   border-color: #E7D6B3;
   color: var(--primary-hover, #9A7229);
 }
+
+/* Barra Rápida de Opções do Canvas (Ajustar, Apagar, Inverter) */
+.bs-canvas-quick-bar {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  height: 32px;
+  padding: 2px 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  box-shadow: 0 3px 12px rgba(28, 25, 23, 0.08);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  z-index: 20;
+  user-select: none;
+}
+
+.bs-quick-btn {
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #57534E);
+  font-size: 11.5px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.18s ease);
+  white-space: nowrap;
+}
+
+.bs-quick-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text-main, #1C1917);
+}
+
+.bs-quick-btn.active {
+  background: var(--primary, #B58938);
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(181, 137, 56, 0.3);
+}
+
+.bs-quick-btn:active {
+  transform: scale(0.96);
+}
+
+/* Card de Cor Personalizada na Gaveta de Cor (Posicionado Acima de Cores da Moda) */
+.bs-custom-color-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-app, #FAF8F5);
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  border-radius: 12px;
+  margin: 10px 0 14px;
+}
+
+.bs-custom-color-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bs-custom-color-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-main, #1C1917);
+}
+
+.bs-custom-color-sub {
+  font-size: 11px;
+  color: var(--text-muted, #57534E);
+}
+
+.bs-custom-color-picker-wrap {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.bs-custom-color-input {
+  position: absolute;
+  inset: -10px;
+  width: 52px;
+  height: 52px;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.bs-custom-color-preview {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+  background: #B58938;
+}
+
+/* Seletor de Estrutura de Fundo (Sketch Guia) */
+.bs-guides-selector {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-top: 6px;
+  padding: 2px 0 4px;
+}
+
+.bs-guides-selector::-webkit-scrollbar {
+  display: none;
+}
+
+.bs-guide-btn-chip {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-main, #1C1917);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-fast, 0.18s ease);
+}
+
+.bs-guide-btn-chip:hover {
+  border-color: var(--primary, #B58938);
+}
+
+.bs-guide-btn-chip.active {
+  background: var(--primary-light, #F7F1E3);
+  border-color: var(--primary, #B58938);
+  color: var(--primary-hover, #9A7229);
+  font-weight: 700;
+}
+
+.bs-guide-icon {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+/* Grid de Elementos para Incluir (Menu Incluir) */
+.bs-elements-catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+  padding-bottom: 6px;
+}
+
+.bs-element-card {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.18s ease);
+  user-select: none;
+}
+
+.bs-element-card:hover {
+  border-color: var(--primary, #B58938);
+  transform: translateY(-1px);
+}
+
+.bs-element-card.active {
+  background: var(--primary-light, #F7F1E3);
+  border-color: var(--primary, #B58938);
+  box-shadow: 0 2px 8px rgba(181, 137, 56, 0.15);
+}
+
+.bs-elem-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+}
+
+.bs-elem-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-main, #1C1917);
+  white-space: nowrap;
+}
+
+.bs-elem-sub {
+  font-size: 10px;
+  color: var(--text-muted, #57534E);
+  white-space: nowrap;
+}
+
+.bs-elem-thumb-balloon {
+  position: relative;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 32%, #FFFFFF 0%, #D4AF37 55%, #75601E 100%);
+  flex-shrink: 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.bs-elem-thumb-balloon.bs-size-5 { width: 14px; height: 14px; }
+.bs-elem-thumb-balloon.bs-size-10 { width: 20px; height: 20px; }
+.bs-elem-thumb-balloon.bs-size-12 { width: 24px; height: 24px; }
+.bs-elem-thumb-balloon.bs-size-18 { width: 28px; height: 28px; }
+.bs-elem-thumb-balloon.bs-size-24 { width: 32px; height: 32px; }
+
+.bs-elem-thumb-cluster {
+  width: 28px;
+  height: 28px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.bs-elem-thumb-cluster i {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 32%, #FFFFFF 0%, #D4AF37 55%, #75601E 100%);
+}
+.bs-elem-thumb-cluster i:nth-child(1) { top: 0; left: 0; }
+.bs-elem-thumb-cluster i:nth-child(2) { top: 0; right: 0; }
+.bs-elem-thumb-cluster i:nth-child(3) { bottom: 0; left: 0; }
+.bs-elem-thumb-cluster i:nth-child(4) { bottom: 0; right: 0; }
+
+.bs-elem-thumb-trio {
+  width: 24px;
+  height: 24px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.bs-elem-thumb-trio i {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 32%, #FFFFFF 0%, #D4AF37 55%, #75601E 100%);
+}
+.bs-elem-thumb-trio i:nth-child(1) { top: 0; left: 6px; }
+.bs-elem-thumb-trio i:nth-child(2) { bottom: 1px; left: 0; }
+.bs-elem-thumb-trio i:nth-child(3) { bottom: 1px; right: 0; }

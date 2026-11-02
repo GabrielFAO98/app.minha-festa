@@ -54,11 +54,25 @@ export class BalloonStudioModal {
   private currentVolumeLevel: 'enxuto' | 'padrao' | 'cheio' = 'padrao';
   private currentDistributionMode: 'mesclado' | 'degrade' | 'blocos' = 'mesclado';
 
-  // Ferramenta ativa no canvas
-  private activeTouchTool: 'adjust' | 'base-balloon' | 'light-point' | 'big-balloon' | 'cluster-quad' | 'eraser' = 'adjust';
+  // Ferramenta ativa no canvas (Ajustar por padrão)
+  private activeTouchTool:
+    | 'adjust'
+    | 'eraser'
+    | 'balloon-5'
+    | 'balloon-10'
+    | 'balloon-12'
+    | 'balloon-18'
+    | 'balloon-24'
+    | 'cluster-quad'
+    | 'cluster-trio'
+    | 'base-balloon'
+    | 'light-point'
+    | 'big-balloon' = 'adjust';
 
   // Aba ativa no dock inferior
-  private activeBottomTab: 'forma' | 'cores' | 'retoques' = 'forma';
+  private activeBottomTab: 'forma' | 'cores' | 'incluir' = 'forma';
+  private activeColorCount: number = 4;
+  private currentGhostGuide: 'none' | 'roman' | 'round' | 'rect' | 'table' = 'none';
 
   // Viewport e Zoom Controlado EXCLUSIVAMENTE por Pinça (Estável, sem pular ao arrastar balões)
   private baseViewBox = { x: 0, y: 0, width: 600, height: 600 };
@@ -176,11 +190,10 @@ export class BalloonStudioModal {
           <!-- Topo do Editor -->
           <header class="bs-editor-header">
             <div class="bs-header-left-actions">
-              <button id="bs-btn-back-to-gallery" class="bs-btn-back-gallery" title="Voltar para a galeria">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+              <button id="bs-btn-back-to-gallery" class="bs-btn-back-gallery" title="Voltar para os modelos" aria-label="Voltar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <polyline points="15 18 9 12 15 6"></polyline>
                 </svg>
-                <span>Modelos</span>
               </button>
               <div id="bs-editor-title-container" class="bs-editor-title-box" title="Clique para renomear">
                 <h2 id="bs-editor-current-title" class="bs-editor-title">Arco Orgânico em L</h2>
@@ -219,9 +232,20 @@ export class BalloonStudioModal {
           <main class="bs-canvas-area" id="bs-canvas-container">
             <!-- Chips Flutuantes -->
             <div id="bs-chip-dimension" class="bs-canvas-chip bs-chip-dim">180 × 230 cm</div>
-            <button id="bs-chip-mirror" class="bs-canvas-chip bs-chip-mirror" title="Inverter lado do arranjo (espelhar)">
-              <span>⇄ Inverter</span>
-            </button>
+            <div id="bs-canvas-quick-bar" class="bs-canvas-quick-bar">
+              <button id="bs-quick-btn-adjust" class="bs-quick-btn active" title="Modo Ajustar: selecione e arraste balões livremente">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"></path><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"></path><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"></path><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"></path></svg>
+                <span>Ajustar</span>
+              </button>
+              <button id="bs-quick-btn-eraser" class="bs-quick-btn" title="Modo Apagar: toque em qualquer balão para excluir">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path><path d="M22 21H7"></path><path d="m5 11 9 9"></path></svg>
+                <span>Apagar</span>
+              </button>
+              <button id="bs-quick-btn-mirror" class="bs-quick-btn" title="Inverter o arranjo horizontalmente (espelhar)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+                <span>Inverter</span>
+              </button>
+            </div>
             <button id="bs-btn-reset-view" class="bs-canvas-chip bs-chip-reset" style="display:none" title="Resetar zoom e centralizar">
               <span>↺ <span id="bs-zoom-level-badge">100%</span></span>
             </button>
@@ -244,6 +268,7 @@ export class BalloonStudioModal {
             <!-- SVG Interativo -->
             <svg id="bs-canvas-svg" class="bs-canvas-svg" xmlns="http://www.w3.org/2000/svg">
               <defs id="bs-svg-defs"></defs>
+              <g id="bs-backdrop-sketch-layer"></g>
               <g id="bs-balloons-layer"></g>
               <g id="bs-highlight-layer"></g>
             </svg>
@@ -269,9 +294,7 @@ export class BalloonStudioModal {
             <div class="bs-swatches-row" id="bs-swatches-container">
               <!-- Swatches A, B, C, D gerados dinamicamente -->
             </div>
-            <button id="bs-btn-open-palettes-sheet" class="bs-btn-strip-palettes" title="Escolher paleta pronta">
-              <span>🎨 Paletas</span>
-            </button>
+
           </section>
 
           <!-- Painel Ativo da Aba -->
@@ -289,9 +312,15 @@ export class BalloonStudioModal {
               <span class="bs-dock-tab-icon">🎨</span>
               <span>Cores</span>
             </button>
-            <button class="bs-dock-tab" data-tab="retoques">
-              <span class="bs-dock-tab-icon">✨</span>
-              <span>Retoques</span>
+            <button class="bs-dock-tab" data-tab="incluir">
+              <span class="bs-dock-tab-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <line x1="12" y1="8" x2="12" y2="16"></line>
+                  <line x1="8" y1="12" x2="16" y2="12"></line>
+                </svg>
+              </span>
+              <span>Incluir</span>
             </button>
           </nav>
         </section>
@@ -320,6 +349,18 @@ export class BalloonStudioModal {
                 <button class="bs-finish-btn-chip" data-finish="glitter">Glitter</button>
               </div>
 
+              <!-- Cor Personalizada (Posicionada Acima de Cores da Moda) -->
+              <div class="bs-custom-color-card">
+                <div class="bs-custom-color-info">
+                  <span class="bs-custom-color-title">Cor Personalizada</span>
+                  <span class="bs-custom-color-sub">Toque para selecionar qualquer tom no círculo</span>
+                </div>
+                <div class="bs-custom-color-picker-wrap">
+                  <input type="color" id="bs-custom-color-input" class="bs-custom-color-input" value="#B58938">
+                  <span id="bs-custom-color-preview" class="bs-custom-color-preview"></span>
+                </div>
+              </div>
+
               <div class="bs-label-row" style="margin: 14px 0 8px">
                 <span>Cores da Moda (Catálogo):</span>
               </div>
@@ -330,11 +371,6 @@ export class BalloonStudioModal {
                     <span class="bs-color-tile-name">${c.name}</span>
                   </div>
                 `).join('')}
-              </div>
-
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid #E6E1DA">
-                <span style="font-size:12px;font-weight:600;color:var(--text-muted)">Cor personalizada (Hex):</span>
-                <input type="color" id="bs-custom-color-input" style="width:40px;height:34px;border:none;cursor:pointer;background:transparent">
               </div>
             </div>
           </div>
@@ -475,8 +511,14 @@ export class BalloonStudioModal {
     });
 
     // 3. Chips do Canvas
-    document.getElementById('bs-chip-mirror')?.addEventListener('click', () => {
+    document.getElementById('bs-quick-btn-mirror')?.addEventListener('click', () => {
       this.mirrorArrangement();
+    });
+    document.getElementById('bs-quick-btn-adjust')?.addEventListener('click', () => {
+      this.setActiveTouchTool('adjust');
+    });
+    document.getElementById('bs-quick-btn-eraser')?.addEventListener('click', () => {
+      this.setActiveTouchTool(this.activeTouchTool === 'eraser' ? 'adjust' : 'eraser');
     });
 
     document.getElementById('bs-btn-reset-view')?.addEventListener('click', () => {
@@ -489,8 +531,7 @@ export class BalloonStudioModal {
 
     // 4. Pílula Flutuante do Balão
     document.getElementById('bs-pill-color-btn')?.addEventListener('click', () => {
-      // Alterna entre Slot A, B, C, D para o balão selecionado
-      const slots: BalloonSlot[] = ['A', 'B', 'C', 'D'];
+      const slots: BalloonSlot[] = (['A', 'B', 'C', 'D', 'E'] as const).slice(0, this.activeColorCount);
       const currentSlot = this.getActiveSelectedPiece()?.slot || 'A';
       const nextIdx = (slots.indexOf(currentSlot) + 1) % slots.length;
       this.setSelectedPieceSlot(slots[nextIdx]);
@@ -513,16 +554,13 @@ export class BalloonStudioModal {
       this.deleteSelected();
     });
 
-    // 5. Botão de Paletas Prontas na Faixa
-    document.getElementById('bs-btn-open-palettes-sheet')?.addEventListener('click', () => {
-      this.setBottomTab('cores');
-    });
+
 
     // 6. Dock de Abas Inferiores
     this.overlayEl.querySelectorAll('.bs-dock-tab').forEach((tabBtn) => {
       tabBtn.addEventListener('click', (e) => {
         const btn = e.currentTarget as HTMLElement;
-        const tab = btn.dataset.tab as 'forma' | 'cores' | 'retoques';
+        const tab = btn.dataset.tab as 'forma' | 'cores' | 'incluir';
         if (tab) this.setBottomTab(tab);
       });
     });
@@ -743,27 +781,45 @@ export class BalloonStudioModal {
         return;
       }
 
-      if (this.activeTouchTool === 'base-balloon') {
+      if (this.activeTouchTool === 'balloon-5' || this.activeTouchTool === 'light-point') {
         const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
-        this.insertBaseBalloonAt(svgCoords.x, svgCoords.y);
+        this.insertSingleBalloonAt(svgCoords.x, svgCoords.y, 5);
         return;
       }
 
-      if (this.activeTouchTool === 'light-point') {
+      if (this.activeTouchTool === 'balloon-10') {
         const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
-        this.insertPointOfLightAt(svgCoords.x, svgCoords.y);
+        this.insertSingleBalloonAt(svgCoords.x, svgCoords.y, 10);
         return;
       }
 
-      if (this.activeTouchTool === 'big-balloon') {
+      if (this.activeTouchTool === 'balloon-12' || this.activeTouchTool === 'base-balloon') {
         const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
-        this.insertBigBalloonAt(svgCoords.x, svgCoords.y);
+        this.insertSingleBalloonAt(svgCoords.x, svgCoords.y, 12);
+        return;
+      }
+
+      if (this.activeTouchTool === 'balloon-18' || this.activeTouchTool === 'big-balloon') {
+        const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
+        this.insertSingleBalloonAt(svgCoords.x, svgCoords.y, 18);
+        return;
+      }
+
+      if (this.activeTouchTool === 'balloon-24') {
+        const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
+        this.insertSingleBalloonAt(svgCoords.x, svgCoords.y, 24);
         return;
       }
 
       if (this.activeTouchTool === 'cluster-quad') {
         const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
-        this.insertClusterAt(svgCoords.x, svgCoords.y);
+        this.insertClusterQuadAt(svgCoords.x, svgCoords.y);
+        return;
+      }
+
+      if (this.activeTouchTool === 'cluster-trio') {
+        const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
+        this.insertClusterTrioAt(svgCoords.x, svgCoords.y);
         return;
       }
 
@@ -909,8 +965,9 @@ export class BalloonStudioModal {
   private renderCanvas(updateDimensions = true): void {
     if (!this.canvasSvgEl) return;
 
+    // Sombra do chão desativada permanentemente
     const { widthCm, heightCm, stats } = renderArrangementSvg(this.pieces, this.palette, {
-      hasFloorShadow: true,
+      hasFloorShadow: false,
       idPrefix: 'bs-cv-'
     });
 
@@ -921,26 +978,13 @@ export class BalloonStudioModal {
       piecesHtml += renderBalloonPieceSvg(p, this.palette, 'bs-cv-');
     }
 
-    let floorShadow = '';
-    if (this.pieces.length > 0) {
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      for (const p of this.pieces) {
-        const r = BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28;
-        if (p.x - r < minX) minX = p.x - r;
-        if (p.x + r > maxX) maxX = p.x + r;
-        if (p.y - r < minY) minY = p.y - r;
-        if (p.y + r > maxY) maxY = p.y + r;
-      }
-      const floorY = maxY + 6;
-      floorShadow = `<ellipse cx="${(minX + maxX) / 2}" cy="${floorY}" rx="${(maxX - minX) * 0.40}" ry="12" fill="#0f172a" opacity="0.22" filter="url(#bs-cv-floorShadowBlur)"/>`;
-    }
-
     this.canvasSvgEl.innerHTML = `
       <defs id="bs-svg-defs">${defs}</defs>
-      ${floorShadow}
+      <g id="bs-backdrop-sketch-layer"></g>
       <g id="bs-balloons-layer">${piecesHtml}</g>
       <g id="bs-highlight-layer"></g>
     `;
+    this.renderBackdropSketchGuide();
 
     if (updateDimensions) {
       const dimBadge = document.getElementById('bs-chip-dimension');
@@ -1041,15 +1085,15 @@ export class BalloonStudioModal {
     const container = document.getElementById('bs-swatches-container');
     if (!container) return;
 
-    const slots: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D'];
-    container.innerHTML = slots.map((s) => {
-      const hex = (this.palette as any)[s] || '#ffffff';
+    const allSlots: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
+    const activeSlots = allSlots.slice(0, this.activeColorCount);
+    container.innerHTML = activeSlots.map((s) => {
+      const hex = (this.palette as any)[s] || (s === 'E' ? '#f8fafc' : '#ffffff');
       const name = this.palette.names?.[s] || `Cor ${s}`;
-      const fin = this.palette.finishes?.[s] || 'satin';
       const activeClass = this.activeColorSlot === s ? 'active' : '';
 
       return `
-        <div class="bs-palette-swatch ${activeClass}" data-slot="${s}" title="Slot ${s} (${name})">
+        <div class="bs-palette-swatch ${activeClass}" data-slot="${s}" title="Família ${s} (${name})">
           <span class="bs-swatch-circle" style="background:${hex}"></span>
           <span class="bs-swatch-name">${name}</span>
         </div>
@@ -1114,7 +1158,7 @@ export class BalloonStudioModal {
   // DOCK DE 3 ABAS: MODELOS & FORMA, CORES, RETOQUES
   // ----------------------------------------------------------------------
 
-  private setBottomTab(tab: 'forma' | 'cores' | 'retoques'): void {
+  private setBottomTab(tab: 'forma' | 'cores' | 'incluir'): void {
     this.activeBottomTab = tab;
     this.overlayEl?.querySelectorAll('.bs-dock-tab').forEach((b) => {
       const btn = b as HTMLElement;
@@ -1171,6 +1215,17 @@ export class BalloonStudioModal {
       panel.innerHTML = `
         <div class="bs-panel-cores">
           <div class="bs-label-row">
+            <span>Quantidade de Cores no Arranjo:</span>
+            <em id="bs-active-color-count-label">${this.activeColorCount} cores</em>
+          </div>
+          <div class="bs-segmented-control" id="bs-color-count-selector">
+            <button class="bs-seg-btn ${this.activeColorCount === 2 ? 'active' : ''}" data-color-count="2">2 Cores</button>
+            <button class="bs-seg-btn ${this.activeColorCount === 3 ? 'active' : ''}" data-color-count="3">3 Cores</button>
+            <button class="bs-seg-btn ${this.activeColorCount === 4 ? 'active' : ''}" data-color-count="4">4 Cores</button>
+            <button class="bs-seg-btn ${this.activeColorCount === 5 ? 'active' : ''}" data-color-count="5">5 Cores</button>
+          </div>
+
+          <div class="bs-label-row" style="margin-top:12px">
             <span>Paletas da Festa:</span>
             <em>Toque para aplicar</em>
           </div>
@@ -1182,13 +1237,14 @@ export class BalloonStudioModal {
                   <i style="background:${p.palette.B}"></i>
                   <i style="background:${p.palette.C}"></i>
                   <i style="background:${p.palette.D}"></i>
+                  ${p.palette.E ? `<i style="background:${p.palette.E}"></i>` : ''}
                 </div>
                 <span>${p.name}</span>
               </div>
             `).join('')}
           </div>
 
-          <div class="bs-label-row" style="margin-top:4px">
+          <div class="bs-label-row" style="margin-top:12px">
             <span>Modo de Distribuição das Cores:</span>
           </div>
           <div class="bs-segmented-control">
@@ -1199,6 +1255,17 @@ export class BalloonStudioModal {
         </div>
       `;
 
+      // Seleção de Quantidade de Cores (2 a 5)
+      panel.querySelectorAll('#bs-color-count-selector .bs-seg-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const count = Number((e.currentTarget as HTMLElement).dataset.colorCount);
+          if (count >= 2 && count <= 5) {
+            this.setActiveColorCount(count);
+          }
+        });
+      });
+
+      // Paletas Prontas
       panel.querySelectorAll('.bs-preset-card').forEach((card) => {
         card.addEventListener('click', (e) => {
           const id = (e.currentTarget as HTMLElement).dataset.presetId;
@@ -1207,7 +1274,8 @@ export class BalloonStudioModal {
         });
       });
 
-      panel.querySelectorAll('.bs-seg-btn').forEach((btn) => {
+      // Modo de Distribuição
+      panel.querySelectorAll('.bs-seg-btn[data-mode]').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           const mode = (e.currentTarget as HTMLElement).dataset.mode as any;
           if (mode) this.setDistributionMode(mode);
@@ -1216,43 +1284,129 @@ export class BalloonStudioModal {
       return;
     }
 
-    if (this.activeBottomTab === 'retoques') {
+    if (this.activeBottomTab === 'incluir') {
       panel.innerHTML = `
-        <div class="bs-panel-retoques">
+        <div class="bs-panel-incluir">
+          <!-- 1. Estrutura de Fundo (Sketch Guia) -->
           <div class="bs-label-row">
-            <span>Ferramenta de Toque:</span>
-            <em>Toque direto no arco</em>
+            <span>Estrutura / Painel de Fundo:</span>
+            <em id="bs-active-guide-label">${
+              this.currentGhostGuide === 'roman' ? 'Romano' :
+              this.currentGhostGuide === 'round' ? 'Redondo' :
+              this.currentGhostGuide === 'rect' ? 'Retangular' :
+              this.currentGhostGuide === 'table' ? 'Mesa' : 'Nenhum'
+            }</em>
           </div>
-          <div class="bs-tools-grid">
-            <div class="bs-tool-card ${this.activeTouchTool === 'adjust' ? 'active' : ''}" data-tool="adjust">
-              <span class="bs-tool-card-icon">👆</span>
-              <span>Ajustar</span>
+          <div class="bs-guides-selector">
+            <button class="bs-guide-btn-chip ${this.currentGhostGuide === 'none' ? 'active' : ''}" data-guide="none">
+              <span class="bs-guide-icon">✕</span>
+              <span>Nenhum</span>
+            </button>
+            <button class="bs-guide-btn-chip ${this.currentGhostGuide === 'roman' ? 'active' : ''}" data-guide="roman">
+              <span class="bs-guide-icon">∩</span>
+              <span>Romano</span>
+            </button>
+            <button class="bs-guide-btn-chip ${this.currentGhostGuide === 'round' ? 'active' : ''}" data-guide="round">
+              <span class="bs-guide-icon">◯</span>
+              <span>Redondo</span>
+            </button>
+            <button class="bs-guide-btn-chip ${this.currentGhostGuide === 'rect' ? 'active' : ''}" data-guide="rect">
+              <span class="bs-guide-icon">▭</span>
+              <span>Pórtico</span>
+            </button>
+            <button class="bs-guide-btn-chip ${this.currentGhostGuide === 'table' ? 'active' : ''}" data-guide="table">
+              <span class="bs-guide-icon">⬭</span>
+              <span>Mesa</span>
+            </button>
+          </div>
+
+          <!-- 2. Adicionar Balões e Peças -->
+          <div class="bs-label-row" style="margin-top:12px">
+            <span>Adicionar Peças ao Arranjo:</span>
+            <em>Toque e posicione no canvas</em>
+          </div>
+          <div class="bs-elements-catalog-grid">
+            <div class="bs-element-card ${this.activeTouchTool === 'balloon-5' ? 'active' : ''}" data-tool="balloon-5">
+              <div class="bs-elem-thumb-balloon bs-size-5"></div>
+              <div class="bs-elem-info">
+                <strong class="bs-elem-title">5" Detalhe</strong>
+                <span class="bs-elem-sub">Ponto de luz</span>
+              </div>
             </div>
-            <div class="bs-tool-card ${this.activeTouchTool === 'base-balloon' ? 'active' : ''}" data-tool="base-balloon">
-              <span class="bs-tool-card-icon">⚪</span>
-              <span>Balão 12"</span>
+
+            <div class="bs-element-card ${this.activeTouchTool === 'balloon-10' ? 'active' : ''}" data-tool="balloon-10">
+              <div class="bs-elem-thumb-balloon bs-size-10"></div>
+              <div class="bs-elem-info">
+                <strong class="bs-elem-title">10" Médio</strong>
+                <span class="bs-elem-sub">Preenchimento</span>
+              </div>
             </div>
-            <div class="bs-tool-card ${this.activeTouchTool === 'light-point' ? 'active' : ''}" data-tool="light-point">
-              <span class="bs-tool-card-icon">✨</span>
-              <span>Ponto 5"</span>
+
+            <div class="bs-element-card ${this.activeTouchTool === 'balloon-12' ? 'active' : ''}" data-tool="balloon-12">
+              <div class="bs-elem-thumb-balloon bs-size-12"></div>
+              <div class="bs-elem-info">
+                <strong class="bs-elem-title">12" Padrão</strong>
+                <span class="bs-elem-sub">Volume base</span>
+              </div>
             </div>
-            <div class="bs-tool-card ${this.activeTouchTool === 'big-balloon' ? 'active' : ''}" data-tool="big-balloon">
-              <span class="bs-tool-card-icon">🎈</span>
-              <span>Big 18"</span>
+
+            <div class="bs-element-card ${this.activeTouchTool === 'balloon-18' ? 'active' : ''}" data-tool="balloon-18">
+              <div class="bs-elem-thumb-balloon bs-size-18"></div>
+              <div class="bs-elem-info">
+                <strong class="bs-elem-title">18" Destaque</strong>
+                <span class="bs-elem-sub">Volume forte</span>
+              </div>
             </div>
-            <div class="bs-tool-card ${this.activeTouchTool === 'cluster-quad' ? 'active' : ''}" data-tool="cluster-quad">
-              <span class="bs-tool-card-icon">🫧</span>
-              <span>Cluster 4x</span>
+
+            <div class="bs-element-card ${this.activeTouchTool === 'balloon-24' ? 'active' : ''}" data-tool="balloon-24">
+              <div class="bs-elem-thumb-balloon bs-size-24"></div>
+              <div class="bs-elem-info">
+                <strong class="bs-elem-title">24" Gigante</strong>
+                <span class="bs-elem-sub">Big Balloon</span>
+              </div>
             </div>
-            <div class="bs-tool-card ${this.activeTouchTool === 'eraser' ? 'active' : ''}" data-tool="eraser">
-              <span class="bs-tool-card-icon">🧽</span>
-              <span>Apagar</span>
+
+            <div class="bs-element-card ${this.activeTouchTool === 'cluster-quad' ? 'active' : ''}" data-tool="cluster-quad">
+              <div class="bs-elem-thumb-cluster"><i></i><i></i><i></i><i></i></div>
+              <div class="bs-elem-info">
+                <strong class="bs-elem-title">Cluster 4x</strong>
+                <span class="bs-elem-sub">Quad agrupado</span>
+              </div>
+            </div>
+
+            <div class="bs-element-card ${this.activeTouchTool === 'cluster-trio' ? 'active' : ''}" data-tool="cluster-trio">
+              <div class="bs-elem-thumb-trio"><i></i><i></i><i></i></div>
+              <div class="bs-elem-info">
+                <strong class="bs-elem-title">Tufo 3x</strong>
+                <span class="bs-elem-sub">Trio mini 5"</span>
+              </div>
             </div>
           </div>
         </div>
       `;
 
-      panel.querySelectorAll('.bs-tool-card').forEach((card) => {
+      // Seleção de Sketch Guia
+      panel.querySelectorAll('.bs-guide-btn-chip').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const guide = (e.currentTarget as HTMLElement).dataset.guide as any;
+          if (guide) {
+            this.currentGhostGuide = guide;
+            panel.querySelectorAll('.bs-guide-btn-chip').forEach((b) => b.classList.remove('active'));
+            (e.currentTarget as HTMLElement).classList.add('active');
+            const label = document.getElementById('bs-active-guide-label');
+            if (label) {
+              label.textContent = guide === 'roman' ? 'Romano' :
+                guide === 'round' ? 'Redondo' :
+                guide === 'rect' ? 'Retangular' :
+                guide === 'table' ? 'Mesa' : 'Nenhum';
+            }
+            this.renderBackdropSketchGuide();
+          }
+        });
+      });
+
+      // Seleção de Ferramenta de Inserção de Peças
+      panel.querySelectorAll('.bs-element-card').forEach((card) => {
         card.addEventListener('click', (e) => {
           const tool = (e.currentTarget as HTMLElement).dataset.tool as any;
           if (tool) this.setActiveTouchTool(tool);
@@ -1292,7 +1446,7 @@ export class BalloonStudioModal {
 
   private setDistributionMode(mode: 'mesclado' | 'degrade' | 'blocos'): void {
     this.currentDistributionMode = mode;
-    this.pieces = distributeColors(this.pieces, mode);
+    this.pieces = distributeColors(this.pieces, mode, this.activeColorCount);
     this.saveHistory();
     this.renderCanvas();
     this.renderTabActivePanel();
@@ -1319,6 +1473,185 @@ export class BalloonStudioModal {
   }
 
   // Inserção direta de balão base 12"
+
+  // Navegação Segura no Mobile (Interceptação do Botão Voltar)
+  public handleBackNavigation(): boolean {
+    // 1. Se alguma gaveta/modal interna estiver aberta, fecha apenas a gaveta
+    const openSheets = ['bs-color-sheet', 'bs-shopping-modal', 'bs-conclude-modal'];
+    for (const sheetId of openSheets) {
+      const el = document.getElementById(sheetId);
+      if (el && el.style.display === 'flex') {
+        this.toggleSheet(sheetId, false);
+        return true;
+      }
+    }
+
+    // 2. Se estiver na tela de edição, volta para a galeria de modelos
+    if (this.currentScreen === 'editor') {
+      this.setScreen('gallery');
+      return true;
+    }
+
+    // 3. Se estiver na galeria inicial, fecha o estúdio com segurança
+    this.close();
+    return false;
+  }
+
+  // Define a quantidade de cores no arranjo (2 a 5 cores)
+  public setActiveColorCount(count: number): void {
+    this.activeColorCount = Math.max(2, Math.min(5, count));
+    if (!this.palette.E) {
+      this.palette.E = '#ffffff';
+    }
+    if (!this.palette.names) {
+      this.palette.names = { A: 'Rosa Quartzo', B: 'Blush Suave', C: 'Ouro Cromo', D: 'Branco Neve', E: 'Pérola' };
+    }
+    if (!this.palette.names.E) this.palette.names.E = 'Pérola';
+    if (!this.palette.finishes) {
+      this.palette.finishes = { A: 'satin', B: 'satin', C: 'chrome', D: 'matte', E: 'satin' };
+    }
+    if (!this.palette.finishes.E) this.palette.finishes.E = 'satin';
+
+    this.palette.colorCount = this.activeColorCount;
+
+    // Redistribui as peças existentes para que respeitem o novo limite de cores
+    this.pieces = distributeColors(this.pieces, this.currentDistributionMode, this.activeColorCount);
+    this.saveHistory();
+    this.renderCanvas();
+    this.syncPaletteSwatches();
+    this.renderTabActivePanel();
+  }
+
+  // Renderiza o esboço arquitetural/guia de fundo para apoio visual
+  private renderBackdropSketchGuide(): void {
+    const layer = document.getElementById('bs-backdrop-sketch-layer');
+    if (!layer) return;
+
+    if (this.currentGhostGuide === 'none' || this.pieces.length === 0) {
+      layer.innerHTML = '';
+      return;
+    }
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const p of this.pieces) {
+      const r = BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28;
+      if (p.x - r < minX) minX = p.x - r;
+      if (p.x + r > maxX) maxX = p.x + r;
+      if (p.y - r < minY) minY = p.y - r;
+      if (p.y + r > maxY) maxY = p.y + r;
+    }
+
+    if (minX === Infinity) {
+      minX = 120; maxX = 320; minY = 80; maxY = 420;
+    }
+
+    const cx = Math.round((minX + maxX) / 2);
+    const baseY = Math.round(maxY + 4);
+    const archW = Math.max(160, Math.min(270, Math.round((maxX - minX) * 0.95)));
+    const archH = Math.max(260, Math.min(440, Math.round((maxY - minY) * 1.05)));
+    const topY = baseY - archH;
+
+    let sketchHtml = '';
+    const strokeColor = '#a8a29e';
+    const fillColor = 'rgba(245, 245, 244, 0.40)';
+
+    if (this.currentGhostGuide === 'roman') {
+      const rx = Math.round(archW / 2);
+      const left = cx - rx;
+      const right = cx + rx;
+      const arcCenterY = topY + rx;
+      const d = `M ${left} ${baseY} L ${left} ${arcCenterY} A ${rx} ${rx} 0 0 1 ${right} ${arcCenterY} L ${right} ${baseY} Z`;
+      sketchHtml = `
+        <path d="${d}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="7 5" opacity="0.8"/>
+        <text x="${cx}" y="${arcCenterY + 45}" fill="#78716c" font-size="11.5" font-weight="600" text-anchor="middle" opacity="0.75">Painel Romano (100×200cm)</text>
+      `;
+    } else if (this.currentGhostGuide === 'round') {
+      const r = Math.round(Math.min(archW, archH) * 0.52);
+      const centerCY = Math.round(topY + r + 15);
+      sketchHtml = `
+        <circle cx="${cx}" cy="${centerCY}" r="${r}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="7 5" opacity="0.8"/>
+        <line x1="${cx}" y1="${centerCY + r}" x2="${cx}" y2="${baseY}" stroke="${strokeColor}" stroke-width="2.2" stroke-dasharray="5 4" opacity="0.6"/>
+        <line x1="${cx - 36}" y1="${baseY}" x2="${cx + 36}" y2="${baseY}" stroke="${strokeColor}" stroke-width="2.5" opacity="0.7"/>
+        <text x="${cx}" y="${centerCY}" fill="#78716c" font-size="11.5" font-weight="600" text-anchor="middle" opacity="0.75">Painel Redondo (150cm)</text>
+      `;
+    } else if (this.currentGhostGuide === 'rect') {
+      const rx = Math.round(archW / 2);
+      const left = cx - rx;
+      sketchHtml = `
+        <rect x="${left}" y="${topY}" width="${archW}" height="${archH}" rx="6" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="7 5" opacity="0.8"/>
+        <text x="${cx}" y="${topY + 38}" fill="#78716c" font-size="11.5" font-weight="600" text-anchor="middle" opacity="0.75">Arco Retangular (120×210cm)</text>
+      `;
+    } else if (this.currentGhostGuide === 'table') {
+      const tw = Math.round(Math.max(140, archW * 0.75));
+      const th = Math.round(Math.min(180, archH * 0.45));
+      const tTop = baseY - th;
+      const rx = Math.round(tw / 2);
+      sketchHtml = `
+        <ellipse cx="${cx}" cy="${tTop}" rx="${rx}" ry="15" fill="rgba(240, 238, 233, 0.6)" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="6 4" opacity="0.85"/>
+        <path d="M ${cx - rx} ${tTop} L ${cx - rx} ${baseY} A ${rx} 15 0 0 0 ${cx + rx} ${baseY} L ${cx + rx} ${tTop}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="6 4" opacity="0.75"/>
+        <text x="${cx}" y="${tTop + Math.round(th / 2)}" fill="#78716c" font-size="11.5" font-weight="600" text-anchor="middle" opacity="0.75">Mesa Cilíndrica (50×80cm)</text>
+      `;
+    }
+
+    layer.innerHTML = sketchHtml;
+  }
+
+  // Inserção de balão individual de qualquer tamanho
+  private insertSingleBalloonAt(x: number, y: number, sizeInches: BalloonSizeInches): void {
+    const slot = this.activeColorSlot;
+    const finish = this.palette.finishes?.[slot as 'A' | 'B' | 'C' | 'D' | 'E'] || (sizeInches === 5 ? 'chrome' : 'satin');
+    const newPiece: BalloonPiece = {
+      id: `p-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      x,
+      y,
+      sizeInches,
+      slot,
+      finish
+    };
+    this.pieces.push(newPiece);
+    this.selectedPieceIds.clear();
+    this.selectedPieceIds.add(newPiece.id);
+
+    this.saveHistory();
+    this.renderCanvas();
+    this.showBalloonPill();
+  }
+
+  private insertClusterQuadAt(x: number, y: number): void {
+    const r = 24;
+    const baseId = Date.now();
+    const activeSlots: BalloonSlot[] = (['A', 'B', 'C', 'D', 'E'] as const).slice(0, this.activeColorCount);
+    const clusterPieces: BalloonPiece[] = [
+      { id: `c-${baseId}-1`, x: x - r, y: y - r, sizeInches: 10, slot: activeSlots[0] || 'A', finish: 'satin' },
+      { id: `c-${baseId}-2`, x: x + r, y: y - r, sizeInches: 10, slot: activeSlots[1] || 'B', finish: 'satin' },
+      { id: `c-${baseId}-3`, x: x - r, y: y + r, sizeInches: 10, slot: activeSlots[2] || activeSlots[0] || 'A', finish: 'chrome' },
+      { id: `c-${baseId}-4`, x: x + r, y: y + r, sizeInches: 10, slot: activeSlots[3] || activeSlots[1] || 'B', finish: 'matte' },
+    ];
+    this.pieces.push(...clusterPieces);
+    this.selectedPieceIds.clear();
+    this.selectedPieceIds.add(clusterPieces[0].id);
+    this.saveHistory();
+    this.renderCanvas();
+    this.showBalloonPill();
+  }
+
+  private insertClusterTrioAt(x: number, y: number): void {
+    const r = 14;
+    const baseId = Date.now();
+    const activeSlots: BalloonSlot[] = (['A', 'B', 'C', 'D', 'E'] as const).slice(0, this.activeColorCount);
+    const trioPieces: BalloonPiece[] = [
+      { id: `t-${baseId}-1`, x, y: y - r * 0.8, sizeInches: 5, slot: activeSlots[0] || 'A', finish: 'chrome' },
+      { id: `t-${baseId}-2`, x: x - r * 0.8, y: y + r * 0.6, sizeInches: 5, slot: activeSlots[1] || 'B', finish: 'satin' },
+      { id: `t-${baseId}-3`, x: x + r * 0.8, y: y + r * 0.6, sizeInches: 5, slot: activeSlots[2] || activeSlots[0] || 'A', finish: 'chrome' },
+    ];
+    this.pieces.push(...trioPieces);
+    this.selectedPieceIds.clear();
+    this.selectedPieceIds.add(trioPieces[0].id);
+    this.saveHistory();
+    this.renderCanvas();
+    this.showBalloonPill();
+  }
+
   private insertBaseBalloonAt(x: number, y: number): void {
     const newPiece: BalloonPiece = {
       id: `base-${Date.now()}`,
@@ -1487,6 +1820,8 @@ export class BalloonStudioModal {
     this.pieces = JSON.parse(JSON.stringify(tmpl.pieces));
     this.baseTemplatePieces = JSON.parse(JSON.stringify(tmpl.pieces));
     this.palette = JSON.parse(JSON.stringify(tmpl.palette));
+    this.activeColorCount = this.palette.colorCount || 4;
+    if (!this.palette.E) this.palette.E = '#ffffff';
 
     // Garante nomes amigáveis em português
     if (!this.palette.names) {
@@ -1664,7 +1999,7 @@ export class BalloonStudioModal {
     if (linkCount) linkCount.textContent = `${this.pieces.length}`;
 
     if (previewBox) {
-      const { svg } = renderArrangementSvg(this.pieces, this.palette, { pad: 20, hasFloorShadow: true, idPrefix: "bs-concl-" });
+      const { svg } = renderArrangementSvg(this.pieces, this.palette, { pad: 20, hasFloorShadow: false, idPrefix: "bs-concl-" });
       previewBox.innerHTML = svg;
     }
 

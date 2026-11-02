@@ -3,7 +3,7 @@
 
 export type BalloonSizeInches = 5 | 10 | 12 | 18 | 24;
 export type BalloonFinish = 'satin' | 'matte' | 'chrome' | 'crystal' | 'glitter';
-export type BalloonSlot = 'A' | 'B' | 'C' | 'D' | 'custom';
+export type BalloonSlot = 'A' | 'B' | 'C' | 'D' | 'E' | 'custom';
 
 export interface BalloonPiece {
   id: string;
@@ -23,9 +23,11 @@ export interface BalloonPaletteConfig {
   B: string;
   C: string;
   D: string;
+  E?: string;
+  colorCount?: number;
   name?: string;
-  names?: Record<'A' | 'B' | 'C' | 'D', string>;
-  finishes?: Record<'A' | 'B' | 'C' | 'D', BalloonFinish>;
+  names?: Partial<Record<'A' | 'B' | 'C' | 'D' | 'E', string>>;
+  finishes?: Partial<Record<'A' | 'B' | 'C' | 'D' | 'E', BalloonFinish>>;
 }
 
 export interface ArrangementStats {
@@ -262,9 +264,9 @@ export function generateStudioDefs(palette: BalloonPaletteConfig, idPrefix: stri
     </radialGradient>
   `;
 
-  const slots: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D'];
+  const slots: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
   for (const slot of slots) {
-    const hex = palette[slot] || '#d4af37';
+    const hex = palette[slot] || (slot === 'E' ? '#f8fafc' : '#d4af37');
     const isLight = isLightColor(hex);
 
     // 1. SATIN
@@ -413,7 +415,7 @@ export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPalet
 // Calcula estatísticas inteligentes (lista de compras) da composição
 export function calculateArrangementStats(pieces: BalloonPiece[], palette?: BalloonPaletteConfig): ArrangementStats {
   const bySize: Record<BalloonSizeInches, number> = { 5: 0, 10: 0, 12: 0, 18: 0, 24: 0 };
-  const bySlot: Record<BalloonSlot, number> = { A: 0, B: 0, C: 0, D: 0, custom: 0 };
+  const bySlot: Record<BalloonSlot, number> = { A: 0, B: 0, C: 0, D: 0, E: 0, custom: 0 };
   const byFinish: Record<BalloonFinish, number> = { satin: 0, matte: 0, chrome: 0, crystal: 0, glitter: 0 };
 
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -485,10 +487,13 @@ export function mirrorArrangementHorizontal(pieces: BalloonPiece[]): BalloonPiec
 // Distribui as cores da paleta no arranjo conforme o modo escolhido
 export function distributeColors(
   pieces: BalloonPiece[],
-  mode: 'mesclado' | 'degrade' | 'blocos'
+  mode: 'mesclado' | 'degrade' | 'blocos',
+  activeCount: number = 4
 ): BalloonPiece[] {
   if (pieces.length === 0) return [];
-  const slots: BalloonSlot[] = ['A', 'B', 'C', 'D'];
+  const allSlots: BalloonSlot[] = ['A', 'B', 'C', 'D', 'E'];
+  const count = Math.max(2, Math.min(5, activeCount));
+  const slots = allSlots.slice(0, count);
   const total = pieces.length;
 
   if (mode === 'degrade') {
@@ -499,31 +504,30 @@ export function distributeColors(
     const result = [...pieces];
     sortedIndices.forEach(({ idx }, i) => {
       const ratio = i / Math.max(1, total - 1);
-      let s: BalloonSlot = 'A';
-      if (ratio < 0.35) s = 'A';
-      else if (ratio < 0.65) s = 'B';
-      else if (ratio < 0.85) s = 'C';
-      else s = 'D';
-      result[idx] = { ...result[idx], slot: s };
+      const slotIdx = Math.min(count - 1, Math.floor(ratio * count));
+      result[idx] = { ...result[idx], slot: slots[slotIdx] };
     });
     return result;
   }
 
   if (mode === 'blocos') {
-    const blockSize = Math.max(3, Math.round(total / 6));
+    const blockSize = Math.max(3, Math.round(total / (count * 1.5)));
     return pieces.map((p, i) => {
-      const blockIdx = Math.floor(i / blockSize) % 4;
+      const blockIdx = Math.floor(i / blockSize) % count;
       return { ...p, slot: slots[blockIdx] };
     });
   }
 
-  // Mesclado
-  const weights = [0.40, 0.30, 0.18, 0.12];
+  // Mesclado proporcional
+  const baseWeights = [0.38, 0.28, 0.18, 0.10, 0.06].slice(0, count);
+  const sumWeights = baseWeights.reduce((a, b) => a + b, 0);
+  const weights = baseWeights.map((w) => w / sumWeights);
+
   return pieces.map((p, i) => {
     const hash = Math.abs(Math.sin(p.x * 12.9898 + p.y * 78.233 + i) * 43758.5453) % 1;
     let acc = 0;
-    let chosen: BalloonSlot = 'A';
-    for (let s = 0; s < 4; s++) {
+    let chosen: BalloonSlot = slots[0];
+    for (let s = 0; s < count; s++) {
       acc += weights[s];
       if (hash <= acc) {
         chosen = slots[s];

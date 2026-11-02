@@ -190,6 +190,7 @@ async function bootstrap() {
 
   btnHeaderBalloonStudio?.addEventListener('click', () => {
     balloonStudioModal.open();
+    history.pushState({ screen: 'balloon-studio' }, '');
   });
 
   btnHeaderUndo?.addEventListener('click', () => {
@@ -271,6 +272,7 @@ async function bootstrap() {
     },
     onOpenBalloonStudio: () => {
       balloonStudioModal.open();
+      history.pushState({ screen: 'balloon-studio' }, '');
     },
     onBeforeExitToHome: async () => {
       if (projectsModal.hasUnsavedChanges()) {
@@ -310,10 +312,14 @@ async function bootstrap() {
       return;
     }
 
-    // 1b. Se o Estúdio de Balões estiver aberto, fecha
+    // 1b. Se o Estúdio de Balões estiver aberto, delega navegação interna antes de fechar
     if (balloonStudioModal.isOpen()) {
-      balloonStudioModal.close();
-      history.pushState({ screen: homeScreen.active ? 'home' : 'studio' }, '');
+      const handled = balloonStudioModal.handleBackNavigation();
+      if (handled) {
+        history.pushState({ screen: 'balloon-studio' }, '');
+      } else {
+        history.pushState({ screen: homeScreen.active ? 'home' : 'studio' }, '');
+      }
       return;
     }
 

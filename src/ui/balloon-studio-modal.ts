@@ -1540,40 +1540,97 @@ export class BalloonStudioModal {
     if (selectedPieces.length === 0) return;
 
     let targetX = 0;
-    let targetY = Infinity;
+    let targetTopY = Infinity;
+    let targetBottomY = -Infinity;
 
     if (selectedPieces.length === 1) {
       const p = selectedPieces[0];
       const r = BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28;
       targetX = p.x;
-      targetY = p.y - r - 8;
+      targetTopY = p.y - r;
+      targetBottomY = p.y + r;
     } else {
       let minX = Infinity;
       let maxX = -Infinity;
       let minY = Infinity;
+      let maxY = -Infinity;
       selectedPieces.forEach((p) => {
         const r = BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28;
         if (p.x - r < minX) minX = p.x - r;
         if (p.x + r > maxX) maxX = p.x + r;
         if (p.y - r < minY) minY = p.y - r;
+        if (p.y + r > maxY) maxY = p.y + r;
       });
       targetX = (minX + maxX) / 2;
-      targetY = minY - 10;
+      targetTopY = minY;
+      targetBottomY = maxY;
     }
-
-    const pt = this.canvasSvgEl.createSVGPoint();
-    pt.x = targetX;
-    pt.y = targetY;
 
     const ctm = this.canvasSvgEl.getScreenCTM();
-    if (ctm) {
-      const screenPt = pt.matrixTransform(ctm);
-      const containerRect = document.getElementById('bs-canvas-container')?.getBoundingClientRect();
-      if (containerRect) {
-        pill.style.left = `${screenPt.x - containerRect.left}px`;
-        pill.style.top = `${screenPt.y - containerRect.top}px`;
-      }
+    if (!ctm) return;
+
+    const container = document.getElementById('bs-canvas-container');
+    if (!container) return;
+    const containerRect = container.getBoundingClientRect();
+    const quickBar = document.getElementById('bs-canvas-quick-bar');
+    const quickBarRect = quickBar?.getBoundingClientRect();
+
+    // Converte topo e base do balão para coordenadas locais do container
+    const ptTop = this.canvasSvgEl.createSVGPoint();
+    ptTop.x = targetX;
+    ptTop.y = targetTopY;
+    const screenTop = ptTop.matrixTransform(ctm);
+
+    const ptBottom = this.canvasSvgEl.createSVGPoint();
+    ptBottom.x = targetX;
+    ptBottom.y = targetBottomY;
+    const screenBottom = ptBottom.matrixTransform(ctm);
+
+    const balloonScreenX = screenTop.x - containerRect.left;
+    const balloonTopScreenY = screenTop.y - containerRect.top;
+    const balloonBottomScreenY = screenBottom.y - containerRect.top;
+
+    const pillW = pill.offsetWidth || 240;
+    const pillH = pill.offsetHeight || 36;
+
+    // Espaço lateral disponível (margem esquerda e clearance da barra vertical à direita)
+    const minLeft = 10;
+    const maxRight = quickBarRect && quickBarRect.left > containerRect.left
+      ? (quickBarRect.left - containerRect.left - 10)
+      : (containerRect.width - 56);
+
+    // Calcula 'left' exato da pílula (sem depender de transform translate(-50%))
+    let pillLeft = Math.round(balloonScreenX - pillW / 2);
+    if (pillLeft < minLeft) {
+      pillLeft = minLeft;
+    } else if (pillLeft + pillW > maxRight) {
+      pillLeft = Math.max(minLeft, Math.round(maxRight - pillW));
     }
+
+    // Posicionamento vertical: acima do balão por padrão, ou abaixo se faltar espaço no topo
+    const placeBelow = (balloonTopScreenY - pillH - 12 < 10);
+
+    let pillTop: number;
+    if (placeBelow) {
+      pill.classList.remove('placement-top');
+      pill.classList.add('placement-bottom');
+      pillTop = Math.round(balloonBottomScreenY + 10);
+    } else {
+      pill.classList.remove('placement-bottom');
+      pill.classList.add('placement-top');
+      pillTop = Math.round(balloonTopScreenY - pillH - 10);
+    }
+
+    // Garante que não corte nem no topo nem na base do container
+    pillTop = Math.max(8, Math.min(containerRect.height - pillH - 10, pillTop));
+
+    // Calcula a posição da setinha (arrow) apontando exatamente no balão
+    const arrowOffset = Math.round(balloonScreenX - pillLeft);
+    const clampedArrow = Math.max(18, Math.min(pillW - 18, arrowOffset));
+    pill.style.setProperty('--arrow-x', `${clampedArrow}px`);
+
+    pill.style.left = `${pillLeft}px`;
+    pill.style.top = `${pillTop}px`;
   }
 
   // ----------------------------------------------------------------------

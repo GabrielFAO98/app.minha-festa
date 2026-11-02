@@ -683,8 +683,6 @@
 /* Pílula Flutuante no Balão Selecionado */
 .bs-balloon-pill {
   position: absolute;
-  transform: translate(-50%, -100%);
-  margin-top: -10px;
   z-index: 60;
   background: #FFFFFF;
   border: 1px solid var(--border-subtle, #E6E1DA);
@@ -694,20 +692,43 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  animation: bsFadeIn 0.15s ease-out;
+  white-space: nowrap;
+  width: max-content;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: auto;
+  animation: bsPillFade 0.12s ease-out;
+}
+
+@keyframes bsPillFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .bs-balloon-pill::after {
   content: '';
   position: absolute;
-  bottom: -6px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid #FFFFFF;
+  left: var(--arrow-x, 50%);
+  width: 10px;
+  height: 10px;
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  box-sizing: border-box;
+}
+
+.bs-balloon-pill.placement-top::after {
+  bottom: -5px;
+  transform: translateX(-50%) rotate(45deg);
+  border-top: none;
+  border-left: none;
+}
+
+.bs-balloon-pill.placement-bottom::after {
+  top: -5px;
+  transform: translateX(-50%) rotate(45deg);
+  border-bottom: none;
+  border-right: none;
 }
 
 .bs-pill-btn {
@@ -719,10 +740,13 @@
   color: var(--text-main, #1C1917);
   font-size: 11px;
   font-weight: 700;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all var(--transition-fast, 0.18s ease);
 }
 
@@ -731,12 +755,45 @@
   border-color: var(--primary, #B58938);
 }
 
+.bs-pill-btn:active {
+  transform: scale(0.96);
+}
+
+#bs-pill-color-name {
+  max-width: 82px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+#bs-pill-dup-btn,
+#bs-pill-del-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+#bs-pill-dup-btn svg,
+#bs-pill-del-btn svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  stroke: currentColor;
+  stroke-width: 2.2;
+}
+
 .bs-pill-swatch-dot {
   width: 12px;
   height: 12px;
   border-radius: 50%;
   display: inline-block;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
 }
 
 .bs-pill-btn-danger {

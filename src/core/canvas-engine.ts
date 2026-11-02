@@ -35,6 +35,9 @@ export class CanvasEngine {
   uiLayer: Konva.Layer | null;
   transformer: Konva.Transformer | null;
   selectedNode: Konva.Group | null;
+  selectedNodes: Konva.Group[] = [];
+  isMultiSelectMode: boolean = false;
+  private dragStartNodesPositions = new Map<Konva.Group, { x: number; y: number }>();
 
   // Botões de Ação nos Cantos do Quadro de Seleção e Alça de Arraste
   btnCornerRotate: Konva.Group | null;
@@ -111,7 +114,7 @@ export class CanvasEngine {
   hitCanvas: HTMLCanvasElement;
   hitCtx: CanvasRenderingContext2D | null;
 
-  onSelectionChange: ((meta: PresetItem | null, node: Konva.Group | null) => void) | null;
+  onSelectionChange: ((meta: PresetItem | null, node: Konva.Group | null, selectedNodes?: Konva.Group[]) => void) | null;
   onLayersChange: ((elements: SceneElement[]) => void) | null;
   onHistoryChange: ((canUndo: boolean, canRedo: boolean) => void) | null;
   onCoverRepositionChange: ((isActive: boolean, meta: PresetItem | null) => void) | null;
@@ -125,6 +128,8 @@ export class CanvasEngine {
     this.uiLayer = null;
     this.transformer = null;
     this.selectedNode = null;
+    this.selectedNodes = [];
+    this.isMultiSelectMode = false;
     this.btnCornerRotate = null;
     this.btnCornerFlip = null;
     this.btnCornerDuplicate = null;
@@ -1220,14 +1225,18 @@ export class CanvasEngine {
       }
 
       // Se clicou/tocou na Alça de Arraste (Move Handle), inicia o arraste da peça selecionada com visão 100% livre
-      if (this.isMoveHandle(e.target) && this.selectedNode && !this.selectedNode.getAttr('locked')) {
-        this.draggingNode = this.selectedNode;
+      if (this.isMoveHandle(e.target) && this.selectedNodes.length > 0 && !this.selectedNodes[0].getAttr('locked')) {
+        this.draggingNode = this.selectedNodes[0];
         this.dragStartClientX = clientX;
         this.dragStartClientY = clientY;
-        this.dragStartNodeX = this.selectedNode.x();
-        this.dragStartNodeY = this.selectedNode.y();
+        this.dragStartNodeX = this.selectedNodes[0].x();
+        this.dragStartNodeY = this.selectedNodes[0].y();
+        this.dragStartNodesPositions.clear();
+        this.selectedNodes.forEach((n) => {
+          this.dragStartNodesPositions.set(n, { x: n.x(), y: n.y() });
+        });
         this.hasMovedDuringDrag = false;
-        this.dragCandidatesOnDown = [this.selectedNode];
+        this.dragCandidatesOnDown = this.selectedNodes;
         this.pendingDragPos = null;
         return;
       }
@@ -1270,24 +1279,70 @@ export class CanvasEngine {
       }
 
       // Decide qual peça selecionar/arrastar imediatamente no mesmo gesto
-      const keepCurrentSelected =
-        Boolean(this.selectedNode && candidates.includes(this.selectedNode)) &&
-        (candidates[0] === this.selectedNode || this.wasSelectedByCycleOrLayer);
+      const clicked = candidates[0];
+      const clickedMeta = clicked.getAttr('itemMeta') as PresetItem | undefined;
+      const isShift = Boolean(rawEvt && (rawEvt as MouseEvent).shiftKey);
+      const isMulti = isShift || this.isMultiSelectMode;
 
-      if (keepCurrentSelected && this.selectedNode) {
-        this.wasAlreadySelectedOnDown = true;
+      if (clickedMeta?.groupId && !isMulti) {
+        // Clicou em peça vinculada a um grupo: seleciona todo o grupo automaticamente (estilo Canva)
+        const groupNodes = this.getSceneNodes().filter((n) => {
+          const m = n.getAttr('itemMeta') as PresetItem | undefined;
+          return m?.groupId && m.groupId === clickedMeta.groupId;
+        });
+
+        const isGroupAlreadySelected =
+          this.selectedNodes.length === groupNodes.length &&
+          groupNodes.every((n) => this.selectedNodes.includes(n));
+
+        if (isGroupAlreadySelected) {
+          this.wasAlreadySelectedOnDown = true;
+        } else {
+          this.wasAlreadySelectedOnDown = false;
+          this.wasSelectedByCycleOrLayer = false;
+          this.selectNodes(groupNodes);
+        }
+      } else if (isMulti) {
+        // Multi-seleção ativa (Shift ou botão Vários)
+        const targetNodes = clickedMeta?.groupId
+          ? this.getSceneNodes().filter((n) => (n.getAttr('itemMeta') as PresetItem | undefined)?.groupId === clickedMeta.groupId)
+          : [clicked];
+
+        let newSelection = [...this.selectedNodes];
+        const isAlreadySelected = targetNodes.some((n) => newSelection.includes(n));
+
+        if (isAlreadySelected) {
+          newSelection = newSelection.filter((n) => !targetNodes.includes(n));
+        } else {
+          targetNodes.forEach((n) => {
+            if (!newSelection.includes(n)) newSelection.push(n);
+          });
+        }
+        this.selectNodes(newSelection);
       } else {
-        this.wasAlreadySelectedOnDown = false;
-        this.wasSelectedByCycleOrLayer = false;
-        this.selectNode(candidates[0]);
+        const keepCurrentSelected =
+          Boolean(this.selectedNode && candidates.includes(this.selectedNode)) &&
+          (candidates[0] === this.selectedNode || this.wasSelectedByCycleOrLayer);
+
+        if (keepCurrentSelected && this.selectedNode) {
+          this.wasAlreadySelectedOnDown = true;
+        } else {
+          this.wasAlreadySelectedOnDown = false;
+          this.wasSelectedByCycleOrLayer = false;
+          this.selectNodes([clicked]);
+        }
       }
 
-      if (this.selectedNode && !this.selectedNode.getAttr('locked')) {
-        this.draggingNode = this.selectedNode;
+      if (this.selectedNodes.length > 0 && !this.selectedNodes[0].getAttr('locked')) {
+        this.draggingNode = this.selectedNodes[0];
         this.dragStartClientX = clientX;
         this.dragStartClientY = clientY;
-        this.dragStartNodeX = this.selectedNode.x();
-        this.dragStartNodeY = this.selectedNode.y();
+        this.dragStartNodeX = this.selectedNodes[0].x();
+        this.dragStartNodeY = this.selectedNodes[0].y();
+        this.dragStartNodesPositions.clear();
+        this.selectedNodes.forEach((n) => {
+          this.dragStartNodesPositions.set(n, { x: n.x(), y: n.y() });
+        });
         this.hasMovedDuringDrag = false;
         this.dragCandidatesOnDown = candidates;
         this.pendingDragPos = null;
@@ -1524,11 +1579,22 @@ export class CanvasEngine {
 
         // Permite transbordamento generoso para elementos decorativos (arcos, tapetes, displays)
         const MARGIN = 350;
-        const newX = Math.max(-MARGIN, Math.min(this.VIRTUAL_WIDTH + MARGIN, this.dragStartNodeX + virtualDx));
-        const newY = Math.max(-MARGIN, Math.min(this.VIRTUAL_HEIGHT + MARGIN, this.dragStartNodeY + virtualDy));
-
-        this.pendingDragPos = { x: newX, y: newY };
-        this.scheduleFastDraw();
+        if (this.selectedNodes.length > 1) {
+          this.selectedNodes.forEach((n) => {
+            const startPos = this.dragStartNodesPositions.get(n);
+            if (startPos) {
+              const nx = Math.max(-MARGIN, Math.min(this.VIRTUAL_WIDTH + MARGIN, startPos.x + virtualDx));
+              const ny = Math.max(-MARGIN, Math.min(this.VIRTUAL_HEIGHT + MARGIN, startPos.y + virtualDy));
+              n.position({ x: nx, y: ny });
+            }
+          });
+          this.scheduleFastDraw();
+        } else {
+          const newX = Math.max(-MARGIN, Math.min(this.VIRTUAL_WIDTH + MARGIN, this.dragStartNodeX + virtualDx));
+          const newY = Math.max(-MARGIN, Math.min(this.VIRTUAL_HEIGHT + MARGIN, this.dragStartNodeY + virtualDy));
+          this.pendingDragPos = { x: newX, y: newY };
+          this.scheduleFastDraw();
+        }
       }
     };
 
@@ -2181,23 +2247,26 @@ export class CanvasEngine {
     return group;
   }
 
-  selectNode(node: Konva.Group | Konva.Node | null) {
-    if (this.isRepositioningCover && this.selectedNode !== node) {
+  selectNodes(nodes: Konva.Group[]) {
+    if (this.isRepositioningCover) {
       this.exitCoverRepositionMode(false);
     }
 
-    if (node && !(node as any).__patchedRotation) {
-      (node as any).__patchedRotation = true;
-      (node as any).getAbsoluteRotation = function () {
-        return this.rotation() || 0;
-      };
-    }
+    nodes.forEach((node) => {
+      if (node && !(node as any).__patchedRotation) {
+        (node as any).__patchedRotation = true;
+        (node as any).getAbsoluteRotation = function () {
+          return this.rotation() || 0;
+        };
+      }
+    });
 
-    this.selectedNode = node as Konva.Group | null;
+    this.selectedNodes = [...nodes];
+    this.selectedNode = nodes[0] || null;
 
-    if (this.transformer && node) {
+    if (this.transformer && nodes.length > 0) {
       this.transformer.padding(4);
-      this.transformer.nodes([node]);
+      this.transformer.nodes(nodes);
     } else {
       this.transformer?.nodes([]);
     }
@@ -2206,9 +2275,13 @@ export class CanvasEngine {
     this.uiLayer?.draw();
 
     if (this.onSelectionChange) {
-      const meta = node ? node.getAttr('itemMeta') : null;
-      this.onSelectionChange(meta, this.selectedNode);
+      const meta = this.selectedNode ? this.selectedNode.getAttr('itemMeta') : null;
+      this.onSelectionChange(meta, this.selectedNode, this.selectedNodes);
     }
+  }
+
+  selectNode(node: Konva.Group | Konva.Node | null) {
+    this.selectNodes(node ? [node as Konva.Group] : []);
   }
 
   deselect() {
@@ -2218,6 +2291,8 @@ export class CanvasEngine {
     this.isRotatingNode = false;
     this.draggingNode = null;
     this.selectedNode = null;
+    this.selectedNodes = [];
+    this.isMultiSelectMode = false;
     this.wasSelectedByCycleOrLayer = false;
     if (this.transformer) {
       this.transformer.padding(4);
@@ -2227,8 +2302,64 @@ export class CanvasEngine {
     this.uiLayer?.draw();
 
     if (this.onSelectionChange) {
-      this.onSelectionChange(null, null);
+      this.onSelectionChange(null, null, []);
     }
+  }
+
+  // ========================================================
+  // AGRUPAMENTO E DESAGRUPAMENTO DE PEÇAS (ESTILO CANVA)
+  // ========================================================
+
+  groupSelected(): boolean {
+    if (this.selectedNodes.length < 2) return false;
+    const groupId = 'grp-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+    this.selectedNodes.forEach((node) => {
+      const meta = node.getAttr('itemMeta') as PresetItem;
+      if (meta) {
+        meta.groupId = groupId;
+        node.setAttr('itemMeta', meta);
+      }
+    });
+    this.isMultiSelectMode = false;
+    this.saveSnapshot();
+    this.notifyLayersChange();
+    if (this.onSelectionChange) {
+      this.onSelectionChange(this.selectedNode?.getAttr('itemMeta') || null, this.selectedNode, this.selectedNodes);
+    }
+    return true;
+  }
+
+  ungroupSelected(): boolean {
+    if (this.selectedNodes.length === 0) return false;
+    this.selectedNodes.forEach((node) => {
+      const meta = node.getAttr('itemMeta') as PresetItem;
+      if (meta && meta.groupId) {
+        delete meta.groupId;
+        node.setAttr('itemMeta', meta);
+      }
+    });
+    this.saveSnapshot();
+    this.notifyLayersChange();
+    if (this.onSelectionChange) {
+      this.onSelectionChange(this.selectedNode?.getAttr('itemMeta') || null, this.selectedNode, this.selectedNodes);
+    }
+    return true;
+  }
+
+  isGroupSelected(): boolean {
+    if (this.selectedNodes.length === 0) return false;
+    if (this.selectedNodes.length === 1) {
+      const meta = this.selectedNodes[0].getAttr('itemMeta') as PresetItem | undefined;
+      return Boolean(meta?.groupId);
+    }
+    const firstGroup = (this.selectedNodes[0].getAttr('itemMeta') as PresetItem | undefined)?.groupId;
+    if (!firstGroup) return false;
+    return this.selectedNodes.every((n) => (n.getAttr('itemMeta') as PresetItem | undefined)?.groupId === firstGroup);
+  }
+
+  toggleMultiSelectMode(): boolean {
+    this.isMultiSelectMode = !this.isMultiSelectMode;
+    return this.isMultiSelectMode;
   }
 
   // ========================================================
@@ -2882,13 +3013,46 @@ export class CanvasEngine {
   }
 
   async duplicateSelected() {
-    if (!this.selectedNode) return;
-    const meta = this.selectedNode.getAttr('itemMeta');
-    const newPos = {
-      x: Math.min(this.VIRTUAL_WIDTH - 120, this.selectedNode.x() + 40),
-      y: Math.min(this.VIRTUAL_HEIGHT - 120, this.selectedNode.y() + 40)
-    };
-    await this.addItem({ ...meta, instanceId: undefined }, newPos, true);
+    if (this.selectedNodes.length === 0) return;
+    const groupMap = new Map<string, string>();
+    const newNodes: Konva.Group[] = [];
+
+    for (const node of this.selectedNodes) {
+      const meta = node.getAttr('itemMeta') as PresetItem;
+      if (!meta) continue;
+      let newGrp = meta.groupId;
+      if (meta.groupId) {
+        if (!groupMap.has(meta.groupId)) {
+          groupMap.set(meta.groupId, 'grp-' + Date.now() + '-' + Math.floor(Math.random() * 1000));
+        }
+        newGrp = groupMap.get(meta.groupId);
+      }
+      const newPos = {
+        x: Math.min(this.VIRTUAL_WIDTH - 120, node.x() + 40),
+        y: Math.min(this.VIRTUAL_HEIGHT - 120, node.y() + 40)
+      };
+      const cloned = await this.addItem(
+        { ...meta, instanceId: undefined, groupId: newGrp },
+        newPos,
+        false,
+        false
+      );
+      if (cloned) {
+        cloned.scaleX(node.scaleX());
+        cloned.scaleY(node.scaleY());
+        cloned.rotation(node.rotation());
+        cloned.offsetX(node.offsetX());
+        cloned.offsetY(node.offsetY());
+        newNodes.push(cloned as Konva.Group);
+      }
+    }
+
+    if (newNodes.length > 0) {
+      this.selectNodes(newNodes);
+      this.decorLayer.batchDraw();
+      this.saveSnapshot();
+      this.notifyLayersChange();
+    }
   }
 
   async updateItemMeta(updatedItem: PresetItem) {
@@ -2926,15 +3090,15 @@ export class CanvasEngine {
     this.decorLayer.batchDraw();
     this.notifyLayersChange();
     if (this.selectedNode && this.onSelectionChange) {
-      this.onSelectionChange(this.selectedNode.getAttr('itemMeta'), this.selectedNode);
+      this.onSelectionChange(this.selectedNode.getAttr('itemMeta'), this.selectedNode, this.selectedNodes);
     }
   }
 
   deleteSelected() {
-    if (!this.selectedNode) return;
-    const node = this.selectedNode;
+    if (this.selectedNodes.length === 0) return;
+    const nodesToDelete = [...this.selectedNodes];
     this.deselect();
-    node.destroy();
+    nodesToDelete.forEach((node) => node.destroy());
     this.decorLayer.batchDraw();
     this.saveSnapshot();
     this.notifyLayersChange();
@@ -3053,8 +3217,8 @@ export class CanvasEngine {
     return dataUrl;
   }
 
-  getSceneNodes() {
-    return this.decorLayer.getChildren();
+  getSceneNodes(): Konva.Group[] {
+    return this.decorLayer.getChildren((node) => Boolean(node.getAttr('itemMeta'))) as unknown as Konva.Group[];
   }
 
   getSceneElements(): SceneElement[] {
@@ -3081,6 +3245,7 @@ export class CanvasEngine {
           coverScale: meta.coverScale || 1,
           modularColors: meta.modularColors || null,
           balloonColors: meta.balloonColors || null,
+          groupId: meta.groupId || null,
           tabletopColor: meta.tabletopColor || null,
           tabletopCoverUrl: meta.tabletopCoverUrl || null,
           tabletopOffsetX: meta.tabletopOffsetX || 0,

@@ -79,6 +79,8 @@ async function bootstrap() {
     }
   );
 
+  (window as any).balloonStudioModalInstance = balloonStudioModal;
+
   // 5. Gerenciador de Telas (Screen Manager) com controle rigoroso de estado
   let isExitingScreen = false;
   const screenManager = new ScreenManager({

@@ -428,6 +428,26 @@ body {
   border-color: var(--primary-hover);
 }
 
+.item-action-btn.btn-group-direct {
+  background: var(--primary-light, #F7F1E3);
+  border-color: rgba(181, 137, 56, 0.45);
+  color: var(--primary-hover, #9A7229);
+  font-weight: 700;
+}
+
+.item-action-btn.btn-group-direct:hover {
+  background: #FFFFFF;
+  border-color: var(--primary, #B58938);
+}
+
+.item-action-btn.btn-multiselect-direct.active {
+  background: var(--primary, #B58938);
+  border-color: var(--primary, #B58938);
+  color: #FFFFFF;
+  font-weight: 700;
+  box-shadow: 0 2px 8px var(--primary-glow);
+}
+
 /* ========================================================== */
 /* PADRÃO DESKTOP STUDIO (Telas >= 900px)                    */
 /* ========================================================== */

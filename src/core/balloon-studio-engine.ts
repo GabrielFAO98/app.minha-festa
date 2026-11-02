@@ -20,6 +20,7 @@ export interface BalloonPiece {
   rotation?: number;
   source?: 'model' | 'user';
   coverUrl?: string;
+  groupId?: string;
 }
 
 export interface BalloonPaletteConfig {

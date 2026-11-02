@@ -188,3 +188,18 @@
   border-color: var(--primary);
 }
 
+
+.layer-group-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--primary-light, #F7F1E3);
+  color: var(--primary-hover, #9A7229);
+  margin-left: 6px;
+  vertical-align: middle;
+}

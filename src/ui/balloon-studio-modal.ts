@@ -383,6 +383,14 @@ export class BalloonStudioModal {
                 <span id="bs-pill-size-text">12"</span>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </button>
+              <button id="bs-pill-group-btn" class="bs-pill-btn" title="Agrupar ou Desagrupar" style="display:none">
+                <svg id="bs-pill-group-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                  <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                  <path d="M10 6.5h4a2 2 0 0 1 2 2v4M14 17.5h-4a2 2 0 0 1-2-2v-4"></path>
+                </svg>
+                <span id="bs-pill-group-text">Agrupar</span>
+              </button>
               <button id="bs-pill-dup-btn" class="bs-pill-btn" title="Duplicar">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
               </button>
@@ -783,6 +791,10 @@ export class BalloonStudioModal {
       const currentSize = p.sizeInches || 12;
       const nextIdx = (sizes.indexOf(currentSize) + 1) % sizes.length;
       this.setSelectedPieceSize(sizes[nextIdx]);
+    });
+
+    document.getElementById('bs-pill-group-btn')?.addEventListener('click', () => {
+      this.toggleGroupSelected();
     });
 
     document.getElementById('bs-pill-dup-btn')?.addEventListener('click', () => {
@@ -1187,10 +1199,16 @@ export class BalloonStudioModal {
       if (this.activeTouchTool === 'multi-select') {
         if (pieceGroup) {
           const pieceId = pieceGroup.id.replace('piece-', '');
-          if (this.selectedPieceIds.has(pieceId)) {
+          const clickedPiece = this.pieces.find((x) => x.id === pieceId);
+          const targetIds = clickedPiece?.groupId
+            ? this.pieces.filter((x) => x.groupId === clickedPiece.groupId).map((x) => x.id)
+            : [pieceId];
+
+          const anySelected = targetIds.some((id) => this.selectedPieceIds.has(id));
+          if (anySelected) {
             this.multiSelectToggleCandidate = pieceId;
           } else {
-            this.selectedPieceIds.add(pieceId);
+            targetIds.forEach((id) => this.selectedPieceIds.add(id));
             this.multiSelectToggleCandidate = null;
           }
           this.hasMovedDrag = false;
@@ -1237,8 +1255,17 @@ export class BalloonStudioModal {
       // 5. Modo Ajustar (Padrão: move peça ou grupo inteiro se já estiver selecionado)
       if (pieceGroup) {
         const pieceId = pieceGroup.id.replace('piece-', '');
-        // Se a peça já estiver no grupo de selecionados (ex: cluster recém inserido ou seleção anterior), mantém o grupo!
-        if (!this.selectedPieceIds.has(pieceId)) {
+        const clickedPiece = this.pieces.find((x) => x.id === pieceId);
+
+        // Se o balão faz parte de um grupo vinculado, seleciona todos os balões do grupo juntos
+        if (clickedPiece?.groupId) {
+          const groupPieces = this.pieces.filter((x) => x.groupId === clickedPiece.groupId);
+          const isGroupAlreadySelected = groupPieces.every((x) => this.selectedPieceIds.has(x.id));
+          if (!isGroupAlreadySelected) {
+            this.selectedPieceIds.clear();
+            groupPieces.forEach((x) => this.selectedPieceIds.add(x.id));
+          }
+        } else if (!this.selectedPieceIds.has(pieceId)) {
           this.selectedPieceIds.clear();
           this.selectedPieceIds.add(pieceId);
         }
@@ -1689,9 +1716,42 @@ export class BalloonStudioModal {
     const colorName = document.getElementById('bs-pill-color-name');
     const sizeText = document.getElementById('bs-pill-size-text');
 
+    const groupBtn = document.getElementById('bs-pill-group-btn');
+    const groupText = document.getElementById('bs-pill-group-text');
+    const groupIcon = document.getElementById('bs-pill-group-icon');
+    const selectedPieces = this.pieces.filter((p) => this.selectedPieceIds.has(p.id));
+    const isGroup = this.isGroupSelected();
+
+    if (groupBtn && groupText) {
+      if (isGroup) {
+        groupBtn.style.display = 'inline-flex';
+        groupText.textContent = 'Desagrupar';
+        groupBtn.title = 'Desvincular balões deste grupo';
+        if (groupIcon) {
+          groupIcon.innerHTML = '<rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><line x1="10" y1="14" x2="14" y2="10" stroke-dasharray="2 2"></line>';
+        }
+      } else if (selectedPieces.length > 1) {
+        groupBtn.style.display = 'inline-flex';
+        groupText.textContent = 'Agrupar';
+        groupBtn.title = 'Vincular balões selecionados (Estilo Canva)';
+        if (groupIcon) {
+          groupIcon.innerHTML = '<rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><path d="M10 6.5h4a2 2 0 0 1 2 2v4M14 17.5h-4a2 2 0 0 1-2-2v-4"></path>';
+        }
+      } else if (selectedPieces.length === 1 && selectedPieces[0].groupId) {
+        groupBtn.style.display = 'inline-flex';
+        groupText.textContent = 'Desagrupar';
+        groupBtn.title = 'Desvincular este balão do grupo';
+        if (groupIcon) {
+          groupIcon.innerHTML = '<rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><line x1="10" y1="14" x2="14" y2="10" stroke-dasharray="2 2"></line>';
+        }
+      } else {
+        groupBtn.style.display = 'none';
+      }
+    }
+
     if (this.selectedPieceIds.size > 1) {
       if (colorDot) colorDot.style.background = '#d4af37';
-      if (colorName) colorName.textContent = `${this.selectedPieceIds.size} balões`;
+      if (colorName) colorName.textContent = isGroup ? `Grupo (${this.selectedPieceIds.size} balões)` : `${this.selectedPieceIds.size} balões`;
       const allSelected = this.pieces.filter((p) => this.selectedPieceIds.has(p.id));
       const firstSize = allSelected[0]?.sizeInches;
       const allSameSize = allSelected.every((p) => p.sizeInches === firstSize);
@@ -2677,11 +2737,12 @@ export class BalloonStudioModal {
     const r = 24;
     const baseId = Date.now();
     const activeSlots: BalloonSlot[] = (['A', 'B', 'C', 'D', 'E'] as const).slice(0, this.activeColorCount);
+    const quadGroupId = `grp-c-${baseId}`;
     const clusterPieces: BalloonPiece[] = [
-      { id: `c-${baseId}-1`, x: x - r, y: y - r, sizeInches: 10, slot: activeSlots[0] || 'A', finish: 'satin', source: 'user' },
-      { id: `c-${baseId}-2`, x: x + r, y: y - r, sizeInches: 10, slot: activeSlots[1] || 'B', finish: 'satin', source: 'user' },
-      { id: `c-${baseId}-3`, x: x - r, y: y + r, sizeInches: 10, slot: activeSlots[2] || activeSlots[0] || 'A', finish: 'chrome', source: 'user' },
-      { id: `c-${baseId}-4`, x: x + r, y: y + r, sizeInches: 10, slot: activeSlots[3] || activeSlots[1] || 'B', finish: 'matte', source: 'user' },
+      { id: `c-${baseId}-1`, x: x - r, y: y - r, sizeInches: 10, slot: activeSlots[0] || 'A', finish: 'satin', groupId: quadGroupId, source: 'user' },
+      { id: `c-${baseId}-2`, x: x + r, y: y - r, sizeInches: 10, slot: activeSlots[1] || 'B', finish: 'satin', groupId: quadGroupId, source: 'user' },
+      { id: `c-${baseId}-3`, x: x - r, y: y + r, sizeInches: 10, slot: activeSlots[2] || activeSlots[0] || 'A', finish: 'chrome', groupId: quadGroupId, source: 'user' },
+      { id: `c-${baseId}-4`, x: x + r, y: y + r, sizeInches: 10, slot: activeSlots[3] || activeSlots[1] || 'B', finish: 'matte', groupId: quadGroupId, source: 'user' },
     ];
     this.pieces.push(...clusterPieces);
     this.selectedPieceIds.clear();
@@ -2698,10 +2759,11 @@ export class BalloonStudioModal {
     const r = 14;
     const baseId = Date.now();
     const activeSlots: BalloonSlot[] = (['A', 'B', 'C', 'D', 'E'] as const).slice(0, this.activeColorCount);
+    const trioGroupId = `grp-t-${baseId}`;
     const trioPieces: BalloonPiece[] = [
-      { id: `t-${baseId}-1`, x, y: y - r * 0.8, sizeInches: 5, slot: activeSlots[0] || 'A', finish: 'chrome', source: 'user' },
-      { id: `t-${baseId}-2`, x: x - r * 0.8, y: y + r * 0.6, sizeInches: 5, slot: activeSlots[1] || 'B', finish: 'satin', source: 'user' },
-      { id: `t-${baseId}-3`, x: x + r * 0.8, y: y + r * 0.6, sizeInches: 5, slot: activeSlots[2] || activeSlots[0] || 'A', finish: 'chrome', source: 'user' },
+      { id: `t-${baseId}-1`, x, y: y - r * 0.8, sizeInches: 5, slot: activeSlots[0] || 'A', finish: 'chrome', groupId: trioGroupId, source: 'user' },
+      { id: `t-${baseId}-2`, x: x - r * 0.8, y: y + r * 0.6, sizeInches: 5, slot: activeSlots[1] || 'B', finish: 'satin', groupId: trioGroupId, source: 'user' },
+      { id: `t-${baseId}-3`, x: x + r * 0.8, y: y + r * 0.6, sizeInches: 5, slot: activeSlots[2] || activeSlots[0] || 'A', finish: 'chrome', groupId: trioGroupId, source: 'user' },
     ];
     this.pieces.push(...trioPieces);
     this.selectedPieceIds.clear();
@@ -2739,6 +2801,50 @@ export class BalloonStudioModal {
     this.showBalloonPill();
   }
 
+  // ----------------------------------------------------------------------
+  // AGRUPAMENTO E DESAGRUPAMENTO DE BALÕES (VINCULAÇÃO ESTILO CANVA)
+  // ----------------------------------------------------------------------
+
+  public isGroupSelected(): boolean {
+    const selected = this.pieces.filter((p) => this.selectedPieceIds.has(p.id));
+    if (selected.length < 2) return false;
+    const firstGroup = selected[0].groupId;
+    if (!firstGroup) return false;
+    return selected.every((p) => p.groupId === firstGroup);
+  }
+
+  public groupSelectedPieces(): void {
+    if (this.selectedPieceIds.size < 2) return;
+    const newGroupId = `grp-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    this.pieces.forEach((p) => {
+      if (this.selectedPieceIds.has(p.id)) {
+        p.groupId = newGroupId;
+      }
+    });
+    this.saveHistory();
+    this.renderCanvas();
+    this.showBalloonPill();
+  }
+
+  public ungroupSelectedPieces(): void {
+    this.pieces.forEach((p) => {
+      if (this.selectedPieceIds.has(p.id)) {
+        delete p.groupId;
+      }
+    });
+    this.saveHistory();
+    this.renderCanvas();
+    this.showBalloonPill();
+  }
+
+  public toggleGroupSelected(): void {
+    if (this.isGroupSelected() || (this.selectedPieceIds.size === 1 && this.getActiveSelectedPiece()?.groupId)) {
+      this.ungroupSelectedPieces();
+    } else {
+      this.groupSelectedPieces();
+    }
+  }
+
   private setSelectedPieceSize(size: BalloonSizeInches): void {
     this.selectedPieceIds.forEach((id) => {
       const p = this.pieces.find((x) => x.id === id);
@@ -2753,15 +2859,24 @@ export class BalloonStudioModal {
     if (this.selectedPieceIds.size === 0) return;
     const newItems: BalloonPiece[] = [];
     const newIds = new Set<string>();
+    const groupMap = new Map<string, string>();
 
     this.selectedPieceIds.forEach((id) => {
       const p = this.pieces.find((x) => x.id === id);
       if (p) {
+        let newGrp = p.groupId;
+        if (p.groupId) {
+          if (!groupMap.has(p.groupId)) {
+            groupMap.set(p.groupId, `grp-${Date.now()}-${Math.floor(Math.random() * 1000)}`);
+          }
+          newGrp = groupMap.get(p.groupId);
+        }
         const cloned: BalloonPiece = {
           ...JSON.parse(JSON.stringify(p)),
           id: `dup-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
           x: p.x + 16,
           y: p.y + 16,
+          groupId: newGrp,
           source: 'user'
         };
         newItems.push(cloned);

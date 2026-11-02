@@ -86,6 +86,7 @@ export interface PresetItem {
   modularColors?: string[] | null;
   balloonColors?: string[] | BalloonColors | null;
   instanceId?: string;
+  groupId?: string | null;
   currentColor?: string;
   availableColors?: string[];
 }

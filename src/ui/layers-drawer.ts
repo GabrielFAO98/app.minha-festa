@@ -1,5 +1,6 @@
 // Controle da Gaveta Oculta de Camadas (Estilo Canva)
 import type { CanvasEngine } from '../core/canvas-engine';
+import type { PresetItem } from '../types';
 import type { ConfirmModal } from './confirm-modal';
 import type Konva from 'konva';
 
@@ -82,12 +83,14 @@ export class LayersDrawer {
       return;
     }
 
-    elements.forEach((node) => {
+    elements.forEach((nodeItem) => {
+      const node = nodeItem as Konva.Group;
       const meta = node.getAttr('itemMeta');
       if (!meta) return;
 
-      const isSelected = this.canvasEngine.selectedNode === node;
+      const isSelected = this.canvasEngine.selectedNodes.includes(node) || this.canvasEngine.selectedNode === node;
       const isLocked = !node.draggable();
+      const hasGroup = Boolean(meta.groupId);
 
       const lockIcon = isLocked
         ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
@@ -102,7 +105,7 @@ export class LayersDrawer {
           <img src="${meta.customCoverUrl || meta.previewUrl}" alt="${meta.name}"/>
         </div>
         <div class="layer-item-info">
-          <div class="layer-item-name">${meta.name}</div>
+          <div class="layer-item-name">${meta.name} ${hasGroup ? '<span class="layer-group-tag" title="Vinculado a um grupo">Grupo</span>' : ''}</div>
           <div class="layer-item-meta">${meta.widthCm}x${meta.heightCm}cm ${meta.customCoverUrl ? '• Capa aplicada' : ''}</div>
         </div>
         <div class="layer-item-actions">
@@ -118,7 +121,12 @@ export class LayersDrawer {
       // Selecionar ao clicar na linha
       row.addEventListener('click', (e) => {
         if ((e.target as HTMLElement).closest('.layer-btn')) return;
-        this.canvasEngine.selectNode(node);
+        if (meta.groupId) {
+          const groupNodes = this.canvasEngine.getSceneNodes().filter(n => (n.getAttr('itemMeta') as PresetItem | undefined)?.groupId === meta.groupId);
+          this.canvasEngine.selectNodes(groupNodes);
+        } else {
+          this.canvasEngine.selectNodes([node]);
+        }
         this.highlightSelected(node);
       });
 

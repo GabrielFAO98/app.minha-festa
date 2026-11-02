@@ -41,9 +41,27 @@ export class ItemToolbar {
 
     btnDelete?.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (this.selectedNode) {
+      if (this.selectedNode || this.canvasEngine.selectedNodes.length > 0) {
         this.canvasEngine.deleteSelected();
       }
+    });
+
+    const btnGroup = document.getElementById('btn-action-group');
+    const btnMulti = document.getElementById('btn-action-multiselect');
+
+    btnGroup?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (this.canvasEngine.isGroupSelected()) {
+        this.canvasEngine.ungroupSelected();
+      } else {
+        this.canvasEngine.groupSelected();
+      }
+    });
+
+    btnMulti?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const active = this.canvasEngine.toggleMultiSelectMode();
+      btnMulti.classList.toggle('active', active);
     });
 
     btnCover?.addEventListener('click', async (e) => {
@@ -110,10 +128,17 @@ export class ItemToolbar {
     const badgeName = document.getElementById('selection-badge-name');
     const btnCover = document.getElementById('btn-action-cover');
     const btnReposition = document.getElementById('btn-action-reposition');
+    const btnGroup = document.getElementById('btn-action-group');
+    const labelGroup = document.getElementById('label-action-group');
+    const btnMulti = document.getElementById('btn-action-multiselect');
 
-    if (!node || !meta) {
+    const totalSelected = this.canvasEngine.selectedNodes.length;
+    const isGroup = this.canvasEngine.isGroupSelected();
+
+    if (!node || !meta || totalSelected === 0) {
       this.toolbarEl?.classList.remove('active');
       badge?.classList.remove('visible');
+      if (btnMulti) btnMulti.classList.remove('active');
       return;
     }
 
@@ -123,15 +148,51 @@ export class ItemToolbar {
       this.toolbarEl?.classList.add('active');
     }
 
+    if (btnMulti) {
+      btnMulti.classList.toggle('active', this.canvasEngine.isMultiSelectMode);
+    }
+
+    if (btnGroup && labelGroup) {
+      if (isGroup) {
+        btnGroup.style.display = 'inline-flex';
+        labelGroup.textContent = 'Desagrupar';
+        btnGroup.title = 'Desvincular peças agrupadas';
+      } else if (totalSelected > 1) {
+        btnGroup.style.display = 'inline-flex';
+        labelGroup.textContent = 'Agrupar';
+        btnGroup.title = 'Vincular peças selecionadas (Estilo Canva)';
+      } else {
+        btnGroup.style.display = 'none';
+      }
+    }
+
     const mode = getItemCustomizationMode(meta);
 
     if (badge && badgeName) {
-      badgeName.textContent = meta.name;
+      if (isGroup) {
+        badgeName.textContent = `Grupo (${totalSelected} itens)`;
+      } else if (totalSelected > 1) {
+        badgeName.textContent = `${totalSelected} itens selecionados`;
+      } else {
+        badgeName.textContent = meta.name;
+      }
       badge.classList.add('visible');
     }
 
     const paletteSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"/></svg>`;
     const cropSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
+
+    if (totalSelected > 1) {
+      if (btnCover) btnCover.style.display = 'none';
+      if (btnReposition) btnReposition.style.display = 'none';
+      return;
+    }
+
+    if (totalSelected > 1) {
+      if (btnCover) btnCover.style.display = 'none';
+      if (btnReposition) btnReposition.style.display = 'none';
+      return;
+    }
 
     if (btnCover) {
       if (meta.type === 'moinho') {

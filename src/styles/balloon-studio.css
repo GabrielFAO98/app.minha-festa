@@ -763,6 +763,17 @@
   display: inline-block;
 }
 
+#bs-pill-group-btn {
+  background: var(--primary-light, #F7F1E3);
+  border-color: rgba(181, 137, 56, 0.45);
+  color: var(--primary-hover, #9A7229);
+}
+
+#bs-pill-group-btn:hover {
+  background: #FFFFFF;
+  border-color: var(--primary, #B58938);
+}
+
 #bs-pill-dup-btn,
 #bs-pill-del-btn {
   width: 28px;

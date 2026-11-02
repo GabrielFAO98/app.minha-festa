@@ -5,6 +5,7 @@ import { DEFAULT_PRESET_ITEMS } from '../core/presets-data';
 import { createSearchBar, normalizeSearch } from './search-bar';
 import type { CanvasEngine } from '../core/canvas-engine';
 import type { PresetItem, ItemCategory } from '../types';
+import type Konva from 'konva';
 import { CANVA_LAYER_ICONS, setupLayersDragAndDrop } from './layers-drag-drop';
 
 export class BottomDock {
@@ -762,16 +763,19 @@ export class BottomDock {
       row.className = 'layer-row-item';
       row.dataset.instanceId = elem.instanceId;
 
-      const isSelected = (this.canvasEngine.selectedNode as any)?.getAttr('itemMeta')?.instanceId === elem.instanceId;
+      const isSelected = this.canvasEngine.selectedNodes.some(n => n.getAttr('itemMeta')?.instanceId === elem.instanceId) || (this.canvasEngine.selectedNode as any)?.getAttr('itemMeta')?.instanceId === elem.instanceId;
       if (isSelected) {
         row.classList.add('selected');
       }
+
+      const isGrouped = !!elem.groupId;
+      const groupBadge = isGrouped ? `<span class="layer-group-tag" style="background: rgba(181, 137, 56, 0.15); color: var(--gold-primary, #b58938); font-size: 0.65rem; padding: 1px 5px; border-radius: 4px; font-weight: 600; margin-left: 4px;">Grupo</span>` : '';
 
       row.innerHTML = `
         <div class="layer-drag-handle" title="Arraste para reordenar a camada">${CANVA_LAYER_ICONS.grip}</div>
         <img class="layer-thumb" src="${elem.previewUrl}" alt="" loading="lazy" decoding="async"/>
         <div class="layer-info">
-          <div class="layer-title">${elem.name}</div>
+          <div class="layer-title" style="display: flex; align-items: center; gap: 4px;"><span>${elem.name}</span>${groupBadge}</div>
           <div class="layer-sub">${elem.widthCm}x${elem.heightCm}cm</div>
         </div>
         <div class="layer-item-actions">
@@ -788,7 +792,14 @@ export class BottomDock {
           (c) => c.getAttr('itemMeta')?.instanceId === elem.instanceId
         );
         if (targetNode) {
-          this.canvasEngine.selectNode(targetNode);
+          if (elem.groupId) {
+            const groupNodes = this.canvasEngine.getSceneNodes().filter(
+              (n) => (n.getAttr('itemMeta') as PresetItem | undefined)?.groupId === elem.groupId
+            );
+            this.canvasEngine.selectNodes(groupNodes);
+          } else {
+            this.canvasEngine.selectNodes([targetNode as Konva.Group]);
+          }
           this.renderLayersTab();
         }
       });

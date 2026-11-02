@@ -6,6 +6,7 @@ import {
   STUDIO_PALETTE_PRESETS,
   FASHION_BALLOON_COLORS,
   BALLOON_SIZE_RADIUS_MAP,
+  generateStarPath,
   renderArrangementSvg,
   arrangementSvgToDataUrl,
   calculateArrangementStats,
@@ -19,6 +20,7 @@ import {
   adjustColorBrightness,
   getFriendlyColorName,
   type BalloonPiece,
+  type BalloonShape,
   type BalloonPaletteConfig,
   type BalloonSizeInches,
   type BalloonFinish,
@@ -74,10 +76,14 @@ export class BalloonStudioModal {
     | 'eraser'
     | 'balloon-5'
     | 'balloon-7'
+    | 'balloon-9'
     | 'balloon-10'
     | 'balloon-12'
+    | 'balloon-16'
     | 'balloon-18'
     | 'balloon-24'
+    | 'balloon-36'
+    | 'balloon-star'
     | 'cluster-quad'
     | 'cluster-trio'
     | 'base-balloon'
@@ -768,9 +774,13 @@ export class BalloonStudioModal {
     });
 
     document.getElementById('bs-pill-size-btn')?.addEventListener('click', () => {
-      const sizes: BalloonSizeInches[] = [5, 7, 10, 12, 18, 24];
+      const sizes: BalloonSizeInches[] = [5, 7, 9, 10, 12, 16, 18, 24, 36];
       const p = this.getActiveSelectedPiece();
-      const currentSize = p?.sizeInches || 12;
+      if (!p) return;
+      if (p.shape === 'star') {
+        return;
+      }
+      const currentSize = p.sizeInches || 12;
       const nextIdx = (sizes.indexOf(currentSize) + 1) % sizes.length;
       this.setSelectedPieceSize(sizes[nextIdx]);
     });
@@ -1106,6 +1116,12 @@ export class BalloonStudioModal {
         return;
       }
 
+      if (this.activeTouchTool === 'balloon-9') {
+        const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
+        this.insertSingleBalloonAt(svgCoords.x, svgCoords.y, 9);
+        return;
+      }
+
       if (this.activeTouchTool === 'balloon-10') {
         const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
         this.insertSingleBalloonAt(svgCoords.x, svgCoords.y, 10);
@@ -1118,6 +1134,12 @@ export class BalloonStudioModal {
         return;
       }
 
+      if (this.activeTouchTool === 'balloon-16') {
+        const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
+        this.insertSingleBalloonAt(svgCoords.x, svgCoords.y, 16);
+        return;
+      }
+
       if (this.activeTouchTool === 'balloon-18' || this.activeTouchTool === 'big-balloon') {
         const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
         this.insertSingleBalloonAt(svgCoords.x, svgCoords.y, 18);
@@ -1127,6 +1149,18 @@ export class BalloonStudioModal {
       if (this.activeTouchTool === 'balloon-24') {
         const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
         this.insertSingleBalloonAt(svgCoords.x, svgCoords.y, 24);
+        return;
+      }
+
+      if (this.activeTouchTool === 'balloon-36') {
+        const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
+        this.insertSingleBalloonAt(svgCoords.x, svgCoords.y, 36);
+        return;
+      }
+
+      if (this.activeTouchTool === 'balloon-star') {
+        const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
+        this.insertSingleBalloonAt(svgCoords.x, svgCoords.y, 18, 'star');
         return;
       }
 
@@ -1626,7 +1660,12 @@ export class BalloonStudioModal {
       const p = this.pieces.find((x) => x.id === id);
       if (p) {
         const r = (BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28) + 3;
-        h += `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="none" stroke="#B58938" stroke-width="2.5" stroke-dasharray="4 3" opacity="0.95"/>`;
+        if (p.shape === 'star') {
+          const starPath = generateStarPath(p.x, p.y, r + 2);
+          h += `<path d="${starPath}" fill="none" stroke="#B58938" stroke-width="2.5" stroke-dasharray="4 3" opacity="0.95"/>`;
+        } else {
+          h += `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="none" stroke="#B58938" stroke-width="2.5" stroke-dasharray="4 3" opacity="0.95"/>`;
+        }
       }
     });
     layer.innerHTML = h;
@@ -1665,7 +1704,7 @@ export class BalloonStudioModal {
 
       if (colorDot) colorDot.style.background = slotHex;
       if (colorName) colorName.textContent = slotFriendlyName;
-      if (sizeText) sizeText.textContent = `${p.sizeInches}"`;
+      if (sizeText) sizeText.textContent = p.shape === 'star' ? `⭐ 18"` : `${p.sizeInches}"`;
     }
 
     pill.style.display = 'flex';
@@ -2209,80 +2248,83 @@ export class BalloonStudioModal {
       panel.innerHTML = `
         <div class="bs-panel-incluir">
           <div class="bs-label-row">
-            <span>Toque na peça para adicionar:</span>
-            <em>Balões e clusters prontos</em>
+            <span>Toque na peça para adicionar ao cenário:</span>
           </div>
           <div class="bs-elements-catalog-grid">
             <!-- 5 polegadas -->
             <div class="bs-element-card" data-tool="balloon-5" data-type="balloon-5">
-              <div class="bs-elem-thumb-balloon bs-size-5"></div>
-              <div class="bs-elem-info">
-                <strong class="bs-elem-title">5" Detalhe</strong>
-                <span class="bs-elem-sub">Ponto de luz</span>
-              </div>
+              <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-5"></div></div>
+              <strong class="bs-elem-title">5"</strong>
             </div>
 
             <!-- 7 polegadas -->
             <div class="bs-element-card" data-tool="balloon-7" data-type="balloon-7">
-              <div class="bs-elem-thumb-balloon bs-size-7"></div>
-              <div class="bs-elem-info">
-                <strong class="bs-elem-title">7" Mini</strong>
-                <span class="bs-elem-sub">Transição</span>
-              </div>
+              <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-7"></div></div>
+              <strong class="bs-elem-title">7"</strong>
+            </div>
+
+            <!-- 9 polegadas -->
+            <div class="bs-element-card" data-tool="balloon-9" data-type="balloon-9">
+              <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-9"></div></div>
+              <strong class="bs-elem-title">9"</strong>
             </div>
 
             <!-- 10 polegadas -->
             <div class="bs-element-card" data-tool="balloon-10" data-type="balloon-10">
-              <div class="bs-elem-thumb-balloon bs-size-10"></div>
-              <div class="bs-elem-info">
-                <strong class="bs-elem-title">10" Médio</strong>
-                <span class="bs-elem-sub">Preenchimento</span>
-              </div>
+              <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-10"></div></div>
+              <strong class="bs-elem-title">10"</strong>
             </div>
 
             <!-- 12 polegadas -->
             <div class="bs-element-card" data-tool="balloon-12" data-type="balloon-12">
-              <div class="bs-elem-thumb-balloon bs-size-12"></div>
-              <div class="bs-elem-info">
-                <strong class="bs-elem-title">12" Padrão</strong>
-                <span class="bs-elem-sub">Volume base</span>
-              </div>
+              <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-12"></div></div>
+              <strong class="bs-elem-title">12"</strong>
+            </div>
+
+            <!-- 16 polegadas -->
+            <div class="bs-element-card" data-tool="balloon-16" data-type="balloon-16">
+              <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-16"></div></div>
+              <strong class="bs-elem-title">16"</strong>
             </div>
 
             <!-- 18 polegadas -->
             <div class="bs-element-card" data-tool="balloon-18" data-type="balloon-18">
-              <div class="bs-elem-thumb-balloon bs-size-18"></div>
-              <div class="bs-elem-info">
-                <strong class="bs-elem-title">18" Destaque</strong>
-                <span class="bs-elem-sub">Volume forte</span>
-              </div>
+              <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-18"></div></div>
+              <strong class="bs-elem-title">18"</strong>
             </div>
 
             <!-- 24 polegadas -->
             <div class="bs-element-card" data-tool="balloon-24" data-type="balloon-24">
-              <div class="bs-elem-thumb-balloon bs-size-24"></div>
-              <div class="bs-elem-info">
-                <strong class="bs-elem-title">24" Gigante</strong>
-                <span class="bs-elem-sub">Big Balloon</span>
+              <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-24"></div></div>
+              <strong class="bs-elem-title">24"</strong>
+            </div>
+
+            <!-- 36 polegadas -->
+            <div class="bs-element-card" data-tool="balloon-36" data-type="balloon-36">
+              <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-36"></div></div>
+              <strong class="bs-elem-title">36"</strong>
+            </div>
+
+            <!-- Estrela 18" Foil -->
+            <div class="bs-element-card" data-tool="balloon-star" data-type="balloon-star">
+              <div class="bs-elem-thumb-box">
+                <svg class="bs-elem-thumb-star-svg" viewBox="0 0 24 24" width="20" height="20">
+                  <path d="M12 2l2.8 6.4 6.9.6-5.2 4.6 1.6 6.8-6.1-3.6-6.1 3.6 1.6-6.8-5.2-4.6 6.9-.6z" fill="#D4AF37" stroke="#9A7229" stroke-width="0.8"/>
+                </svg>
               </div>
+              <strong class="bs-elem-title">Estrela 18"</strong>
             </div>
 
             <!-- Cluster Quad -->
             <div class="bs-element-card" data-tool="cluster-quad" data-type="cluster-quad">
-              <div class="bs-elem-thumb-cluster"><i></i><i></i><i></i><i></i></div>
-              <div class="bs-elem-info">
-                <strong class="bs-elem-title">Cluster 4x</strong>
-                <span class="bs-elem-sub">Quad agrupado</span>
-              </div>
+              <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-cluster"><i></i><i></i><i></i><i></i></div></div>
+              <strong class="bs-elem-title">Cluster 4x</strong>
             </div>
 
             <!-- Tufo Trio -->
             <div class="bs-element-card" data-tool="cluster-trio" data-type="cluster-trio">
-              <div class="bs-elem-thumb-trio"><i></i><i></i><i></i></div>
-              <div class="bs-elem-info">
-                <strong class="bs-elem-title">Tufo 3x</strong>
-                <span class="bs-elem-sub">Trio mini 5"</span>
-              </div>
+              <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-trio"><i></i><i></i><i></i></div></div>
+              <strong class="bs-elem-title">Tufo 3x</strong>
             </div>
           </div>
         </div>
@@ -2455,7 +2497,7 @@ export class BalloonStudioModal {
     }, 2000);
   }
 
-  private setActiveTouchTool(tool: 'adjust' | 'multi-select' | 'pan' | 'eraser' | 'balloon-5' | 'balloon-7' | 'balloon-10' | 'balloon-12' | 'balloon-18' | 'balloon-24' | 'cluster-quad' | 'cluster-trio' | 'base-balloon' | 'light-point' | 'big-balloon'): void {
+  private setActiveTouchTool(tool: 'adjust' | 'multi-select' | 'pan' | 'eraser' | 'balloon-5' | 'balloon-7' | 'balloon-9' | 'balloon-10' | 'balloon-12' | 'balloon-16' | 'balloon-18' | 'balloon-24' | 'balloon-36' | 'balloon-star' | 'cluster-quad' | 'cluster-trio' | 'base-balloon' | 'light-point' | 'big-balloon'): void {
     this.activeTouchTool = tool;
 
     // Limpa ponteiros órfãos para evitar travamento de toque
@@ -2499,15 +2541,25 @@ export class BalloonStudioModal {
         } else if (tool === 'eraser') {
           text.textContent = 'Toque em qualquer balão para apagar';
         } else if (tool === 'balloon-5' || tool === 'light-point') {
-          text.textContent = 'Toque no cenário para posicionar ponto de luz de 5"';
+          text.textContent = 'Toque no cenário para posicionar balão de 5"';
+        } else if (tool === 'balloon-7') {
+          text.textContent = 'Toque no cenário para posicionar balão de 7"';
+        } else if (tool === 'balloon-9') {
+          text.textContent = 'Toque no cenário para posicionar balão de 9"';
         } else if (tool === 'balloon-10') {
           text.textContent = 'Toque no cenário para posicionar balão de 10"';
         } else if (tool === 'balloon-12' || tool === 'base-balloon') {
           text.textContent = 'Toque no cenário para posicionar balão de 12"';
+        } else if (tool === 'balloon-16') {
+          text.textContent = 'Toque no cenário para posicionar balão de 16"';
         } else if (tool === 'balloon-18' || tool === 'big-balloon') {
           text.textContent = 'Toque no cenário para posicionar balão de 18"';
         } else if (tool === 'balloon-24') {
           text.textContent = 'Toque no cenário para posicionar balão de 24"';
+        } else if (tool === 'balloon-36') {
+          text.textContent = 'Toque no cenário para posicionar balão de 36"';
+        } else if (tool === 'balloon-star') {
+          text.textContent = 'Toque no cenário para posicionar balão estrela 18"';
         } else if (tool === 'cluster-quad') {
           text.textContent = 'Toque no cenário para posicionar cluster de 4 balões';
         } else if (tool === 'cluster-trio') {
@@ -2567,7 +2619,7 @@ export class BalloonStudioModal {
   }
 
   // Inserção no centro do canvas (usada pelo botão + Inserir)
-  private insertPieceAtCenter(type: 'balloon-5' | 'balloon-7' | 'balloon-10' | 'balloon-12' | 'balloon-18' | 'balloon-24' | 'cluster-quad' | 'cluster-trio'): void {
+  private insertPieceAtCenter(type: string): void {
     const cx = this.baseViewBox.x + this.baseViewBox.width / 2 + this.panOffset.x;
     const cy = this.baseViewBox.y + this.baseViewBox.height / 2 + this.panOffset.y;
 
@@ -2575,21 +2627,35 @@ export class BalloonStudioModal {
       this.insertClusterQuadAt(cx, cy);
     } else if (type === 'cluster-trio') {
       this.insertClusterTrioAt(cx, cy);
+    } else if (type === 'balloon-star') {
+      this.insertSingleBalloonAt(cx, cy, 18, 'star');
     } else {
-      const size = type === 'balloon-5' ? 5 : type === 'balloon-7' ? 7 : type === 'balloon-10' ? 10 : type === 'balloon-12' ? 12 : type === 'balloon-18' ? 18 : 24;
-      this.insertSingleBalloonAt(cx, cy, size as BalloonSizeInches);
+      const sizeMap: Record<string, BalloonSizeInches> = {
+        'balloon-5': 5,
+        'balloon-7': 7,
+        'balloon-9': 9,
+        'balloon-10': 10,
+        'balloon-12': 12,
+        'balloon-16': 16,
+        'balloon-18': 18,
+        'balloon-24': 24,
+        'balloon-36': 36
+      };
+      const size = sizeMap[type] || 12;
+      this.insertSingleBalloonAt(cx, cy, size, 'round');
     }
   }
 
   // Inserção de balão individual (Single-shot: volta para ajustar imediatamente)
-  private insertSingleBalloonAt(x: number, y: number, sizeInches: BalloonSizeInches): void {
+  private insertSingleBalloonAt(x: number, y: number, sizeInches: BalloonSizeInches, shape: BalloonShape = 'round'): void {
     const slot = this.activeColorSlot;
-    const finish = this.palette.finishes?.[slot as 'A' | 'B' | 'C' | 'D' | 'E'] || (sizeInches === 5 ? 'chrome' : 'satin');
+    const finish = this.palette.finishes?.[slot as 'A' | 'B' | 'C' | 'D' | 'E'] || (shape === 'star' ? 'satin' : (sizeInches === 5 ? 'chrome' : 'satin'));
     const newPiece: BalloonPiece = {
       id: `p-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       x,
       y,
       sizeInches,
+      shape,
       slot,
       finish,
       source: 'user'
@@ -2896,18 +2962,27 @@ export class BalloonStudioModal {
       const piecesOfSlot = this.pieces.filter((p) => p.slot === s);
       if (piecesOfSlot.length === 0) return '';
 
-      const countsBySize: Record<BalloonSizeInches, number> = { 5: 0, 7: 0, 10: 0, 12: 0, 18: 0, 24: 0 };
+      const countsBySize: Record<BalloonSizeInches, number> = { 5: 0, 7: 0, 9: 0, 10: 0, 12: 0, 16: 0, 18: 0, 24: 0, 36: 0 };
+      let starCount = 0;
       piecesOfSlot.forEach((p) => {
-        countsBySize[p.sizeInches]++;
+        if (p.shape === 'star') {
+          starCount++;
+        } else {
+          countsBySize[p.sizeInches]++;
+        }
       });
 
-      const sizesBadges = ([24, 18, 12, 10, 7, 5] as BalloonSizeInches[])
+      const sizesBadges = ([36, 24, 18, 16, 12, 10, 9, 7, 5] as BalloonSizeInches[])
         .filter((sz) => countsBySize[sz] > 0)
         .map((sz) => {
           const qty = Math.ceil(countsBySize[sz] * mult);
           return `<span class="bs-size-badge">${sz}" · <u>${qty}</u></span>`;
-        })
-        .join('');
+        });
+      if (starCount > 0) {
+        const qtyStar = Math.ceil(starCount * mult);
+        sizesBadges.push(`<span class="bs-size-badge">⭐ 18" · <u>${qtyStar}</u></span>`);
+      }
+      const sizesBadgesHtml = sizesBadges.join('');
 
       return `
         <div class="bs-material-row">
@@ -2917,7 +2992,7 @@ export class BalloonStudioModal {
             <span class="bs-material-finish">${finishLabel[fin]}</span>
           </div>
           <div class="bs-material-sizes">
-            ${sizesBadges}
+            ${sizesBadgesHtml}
           </div>
         </div>
       `;
@@ -2949,13 +3024,23 @@ export class BalloonStudioModal {
       const piecesOfSlot = this.pieces.filter((p) => p.slot === s);
       if (piecesOfSlot.length === 0) return;
 
-      const countsBySize: Record<BalloonSizeInches, number> = { 5: 0, 7: 0, 10: 0, 12: 0, 18: 0, 24: 0 };
-      piecesOfSlot.forEach((p) => countsBySize[p.sizeInches]++);
+      const countsBySize: Record<BalloonSizeInches, number> = { 5: 0, 7: 0, 9: 0, 10: 0, 12: 0, 16: 0, 18: 0, 24: 0, 36: 0 };
+      let starCount = 0;
+      piecesOfSlot.forEach((p) => {
+        if (p.shape === 'star') {
+          starCount++;
+        } else {
+          countsBySize[p.sizeInches]++;
+        }
+      });
 
-      const sizesStr = ([24, 18, 12, 10, 7, 5] as BalloonSizeInches[])
+      const sizesParts = ([36, 24, 18, 16, 12, 10, 9, 7, 5] as BalloonSizeInches[])
         .filter((sz) => countsBySize[sz] > 0)
-        .map((sz) => `${sz}" × ${Math.ceil(countsBySize[sz] * mult)}`)
-        .join(' · ');
+        .map((sz) => `${sz}" × ${Math.ceil(countsBySize[sz] * mult)}`);
+      if (starCount > 0) {
+        sizesParts.push(`⭐ 18" × ${Math.ceil(starCount * mult)}`);
+      }
+      const sizesStr = sizesParts.join(' · ');
 
       text += `• *${name}* (${finishLabel[fin]}): ${sizesStr}\n`;
     });

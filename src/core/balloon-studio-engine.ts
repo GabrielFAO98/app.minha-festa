@@ -1,7 +1,8 @@
 // Motor de Criação, Renderização e Cálculo de Balões Orgânicos
 // Padrão de Alto Nível para Decoração de Festas Profissionais
 
-export type BalloonSizeInches = 5 | 7 | 10 | 12 | 18 | 24;
+export type BalloonSizeInches = 5 | 7 | 9 | 10 | 12 | 16 | 18 | 24 | 36;
+export type BalloonShape = 'round' | 'star';
 export type BalloonFinish = 'satin' | 'matte' | 'chrome' | 'crystal' | 'glitter';
 export type BalloonSlot = 'A' | 'B' | 'C' | 'D' | 'E' | 'custom';
 
@@ -11,6 +12,7 @@ export interface BalloonPiece {
   y: number;
   z?: number;
   sizeInches: BalloonSizeInches;
+  shape?: BalloonShape;
   slot: BalloonSlot;
   customColor?: string;
   finish: BalloonFinish;
@@ -57,10 +59,13 @@ export interface BalloonModelTemplate {
 export const BALLOON_SIZE_RADIUS_MAP: Record<BalloonSizeInches, number> = {
   5: 12,   // ~12.5cm
   7: 17,   // ~17.5cm
+  9: 21,   // ~22.8cm (nº 9 padrão Brasil)
   10: 23,  // ~25cm
   12: 28,  // ~30cm
+  16: 37,  // ~40cm
   18: 42,  // ~45cm
-  24: 56   // ~60cm
+  24: 56,  // ~60cm
+  36: 84   // ~90cm (Gigante 3ft)
 };
 
 export const CM_PER_PIXEL = 0.52; // Escala métrica (1px ≈ 0.52cm)
@@ -397,17 +402,100 @@ export function generateStudioDefs(palette: BalloonPaletteConfig, idPrefix: stri
 }
 
 // Renderiza uma peça de balão individual
+export function generateStarPath(cx: number, cy: number, r: number): string {
+  const outerR = r;
+  const innerR = r * 0.48;
+  const points: { x: number; y: number }[] = [];
+  for (let i = 0; i < 10; i++) {
+    const angle = -Math.PI / 2 + (i * Math.PI) / 5;
+    const rad = i % 2 === 0 ? outerR : innerR;
+    points.push({
+      x: cx + Math.cos(angle) * rad,
+      y: cy + Math.sin(angle) * rad
+    });
+  }
+
+  let d = '';
+  for (let i = 0; i < 10; i++) {
+    const curr = points[i];
+    const prev = points[(i - 1 + 10) % 10];
+    const next = points[(i + 1) % 10];
+
+    if (i === 0) {
+      const pStartX = curr.x + (prev.x - curr.x) * 0.15;
+      const pStartY = curr.y + (prev.y - curr.y) * 0.15;
+      d += `M ${pStartX.toFixed(1)} ${pStartY.toFixed(1)} `;
+    }
+
+    if (i % 2 === 0) {
+      const p2X = curr.x + (next.x - curr.x) * 0.12;
+      const p2Y = curr.y + (next.y - curr.y) * 0.12;
+      d += `Q ${curr.x.toFixed(1)} ${curr.y.toFixed(1)}, ${p2X.toFixed(1)} ${p2Y.toFixed(1)} `;
+    } else {
+      const p1X = curr.x + (prev.x - curr.x) * 0.25;
+      const p1Y = curr.y + (prev.y - curr.y) * 0.25;
+      const p2X = curr.x + (next.x - curr.x) * 0.25;
+      const p2Y = curr.y + (next.y - curr.y) * 0.25;
+      d += `L ${p1X.toFixed(1)} ${p1Y.toFixed(1)} Q ${curr.x.toFixed(1)} ${curr.y.toFixed(1)}, ${p2X.toFixed(1)} ${p2Y.toFixed(1)} `;
+    }
+  }
+  d += 'Z';
+  return d;
+}
+
 export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPaletteConfig, idPrefix: string = ""): string {
   const { x, y, sizeInches = 12, slot = 'A', finish = 'satin', glitterColor = '#d4af37' } = piece;
   const r = BALLOON_SIZE_RADIUS_MAP[sizeInches] || 28;
-  const rx = r * 0.97;
-  const ry = r * 1.03;
 
   const effectiveSlot = (slot === 'custom' || !slot) ? 'A' : slot;
   const effectiveFinish: BalloonFinish = (slot && slot !== 'custom' && palette.finishes && palette.finishes[slot])
     ? palette.finishes[slot]
     : finish;
   const gradId = effectiveFinish === 'glitter' ? `${idPrefix}grad_crystal_${effectiveSlot}` : `${idPrefix}grad_${effectiveFinish}_${effectiveSlot}`;
+
+  if (piece.shape === 'star') {
+    const starR = r;
+    const baseHex = (palette as any)[effectiveSlot] || '#f59e0b';
+    const darkEdge = adjustColorBrightness(baseHex, -0.32);
+    const starPathOuter = generateStarPath(x, y, starR + 2);
+    const starPathInner = generateStarPath(x, y, starR);
+    const tabY = y + starR * 0.90;
+    const tabW = Math.max(6, Math.round(starR * 0.20));
+    const tabH = Math.max(7, Math.round(starR * 0.22));
+
+    const hx = x - starR * 0.12;
+    const hy = y - starR * 0.16;
+    const hrx = starR * 0.42;
+    const hry = starR * 0.32;
+
+    let crimpLines = '';
+    for (let i = 1; i < 10; i += 2) {
+      const angle = -Math.PI / 2 + (i * Math.PI) / 5;
+      const valleyX = x + Math.cos(angle) * (starR * 0.48);
+      const valleyY = y + Math.sin(angle) * (starR * 0.48);
+      const innerX = x + Math.cos(angle) * (starR * 0.22);
+      const innerY = y + Math.sin(angle) * (starR * 0.22);
+      crimpLines += `<line x1="${valleyX.toFixed(1)}" y1="${valleyY.toFixed(1)}" x2="${innerX.toFixed(1)}" y2="${innerY.toFixed(1)}" stroke="${darkEdge}" stroke-width="1.1" opacity="0.32"/>`;
+    }
+
+    return `
+  <g id="piece-${piece.id}" class="balloon-piece balloon-piece-star" filter="url(#${idPrefix}balloonShadow)">
+    <!-- Válvula inferior de enchimento -->
+    <rect x="${(x - tabW / 2).toFixed(1)}" y="${tabY.toFixed(1)}" width="${tabW}" height="${tabH}" rx="1.5" fill="${darkEdge}" opacity="0.85"/>
+    <!-- Borda perimetral térmica da costura do foil -->
+    <path d="${starPathOuter}" fill="${darkEdge}" opacity="0.55"/>
+    <!-- Corpo estufado da estrela metalizada -->
+    <path d="${starPathInner}" fill="url(#${gradId})"/>
+    <!-- Vincos de pressão do foil -->
+    <g>${crimpLines}</g>
+    <!-- Brilho central especular estufado -->
+    <ellipse cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" rx="${hrx.toFixed(1)}" ry="${hry.toFixed(1)}" fill="url(#${idPrefix}glare_soft)" opacity="0.85"/>
+    <!-- Reflexo estúdio -->
+    <circle cx="${(x - starR * 0.18).toFixed(1)}" cy="${(y - starR * 0.28).toFixed(1)}" r="${Math.max(2, starR * 0.07)}" fill="#ffffff" opacity="0.8"/>
+  </g>`;
+  }
+  const rx = r * 0.97;
+  const ry = r * 1.03;
 
   const gx = x - rx * 0.24;
   const gy = y - ry * 0.26;
@@ -478,7 +566,7 @@ export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPalet
 
 // Calcula estatísticas inteligentes (lista de compras) da composição
 export function calculateArrangementStats(pieces: BalloonPiece[], palette?: BalloonPaletteConfig): ArrangementStats {
-  const bySize: Record<BalloonSizeInches, number> = { 5: 0, 7: 0, 10: 0, 12: 0, 18: 0, 24: 0 };
+  const bySize: Record<BalloonSizeInches, number> = { 5: 0, 7: 0, 9: 0, 10: 0, 12: 0, 16: 0, 18: 0, 24: 0, 36: 0 };
   const bySlot: Record<BalloonSlot, number> = { A: 0, B: 0, C: 0, D: 0, E: 0, custom: 0 };
   const byFinish: Record<BalloonFinish, number> = { satin: 0, matte: 0, chrome: 0, crystal: 0, glitter: 0 };
 
@@ -516,11 +604,14 @@ export function calculateArrangementStats(pieces: BalloonPiece[], palette?: Ball
 // Ordena balões por profundidade física automática (24" e 18" no fundo, 12"/10" no meio, 5" na frente)
 export function sortPiecesByDepth(pieces: BalloonPiece[]): BalloonPiece[] {
   return [...pieces].sort((a, b) => {
-    // 5" balões de acabamento sempre na frente (pontos de luz)
+    // Balões estrela (foil) e 5" balões de acabamento sempre na frente (pontos de luz/destaque)
+    if (a.shape === 'star' && b.shape !== 'star') return 1;
+    if (b.shape === 'star' && a.shape !== 'star') return -1;
+
     if (a.sizeInches === 5 && b.sizeInches !== 5) return 1;
     if (b.sizeInches === 5 && a.sizeInches !== 5) return -1;
 
-    // 18" e 24" balões gigantes de base e impacto estrutural atrás
+    // Balões gigantes (18", 24", 36") de base e impacto estrutural atrás
     if (a.sizeInches >= 18 && b.sizeInches < 18) return -1;
     if (b.sizeInches >= 18 && a.sizeInches < 18) return 1;
 

@@ -634,16 +634,7 @@
    4. FAIXA DA PALETA (CORES DA FESTA)
    ====================================================================== */
 .bs-palette-strip {
-  height: 58px;
-  background-color: #FFFFFF;
-  border-top: 1px solid var(--border-subtle, #E6E1DA);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 12px;
-  flex-shrink: 0;
-  z-index: 10;
-  gap: 6px;
+  display: none !important;
 }
 
 .bs-swatches-row {
@@ -1640,30 +1631,7 @@ input:checked + .bs-slider-round:before {
    NOVA ARQUITETURA DE ABAS & GAVETAS (CORES / INCLUIR / AJUSTES)
    ====================================================================== */
 
-/* Destaque para a aba central Incluir */
-.bs-dock-tab-primary {
-  background: var(--primary, #B58938) !important;
-  color: #FFFFFF !important;
-  border-radius: 14px;
-  box-shadow: 0 4px 12px rgba(181, 137, 56, 0.35);
-  transform: translateY(-4px);
-  height: 48px;
-}
 
-.bs-dock-tab-primary:hover {
-  background: var(--primary-hover, #9A7229) !important;
-  color: #FFFFFF !important;
-}
-
-.bs-dock-tab-primary.active {
-  background: #1C1917 !important;
-  color: #FFFFFF !important;
-  box-shadow: 0 4px 14px rgba(28, 25, 23, 0.4);
-}
-
-.bs-dock-tab-primary .bs-dock-tab-icon {
-  color: #FFFFFF;
-}
 
 /* Banner de Ferramenta Ativa com Botão Cancelar */
 .bs-tool-banner {
@@ -1906,4 +1874,163 @@ input:checked + .bs-slider-round:before {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ======================================================================
+   REORGANIZAÇÃO VISUAL DO MENU DE CORES
+   ====================================================================== */
+.bs-panel-cores {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bs-cores-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.bs-cores-title-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.bs-cores-main-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-main, #1C1917);
+  letter-spacing: -0.01em;
+}
+
+.bs-cores-subtitle {
+  font-size: 10.5px;
+  color: var(--text-dim, #78716C);
+}
+
+.bs-color-count-chips {
+  display: flex;
+  background: var(--bg-app, #FAF8F5);
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  border-radius: 999px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.bs-count-chip {
+  width: 26px;
+  height: 24px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-dim, #78716C);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.bs-count-chip:hover {
+  color: var(--text-main, #1C1917);
+}
+
+.bs-count-chip.active {
+  background: var(--primary, #B58938);
+  color: #FFFFFF;
+  box-shadow: 0 1px 4px rgba(181, 137, 56, 0.3);
+}
+
+/* Grade de Famílias de Cores (2 colunas fluidas) */
+.bs-color-family-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.bs-color-family-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #FFFFFF;
+  border: 1.5px solid var(--border-subtle, #E6E1DA);
+  border-radius: 14px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  min-height: 52px;
+  user-select: none;
+}
+
+.bs-color-family-card:hover {
+  border-color: var(--primary, #B58938);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(181, 137, 56, 0.12);
+}
+
+.bs-color-family-card:active {
+  transform: scale(0.98);
+}
+
+.bs-color-family-card.active {
+  border-color: var(--primary, #B58938);
+  background: var(--primary-light, #F7F1E3);
+}
+
+.bs-color-swatch-ball {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.bs-color-card-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: 1px;
+}
+
+.bs-color-card-top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bs-color-card-name {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-main, #1C1917);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bs-color-card-badge {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--primary-hover, #9A7229);
+  background: var(--primary-light, #F7F1E3);
+  padding: 1px 5px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.bs-color-card-role {
+  font-size: 10px;
+  color: var(--text-dim, #78716C);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bs-color-card-arrow {
+  color: var(--text-muted, #A8A29E);
+  flex-shrink: 0;
+  margin-left: 2px;
 }

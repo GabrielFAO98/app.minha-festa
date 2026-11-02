@@ -16,6 +16,7 @@ import {
   distributeColors,
   variateArrangement,
   applyVolumeLevel,
+  adjustColorBrightness,
   type BalloonPiece,
   type BalloonPaletteConfig,
   type BalloonSizeInches,
@@ -331,7 +332,7 @@ export class BalloonStudioModal {
               </span>
               <span>Cores</span>
             </button>
-            <button class="bs-dock-tab bs-dock-tab-primary ${this.activeBottomTab === 'incluir' && this.isBottomDrawerOpen ? 'active' : ''}" data-tab="incluir">
+            <button class="bs-dock-tab ${this.activeBottomTab === 'incluir' && this.isBottomDrawerOpen ? 'active' : ''}" data-tab="incluir">
               <span class="bs-dock-tab-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -1501,22 +1502,78 @@ export class BalloonStudioModal {
 
     // ABA 1: CORES
     if (this.activeBottomTab === 'cores') {
+      const allSlots: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
+      const activeSlots = allSlots.slice(0, this.activeColorCount);
+
+      const slotRoles: Record<'A' | 'B' | 'C' | 'D' | 'E', string> = {
+        A: 'Cor Principal',
+        B: 'Secundária',
+        C: 'Destaque',
+        D: 'Base / Neutro',
+        E: 'Detalhe Suave'
+      };
+
+      const finishLabels: Record<BalloonFinish, string> = {
+        satin: 'Acetinado',
+        matte: 'Fosco',
+        chrome: 'Cromado',
+        crystal: 'Cristal',
+        glitter: 'Glitter'
+      };
+
       panel.innerHTML = `
         <div class="bs-panel-cores">
-          <div class="bs-label-row">
-            <span>Quantidade de Cores:</span>
-            <em>${this.activeColorCount} cores ativas</em>
-          </div>
-          <div class="bs-segmented-control" id="bs-color-count-selector">
-            <button class="bs-seg-btn ${this.activeColorCount === 2 ? 'active' : ''}" data-color-count="2">2 Cores</button>
-            <button class="bs-seg-btn ${this.activeColorCount === 3 ? 'active' : ''}" data-color-count="3">3 Cores</button>
-            <button class="bs-seg-btn ${this.activeColorCount === 4 ? 'active' : ''}" data-color-count="4">4 Cores</button>
-            <button class="bs-seg-btn ${this.activeColorCount === 5 ? 'active' : ''}" data-color-count="5">5 Cores</button>
+          <!-- Topo: Título da seção + Seletor de Quantidade de Cores -->
+          <div class="bs-cores-header-row">
+            <div class="bs-cores-title-box">
+              <span class="bs-cores-main-title">Cores do Arranjo</span>
+              <span class="bs-cores-subtitle">Toque no card para editar tom, acabamento ou estampa</span>
+            </div>
+            <div class="bs-color-count-chips" id="bs-color-count-selector">
+              <button class="bs-count-chip ${this.activeColorCount === 2 ? 'active' : ''}" data-color-count="2" title="2 Cores">2</button>
+              <button class="bs-count-chip ${this.activeColorCount === 3 ? 'active' : ''}" data-color-count="3" title="3 Cores">3</button>
+              <button class="bs-count-chip ${this.activeColorCount === 4 ? 'active' : ''}" data-color-count="4" title="4 Cores">4</button>
+              <button class="bs-count-chip ${this.activeColorCount === 5 ? 'active' : ''}" data-color-count="5" title="5 Cores">5</button>
+            </div>
           </div>
 
-          <div class="bs-label-row" style="margin-top:12px">
+          <!-- Grade dos Cards de Famílias de Cores / Capas Vinculadas (2 colunas) -->
+          <div class="bs-color-family-grid">
+            ${activeSlots.map((s) => {
+              const hex = (this.palette as any)[s] || (s === 'E' ? '#f8fafc' : '#d4af37');
+              const hasCover = Boolean(this.palette.covers && this.palette.covers[s]);
+              const coverUrl = this.palette.covers?.[s];
+              const name = hasCover
+                ? (this.palette.coverNames?.[s] || `Capa ${s}`)
+                : (this.palette.names?.[s] || `Cor ${s}`);
+              const fin = this.palette.finishes?.[s] || 'satin';
+              const badgeText = hasCover ? 'Estampa' : finishLabels[fin];
+              const roleText = slotRoles[s];
+
+              const ballStyle = hasCover
+                ? `background-image: url('${coverUrl}'); background-size: cover; background-position: center; border: 2px solid #d4af37; box-shadow: 0 2px 6px rgba(0,0,0,0.15);`
+                : `background: radial-gradient(circle at 35% 32%, #FFFFFF 0%, ${hex} 55%, ${adjustColorBrightness(hex, -0.3)} 100%); border: 2px solid #FFFFFF; box-shadow: 0 2px 6px rgba(0,0,0,0.18);`;
+
+              return `
+                <div class="bs-color-family-card ${this.activeColorSlot === s ? 'active' : ''}" data-slot="${s}" title="Editar ${roleText}">
+                  <div class="bs-color-swatch-ball" style="${ballStyle}"></div>
+                  <div class="bs-color-card-info">
+                    <div class="bs-color-card-top">
+                      <strong class="bs-color-card-name">${name}</strong>
+                      <span class="bs-color-card-badge">${badgeText}</span>
+                    </div>
+                    <span class="bs-color-card-role">${roleText}</span>
+                  </div>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="bs-color-card-arrow"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <!-- Paletas Prontas da Festa -->
+          <div class="bs-label-row" style="margin-top:4px">
             <span>Paletas da Festa:</span>
-            <em>Toque para aplicar</em>
+            <em>Harmonias prontas em 1 toque</em>
           </div>
           <div class="bs-palettes-hscroll">
             ${STUDIO_PALETTE_PRESETS.map((p) => `
@@ -1533,8 +1590,9 @@ export class BalloonStudioModal {
             `).join('')}
           </div>
 
-          <div class="bs-label-row" style="margin-top:12px">
-            <span>Modo de Distribuição das Cores:</span>
+          <!-- Modo de Distribuição -->
+          <div class="bs-label-row" style="margin-top:4px">
+            <span>Modo de Distribuição:</span>
           </div>
           <div class="bs-segmented-control">
             <button class="bs-seg-btn ${this.currentDistributionMode === 'mesclado' ? 'active' : ''}" data-mode="mesclado">Mesclado</button>
@@ -1544,7 +1602,19 @@ export class BalloonStudioModal {
         </div>
       `;
 
-      panel.querySelectorAll('#bs-color-count-selector .bs-seg-btn').forEach((btn) => {
+      // Eventos dos cards de cores
+      panel.querySelectorAll('.bs-color-family-card').forEach((card) => {
+        card.addEventListener('click', (e) => {
+          const slot = (e.currentTarget as HTMLElement).dataset.slot as BalloonSlot;
+          if (slot) {
+            this.activeColorSlot = slot;
+            this.openColorSheet(slot);
+          }
+        });
+      });
+
+      // Seletor de quantidade de cores
+      panel.querySelectorAll('#bs-color-count-selector .bs-count-chip').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           const count = Number((e.currentTarget as HTMLElement).dataset.colorCount);
           if (count >= 2 && count <= 5) {
@@ -1553,6 +1623,7 @@ export class BalloonStudioModal {
         });
       });
 
+      // Paletas Prontas
       panel.querySelectorAll('.bs-preset-card').forEach((card) => {
         card.addEventListener('click', (e) => {
           const id = (e.currentTarget as HTMLElement).dataset.presetId;
@@ -1561,6 +1632,7 @@ export class BalloonStudioModal {
         });
       });
 
+      // Modo de Distribuição
       panel.querySelectorAll('.bs-seg-btn[data-mode]').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           const mode = (e.currentTarget as HTMLElement).dataset.mode as any;

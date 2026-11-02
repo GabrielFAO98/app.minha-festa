@@ -2,7 +2,6 @@
 import { getAllProjects, getScenarioProjects, saveProject, deleteProject } from '../core/db';
 import { CanvasEngine, DEFAULT_SCENARIO_BG } from '../core/canvas-engine';
 import type { ConfirmModal } from './confirm-modal';
-import { renameModal } from './rename-modal';
 import type { ProjectData } from '../types';
 
 export class ProjectsModal {
@@ -115,6 +114,12 @@ export class ProjectsModal {
     this.btnHeaderProjects?.addEventListener('click', () => {
       this.openProjectsScreen(true);
     });
+
+    // Header: Renomear Cenário Atual (Ícone de Lápis)
+    document.getElementById('btn-scenario-rename')?.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await this.promptRenameCurrentProject();
+    });
   }
 
   // ========================================================
@@ -161,6 +166,7 @@ export class ProjectsModal {
   }
 
   // Verificação Segura ao tentar sair da tela de Cenário
+  // Verificação ao tentar sair da tela de Cenário (salvamento silencioso em background, sem bloquear o usuário)
   async requestExit(): Promise<boolean> {
     if (this.autosaveTimer) {
       clearTimeout(this.autosaveTimer);
@@ -169,53 +175,44 @@ export class ProjectsModal {
         await this.performAutosave();
       }
     }
+    return true;
+  }
 
-    // Se o usuário não incluiu nem alterou nada no cenário, sai direto sem prompt!
-    if (!this.hasEverBeenSaved) {
-      return true;
+  // Renomeação Direta sob Demanda (acionada pelo ícone de lápis)
+  async promptRenameCurrentProject(): Promise<void> {
+    const currentName = this.currentProjectTitle || 'Novo Cenário';
+    const newName = window.prompt('Digite o nome do cenário:', currentName);
+    if (!newName || !newName.trim() || newName.trim() === currentName) {
+      return;
     }
 
-    // Se o projeto já possui nome personalizado, salva em silêncio e sai direto SEM abrir o modal de renomear!
-    if (this.hasCustomName || (this.currentProjectTitle && this.currentProjectTitle !== 'Novo Cenário')) {
-      if (this.isDirty) {
-        await this.performAutosave();
-      }
-      return true;
+    const cleanTitle = newName.trim();
+    this.currentProjectTitle = cleanTitle;
+    this.hasCustomName = true;
+    if (this.titleDisplay) {
+      this.titleDisplay.textContent = cleanTitle;
     }
 
-    // Se e somente se o projeto ainda estiver com o nome padrão 'Novo Cenário', pergunta se quer renomear
-    const result = await renameModal.prompt({
-      currentTitle: this.currentProjectTitle,
-      itemType: 'cenário'
-    });
-
-    if (result.action === 'cancel') {
-      return false; // Cancela a saída, permanece editando
+    if (!this.currentProjectId) {
+      this.currentProjectId = 'proj-' + Date.now();
     }
 
-    if (result.action === 'rename' && result.title) {
-      this.currentProjectTitle = result.title;
-      this.hasCustomName = true;
-      if (this.titleDisplay) {
-        this.titleDisplay.textContent = this.currentProjectTitle;
-      }
-      if (this.currentProjectId) {
-        await saveProject({
-          id: this.currentProjectId,
-          title: this.currentProjectTitle,
-          projectType: 'scenario',
-          elements: this.canvasEngine.getSceneElements(),
-          wallTextureUrl: this.canvasEngine.wallTextureUrl,
-          floorTextureUrl: this.canvasEngine.floorTextureUrl,
-          bgImageUrl: this.canvasEngine.bgImageUrl || undefined,
-          thumbnailUrl: this.canvasEngine.exportHDImage()
-        });
-      }
-    } else if (result.action === 'keep') {
-      this.hasCustomName = true;
+    try {
+      await saveProject({
+        id: this.currentProjectId,
+        title: cleanTitle,
+        projectType: 'scenario',
+        elements: this.canvasEngine.getSceneElements(),
+        wallTextureUrl: this.canvasEngine.wallTextureUrl,
+        floorTextureUrl: this.canvasEngine.floorTextureUrl,
+        bgImageUrl: this.canvasEngine.bgImageUrl || undefined,
+        thumbnailUrl: this.canvasEngine.exportHDImage()
+      });
+      this.hasEverBeenSaved = true;
+      this.isDirty = false;
+    } catch (err) {
+      console.warn('Erro ao salvar novo nome:', err);
     }
-
-    return true; // Prossegue com a saída
   }
 
   hasUnsavedChanges(): boolean {
@@ -300,7 +297,14 @@ export class ProjectsModal {
           ${isCurrentActive ? '<span class="project-badge-active">Ativo</span>' : ''}
         </div>
         <div class="project-card-info">
-          <h3 class="project-card-title">${proj.title}</h3>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <h3 class="project-card-title" style="margin: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${proj.title}</h3>
+            <button class="btn-proj-rename" data-proj-id="${proj.id}" title="Renomear este cenário" style="background: none; border: none; cursor: pointer; color: var(--primary, #B58938); padding: 4px; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+              </svg>
+            </button>
+          </div>
           <div class="project-card-meta">
             <span>${countLabel}</span>
             <span class="meta-dot">•</span>
@@ -331,8 +335,34 @@ export class ProjectsModal {
 
       card.addEventListener('click', async (e) => {
         const target = e.target as HTMLElement;
-        if (target.closest('.btn-proj-delete')) return;
+        if (target.closest('.btn-proj-delete') || target.closest('.btn-proj-rename')) return;
         await this.handleOpenProject(proj);
+      });
+
+      // Ação Renomear Projeto no Card
+      card.querySelector('.btn-proj-rename')?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const currentName = proj.title || 'Novo Cenário';
+        const newName = window.prompt('Digite o novo nome do cenário:', currentName);
+        if (!newName || !newName.trim() || newName.trim() === currentName) {
+          return;
+        }
+
+        const cleanTitle = newName.trim();
+        await saveProject({
+          ...proj,
+          title: cleanTitle
+        });
+
+        if (this.currentProjectId === proj.id) {
+          this.currentProjectTitle = cleanTitle;
+          this.hasCustomName = true;
+          if (this.titleDisplay) {
+            this.titleDisplay.textContent = cleanTitle;
+          }
+        }
+
+        await this.renderProjectsGrid();
       });
 
       // Ação Excluir Projeto com Confirmação

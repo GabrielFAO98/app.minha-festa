@@ -116,6 +116,33 @@ body {
   max-width: 140px;
 }
 
+.project-title-rename-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 1px 4px;
+  margin-left: -4px;
+  border-radius: var(--radius-sm, 4px);
+  transition: background var(--transition-fast, 0.15s ease);
+}
+
+.project-title-rename-trigger:hover {
+  background: rgba(181, 137, 56, 0.12);
+}
+
+.rename-pencil-icon {
+  color: var(--primary, #B58938);
+  opacity: 0.75;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.project-title-rename-trigger:hover .rename-pencil-icon {
+  opacity: 1;
+  transform: scale(1.12);
+}
+
 @media (min-width: 900px) {
   .brand-subtitle {
     max-width: 260px;
@@ -216,8 +243,15 @@ body {
     font-size: 0.85rem;
   }
 
+  .project-title-rename-trigger {
+    display: flex;
+    max-width: 170px;
+  }
+
   .brand-subtitle {
-    display: none;
+    display: block;
+    font-size: 0.62rem;
+    max-width: 150px;
   }
 
   .header-actions {

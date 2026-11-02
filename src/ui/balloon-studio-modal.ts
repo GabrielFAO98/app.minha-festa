@@ -27,7 +27,6 @@ import {
   type ArrangementStats
 } from '../core/balloon-studio-engine';
 import { addCustomItem, getAllCovers, addCustomCover, saveProject, getBalloonProjects, deleteProject, type CoverItemRecord } from '../core/db';
-import { renameModal } from './rename-modal';
 import type { ProjectData } from '../types';
 import { optimizeUserUploadedImage } from '../core/image-optimizer';
 import type { PresetItem } from '../types';
@@ -649,7 +648,7 @@ export class BalloonStudioModal {
       });
     });
 
-    // 2. Ações do Topo do Editor (Retorna à Galeria com Salvamento)
+    // 2. Ações do Topo do Editor (Retorna à Galeria com Salvamento Silencioso)
     document.getElementById('bs-btn-back-to-gallery')?.addEventListener('click', async () => {
       if (this.autosaveTimer) {
         clearTimeout(this.autosaveTimer);
@@ -659,54 +658,36 @@ export class BalloonStudioModal {
         }
       }
 
-      if (!this.hasCustomName && this.hasEverBeenSaved) {
-        const result = await renameModal.prompt({
-          currentTitle: this.arrangementTitle,
-          itemType: 'arranjo'
-        });
-
-        if (result.action === 'cancel') {
-          return;
-        }
-
-        if (result.action === 'rename' && result.title) {
-          this.arrangementTitle = result.title;
-          this.hasCustomName = true;
-          const titleEl = document.getElementById('bs-editor-current-title');
-          if (titleEl) titleEl.textContent = this.arrangementTitle;
-          if (this.currentBalloonProjectId) {
-            await saveProject({
-              id: this.currentBalloonProjectId,
-              title: this.arrangementTitle,
-              projectType: 'balloon',
-              elements: [],
-              balloonData: {
-                pieces: JSON.parse(JSON.stringify(this.pieces)),
-                palette: JSON.parse(JSON.stringify(this.palette)),
-                distributionMode: this.currentDistributionMode,
-                volumeLevel: this.currentVolumeLevel,
-                selectedTemplateId: this.selectedTemplateId
-              },
-              thumbnailUrl: this.exportSvgThumbnail(),
-              updatedAt: Date.now()
-            });
-          }
-        } else if (result.action === 'keep') {
-          this.hasCustomName = true;
-        }
-      }
-
       this.setScreen('gallery');
       await this.renderSavedArrangements();
     });
 
-    document.getElementById('bs-editor-title-container')?.addEventListener('click', () => {
-      const novo = prompt('Nome do arranjo:', this.arrangementTitle);
-      if (novo && novo.trim()) {
+    document.getElementById('bs-editor-title-container')?.addEventListener('click', async () => {
+      const currentName = this.arrangementTitle || 'Novo Arranjo';
+      const novo = prompt('Digite o nome do arranjo:', currentName);
+      if (novo && novo.trim() && novo.trim() !== currentName) {
         this.arrangementTitle = novo.trim();
         this.hasCustomName = true;
         const el = document.getElementById('bs-editor-current-title');
         if (el) el.textContent = this.arrangementTitle;
+
+        if (this.currentBalloonProjectId) {
+          await saveProject({
+            id: this.currentBalloonProjectId,
+            title: this.arrangementTitle,
+            projectType: 'balloon',
+            elements: [],
+            balloonData: {
+              pieces: JSON.parse(JSON.stringify(this.pieces)),
+              palette: JSON.parse(JSON.stringify(this.palette)),
+              distributionMode: this.currentDistributionMode,
+              volumeLevel: this.currentVolumeLevel,
+              selectedTemplateId: this.selectedTemplateId
+            },
+            thumbnailUrl: this.exportSvgThumbnail(),
+            updatedAt: Date.now()
+          });
+        }
       }
     });
 
@@ -2940,9 +2921,8 @@ export class BalloonStudioModal {
     }
   }
 
-  // Verificação Segura ao tentar sair do Estúdio
+  // Verificação ao tentar sair do Estúdio (salvamento silencioso em background, sem bloquear o usuário)
   public async requestExit(): Promise<boolean> {
-    console.log('[BS] requestExit called! isDirty:', this.isDirty, 'hasEverBeenSaved:', this.hasEverBeenSaved);
     if (this.autosaveTimer) {
       clearTimeout(this.autosaveTimer);
       this.autosaveTimer = null;
@@ -2951,63 +2931,9 @@ export class BalloonStudioModal {
       }
     }
 
-    // Se nunca foi salvo (o usuário não fez nada), sai direto sem prompt!
-    if (!this.hasEverBeenSaved) {
-      this.close();
-      this.onExitCallback?.();
-      return true;
-    }
-
-    // Se o projeto já tem nome personalizado, salva em silêncio e sai direto SEM abrir o modal de renomear!
-    if (this.hasCustomName || (this.arrangementTitle && this.arrangementTitle !== 'Novo Arranjo' && this.arrangementTitle !== 'Arranjo de Balões')) {
-      if (this.isDirty) {
-        await this.performAutosave();
-      }
-      this.close();
-      this.onExitCallback?.();
-      return true;
-    }
-
-    // Se e somente se o projeto foi salvo automaticamente e ainda está com nome padrão 'Novo Arranjo', pergunta se quer renomear
-    const result = await renameModal.prompt({
-      currentTitle: this.arrangementTitle,
-      itemType: 'arranjo'
-    });
-
-    if (result.action === 'cancel') {
-      return false; // Cancela a saída, permanece editando
-    }
-
-    if (result.action === 'rename' && result.title) {
-      this.arrangementTitle = result.title;
-      this.hasCustomName = true;
-      const titleEl = document.getElementById('bs-editor-current-title');
-      if (titleEl) titleEl.textContent = this.arrangementTitle;
-
-      if (this.currentBalloonProjectId) {
-        await saveProject({
-          id: this.currentBalloonProjectId,
-          title: this.arrangementTitle,
-          projectType: 'balloon',
-          elements: [],
-          balloonData: {
-            pieces: JSON.parse(JSON.stringify(this.pieces)),
-            palette: JSON.parse(JSON.stringify(this.palette)),
-            distributionMode: this.currentDistributionMode,
-            volumeLevel: this.currentVolumeLevel,
-            selectedTemplateId: this.selectedTemplateId
-          },
-          thumbnailUrl: this.exportSvgThumbnail(),
-          updatedAt: Date.now()
-        });
-      }
-    } else if (result.action === 'keep') {
-      this.hasCustomName = true;
-    }
-
     this.close();
     this.onExitCallback?.();
-    return true; // Prossegue com a saída
+    return true;
   }
 
   // ----------------------------------------------------------------------
@@ -3161,7 +3087,14 @@ export class BalloonStudioModal {
             ${thumbHtml}
           </div>
           <div class="bs-card-meta">
-            <b class="bs-card-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;" title="${proj.title}">${proj.title}</b>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+              <b class="bs-card-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; flex: 1;" title="${proj.title}">${proj.title}</b>
+              <button type="button" class="bs-btn-rename-saved" data-rename-id="${proj.id}" title="Renomear arranjo" style="background: none; border: none; cursor: pointer; color: var(--primary, #B58938); padding: 2px; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                </svg>
+              </button>
+            </div>
             <span class="bs-card-sub">${piecesCount} balões • ${dateStr}</span>
           </div>
           <button type="button" class="bs-btn-delete-saved" data-delete-id="${proj.id}" title="Excluir este arranjo" style="position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 8px; background: rgba(255, 255, 255, 0.94); border: 1px solid #E6E1DA; display: flex; align-items: center; justify-content: center; color: #DC2626; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.06); touch-action: manipulation; transition: all 0.15s ease;">
@@ -3175,8 +3108,30 @@ export class BalloonStudioModal {
         // Abrir arranjo no estúdio ao clicar no card
         card.addEventListener('click', (e) => {
           const target = e.target as HTMLElement;
-          if (target.closest('.bs-btn-delete-saved')) return;
+          if (target.closest('.bs-btn-delete-saved') || target.closest('.bs-btn-rename-saved')) return;
           this.loadBalloonProject(proj);
+        });
+
+        // Renomear arranjo salvo no card
+        const btnRename = card.querySelector('.bs-btn-rename-saved');
+        btnRename?.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const currentName = proj.title || 'Novo Arranjo';
+          const novo = prompt('Digite o novo nome do arranjo:', currentName);
+          if (novo && novo.trim() && novo.trim() !== currentName) {
+            const cleanTitle = novo.trim();
+            await saveProject({
+              ...proj,
+              title: cleanTitle
+            });
+            if (this.currentBalloonProjectId === proj.id) {
+              this.arrangementTitle = cleanTitle;
+              this.hasCustomName = true;
+              const el = document.getElementById('bs-editor-current-title');
+              if (el) el.textContent = cleanTitle;
+            }
+            await this.renderSavedArrangements();
+          }
         });
 
         // Excluir arranjo com confirmação amigável

@@ -1,5 +1,5 @@
 // Gerenciador de Projetos: Tela Exclusiva de Cenários e Modal de Salvar
-import { getAllProjects, saveProject, deleteProject } from '../core/db';
+import { getAllProjects, getScenarioProjects, saveProject, deleteProject } from '../core/db';
 import type { CanvasEngine } from '../core/canvas-engine';
 import type { ConfirmModal } from './confirm-modal';
 import { renameModal } from './rename-modal';
@@ -256,10 +256,10 @@ export class ProjectsModal {
 
   async renderProjectsGrid(): Promise<void> {
     if (!this.projectsGridEl) return;
-    const projects = await getAllProjects();
+    const projects = await getScenarioProjects();
     this.projectsGridEl.innerHTML = '';
 
-    const countText = `${projects.length} ${projects.length === 1 ? 'projeto salvo' : 'projetos salvos'}`;
+    const countText = `${projects.length} ${projects.length === 1 ? 'cenário salvo' : 'cenários salvos'}`;
     if (this.projectsCountEl) {
       this.projectsCountEl.textContent = countText;
     }
@@ -272,8 +272,8 @@ export class ProjectsModal {
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
             </svg>
           </div>
-          <h2 class="projects-empty-title">Nenhum projeto salvo ainda</h2>
-          <p class="projects-empty-desc">Crie decorações e arranjos exclusivos no estúdio e eles serão salvos automaticamente.</p>
+          <h2 class="projects-empty-title">Nenhum cenário salvo ainda</h2>
+          <p class="projects-empty-desc">Crie decorações no estúdio e elas serão salvas automaticamente.</p>
           <button id="btn-empty-create-scene" class="btn-primary" style="margin-top: 6px; padding: 0 18px; height: 38px;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             <span>Criar Novo Cenário</span>
@@ -289,8 +289,7 @@ export class ProjectsModal {
 
     const fragment = document.createDocumentFragment();
     projects.forEach((proj) => {
-      const isBalloon = proj.projectType === 'balloon';
-      const isCurrentActive = !isBalloon && proj.id === this.currentProjectId;
+      const isCurrentActive = proj.id === this.currentProjectId;
       const card = document.createElement('div');
       card.className = `project-card ${isCurrentActive ? 'active-project' : ''}`;
 
@@ -301,16 +300,12 @@ export class ProjectsModal {
         minute: '2-digit'
       });
 
-      const badgeTypeLabel = isBalloon ? 'Arranjo de Balões' : 'Cenário';
-      const countLabel = isBalloon
-        ? `${proj.balloonData?.pieces.length || 0} balões`
-        : `${proj.elements?.length || 0} peças`;
-      const openBtnText = isBalloon ? 'Abrir no Estúdio' : 'Abrir Cenário';
+      const countLabel = `${proj.elements?.length || 0} peças`;
 
       card.innerHTML = `
         <div class="project-card-thumb-wrap">
           <img src="${proj.thumbnailUrl || ''}" alt="${proj.title}" class="project-card-thumb" style="object-fit: contain; background: #FAF8F5;" />
-          <span class="project-badge-type" style="position: absolute; top: 8px; left: 8px; background: rgba(28, 25, 23, 0.78); color: #FFF; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; backdrop-filter: blur(4px);">${badgeTypeLabel}</span>
+          <span class="project-badge-type" style="position: absolute; top: 8px; left: 8px; background: rgba(28, 25, 23, 0.78); color: #FFF; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; backdrop-filter: blur(4px);">Cenário</span>
           ${isCurrentActive ? '<span class="project-badge-active">Ativo</span>' : ''}
         </div>
         <div class="project-card-info">
@@ -325,7 +320,7 @@ export class ProjectsModal {
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
-              <span>${openBtnText}</span>
+              <span>Abrir Cenário</span>
             </button>
             <button class="btn-proj-delete" data-proj-id="${proj.id}" title="Excluir este projeto">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -353,9 +348,9 @@ export class ProjectsModal {
       card.querySelector('.btn-proj-delete')?.addEventListener('click', async (e) => {
         e.stopPropagation();
         const confirmed = await this.confirmModal.ask({
-          title: isBalloon ? 'Excluir Arranjo' : 'Excluir Cenário',
-          message: `Deseja excluir permanentemente ${isBalloon ? 'o arranjo' : 'o cenário'} "${proj.title}"? Esta ação não pode ser desfeita.`,
-          confirmLabel: isBalloon ? 'Excluir Arranjo' : 'Excluir Cenário',
+          title: 'Excluir Cenário',
+          message: `Deseja excluir permanentemente o cenário "${proj.title}"? Esta ação não pode ser desfeita.`,
+          confirmLabel: 'Excluir Cenário',
           cancelLabel: 'Cancelar',
           danger: true
         });

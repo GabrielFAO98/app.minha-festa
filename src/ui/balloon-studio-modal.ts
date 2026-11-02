@@ -25,7 +25,7 @@ import {
   type BalloonModelTemplate,
   type ArrangementStats
 } from '../core/balloon-studio-engine';
-import { addCustomItem, getAllCovers, addCustomCover, saveProject, type CoverItemRecord } from '../core/db';
+import { addCustomItem, getAllCovers, addCustomCover, saveProject, getBalloonProjects, deleteProject, type CoverItemRecord } from '../core/db';
 import { renameModal } from './rename-modal';
 import type { ProjectData } from '../types';
 import { optimizeUserUploadedImage } from '../core/image-optimizer';
@@ -179,6 +179,19 @@ export class BalloonStudioModal {
               <p class="bs-gallery-sub">Escolha uma base. Você ajusta tudo depois.</p>
             </div>
 
+            <!-- SEÇÃO: MEUS ARRANJOS SALVOS (DINÂMICO) -->
+            <div id="bs-saved-arrangements-section" class="bs-gallery-section" style="margin-bottom: 22px; display: none;">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px;">
+                <h3 style="font-family: var(--font-brand, 'Fredoka', sans-serif); font-size: 16px; font-weight: 600; color: var(--text-brand, #261613); margin: 0;">
+                  Meus Arranjos Salvos
+                </h3>
+                <span id="bs-saved-count-label" style="font-size: 12px; color: var(--text-muted, #78716C); font-weight: 500;">
+                  0 arranjos salvos
+                </span>
+              </div>
+              <div class="bs-gallery-grid" id="bs-saved-arrangements-grid"></div>
+            </div>
+
             <!-- CARD 1: COMEÇAR DO ZERO (EM PRIMEIRO LUGAR - SEM TAGS) -->
             <div id="bs-card-start-zero" class="bs-card-zero" title="Iniciar arranjo em branco">
               <div class="bs-card-zero-icon">
@@ -191,6 +204,13 @@ export class BalloonStudioModal {
                 <b class="bs-card-zero-title">Começar do zero (em branco)</b>
                 <span class="bs-card-zero-desc">Monte seu arranjo em um espaço livre sem modelo pré-definido</span>
               </div>
+            </div>
+
+            <!-- SEÇÃO: MODELOS DE ARRANJO -->
+            <div class="bs-gallery-section-header" style="margin: 22px 0 10px 0;">
+              <h3 style="font-family: var(--font-brand, 'Fredoka', sans-serif); font-size: 16px; font-weight: 600; color: var(--text-brand, #261613); margin: 0;">
+                Modelos de Arranjo
+              </h3>
             </div>
 
             <!-- GRID DOS 10 MODELOS REALISTAS (SEM TAGS) -->
@@ -612,9 +632,55 @@ export class BalloonStudioModal {
       });
     });
 
-    // 2. Ações do Topo do Editor
+    // 2. Ações do Topo do Editor (Retorna à Galeria com Salvamento)
     document.getElementById('bs-btn-back-to-gallery')?.addEventListener('click', async () => {
-      await this.requestExit();
+      if (this.autosaveTimer) {
+        clearTimeout(this.autosaveTimer);
+        this.autosaveTimer = null;
+        if (this.isDirty) {
+          await this.performAutosave();
+        }
+      }
+
+      if (!this.hasCustomName && this.hasEverBeenSaved) {
+        const result = await renameModal.prompt({
+          currentTitle: this.arrangementTitle,
+          itemType: 'arranjo'
+        });
+
+        if (result.action === 'cancel') {
+          return;
+        }
+
+        if (result.action === 'rename' && result.title) {
+          this.arrangementTitle = result.title;
+          this.hasCustomName = true;
+          const titleEl = document.getElementById('bs-editor-current-title');
+          if (titleEl) titleEl.textContent = this.arrangementTitle;
+          if (this.currentBalloonProjectId) {
+            await saveProject({
+              id: this.currentBalloonProjectId,
+              title: this.arrangementTitle,
+              projectType: 'balloon',
+              elements: [],
+              balloonData: {
+                pieces: JSON.parse(JSON.stringify(this.pieces)),
+                palette: JSON.parse(JSON.stringify(this.palette)),
+                distributionMode: this.currentDistributionMode,
+                volumeLevel: this.currentVolumeLevel,
+                selectedTemplateId: this.selectedTemplateId
+              },
+              thumbnailUrl: this.exportSvgThumbnail(),
+              updatedAt: Date.now()
+            });
+          }
+        } else if (result.action === 'keep') {
+          this.hasCustomName = true;
+        }
+      }
+
+      this.setScreen('gallery');
+      await this.renderSavedArrangements();
     });
 
     document.getElementById('bs-editor-title-container')?.addEventListener('click', () => {
@@ -833,6 +899,8 @@ export class BalloonStudioModal {
       this.renderCanvas();
       this.syncPaletteSwatches();
       this.renderTabActivePanel();
+    } else if (screen === 'gallery') {
+      this.renderSavedArrangements();
     }
   }
 
@@ -2748,6 +2816,7 @@ export class BalloonStudioModal {
       this.hasEverBeenSaved = false;
       this.isDirty = false;
       this.setScreen('gallery');
+      this.renderSavedArrangements();
     }
   }
 
@@ -2775,6 +2844,108 @@ export class BalloonStudioModal {
     this.setScreen('editor');
     this.renderCanvas();
     this.syncPaletteSwatches();
+  }
+
+  
+  // Renderiza a Seção Dinâmica de Arranjos Salvos na Galeria Inicial
+  public async renderSavedArrangements(): Promise<void> {
+    const sectionEl = document.getElementById('bs-saved-arrangements-section');
+    const gridEl = document.getElementById('bs-saved-arrangements-grid');
+    const countEl = document.getElementById('bs-saved-count-label');
+    if (!sectionEl || !gridEl) return;
+
+    try {
+      const savedProjects = await getBalloonProjects();
+
+      if (savedProjects.length === 0) {
+        sectionEl.style.display = 'none';
+        gridEl.innerHTML = '';
+        return;
+      }
+
+      sectionEl.style.display = 'block';
+      if (countEl) {
+        countEl.textContent = `${savedProjects.length} ${savedProjects.length === 1 ? 'arranjo salvo' : 'arranjos salvos'}`;
+      }
+
+      gridEl.innerHTML = '';
+      const fragment = document.createDocumentFragment();
+
+      savedProjects.forEach((proj) => {
+        const card = document.createElement('div');
+        card.className = 'bs-template-card bs-saved-card';
+        card.dataset.projectId = proj.id;
+        card.style.position = 'relative';
+
+        const piecesCount = proj.balloonData?.pieces.length || 0;
+        const dateStr = new Date(proj.updatedAt).toLocaleDateString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit'
+        });
+
+        let thumbHtml = '';
+        if (proj.thumbnailUrl && (proj.thumbnailUrl.startsWith('data:') || proj.thumbnailUrl.startsWith('http') || proj.thumbnailUrl.startsWith('blob:'))) {
+          thumbHtml = `<img src="${proj.thumbnailUrl}" alt="${proj.title}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;" />`;
+        } else if (proj.balloonData?.pieces && proj.balloonData?.palette) {
+          const { svg } = renderArrangementSvg(proj.balloonData.pieces, proj.balloonData.palette, {
+            pad: 14,
+            hasFloorShadow: false,
+            idPrefix: `saved-${proj.id}-`
+          });
+          thumbHtml = svg;
+        } else {
+          thumbHtml = `
+            <div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: #A8A29E;">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/></svg>
+            </div>
+          `;
+        }
+
+        card.innerHTML = `
+          <div class="bs-card-thumb" style="display: flex; align-items: center; justify-content: center; background: #FAF8F5; overflow: hidden; height: 115px;">
+            ${thumbHtml}
+          </div>
+          <div class="bs-card-meta">
+            <b class="bs-card-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;" title="${proj.title}">${proj.title}</b>
+            <span class="bs-card-sub">${piecesCount} balões • ${dateStr}</span>
+          </div>
+          <button type="button" class="bs-btn-delete-saved" data-delete-id="${proj.id}" title="Excluir este arranjo" style="position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 8px; background: rgba(255, 255, 255, 0.94); border: 1px solid #E6E1DA; display: flex; align-items: center; justify-content: center; color: #DC2626; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.06); touch-action: manipulation; transition: all 0.15s ease;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        `;
+
+        // Abrir arranjo no estúdio ao clicar no card
+        card.addEventListener('click', (e) => {
+          const target = e.target as HTMLElement;
+          if (target.closest('.bs-btn-delete-saved')) return;
+          this.loadBalloonProject(proj);
+        });
+
+        // Excluir arranjo com confirmação amigável
+        const btnDelete = card.querySelector('.bs-btn-delete-saved');
+        btnDelete?.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const conf = confirm(`Deseja excluir permanentemente o arranjo "${proj.title}"? Esta ação não pode ser desfeita.`);
+          if (conf) {
+            await deleteProject(proj.id);
+            if (this.currentBalloonProjectId === proj.id) {
+              this.currentBalloonProjectId = null;
+              this.hasEverBeenSaved = false;
+            }
+            await this.renderSavedArrangements();
+          }
+        });
+
+        fragment.appendChild(card);
+      });
+
+      gridEl.appendChild(fragment);
+    } catch (err) {
+      console.warn('Erro ao carregar arranjos salvos no estúdio:', err);
+    }
   }
 
   public close(): void {

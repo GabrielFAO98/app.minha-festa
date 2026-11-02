@@ -185,6 +185,16 @@ export async function getAllProjects(): Promise<ProjectData[]> {
   return await db.projects.reverse().sortBy('updatedAt');
 }
 
+export async function getScenarioProjects(): Promise<ProjectData[]> {
+  const all = await db.projects.reverse().sortBy('updatedAt');
+  return all.filter((p) => p.projectType !== 'balloon');
+}
+
+export async function getBalloonProjects(): Promise<ProjectData[]> {
+  const all = await db.projects.reverse().sortBy('updatedAt');
+  return all.filter((p) => p.projectType === 'balloon');
+}
+
 export async function getProject(id: string): Promise<ProjectData | undefined> {
   return await db.projects.get(id);
 }

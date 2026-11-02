@@ -507,7 +507,7 @@ export class CanvasEngine {
       flipEnabled: false, // Impede inversão acidental de escala pelo transformer
       ignoreStroke: true,
       boundBoxFunc: (oldBox, newBox) => {
-        const MIN_SIZE = 45;
+        const MIN_SIZE = 28;
         // Se a largura ou altura ficar menor que o tamanho mínimo funcional, trava no tamanho anterior
         if (Math.abs(newBox.width) < MIN_SIZE || Math.abs(newBox.height) < MIN_SIZE) {
           return oldBox;
@@ -582,15 +582,6 @@ export class CanvasEngine {
     this.createCornerActionButtons();
 
     this.transformer.on('transform', () => {
-      if (this.selectedNode && this.transformer) {
-        const w = this.selectedNode.width() * Math.abs(this.selectedNode.scaleX() || 1);
-        const h = this.selectedNode.height() * Math.abs(this.selectedNode.scaleY() || 1);
-        const MIN_SPAN = 85;
-        const padX = w < MIN_SPAN ? Math.round((MIN_SPAN - w) / 2) : 4;
-        const padY = h < MIN_SPAN ? Math.round((MIN_SPAN - h) / 2) : 4;
-        const pad = Math.max(padX, padY, 4);
-        this.transformer.padding(pad);
-      }
       this.updateCornerActionButtons();
       this.decorLayer?.batchDraw();
       this.uiLayer?.batchDraw();
@@ -598,13 +589,6 @@ export class CanvasEngine {
 
     this.transformer.on('transformend', () => {
       if (this.selectedNode && this.transformer) {
-        const w = (typeof (this.selectedNode as any).width === 'function' ? (this.selectedNode as any).width() : 100) * Math.abs(this.selectedNode.scaleX() || 1);
-        const h = (typeof (this.selectedNode as any).height === 'function' ? (this.selectedNode as any).height() : 100) * Math.abs(this.selectedNode.scaleY() || 1);
-        const MIN_SPAN = 85;
-        const padX = w < MIN_SPAN ? Math.round((MIN_SPAN - w) / 2) : 4;
-        const padY = h < MIN_SPAN ? Math.round((MIN_SPAN - h) / 2) : 4;
-        const pad = Math.max(padX, padY, 4);
-        this.transformer.padding(pad);
         (this.transformer as any)._resetTransformCache();
         this.transformer.update();
       }
@@ -974,32 +958,34 @@ export class CanvasEngine {
       return;
     }
 
-    // Obtém dimensões sem padding do nó selecionado (sempre estritamente positivas para evitar inversões)
+    // Obtém dimensões sem padding do nó selecionado no sistema de coordenadas do Transformer
     const nodeRect = typeof (this.transformer as any)._getNodeRect === 'function'
       ? (this.transformer as any)._getNodeRect()
       : null;
-    const rawW = nodeRect && typeof nodeRect.width === 'number' ? nodeRect.width : (this.selectedNode.width() * Math.abs(this.selectedNode.scaleX() || 1));
-    const rawH = nodeRect && typeof nodeRect.height === 'number' ? nodeRect.height : (this.selectedNode.height() * Math.abs(this.selectedNode.scaleY() || 1));
-    const bw = Math.max(30, Math.abs(rawW));
-    const bh = Math.max(30, Math.abs(rawH));
+    const rawW = nodeRect && typeof nodeRect.width === 'number'
+      ? nodeRect.width
+      : (this.selectedNode.width() * Math.abs(this.selectedNode.scaleX() || 1));
+    const rawH = nodeRect && typeof nodeRect.height === 'number'
+      ? nodeRect.height
+      : (this.selectedNode.height() * Math.abs(this.selectedNode.scaleY() || 1));
+    const bw = Math.abs(rawW);
+    const bh = Math.abs(rawH);
 
-    const MIN_SPAN = 85;
-    const padX = bw < MIN_SPAN ? Math.round((MIN_SPAN - bw) / 2) : 4;
-    const padY = bh < MIN_SPAN ? Math.round((MIN_SPAN - bh) / 2) : 4;
-    const pad = Math.max(padX, padY, this.transformer.padding() || 4);
-
+    // Padding fixo elegante de 4px que mantém a moldura e âncoras perfeitamente ajustadas à peça
+    const pad = 4;
     if (this.transformer.padding() !== pad) {
       this.transformer.padding(pad);
     }
 
-    // Atualiza o quadro delimitador tracejado (.back) para envolver perfeitamente o padding
+    // Atualiza o quadro delimitador tracejado (.back) para envolver perfeitamente o padding fixo
     back.x(-pad);
     back.y(-pad);
     back.width(bw + pad * 2);
     back.height(bh + pad * 2);
 
-    // Ajusta a escala visual dos botões quando o quadro for muito pequeno para evitar sobreposição
-    const btnScale = bw < 65 || bh < 65 ? 0.82 : 1;
+    // Ajusta a escala visual dos botões quando a peça for muito pequena para evitar sobreposição
+    const minDim = Math.min(bw, bh);
+    const btnScale = minDim < 65 ? Math.max(0.70, minDim / 65) : 1;
 
     // Canto superior esquerdo: Rotação (seta girando)
     if (this.btnCornerRotate) {
@@ -2210,17 +2196,7 @@ export class CanvasEngine {
     this.selectedNode = node as Konva.Group | null;
 
     if (this.transformer && node) {
-      const w = (typeof (node as any).width === 'function' ? (node as any).width() : 100) * Math.abs(node.scaleX() || 1);
-      const h = (typeof (node as any).height === 'function' ? (node as any).height() : 100) * Math.abs(node.scaleY() || 1);
-
-      // Garante distância mínima confortável entre botões opostos (raio 10px / diâmetro 20px)
-      // para que nunca fiquem espremidos ou colidam em elementos pequenos
-      const MIN_SPAN = 80;
-      const padX = w < MIN_SPAN ? Math.round((MIN_SPAN - w) / 2) : 4;
-      const padY = h < MIN_SPAN ? Math.round((MIN_SPAN - h) / 2) : 4;
-      const pad = Math.max(padX, padY, 4);
-
-      this.transformer.padding(pad);
+      this.transformer.padding(4);
       this.transformer.nodes([node]);
     } else {
       this.transformer?.nodes([]);
@@ -2244,7 +2220,7 @@ export class CanvasEngine {
     this.selectedNode = null;
     this.wasSelectedByCycleOrLayer = false;
     if (this.transformer) {
-      this.transformer.padding(2);
+      this.transformer.padding(4);
       this.transformer.nodes([]);
     }
     this.updateCornerActionButtons();

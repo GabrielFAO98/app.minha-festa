@@ -177,3 +177,4 @@ export class RenameModal {
     return this.modalEl?.classList.contains('open') || false;
   }
 }
+

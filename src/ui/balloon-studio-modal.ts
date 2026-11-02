@@ -24,7 +24,8 @@ import {
   type BalloonModelTemplate,
   type ArrangementStats
 } from '../core/balloon-studio-engine';
-import { addCustomItem } from '../core/db';
+import { addCustomItem, getAllCovers, addCustomCover, type CoverItemRecord } from '../core/db';
+import { optimizeUserUploadedImage } from '../core/image-optimizer';
 import type { PresetItem } from '../types';
 
 export class BalloonStudioModal {
@@ -69,10 +70,14 @@ export class BalloonStudioModal {
     | 'light-point'
     | 'big-balloon' = 'adjust';
 
-  // Aba ativa no dock inferior
-  private activeBottomTab: 'forma' | 'cores' | 'incluir' = 'forma';
+  // Aba ativa no dock inferior (Ordem: Cores | Incluir | Ajustes)
+  private activeBottomTab: 'cores' | 'incluir' | 'ajustes' = 'cores';
+  private isBottomDrawerOpen: boolean = true;
   private activeColorCount: number = 4;
-  private currentGhostGuide: 'none' | 'roman' | 'round' | 'rect' | 'table' = 'none';
+  private currentGhostGuide: 'none' | 'roman' | 'round' | 'rect' | 'table' = 'round';
+  private hasConfirmedVariar: boolean = false;
+  private colorSheetSubtab: 'colors' | 'covers' = 'colors';
+  private cachedCovers: CoverItemRecord[] = [];
 
   // Viewport e Zoom Controlado EXCLUSIVAMENTE por Pinça (Estável, sem pular ao arrastar balões)
   private baseViewBox = { x: 0, y: 0, width: 600, height: 600 };
@@ -156,7 +161,12 @@ export class BalloonStudioModal {
 
             <!-- CARD 1: COMEÇAR DO ZERO (EM PRIMEIRO LUGAR - SEM TAGS) -->
             <div id="bs-card-start-zero" class="bs-card-zero" title="Iniciar arranjo em branco">
-              <div class="bs-card-zero-icon">✦</div>
+              <div class="bs-card-zero-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </div>
               <div class="bs-card-zero-content">
                 <b class="bs-card-zero-title">Começar do zero (em branco)</b>
                 <span class="bs-card-zero-desc">Monte seu arranjo em um espaço livre sem modelo pré-definido</span>
@@ -197,7 +207,9 @@ export class BalloonStudioModal {
               </button>
               <div id="bs-editor-title-container" class="bs-editor-title-box" title="Clique para renomear">
                 <h2 id="bs-editor-current-title" class="bs-editor-title">Arco Orgânico em L</h2>
-                <span class="bs-editor-title-icon">✎</span>
+                <span class="bs-editor-title-icon">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </span>
               </div>
             </div>
 
@@ -247,20 +259,26 @@ export class BalloonStudioModal {
               </button>
             </div>
             <button id="bs-btn-reset-view" class="bs-canvas-chip bs-chip-reset" style="display:none" title="Resetar zoom e centralizar">
-              <span>↺ <span id="bs-zoom-level-badge">100%</span></span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+              <span id="bs-zoom-level-badge">100%</span>
             </button>
             <button id="bs-chip-shopping" class="bs-canvas-chip bs-chip-shop" title="Ver lista de compras de balões">
-              <span>🎈 <span id="bs-chip-count-label">0 balões</span> ›</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="7"></circle><path d="M12 17v4"></path></svg>
+              <span id="bs-chip-count-label">0 balões</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </button>
 
-            <!-- Banner de Ferramenta Ativa -->
+            <!-- Banner de Ferramenta Ativa com Botão Cancelar -->
             <div id="bs-tool-active-banner" class="bs-tool-banner" style="display:none">
-              <span id="bs-tool-banner-text">Toque no arco para encaixar</span>
+              <span id="bs-tool-banner-text">Toque no cenário para posicionar</span>
+              <button id="bs-btn-cancel-tool" class="bs-tool-cancel-btn" title="Cancelar inserção">Cancelar</button>
             </div>
 
             <!-- Estado Vazio (quando tela estiver em branco) -->
             <div id="bs-canvas-empty-state" class="bs-canvas-empty-state" style="display:none">
-              <div class="bs-empty-state-icon">🎈</div>
+              <div class="bs-empty-state-icon">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="10" r="7"></circle><path d="M12 17v4"></path></svg>
+              </div>
               <p class="bs-empty-state-text">Sua tela está livre</p>
               <span class="bs-empty-state-sub">Toque para adicionar seu primeiro cluster ou balão</span>
             </div>
@@ -278,49 +296,60 @@ export class BalloonStudioModal {
               <button id="bs-pill-color-btn" class="bs-pill-btn" title="Mudar cor desta família">
                 <span id="bs-pill-swatch-dot" class="bs-pill-swatch-dot"></span>
                 <span id="bs-pill-color-name">Cor</span>
-                <small>▾</small>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </button>
               <button id="bs-pill-size-btn" class="bs-pill-btn" title="Mudar tamanho">
                 <span id="bs-pill-size-text">12"</span>
-                <small>▾</small>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </button>
-              <button id="bs-pill-dup-btn" class="bs-pill-btn" title="Duplicar">⧉</button>
-              <button id="bs-pill-del-btn" class="bs-pill-btn bs-pill-btn-danger" title="Excluir">🗑</button>
+              <button id="bs-pill-dup-btn" class="bs-pill-btn" title="Duplicar">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              </button>
+              <button id="bs-pill-del-btn" class="bs-pill-btn bs-pill-btn-danger" title="Excluir">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
             </div>
           </main>
 
-          <!-- Faixa da Paleta (Cores da Festa) -->
-          <section class="bs-palette-strip">
+          <!-- Faixa da Paleta (Exibida APENAS no Menu Cores) -->
+          <section class="bs-palette-strip" id="bs-palette-strip-bar">
             <div class="bs-swatches-row" id="bs-swatches-container">
-              <!-- Swatches A, B, C, D gerados dinamicamente -->
+              <!-- Swatches gerados dinamicamente -->
             </div>
-
           </section>
 
           <!-- Painel Ativo da Aba -->
           <section class="bs-tab-panel" id="bs-tab-active-panel">
-            <!-- Conteúdo injetado dinamicamente: Forma, Cores ou Retoques -->
+            <!-- Conteúdo injetado dinamicamente: Cores, Incluir ou Ajustes -->
           </section>
 
-          <!-- Dock Inferior com 3 Abas -->
+          <!-- Dock Inferior com 3 Abas: Cores | Incluir (Centro Destacado) | Ajustes -->
           <nav class="bs-tabs-dock">
-            <button class="bs-dock-tab active" data-tab="forma">
-              <span class="bs-dock-tab-icon">🧩</span>
-              <span>Modelos & Forma</span>
-            </button>
-            <button class="bs-dock-tab" data-tab="cores">
-              <span class="bs-dock-tab-icon">🎨</span>
+            <button class="bs-dock-tab ${this.activeBottomTab === 'cores' && this.isBottomDrawerOpen ? 'active' : ''}" data-tab="cores">
+              <span class="bs-dock-tab-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z"></path></svg>
+              </span>
               <span>Cores</span>
             </button>
-            <button class="bs-dock-tab" data-tab="incluir">
+            <button class="bs-dock-tab bs-dock-tab-primary ${this.activeBottomTab === 'incluir' && this.isBottomDrawerOpen ? 'active' : ''}" data-tab="incluir">
               <span class="bs-dock-tab-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                  <circle cx="12" cy="12" r="9"></circle>
-                  <line x1="12" y1="8" x2="12" y2="16"></line>
-                  <line x1="8" y1="12" x2="16" y2="12"></line>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
               </span>
               <span>Incluir</span>
+            </button>
+            <button class="bs-dock-tab ${this.activeBottomTab === 'ajustes' && this.isBottomDrawerOpen ? 'active' : ''}" data-tab="ajustes">
+              <span class="bs-dock-tab-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line>
+                  <line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line>
+                  <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line>
+                </svg>
+              </span>
+              <span>Ajustes</span>
             </button>
           </nav>
         </section>
@@ -329,48 +358,114 @@ export class BalloonStudioModal {
         <!-- 3. GAVETAS / BOTTOM SHEETS                             -->
         <!-- ======================================================= -->
 
-        <!-- Gaveta: Trocar Cor & Acabamento da Família -->
+        <!-- Gaveta: Trocar Cor, Acabamento ou Capa de Tecido -->
         <div id="bs-color-sheet" class="bs-sheet-dim" style="display:none">
           <div class="bs-bottom-sheet">
             <div class="bs-sheet-grabber"></div>
             <div class="bs-sheet-header">
               <h3 class="bs-sheet-title" id="bs-color-sheet-title">Editar Cor da Família</h3>
-              <button id="bs-btn-close-color-sheet" class="bs-sheet-close">✕</button>
+              <button id="bs-btn-close-color-sheet" class="bs-sheet-close">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            <div class="bs-sheet-body">
+              <!-- Sub-abas: Cor & Acabamento vs Capa de Tecido -->
+              <div class="bs-sheet-subtabs">
+                <button id="bs-sheet-subtab-color" class="bs-sheet-subtab active">Cor & Acabamento</button>
+                <button id="bs-sheet-subtab-cover" class="bs-sheet-subtab">Capa de Tecido</button>
+              </div>
+
+              <!-- Painel 1: Cores Sólidas & Acabamentos -->
+              <div id="bs-sheet-panel-colors">
+                <div class="bs-label-row" style="margin-bottom:8px">
+                  <span>Acabamento do Látex:</span>
+                </div>
+                <div class="bs-finishes-selector" id="bs-sheet-finishes-grid">
+                  <button class="bs-finish-btn-chip active" data-finish="satin">Acetinado</button>
+                  <button class="bs-finish-btn-chip" data-finish="matte">Fosco</button>
+                  <button class="bs-finish-btn-chip" data-finish="chrome">Cromado</button>
+                  <button class="bs-finish-btn-chip" data-finish="crystal">Cristal</button>
+                  <button class="bs-finish-btn-chip" data-finish="glitter">Glitter</button>
+                </div>
+
+                <div class="bs-custom-color-card">
+                  <div class="bs-custom-color-info">
+                    <span class="bs-custom-color-title">Cor Personalizada</span>
+                    <span class="bs-custom-color-sub">Toque para selecionar qualquer tom no círculo</span>
+                  </div>
+                  <div class="bs-custom-color-picker-wrap">
+                    <input type="color" id="bs-custom-color-input" class="bs-custom-color-input" value="#B58938">
+                    <span id="bs-custom-color-preview" class="bs-custom-color-preview"></span>
+                  </div>
+                </div>
+
+                <div class="bs-label-row" style="margin: 14px 0 8px">
+                  <span>Cores da Moda (Catálogo):</span>
+                </div>
+                <div class="bs-color-catalog-grid">
+                  ${FASHION_BALLOON_COLORS.map((c) => `
+                    <div class="bs-color-tile" data-hex="${c.hex}" data-name="${c.name}">
+                      <span class="bs-color-tile-dot" style="background:${c.hex}"></span>
+                      <span class="bs-color-tile-name">${c.name}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+
+              <!-- Painel 2: Capas de Tecido / Estampas -->
+              <div id="bs-sheet-panel-covers" style="display:none">
+                <div id="bs-active-cover-status" class="bs-covers-status-card" style="display:none">
+                  <div class="bs-covers-status-info">
+                    <div id="bs-active-cover-thumb" class="bs-covers-status-thumb"></div>
+                    <div>
+                      <b id="bs-active-cover-name" style="font-size:12px;color:#1C1917">Capa Ativa</b>
+                      <div style="font-size:10.5px;color:#78716C">Estampa aplicada aos balões desta cor</div>
+                    </div>
+                  </div>
+                  <button id="bs-btn-remove-active-cover" class="bs-btn-remove-cover">Remover Capa</button>
+                </div>
+
+                <div class="bs-label-row" style="margin: 10px 0 8px">
+                  <span>Capas e Estampas Disponíveis:</span>
+                </div>
+                <div class="bs-covers-grid" id="bs-sheet-covers-grid">
+                  <div id="bs-card-upload-cover" class="bs-cover-tile bs-cover-tile-upload">
+                    <div class="bs-cover-tile-thumb" style="display:flex;align-items:center;justify-content:center;background:transparent;border:none">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </div>
+                    <span class="bs-cover-tile-name">Nova da Galeria</span>
+                    <input type="file" id="bs-input-cover-upload" accept="image/*" style="display:none">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gaveta: Adicionar Arranjo Modelo -->
+        <div id="bs-append-model-sheet" class="bs-sheet-dim" style="display:none">
+          <div class="bs-bottom-sheet">
+            <div class="bs-sheet-grabber"></div>
+            <div class="bs-sheet-header">
+              <h3 class="bs-sheet-title">Adicionar Arranjo Modelo</h3>
+              <button id="bs-btn-close-append-sheet" class="bs-sheet-close">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
             </div>
             <div class="bs-sheet-body">
               <div class="bs-label-row" style="margin-bottom:8px">
-                <span>Acabamento do Látex:</span>
+                <span>Escolha um modelo para somar ao arranjo atual:</span>
               </div>
-              <div class="bs-finishes-selector" id="bs-sheet-finishes-grid">
-                <button class="bs-finish-btn-chip active" data-finish="satin">Acetinado</button>
-                <button class="bs-finish-btn-chip" data-finish="matte">Fosco</button>
-                <button class="bs-finish-btn-chip" data-finish="chrome">Cromado ✨</button>
-                <button class="bs-finish-btn-chip" data-finish="crystal">Cristal</button>
-                <button class="bs-finish-btn-chip" data-finish="glitter">Glitter</button>
-              </div>
-
-              <!-- Cor Personalizada (Posicionada Acima de Cores da Moda) -->
-              <div class="bs-custom-color-card">
-                <div class="bs-custom-color-info">
-                  <span class="bs-custom-color-title">Cor Personalizada</span>
-                  <span class="bs-custom-color-sub">Toque para selecionar qualquer tom no círculo</span>
-                </div>
-                <div class="bs-custom-color-picker-wrap">
-                  <input type="color" id="bs-custom-color-input" class="bs-custom-color-input" value="#B58938">
-                  <span id="bs-custom-color-preview" class="bs-custom-color-preview"></span>
-                </div>
-              </div>
-
-              <div class="bs-label-row" style="margin: 14px 0 8px">
-                <span>Cores da Moda (Catálogo):</span>
-              </div>
-              <div class="bs-color-catalog-grid">
-                ${FASHION_BALLOON_COLORS.map((c) => `
-                  <div class="bs-color-tile" data-hex="${c.hex}" data-name="${c.name}">
-                    <span class="bs-color-tile-dot" style="background:${c.hex}"></span>
-                    <span class="bs-color-tile-name">${c.name}</span>
-                  </div>
-                `).join('')}
+              <div class="bs-models-append-grid">
+                ${BALLOON_STUDIO_TEMPLATES.map((tmpl) => {
+                  const { svg } = renderArrangementSvg(tmpl.pieces, tmpl.palette, { pad: 14, hasFloorShadow: false, idPrefix: `app-${tmpl.id}-` });
+                  return `
+                    <div class="bs-append-card" data-template-id="${tmpl.id}">
+                      <div class="bs-append-card-thumb">${svg}</div>
+                      <span class="bs-append-card-title">${tmpl.name}</span>
+                    </div>
+                  `;
+                }).join('')}
               </div>
             </div>
           </div>
@@ -382,7 +477,9 @@ export class BalloonStudioModal {
             <div class="bs-sheet-grabber"></div>
             <div class="bs-sheet-header">
               <h3 class="bs-sheet-title">Lista de Balões & Material</h3>
-              <button id="bs-btn-close-shopping" class="bs-sheet-close">✕</button>
+              <button id="bs-btn-close-shopping" class="bs-sheet-close">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
             </div>
             <div class="bs-sheet-body">
               <div class="bs-shopping-summary-cards">
@@ -414,7 +511,8 @@ export class BalloonStudioModal {
 
               <div style="display:flex;gap:8px;margin-top:10px">
                 <button id="bs-btn-copy-shopping-text" class="bs-btn-conclude-saveonly" style="flex:1">
-                  📋 Copiar Lista
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <span>Copiar Lista</span>
                 </button>
                 <button id="bs-btn-share-whatsapp" class="bs-btn-whatsapp" style="flex:2;margin-top:0">
                   <span>Enviar no WhatsApp</span>
@@ -429,8 +527,10 @@ export class BalloonStudioModal {
           <div class="bs-bottom-sheet">
             <div class="bs-sheet-grabber"></div>
             <div class="bs-sheet-header">
-              <h3 class="bs-sheet-title">Ficou Lindo ✨</h3>
-              <button id="bs-btn-close-conclude" class="bs-sheet-close">✕</button>
+              <h3 class="bs-sheet-title">Arranjo Concluído</h3>
+              <button id="bs-btn-close-conclude" class="bs-sheet-close">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
             </div>
             <div class="bs-sheet-body">
               <div class="bs-conclude-preview-card" id="bs-conclude-preview-box">
@@ -450,7 +550,8 @@ export class BalloonStudioModal {
               </button>
 
               <span id="bs-link-view-shopping" class="bs-conclude-materials-link">
-                🎈 Ver Lista de Materiais (<span id="bs-link-count">0</span> balões)
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                <span>Ver Lista de Materiais (<span id="bs-link-count">0</span> balões)</span>
               </span>
             </div>
           </div>
@@ -510,7 +611,7 @@ export class BalloonStudioModal {
       this.openConcludeModal();
     });
 
-    // 3. Chips do Canvas
+    // 3. Quick Bar do Canvas
     document.getElementById('bs-quick-btn-mirror')?.addEventListener('click', () => {
       this.mirrorArrangement();
     });
@@ -519,6 +620,11 @@ export class BalloonStudioModal {
     });
     document.getElementById('bs-quick-btn-eraser')?.addEventListener('click', () => {
       this.setActiveTouchTool(this.activeTouchTool === 'eraser' ? 'adjust' : 'eraser');
+    });
+
+    // Botão cancelar modo ativo no banner
+    document.getElementById('bs-btn-cancel-tool')?.addEventListener('click', () => {
+      this.setActiveTouchTool('adjust');
     });
 
     document.getElementById('bs-btn-reset-view')?.addEventListener('click', () => {
@@ -538,7 +644,6 @@ export class BalloonStudioModal {
     });
 
     document.getElementById('bs-pill-size-btn')?.addEventListener('click', () => {
-      // Cicla entre tamanhos 5", 10", 12", 18", 24"
       const sizes: BalloonSizeInches[] = [5, 10, 12, 18, 24];
       const p = this.getActiveSelectedPiece();
       const currentSize = p?.sizeInches || 12;
@@ -554,21 +659,65 @@ export class BalloonStudioModal {
       this.deleteSelected();
     });
 
-
-
-    // 6. Dock de Abas Inferiores
+    // 6. Dock de Abas Inferiores com Comportamento de Toggle ao Re-clicar
     this.overlayEl.querySelectorAll('.bs-dock-tab').forEach((tabBtn) => {
       tabBtn.addEventListener('click', (e) => {
         const btn = e.currentTarget as HTMLElement;
-        const tab = btn.dataset.tab as 'forma' | 'cores' | 'incluir';
-        if (tab) this.setBottomTab(tab);
+        const tab = btn.dataset.tab as 'cores' | 'incluir' | 'ajustes';
+        if (tab) this.toggleBottomTab(tab);
       });
     });
 
     // 7. Gavetas Modais (Fechar e Ações)
     document.getElementById('bs-btn-close-color-sheet')?.addEventListener('click', () => this.toggleSheet('bs-color-sheet', false));
+    document.getElementById('bs-btn-close-append-sheet')?.addEventListener('click', () => this.toggleSheet('bs-append-model-sheet', false));
     document.getElementById('bs-btn-close-shopping')?.addEventListener('click', () => this.toggleSheet('bs-shopping-modal', false));
     document.getElementById('bs-btn-close-conclude')?.addEventListener('click', () => this.toggleSheet('bs-conclude-modal', false));
+
+    // Sub-abas na Gaveta de Cores
+    document.getElementById('bs-sheet-subtab-color')?.addEventListener('click', () => {
+      this.switchColorSheetSubtab('colors');
+    });
+    document.getElementById('bs-sheet-subtab-cover')?.addEventListener('click', () => {
+      this.switchColorSheetSubtab('covers');
+    });
+
+    // Remoção de capa ativa
+    document.getElementById('bs-btn-remove-active-cover')?.addEventListener('click', () => {
+      this.removeCoverFromSlot(this.editingColorSlot);
+    });
+
+    // Upload de capa da galeria
+    const coverUploadInput = document.getElementById('bs-input-cover-upload') as HTMLInputElement | null;
+    coverUploadInput?.addEventListener('change', async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      try {
+        const optimizedUrl = await optimizeUserUploadedImage(file, 1400);
+        const newCover = await addCustomCover({
+          themeName: 'Minhas Estampas',
+          name: file.name.replace(/\.[^/.]+$/, ''),
+          imageUrl: optimizedUrl,
+          targetType: 'all'
+        });
+        this.cachedCovers.unshift(newCover);
+        this.applyCoverToSlot(this.editingColorSlot, newCover.imageUrl, newCover.name);
+      } catch (err) {
+        console.error('Falha ao importar capa da galeria:', err);
+      }
+      if (coverUploadInput) coverUploadInput.value = '';
+    });
+
+    // Clique nos cards de Adicionar Arranjo Modelo
+    this.overlayEl.querySelectorAll('.bs-append-card').forEach((card) => {
+      card.addEventListener('click', (e) => {
+        const target = e.currentTarget as HTMLElement;
+        const id = target.dataset.templateId;
+        if (id) {
+          this.appendModelTemplate(id);
+        }
+      });
+    });
 
     document.getElementById('bs-toggle-spare-checkbox')?.addEventListener('change', (e) => {
       this.includeSpareBalloons = (e.target as HTMLInputElement).checked;
@@ -1082,6 +1231,12 @@ export class BalloonStudioModal {
   // ----------------------------------------------------------------------
 
   private syncPaletteSwatches(): void {
+    const strip = document.getElementById('bs-palette-strip-bar');
+    if (strip) {
+      // Exibe a barra de cores APENAS quando a aba Cores estiver aberta
+      strip.style.display = (this.activeBottomTab === 'cores' && this.isBottomDrawerOpen) ? 'flex' : 'none';
+    }
+
     const container = document.getElementById('bs-swatches-container');
     if (!container) return;
 
@@ -1089,12 +1244,20 @@ export class BalloonStudioModal {
     const activeSlots = allSlots.slice(0, this.activeColorCount);
     container.innerHTML = activeSlots.map((s) => {
       const hex = (this.palette as any)[s] || (s === 'E' ? '#f8fafc' : '#ffffff');
-      const name = this.palette.names?.[s] || `Cor ${s}`;
+      const hasCover = Boolean(this.palette.covers && this.palette.covers[s]);
+      const coverUrl = this.palette.covers?.[s];
+      const name = hasCover
+        ? (this.palette.coverNames?.[s] || `Capa ${s}`)
+        : (this.palette.names?.[s] || `Cor ${s}`);
       const activeClass = this.activeColorSlot === s ? 'active' : '';
+
+      const circleStyle = hasCover
+        ? `background-image: url('${coverUrl}'); background-size: cover; background-position: center; border: 1.5px solid #d4af37;`
+        : `background: ${hex};`;
 
       return `
         <div class="bs-palette-swatch ${activeClass}" data-slot="${s}" title="Família ${s} (${name})">
-          <span class="bs-swatch-circle" style="background:${hex}"></span>
+          <span class="bs-swatch-circle" style="${circleStyle}"></span>
           <span class="bs-swatch-name">${name}</span>
         </div>
       `;
@@ -1112,13 +1275,17 @@ export class BalloonStudioModal {
     });
   }
 
-  private openColorSheet(slot: BalloonSlot): void {
+  // ----------------------------------------------------------------------
+  // GAVETA DE CORES / CAPAS DE TECIDO
+  // ----------------------------------------------------------------------
+
+  private async openColorSheet(slot: BalloonSlot): Promise<void> {
     this.editingColorSlot = slot;
     const titleEl = document.getElementById('bs-color-sheet-title');
-    const currentName = this.palette.names?.[slot as 'A' | 'B' | 'C' | 'D'] || `Slot ${slot}`;
-    if (titleEl) titleEl.textContent = `Editar ${currentName} (${slot})`;
+    const currentName = this.palette.names?.[slot as 'A' | 'B' | 'C' | 'D' | 'E'] || `Cor ${slot}`;
+    if (titleEl) titleEl.textContent = `Editar Família ${slot} (${currentName})`;
 
-    const currentFin = this.palette.finishes?.[slot as 'A' | 'B' | 'C' | 'D'] || 'satin';
+    const currentFin = this.palette.finishes?.[slot as 'A' | 'B' | 'C' | 'D' | 'E'] || 'satin';
     this.overlayEl?.querySelectorAll('.bs-finish-btn-chip').forEach((c) => {
       c.classList.toggle('active', (c as HTMLElement).dataset.finish === currentFin);
     });
@@ -1126,13 +1293,142 @@ export class BalloonStudioModal {
     const customInput = document.getElementById('bs-custom-color-input') as HTMLInputElement | null;
     if (customInput) customInput.value = (this.palette as any)[slot] || '#c97a8e';
 
+    // Se a família já tiver capa aplicada, abre direto na aba de Capa
+    const hasCover = Boolean(this.palette.covers && this.palette.covers[slot]);
+    this.switchColorSheetSubtab(hasCover ? 'covers' : 'colors');
+    await this.renderCoverPickerInSheet();
+
     this.toggleSheet('bs-color-sheet', true);
+  }
+
+  private switchColorSheetSubtab(subtab: 'colors' | 'covers'): void {
+    this.colorSheetSubtab = subtab;
+    const btnColor = document.getElementById('bs-sheet-subtab-color');
+    const btnCover = document.getElementById('bs-sheet-subtab-cover');
+    const panelColor = document.getElementById('bs-sheet-panel-colors');
+    const panelCover = document.getElementById('bs-sheet-panel-covers');
+
+    if (btnColor) btnColor.classList.toggle('active', subtab === 'colors');
+    if (btnCover) btnCover.classList.toggle('active', subtab === 'covers');
+    if (panelColor) panelColor.style.display = subtab === 'colors' ? 'block' : 'none';
+    if (panelCover) panelCover.style.display = subtab === 'covers' ? 'block' : 'none';
+  }
+
+  private async renderCoverPickerInSheet(): Promise<void> {
+    const slot = this.editingColorSlot;
+    const activeCoverUrl = this.palette.covers?.[slot];
+    const activeCoverName = this.palette.coverNames?.[slot] || 'Capa Personalizada';
+
+    const statusCard = document.getElementById('bs-active-cover-status');
+    const statusThumb = document.getElementById('bs-active-cover-thumb');
+    const statusName = document.getElementById('bs-active-cover-name');
+
+    if (activeCoverUrl) {
+      if (statusCard) statusCard.style.display = 'flex';
+      if (statusThumb) statusThumb.style.backgroundImage = `url('${activeCoverUrl}')`;
+      if (statusName) statusName.textContent = activeCoverName;
+    } else {
+      if (statusCard) statusCard.style.display = 'none';
+    }
+
+    if (this.cachedCovers.length === 0) {
+      try {
+        this.cachedCovers = await getAllCovers();
+      } catch (err) {
+        console.warn('Erro ao carregar capas:', err);
+      }
+    }
+
+    const grid = document.getElementById('bs-sheet-covers-grid');
+    if (!grid) return;
+
+    grid.innerHTML = `
+      <div id="bs-card-upload-cover" class="bs-cover-tile bs-cover-tile-upload">
+        <div class="bs-cover-tile-thumb" style="display:flex;align-items:center;justify-content:center;background:transparent;border:none">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </div>
+        <span class="bs-cover-tile-name">Nova da Galeria</span>
+        <input type="file" id="bs-input-cover-upload" accept="image/*" style="display:none">
+      </div>
+    ` + this.cachedCovers.map((cover) => {
+      const isSelected = activeCoverUrl === cover.imageUrl;
+      return `
+        <div class="bs-cover-tile ${isSelected ? 'active' : ''}" data-cover-url="${cover.imageUrl}" data-cover-name="${cover.name}">
+          <div class="bs-cover-tile-thumb" style="background-image:url('${cover.imageUrl}')"></div>
+          <span class="bs-cover-tile-name">${cover.name}</span>
+        </div>
+      `;
+    }).join('');
+
+    // Vincula upload de arquivo
+    const uploadBtn = document.getElementById('bs-card-upload-cover');
+    const uploadInput = document.getElementById('bs-input-cover-upload') as HTMLInputElement | null;
+    uploadBtn?.addEventListener('click', () => uploadInput?.click());
+    uploadInput?.addEventListener('change', async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      try {
+        const optimizedUrl = await optimizeUserUploadedImage(file, 1400);
+        const newCover = await addCustomCover({
+          themeName: 'Minhas Estampas',
+          name: file.name.replace(/\.[^/.]+$/, ''),
+          imageUrl: optimizedUrl,
+          targetType: 'all'
+        });
+        this.cachedCovers.unshift(newCover);
+        this.applyCoverToSlot(this.editingColorSlot, newCover.imageUrl, newCover.name);
+      } catch (err) {
+        console.error('Falha ao importar capa:', err);
+      }
+      if (uploadInput) uploadInput.value = '';
+    });
+
+    // Vincula seleção de capas existentes
+    grid.querySelectorAll('.bs-cover-tile[data-cover-url]').forEach((tile) => {
+      tile.addEventListener('click', (e) => {
+        const el = e.currentTarget as HTMLElement;
+        const url = el.dataset.coverUrl;
+        const name = el.dataset.coverName || 'Capa';
+        if (url) {
+          this.applyCoverToSlot(this.editingColorSlot, url, name);
+          this.toggleSheet('bs-color-sheet', false);
+        }
+      });
+    });
+  }
+
+  private applyCoverToSlot(slot: BalloonSlot, coverUrl: string, name: string): void {
+    if (!this.palette.covers) this.palette.covers = {};
+    if (!this.palette.coverNames) this.palette.coverNames = {};
+    this.palette.covers[slot] = coverUrl;
+    this.palette.coverNames[slot] = name;
+
+    this.saveHistory();
+    this.renderCanvas();
+    this.syncPaletteSwatches();
+    this.renderCoverPickerInSheet();
+  }
+
+  private removeCoverFromSlot(slot: BalloonSlot): void {
+    if (this.palette.covers) delete this.palette.covers[slot];
+    if (this.palette.coverNames) delete this.palette.coverNames[slot];
+
+    this.saveHistory();
+    this.renderCanvas();
+    this.syncPaletteSwatches();
+    this.renderCoverPickerInSheet();
   }
 
   private updateSlotColorAndName(slot: BalloonSlot, hex: string, name: string): void {
     (this.palette as any)[slot] = hex;
-    if (!this.palette.names) this.palette.names = { A: '', B: '', C: '', D: '' };
-    this.palette.names[slot as 'A' | 'B' | 'C' | 'D'] = name;
+    if (!this.palette.names) this.palette.names = { A: '', B: '', C: '', D: '', E: '' };
+    this.palette.names[slot as 'A' | 'B' | 'C' | 'D' | 'E'] = name;
+
+    // Se tinha capa associada, desativa para usar a cor selecionada
+    if (this.palette.covers && this.palette.covers[slot]) {
+      delete this.palette.covers[slot];
+      if (this.palette.coverNames) delete this.palette.coverNames[slot];
+    }
 
     this.saveHistory();
     this.renderCanvas();
@@ -1141,10 +1437,9 @@ export class BalloonStudioModal {
   }
 
   private updateSlotFinish(slot: BalloonSlot, finish: BalloonFinish): void {
-    if (!this.palette.finishes) this.palette.finishes = { A: 'satin', B: 'satin', C: 'chrome', D: 'matte' };
-    this.palette.finishes[slot as 'A' | 'B' | 'C' | 'D'] = finish;
+    if (!this.palette.finishes) this.palette.finishes = { A: 'satin', B: 'satin', C: 'chrome', D: 'matte', E: 'satin' };
+    this.palette.finishes[slot as 'A' | 'B' | 'C' | 'D' | 'E'] = finish;
 
-    // Atualiza o acabamento de todas as peças pertencentes a esta família
     this.pieces.forEach((p) => {
       if (p.slot === slot) p.finish = finish;
     });
@@ -1155,68 +1450,62 @@ export class BalloonStudioModal {
   }
 
   // ----------------------------------------------------------------------
-  // DOCK DE 3 ABAS: MODELOS & FORMA, CORES, RETOQUES
+  // DOCK DE 3 ABAS COM TOGGLE: CORES | INCLUIR | AJUSTES
   // ----------------------------------------------------------------------
 
-  private setBottomTab(tab: 'forma' | 'cores' | 'incluir'): void {
+  public toggleBottomTab(tab: 'cores' | 'incluir' | 'ajustes'): void {
+    if (this.isBottomDrawerOpen && this.activeBottomTab === tab) {
+      this.closeBottomDrawer();
+    } else {
+      this.openBottomDrawer(tab);
+    }
+  }
+
+  public closeBottomDrawer(): void {
+    this.isBottomDrawerOpen = false;
+    this.overlayEl?.querySelectorAll('.bs-dock-tab').forEach((b) => b.classList.remove('active'));
+    const panel = document.getElementById('bs-tab-active-panel');
+    if (panel) panel.style.display = 'none';
+
+    const strip = document.getElementById('bs-palette-strip-bar');
+    if (strip) strip.style.display = 'none';
+
+    // Ao fechar a gaveta, o modo de inserção é desativado voltando para ajustar
+    if (this.activeTouchTool !== 'adjust' && this.activeTouchTool !== 'eraser') {
+      this.setActiveTouchTool('adjust');
+    }
+  }
+
+  public openBottomDrawer(tab: 'cores' | 'incluir' | 'ajustes'): void {
+    this.isBottomDrawerOpen = true;
     this.activeBottomTab = tab;
     this.overlayEl?.querySelectorAll('.bs-dock-tab').forEach((b) => {
       const btn = b as HTMLElement;
       btn.classList.toggle('active', btn.dataset.tab === tab);
     });
+
+    const panel = document.getElementById('bs-tab-active-panel');
+    if (panel) panel.style.display = 'block';
+
+    this.syncPaletteSwatches();
     this.renderTabActivePanel();
+  }
+
+  private setBottomTab(tab: 'cores' | 'incluir' | 'ajustes'): void {
+    this.openBottomDrawer(tab);
   }
 
   private renderTabActivePanel(): void {
     const panel = document.getElementById('bs-tab-active-panel');
     if (!panel) return;
 
-    if (this.activeBottomTab === 'forma') {
-      panel.innerHTML = `
-        <div class="bs-panel-forma">
-          <div class="bs-label-row">
-            <span>Volume do Arranjo:</span>
-            <em>${this.currentVolumeLevel === 'enxuto' ? 'Enxuto' : (this.currentVolumeLevel === 'cheio' ? 'Super Cheio' : 'Padrão')}</em>
-          </div>
-          <div class="bs-segmented-control">
-            <button class="bs-seg-btn ${this.currentVolumeLevel === 'enxuto' ? 'active' : ''}" data-volume="enxuto">Enxuto</button>
-            <button class="bs-seg-btn ${this.currentVolumeLevel === 'padrao' ? 'active' : ''}" data-volume="padrao">Padrão</button>
-            <button class="bs-seg-btn ${this.currentVolumeLevel === 'cheio' ? 'active' : ''}" data-volume="cheio">Super Cheio</button>
-          </div>
-
-          <div class="bs-actions-forma-grid">
-            <button id="bs-btn-forma-mirror" class="bs-btn-action-forma">
-              <span>⇄ Inverter</span>
-            </button>
-            <button id="bs-btn-forma-variar" class="bs-btn-action-forma" title="Sorteia variações de cores e harmonia">
-              <span>🎲 Variar</span>
-            </button>
-            <button id="bs-btn-forma-trocar" class="bs-btn-action-forma">
-              <span>✦ Trocar Base</span>
-            </button>
-          </div>
-        </div>
-      `;
-
-      panel.querySelectorAll('.bs-seg-btn').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-          const vol = (e.currentTarget as HTMLElement).dataset.volume as any;
-          if (vol) this.setVolumeLevel(vol);
-        });
-      });
-
-      document.getElementById('bs-btn-forma-mirror')?.addEventListener('click', () => this.mirrorArrangement());
-      document.getElementById('bs-btn-forma-variar')?.addEventListener('click', () => this.variateColorsAndSizes());
-      document.getElementById('bs-btn-forma-trocar')?.addEventListener('click', () => this.setScreen('gallery'));
-      return;
-    }
-
+    // ABA 1: CORES
     if (this.activeBottomTab === 'cores') {
       panel.innerHTML = `
         <div class="bs-panel-cores">
           <div class="bs-label-row">
-            <span>Quantidade de Cores no Arranjo:</span>
-            <em id="bs-active-color-count-label">${this.activeColorCount} cores</em>
+            <span>Quantidade de Cores:</span>
+            <em>${this.activeColorCount} cores ativas</em>
           </div>
           <div class="bs-segmented-control" id="bs-color-count-selector">
             <button class="bs-seg-btn ${this.activeColorCount === 2 ? 'active' : ''}" data-color-count="2">2 Cores</button>
@@ -1255,7 +1544,6 @@ export class BalloonStudioModal {
         </div>
       `;
 
-      // Seleção de Quantidade de Cores (2 a 5)
       panel.querySelectorAll('#bs-color-count-selector .bs-seg-btn').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           const count = Number((e.currentTarget as HTMLElement).dataset.colorCount);
@@ -1265,7 +1553,6 @@ export class BalloonStudioModal {
         });
       });
 
-      // Paletas Prontas
       panel.querySelectorAll('.bs-preset-card').forEach((card) => {
         card.addEventListener('click', (e) => {
           const id = (e.currentTarget as HTMLElement).dataset.presetId;
@@ -1274,7 +1561,6 @@ export class BalloonStudioModal {
         });
       });
 
-      // Modo de Distribuição
       panel.querySelectorAll('.bs-seg-btn[data-mode]').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           const mode = (e.currentTarget as HTMLElement).dataset.mode as any;
@@ -1284,12 +1570,114 @@ export class BalloonStudioModal {
       return;
     }
 
+    // ABA 2: INCLUIR (MEIO, DESTACADO)
     if (this.activeBottomTab === 'incluir') {
       panel.innerHTML = `
         <div class="bs-panel-incluir">
-          <!-- 1. Estrutura de Fundo (Sketch Guia) -->
           <div class="bs-label-row">
-            <span>Estrutura / Painel de Fundo:</span>
+            <span>Adicionar Peças ao Arranjo:</span>
+            <em>Toque para posicionar ou clique em Inserir</em>
+          </div>
+          <div class="bs-elements-catalog-grid">
+            <!-- 5 polegadas -->
+            <div class="bs-element-card ${this.activeTouchTool === 'balloon-5' ? 'active' : ''}" data-tool="balloon-5">
+              <div class="bs-elem-thumb-balloon bs-size-5"></div>
+              <div class="bs-elem-info">
+                <strong class="bs-elem-title">5" Detalhe</strong>
+                <span class="bs-elem-sub">Ponto de luz</span>
+              </div>
+              <button class="bs-elem-btn-insert-now" data-action="insert-center" data-type="balloon-5">+ Inserir</button>
+            </div>
+
+            <!-- 10 polegadas -->
+            <div class="bs-element-card ${this.activeTouchTool === 'balloon-10' ? 'active' : ''}" data-tool="balloon-10">
+              <div class="bs-elem-thumb-balloon bs-size-10"></div>
+              <div class="bs-elem-info">
+                <strong class="bs-elem-title">10" Médio</strong>
+                <span class="bs-elem-sub">Preenchimento</span>
+              </div>
+              <button class="bs-elem-btn-insert-now" data-action="insert-center" data-type="balloon-10">+ Inserir</button>
+            </div>
+
+            <!-- 12 polegadas -->
+            <div class="bs-element-card ${this.activeTouchTool === 'balloon-12' ? 'active' : ''}" data-tool="balloon-12">
+              <div class="bs-elem-thumb-balloon bs-size-12"></div>
+              <div class="bs-elem-info">
+                <strong class="bs-elem-title">12" Padrão</strong>
+                <span class="bs-elem-sub">Volume base</span>
+              </div>
+              <button class="bs-elem-btn-insert-now" data-action="insert-center" data-type="balloon-12">+ Inserir</button>
+            </div>
+
+            <!-- 18 polegadas -->
+            <div class="bs-element-card ${this.activeTouchTool === 'balloon-18' ? 'active' : ''}" data-tool="balloon-18">
+              <div class="bs-elem-thumb-balloon bs-size-18"></div>
+              <div class="bs-elem-info">
+                <strong class="bs-elem-title">18" Destaque</strong>
+                <span class="bs-elem-sub">Volume forte</span>
+              </div>
+              <button class="bs-elem-btn-insert-now" data-action="insert-center" data-type="balloon-18">+ Inserir</button>
+            </div>
+
+            <!-- 24 polegadas -->
+            <div class="bs-element-card ${this.activeTouchTool === 'balloon-24' ? 'active' : ''}" data-tool="balloon-24">
+              <div class="bs-elem-thumb-balloon bs-size-24"></div>
+              <div class="bs-elem-info">
+                <strong class="bs-elem-title">24" Gigante</strong>
+                <span class="bs-elem-sub">Big Balloon</span>
+              </div>
+              <button class="bs-elem-btn-insert-now" data-action="insert-center" data-type="balloon-24">+ Inserir</button>
+            </div>
+
+            <!-- Cluster Quad -->
+            <div class="bs-element-card ${this.activeTouchTool === 'cluster-quad' ? 'active' : ''}" data-tool="cluster-quad">
+              <div class="bs-elem-thumb-cluster"><i></i><i></i><i></i><i></i></div>
+              <div class="bs-elem-info">
+                <strong class="bs-elem-title">Cluster 4x</strong>
+                <span class="bs-elem-sub">Quad agrupado</span>
+              </div>
+              <button class="bs-elem-btn-insert-now" data-action="insert-center" data-type="cluster-quad">+ Inserir</button>
+            </div>
+
+            <!-- Tufo Trio -->
+            <div class="bs-element-card ${this.activeTouchTool === 'cluster-trio' ? 'active' : ''}" data-tool="cluster-trio">
+              <div class="bs-elem-thumb-trio"><i></i><i></i><i></i></div>
+              <div class="bs-elem-info">
+                <strong class="bs-elem-title">Tufo 3x</strong>
+                <span class="bs-elem-sub">Trio mini 5"</span>
+              </div>
+              <button class="bs-elem-btn-insert-now" data-action="insert-center" data-type="cluster-trio">+ Inserir</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Botão direto de inserção no centro do canvas
+      panel.querySelectorAll('.bs-elem-btn-insert-now').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const type = (e.currentTarget as HTMLElement).dataset.type as any;
+          if (type) this.insertPieceAtCenter(type);
+        });
+      });
+
+      // Clique no card arma inserção single-shot no canvas
+      panel.querySelectorAll('.bs-element-card').forEach((card) => {
+        card.addEventListener('click', (e) => {
+          const tool = (e.currentTarget as HTMLElement).dataset.tool as any;
+          if (tool) this.setActiveTouchTool(tool);
+        });
+      });
+      return;
+    }
+
+    // ABA 3: AJUSTES (PAINEL DE FUNDO, VOLUME E MODELOS)
+    if (this.activeBottomTab === 'ajustes') {
+      panel.innerHTML = `
+        <div class="bs-panel-forma">
+          <!-- 1. Estrutura / Painel de Fundo (Sketch Guia) -->
+          <div class="bs-label-row">
+            <span>Painel de Fundo:</span>
             <em id="bs-active-guide-label">${
               this.currentGhostGuide === 'roman' ? 'Romano' :
               this.currentGhostGuide === 'round' ? 'Redondo' :
@@ -1299,88 +1687,58 @@ export class BalloonStudioModal {
           </div>
           <div class="bs-guides-selector">
             <button class="bs-guide-btn-chip ${this.currentGhostGuide === 'none' ? 'active' : ''}" data-guide="none">
-              <span class="bs-guide-icon">✕</span>
+              <span class="bs-guide-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+              </span>
               <span>Nenhum</span>
             </button>
-            <button class="bs-guide-btn-chip ${this.currentGhostGuide === 'roman' ? 'active' : ''}" data-guide="roman">
-              <span class="bs-guide-icon">∩</span>
-              <span>Romano</span>
-            </button>
             <button class="bs-guide-btn-chip ${this.currentGhostGuide === 'round' ? 'active' : ''}" data-guide="round">
-              <span class="bs-guide-icon">◯</span>
+              <span class="bs-guide-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle></svg>
+              </span>
               <span>Redondo</span>
             </button>
+            <button class="bs-guide-btn-chip ${this.currentGhostGuide === 'roman' ? 'active' : ''}" data-guide="roman">
+              <span class="bs-guide-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V10a7 7 0 0 1 14 0v11"></path></svg>
+              </span>
+              <span>Romano</span>
+            </button>
             <button class="bs-guide-btn-chip ${this.currentGhostGuide === 'rect' ? 'active' : ''}" data-guide="rect">
-              <span class="bs-guide-icon">▭</span>
+              <span class="bs-guide-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="1"></rect></svg>
+              </span>
               <span>Pórtico</span>
             </button>
             <button class="bs-guide-btn-chip ${this.currentGhostGuide === 'table' ? 'active' : ''}" data-guide="table">
-              <span class="bs-guide-icon">⬭</span>
+              <span class="bs-guide-icon">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="9" rx="9" ry="4"></ellipse><path d="M3 9v6c0 2.2 4 4 9 4s9-1.8 9-4V9"></path></svg>
+              </span>
               <span>Mesa</span>
             </button>
           </div>
 
-          <!-- 2. Adicionar Balões e Peças -->
+          <!-- 2. Volume do Arranjo -->
           <div class="bs-label-row" style="margin-top:12px">
-            <span>Adicionar Peças ao Arranjo:</span>
-            <em>Toque e posicione no canvas</em>
+            <span>Volume do Arranjo:</span>
+            <em>${this.currentVolumeLevel === 'enxuto' ? 'Enxuto' : (this.currentVolumeLevel === 'cheio' ? 'Super Cheio' : 'Padrão')}</em>
           </div>
-          <div class="bs-elements-catalog-grid">
-            <div class="bs-element-card ${this.activeTouchTool === 'balloon-5' ? 'active' : ''}" data-tool="balloon-5">
-              <div class="bs-elem-thumb-balloon bs-size-5"></div>
-              <div class="bs-elem-info">
-                <strong class="bs-elem-title">5" Detalhe</strong>
-                <span class="bs-elem-sub">Ponto de luz</span>
-              </div>
-            </div>
+          <div class="bs-segmented-control">
+            <button class="bs-seg-btn ${this.currentVolumeLevel === 'enxuto' ? 'active' : ''}" data-volume="enxuto">Enxuto</button>
+            <button class="bs-seg-btn ${this.currentVolumeLevel === 'padrao' ? 'active' : ''}" data-volume="padrao">Padrão</button>
+            <button class="bs-seg-btn ${this.currentVolumeLevel === 'cheio' ? 'active' : ''}" data-volume="cheio">Super Cheio</button>
+          </div>
 
-            <div class="bs-element-card ${this.activeTouchTool === 'balloon-10' ? 'active' : ''}" data-tool="balloon-10">
-              <div class="bs-elem-thumb-balloon bs-size-10"></div>
-              <div class="bs-elem-info">
-                <strong class="bs-elem-title">10" Médio</strong>
-                <span class="bs-elem-sub">Preenchimento</span>
-              </div>
-            </div>
-
-            <div class="bs-element-card ${this.activeTouchTool === 'balloon-12' ? 'active' : ''}" data-tool="balloon-12">
-              <div class="bs-elem-thumb-balloon bs-size-12"></div>
-              <div class="bs-elem-info">
-                <strong class="bs-elem-title">12" Padrão</strong>
-                <span class="bs-elem-sub">Volume base</span>
-              </div>
-            </div>
-
-            <div class="bs-element-card ${this.activeTouchTool === 'balloon-18' ? 'active' : ''}" data-tool="balloon-18">
-              <div class="bs-elem-thumb-balloon bs-size-18"></div>
-              <div class="bs-elem-info">
-                <strong class="bs-elem-title">18" Destaque</strong>
-                <span class="bs-elem-sub">Volume forte</span>
-              </div>
-            </div>
-
-            <div class="bs-element-card ${this.activeTouchTool === 'balloon-24' ? 'active' : ''}" data-tool="balloon-24">
-              <div class="bs-elem-thumb-balloon bs-size-24"></div>
-              <div class="bs-elem-info">
-                <strong class="bs-elem-title">24" Gigante</strong>
-                <span class="bs-elem-sub">Big Balloon</span>
-              </div>
-            </div>
-
-            <div class="bs-element-card ${this.activeTouchTool === 'cluster-quad' ? 'active' : ''}" data-tool="cluster-quad">
-              <div class="bs-elem-thumb-cluster"><i></i><i></i><i></i><i></i></div>
-              <div class="bs-elem-info">
-                <strong class="bs-elem-title">Cluster 4x</strong>
-                <span class="bs-elem-sub">Quad agrupado</span>
-              </div>
-            </div>
-
-            <div class="bs-element-card ${this.activeTouchTool === 'cluster-trio' ? 'active' : ''}" data-tool="cluster-trio">
-              <div class="bs-elem-thumb-trio"><i></i><i></i><i></i></div>
-              <div class="bs-elem-info">
-                <strong class="bs-elem-title">Tufo 3x</strong>
-                <span class="bs-elem-sub">Trio mini 5"</span>
-              </div>
-            </div>
+          <!-- 3. Ações: Variar & Adicionar Arranjo Modelo -->
+          <div class="bs-actions-forma-grid" style="margin-top:12px">
+            <button id="bs-btn-forma-variar" class="bs-btn-action-forma" title="Sortear novas posições e mesclas de cores">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+              <span>Variar</span>
+            </button>
+            <button id="bs-btn-forma-append-model" class="bs-btn-action-forma" title="Somar um modelo ao arranjo atual">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Adicionar Arranjo Modelo</span>
+            </button>
           </div>
         </div>
       `;
@@ -1405,12 +1763,22 @@ export class BalloonStudioModal {
         });
       });
 
-      // Seleção de Ferramenta de Inserção de Peças
-      panel.querySelectorAll('.bs-element-card').forEach((card) => {
-        card.addEventListener('click', (e) => {
-          const tool = (e.currentTarget as HTMLElement).dataset.tool as any;
-          if (tool) this.setActiveTouchTool(tool);
+      // Volume do arranjo
+      panel.querySelectorAll('.bs-seg-btn[data-volume]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const vol = (e.currentTarget as HTMLElement).dataset.volume as any;
+          if (vol) this.setVolumeLevel(vol);
         });
+      });
+
+      // Variar com confirmação na 1ª vez
+      document.getElementById('bs-btn-forma-variar')?.addEventListener('click', () => {
+        this.variateColorsAndSizes();
+      });
+
+      // Adicionar arranjo modelo à cena
+      document.getElementById('bs-btn-forma-append-model')?.addEventListener('click', () => {
+        this.toggleSheet('bs-append-model-sheet', true);
       });
     }
   }
@@ -1429,15 +1797,29 @@ export class BalloonStudioModal {
   }
 
   private variateColorsAndSizes(): void {
+    if (!this.hasConfirmedVariar) {
+      const ok = window.confirm('Deseja redistribuir as posições e variações dos balões do arranjo?');
+      if (!ok) return;
+      this.hasConfirmedVariar = true;
+    }
+
     this.pieces = variateArrangement(this.pieces);
     this.saveHistory();
     this.renderCanvas();
   }
 
+  // Ajusta volume alterando APENAS as peças dos modelos, preservando as inseridas pelo usuário
   private setVolumeLevel(volume: 'enxuto' | 'padrao' | 'cheio'): void {
     this.currentVolumeLevel = volume;
     if (this.baseTemplatePieces.length > 0) {
-      this.pieces = applyVolumeLevel(this.baseTemplatePieces, volume);
+      const userPieces = this.pieces.filter((p) => p.source === 'user');
+      const modelTemplatePieces = this.baseTemplatePieces.filter((p) => p.source !== 'user');
+      const adjustedModelPieces = applyVolumeLevel(modelTemplatePieces, volume).map((p) => ({
+        ...p,
+        source: 'model' as const
+      }));
+
+      this.pieces = [...adjustedModelPieces, ...userPieces];
       this.saveHistory();
       this.renderCanvas();
     }
@@ -1452,8 +1834,55 @@ export class BalloonStudioModal {
     this.renderTabActivePanel();
   }
 
-  private setActiveTouchTool(tool: 'adjust' | 'base-balloon' | 'light-point' | 'big-balloon' | 'cluster-quad' | 'eraser'): void {
+  // Adiciona um modelo como novo arranjo na cena (sem substituir o existente)
+  private appendModelTemplate(templateId: string): void {
+    const tmpl = BALLOON_STUDIO_TEMPLATES.find((t) => t.id === templateId);
+    if (!tmpl) return;
+
+    let maxX = -Infinity;
+    for (const p of this.pieces) {
+      const r = BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28;
+      if (p.x + r > maxX) maxX = p.x + r;
+    }
+
+    let offsetX = 70;
+    if (this.pieces.length > 0 && maxX !== -Infinity) {
+      let tMinX = Infinity;
+      for (const p of tmpl.pieces) {
+        if (p.x < tMinX) tMinX = p.x;
+      }
+      offsetX = Math.round(maxX - tMinX + 45);
+    }
+
+    const baseId = Date.now();
+    const newPieces: BalloonPiece[] = tmpl.pieces.map((p, idx) => ({
+      ...JSON.parse(JSON.stringify(p)),
+      id: `app-${baseId}-${idx}`,
+      x: p.x + offsetX,
+      y: p.y,
+      source: 'model' as const
+    }));
+
+    this.pieces.push(...newPieces);
+    this.baseTemplatePieces.push(...newPieces);
+
+    this.toggleSheet('bs-append-model-sheet', false);
+    this.saveHistory();
+    this.computeBaseViewBox();
+    this.renderCanvas();
+    this.renderTabActivePanel();
+  }
+
+  // Atualiza a ferramenta ativa com feedback visual claro e destaque na quick bar
+  private setActiveTouchTool(tool: 'adjust' | 'eraser' | 'balloon-5' | 'balloon-10' | 'balloon-12' | 'balloon-18' | 'balloon-24' | 'cluster-quad' | 'cluster-trio' | 'base-balloon' | 'light-point' | 'big-balloon'): void {
     this.activeTouchTool = tool;
+
+    // Atualiza destaque na barra de ações rápidas: apenas ajustar ou apagar fica destacado
+    const btnAdjust = document.getElementById('bs-quick-btn-adjust');
+    const btnEraser = document.getElementById('bs-quick-btn-eraser');
+    if (btnAdjust) btnAdjust.classList.toggle('active', tool === 'adjust');
+    if (btnEraser) btnEraser.classList.toggle('active', tool === 'eraser');
+
     const banner = document.getElementById('bs-tool-active-banner');
     const text = document.getElementById('bs-tool-banner-text');
 
@@ -1461,23 +1890,35 @@ export class BalloonStudioModal {
       if (tool === 'adjust') {
         banner.style.display = 'none';
       } else {
-        banner.style.display = 'block';
-        if (tool === 'base-balloon') text.textContent = '⚪ Toque para adicionar um balão de 12"';
-        else if (tool === 'light-point') text.textContent = '✨ Toque no arco para encaixar um ponto de luz de 5"';
-        else if (tool === 'big-balloon') text.textContent = '🎈 Toque para adicionar um Big Balloon de 18"';
-        else if (tool === 'cluster-quad') text.textContent = '🫧 Toque para adicionar um cluster de 4 balões';
-        else if (tool === 'eraser') text.textContent = '🧽 Toque em qualquer balão para apagar';
+        banner.style.display = 'flex';
+        if (tool === 'eraser') {
+          text.textContent = 'Toque em qualquer balão para apagar';
+        } else if (tool === 'balloon-5' || tool === 'light-point') {
+          text.textContent = 'Toque no cenário para posicionar ponto de luz de 5"';
+        } else if (tool === 'balloon-10') {
+          text.textContent = 'Toque no cenário para posicionar balão de 10"';
+        } else if (tool === 'balloon-12' || tool === 'base-balloon') {
+          text.textContent = 'Toque no cenário para posicionar balão de 12"';
+        } else if (tool === 'balloon-18' || tool === 'big-balloon') {
+          text.textContent = 'Toque no cenário para posicionar balão de 18"';
+        } else if (tool === 'balloon-24') {
+          text.textContent = 'Toque no cenário para posicionar balão de 24"';
+        } else if (tool === 'cluster-quad') {
+          text.textContent = 'Toque no cenário para posicionar cluster de 4 balões';
+        } else if (tool === 'cluster-trio') {
+          text.textContent = 'Toque no cenário para posicionar tufo de 3 balões';
+        }
       }
     }
-    this.renderTabActivePanel();
-  }
 
-  // Inserção direta de balão base 12"
+    if (this.activeBottomTab === 'incluir' && this.isBottomDrawerOpen) {
+      this.renderTabActivePanel();
+    }
+  }
 
   // Navegação Segura no Mobile (Interceptação do Botão Voltar)
   public handleBackNavigation(): boolean {
-    // 1. Se alguma gaveta/modal interna estiver aberta, fecha apenas a gaveta
-    const openSheets = ['bs-color-sheet', 'bs-shopping-modal', 'bs-conclude-modal'];
+    const openSheets = ['bs-color-sheet', 'bs-append-model-sheet', 'bs-shopping-modal', 'bs-conclude-modal'];
     for (const sheetId of openSheets) {
       const el = document.getElementById(sheetId);
       if (el && el.style.display === 'flex') {
@@ -1486,13 +1927,11 @@ export class BalloonStudioModal {
       }
     }
 
-    // 2. Se estiver na tela de edição, volta para a galeria de modelos
     if (this.currentScreen === 'editor') {
       this.setScreen('gallery');
       return true;
     }
 
-    // 3. Se estiver na galeria inicial, fecha o estúdio com segurança
     this.close();
     return false;
   }
@@ -1514,7 +1953,6 @@ export class BalloonStudioModal {
 
     this.palette.colorCount = this.activeColorCount;
 
-    // Redistribui as peças existentes para que respeitem o novo limite de cores
     this.pieces = distributeColors(this.pieces, this.currentDistributionMode, this.activeColorCount);
     this.saveHistory();
     this.renderCanvas();
@@ -1548,55 +1986,73 @@ export class BalloonStudioModal {
     const cx = Math.round((minX + maxX) / 2);
     const baseY = Math.round(maxY + 4);
     const archW = Math.max(160, Math.min(270, Math.round((maxX - minX) * 0.95)));
-    const archH = Math.max(260, Math.min(440, Math.round((maxY - minY) * 1.05)));
-    const topY = baseY - archH;
+    const archH = Math.max(200, Math.min(380, Math.round((maxY - minY) * 1.05)));
+    const topY = Math.max(20, baseY - archH);
 
     let sketchHtml = '';
-    const strokeColor = '#a8a29e';
-    const fillColor = 'rgba(245, 245, 244, 0.40)';
+    const strokeColor = 'rgba(181, 137, 56, 0.40)';
+    const fillColor = 'rgba(181, 137, 56, 0.04)';
 
-    if (this.currentGhostGuide === 'roman') {
-      const rx = Math.round(archW / 2);
-      const left = cx - rx;
-      const right = cx + rx;
-      const arcCenterY = topY + rx;
-      const d = `M ${left} ${baseY} L ${left} ${arcCenterY} A ${rx} ${rx} 0 0 1 ${right} ${arcCenterY} L ${right} ${baseY} Z`;
+    if (this.currentGhostGuide === 'round') {
+      const r = Math.min(archW, archH) / 2 + 10;
+      const roundCy = topY + r + 15;
       sketchHtml = `
-        <path d="${d}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="7 5" opacity="0.8"/>
-        <text x="${cx}" y="${arcCenterY + 45}" fill="#78716c" font-size="11.5" font-weight="600" text-anchor="middle" opacity="0.75">Painel Romano (100×200cm)</text>
+        <g class="bs-backdrop-guide">
+          <circle cx="${cx}" cy="${roundCy}" r="${r}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="6 4"/>
+          <line x1="${cx - r * 0.4}" y1="${baseY}" x2="${cx + r * 0.4}" y2="${baseY}" stroke="${strokeColor}" stroke-width="2.5"/>
+          <line x1="${cx - 15}" y1="${roundCy + r}" x2="${cx - 15}" y2="${baseY}" stroke="${strokeColor}" stroke-width="1.8"/>
+          <line x1="${cx + 15}" y1="${roundCy + r}" x2="${cx + 15}" y2="${baseY}" stroke="${strokeColor}" stroke-width="1.8"/>
+        </g>
       `;
-    } else if (this.currentGhostGuide === 'round') {
-      const r = Math.round(Math.min(archW, archH) * 0.52);
-      const centerCY = Math.round(topY + r + 15);
+    } else if (this.currentGhostGuide === 'roman') {
+      const r = archW / 2;
+      const leftX = cx - r;
+      const rightX = cx + r;
       sketchHtml = `
-        <circle cx="${cx}" cy="${centerCY}" r="${r}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="7 5" opacity="0.8"/>
-        <line x1="${cx}" y1="${centerCY + r}" x2="${cx}" y2="${baseY}" stroke="${strokeColor}" stroke-width="2.2" stroke-dasharray="5 4" opacity="0.6"/>
-        <line x1="${cx - 36}" y1="${baseY}" x2="${cx + 36}" y2="${baseY}" stroke="${strokeColor}" stroke-width="2.5" opacity="0.7"/>
-        <text x="${cx}" y="${centerCY}" fill="#78716c" font-size="11.5" font-weight="600" text-anchor="middle" opacity="0.75">Painel Redondo (150cm)</text>
+        <g class="bs-backdrop-guide">
+          <path d="M ${leftX} ${baseY} L ${leftX} ${topY + r} A ${r} ${r} 0 0 1 ${rightX} ${topY + r} L ${rightX} ${baseY} Z" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="6 4"/>
+          <line x1="${leftX - 10}" y1="${baseY}" x2="${rightX + 10}" y2="${baseY}" stroke="${strokeColor}" stroke-width="2.5"/>
+        </g>
       `;
     } else if (this.currentGhostGuide === 'rect') {
-      const rx = Math.round(archW / 2);
-      const left = cx - rx;
+      const leftX = cx - archW / 2;
       sketchHtml = `
-        <rect x="${left}" y="${topY}" width="${archW}" height="${archH}" rx="6" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="7 5" opacity="0.8"/>
-        <text x="${cx}" y="${topY + 38}" fill="#78716c" font-size="11.5" font-weight="600" text-anchor="middle" opacity="0.75">Arco Retangular (120×210cm)</text>
+        <g class="bs-backdrop-guide">
+          <rect x="${leftX}" y="${topY}" width="${archW}" height="${archH}" rx="8" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="6 4"/>
+          <line x1="${leftX - 12}" y1="${baseY}" x2="${leftX + archW + 12}" y2="${baseY}" stroke="${strokeColor}" stroke-width="2.5"/>
+        </g>
       `;
     } else if (this.currentGhostGuide === 'table') {
-      const tw = Math.round(Math.max(140, archW * 0.75));
-      const th = Math.round(Math.min(180, archH * 0.45));
-      const tTop = baseY - th;
-      const rx = Math.round(tw / 2);
+      const tableW = Math.max(120, archW * 0.7);
+      const tableH = Math.max(70, archH * 0.35);
+      const leftX = cx - tableW / 2;
       sketchHtml = `
-        <ellipse cx="${cx}" cy="${tTop}" rx="${rx}" ry="15" fill="rgba(240, 238, 233, 0.6)" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="6 4" opacity="0.85"/>
-        <path d="M ${cx - rx} ${tTop} L ${cx - rx} ${baseY} A ${rx} 15 0 0 0 ${cx + rx} ${baseY} L ${cx + rx} ${tTop}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="6 4" opacity="0.75"/>
-        <text x="${cx}" y="${tTop + Math.round(th / 2)}" fill="#78716c" font-size="11.5" font-weight="600" text-anchor="middle" opacity="0.75">Mesa Cilíndrica (50×80cm)</text>
+        <g class="bs-backdrop-guide">
+          <rect x="${leftX}" y="${baseY - tableH}" width="${tableW}" height="${tableH}" rx="14" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="6 4"/>
+          <line x1="${leftX - 8}" y1="${baseY}" x2="${leftX + tableW + 8}" y2="${baseY}" stroke="${strokeColor}" stroke-width="2.5"/>
+        </g>
       `;
     }
 
     layer.innerHTML = sketchHtml;
   }
 
-  // Inserção de balão individual de qualquer tamanho
+  // Inserção no centro do canvas (usada pelo botão + Inserir)
+  private insertPieceAtCenter(type: 'balloon-5' | 'balloon-10' | 'balloon-12' | 'balloon-18' | 'balloon-24' | 'cluster-quad' | 'cluster-trio'): void {
+    const cx = this.baseViewBox.x + this.baseViewBox.width / 2 + this.panOffset.x;
+    const cy = this.baseViewBox.y + this.baseViewBox.height / 2 + this.panOffset.y;
+
+    if (type === 'cluster-quad') {
+      this.insertClusterQuadAt(cx, cy);
+    } else if (type === 'cluster-trio') {
+      this.insertClusterTrioAt(cx, cy);
+    } else {
+      const size = type === 'balloon-5' ? 5 : type === 'balloon-10' ? 10 : type === 'balloon-12' ? 12 : type === 'balloon-18' ? 18 : 24;
+      this.insertSingleBalloonAt(cx, cy, size as BalloonSizeInches);
+    }
+  }
+
+  // Inserção de balão individual (Single-shot: volta para ajustar imediatamente)
   private insertSingleBalloonAt(x: number, y: number, sizeInches: BalloonSizeInches): void {
     const slot = this.activeColorSlot;
     const finish = this.palette.finishes?.[slot as 'A' | 'B' | 'C' | 'D' | 'E'] || (sizeInches === 5 ? 'chrome' : 'satin');
@@ -1606,7 +2062,8 @@ export class BalloonStudioModal {
       y,
       sizeInches,
       slot,
-      finish
+      finish,
+      source: 'user'
     };
     this.pieces.push(newPiece);
     this.selectedPieceIds.clear();
@@ -1615,17 +2072,21 @@ export class BalloonStudioModal {
     this.saveHistory();
     this.renderCanvas();
     this.showBalloonPill();
+
+    // Volta para ajustar para permitir mover a peça imediatamente
+    this.setActiveTouchTool('adjust');
   }
 
+  // Inserção de cluster quad (4 balões)
   private insertClusterQuadAt(x: number, y: number): void {
     const r = 24;
     const baseId = Date.now();
     const activeSlots: BalloonSlot[] = (['A', 'B', 'C', 'D', 'E'] as const).slice(0, this.activeColorCount);
     const clusterPieces: BalloonPiece[] = [
-      { id: `c-${baseId}-1`, x: x - r, y: y - r, sizeInches: 10, slot: activeSlots[0] || 'A', finish: 'satin' },
-      { id: `c-${baseId}-2`, x: x + r, y: y - r, sizeInches: 10, slot: activeSlots[1] || 'B', finish: 'satin' },
-      { id: `c-${baseId}-3`, x: x - r, y: y + r, sizeInches: 10, slot: activeSlots[2] || activeSlots[0] || 'A', finish: 'chrome' },
-      { id: `c-${baseId}-4`, x: x + r, y: y + r, sizeInches: 10, slot: activeSlots[3] || activeSlots[1] || 'B', finish: 'matte' },
+      { id: `c-${baseId}-1`, x: x - r, y: y - r, sizeInches: 10, slot: activeSlots[0] || 'A', finish: 'satin', source: 'user' },
+      { id: `c-${baseId}-2`, x: x + r, y: y - r, sizeInches: 10, slot: activeSlots[1] || 'B', finish: 'satin', source: 'user' },
+      { id: `c-${baseId}-3`, x: x - r, y: y + r, sizeInches: 10, slot: activeSlots[2] || activeSlots[0] || 'A', finish: 'chrome', source: 'user' },
+      { id: `c-${baseId}-4`, x: x + r, y: y + r, sizeInches: 10, slot: activeSlots[3] || activeSlots[1] || 'B', finish: 'matte', source: 'user' },
     ];
     this.pieces.push(...clusterPieces);
     this.selectedPieceIds.clear();
@@ -1633,16 +2094,19 @@ export class BalloonStudioModal {
     this.saveHistory();
     this.renderCanvas();
     this.showBalloonPill();
+
+    this.setActiveTouchTool('adjust');
   }
 
+  // Inserção de tufo trio (3 balões de 5")
   private insertClusterTrioAt(x: number, y: number): void {
     const r = 14;
     const baseId = Date.now();
     const activeSlots: BalloonSlot[] = (['A', 'B', 'C', 'D', 'E'] as const).slice(0, this.activeColorCount);
     const trioPieces: BalloonPiece[] = [
-      { id: `t-${baseId}-1`, x, y: y - r * 0.8, sizeInches: 5, slot: activeSlots[0] || 'A', finish: 'chrome' },
-      { id: `t-${baseId}-2`, x: x - r * 0.8, y: y + r * 0.6, sizeInches: 5, slot: activeSlots[1] || 'B', finish: 'satin' },
-      { id: `t-${baseId}-3`, x: x + r * 0.8, y: y + r * 0.6, sizeInches: 5, slot: activeSlots[2] || activeSlots[0] || 'A', finish: 'chrome' },
+      { id: `t-${baseId}-1`, x, y: y - r * 0.8, sizeInches: 5, slot: activeSlots[0] || 'A', finish: 'chrome', source: 'user' },
+      { id: `t-${baseId}-2`, x: x - r * 0.8, y: y + r * 0.6, sizeInches: 5, slot: activeSlots[1] || 'B', finish: 'satin', source: 'user' },
+      { id: `t-${baseId}-3`, x: x + r * 0.8, y: y + r * 0.6, sizeInches: 5, slot: activeSlots[2] || activeSlots[0] || 'A', finish: 'chrome', source: 'user' },
     ];
     this.pieces.push(...trioPieces);
     this.selectedPieceIds.clear();
@@ -1650,80 +2114,16 @@ export class BalloonStudioModal {
     this.saveHistory();
     this.renderCanvas();
     this.showBalloonPill();
+
+    this.setActiveTouchTool('adjust');
   }
 
   private insertBaseBalloonAt(x: number, y: number): void {
-    const newPiece: BalloonPiece = {
-      id: `base-${Date.now()}`,
-      x,
-      y,
-      sizeInches: 12,
-      slot: this.activeColorSlot,
-      finish: this.palette.finishes?.[this.activeColorSlot as 'A' | 'B' | 'C' | 'D'] || 'satin'
-    };
-    this.pieces.push(newPiece);
-    this.selectedPieceIds.clear();
-    this.selectedPieceIds.add(newPiece.id);
-
-    this.saveHistory();
-    this.renderCanvas();
-    this.showBalloonPill();
+    this.insertSingleBalloonAt(x, y, 12);
   }
 
-  // Inserção direta de cluster quad (4 balões de 10")
   private insertClusterAt(x: number, y: number): void {
-    const r = 24;
-    const baseId = Date.now();
-    const clusterPieces: BalloonPiece[] = [
-      { id: `c-${baseId}-1`, x: x - r, y: y - r, sizeInches: 10, slot: 'A', finish: this.palette.finishes?.A || 'satin' },
-      { id: `c-${baseId}-2`, x: x + r, y: y - r, sizeInches: 10, slot: 'B', finish: this.palette.finishes?.B || 'satin' },
-      { id: `c-${baseId}-3`, x: x - r, y: y + r, sizeInches: 10, slot: 'C', finish: this.palette.finishes?.C || 'chrome' },
-      { id: `c-${baseId}-4`, x: x + r, y: y + r, sizeInches: 10, slot: 'D', finish: this.palette.finishes?.D || 'matte' },
-    ];
-    this.pieces.push(...clusterPieces);
-    this.selectedPieceIds.clear();
-    this.selectedPieceIds.add(clusterPieces[0].id);
-
-    this.saveHistory();
-    this.renderCanvas();
-    this.showBalloonPill();
-  }
-
-  // Inserção direta no ponto clicado
-  private insertPointOfLightAt(x: number, y: number): void {
-    const newPiece: BalloonPiece = {
-      id: `light-${Date.now()}`,
-      x,
-      y,
-      sizeInches: 5,
-      slot: this.activeColorSlot,
-      finish: this.palette.finishes?.[this.activeColorSlot as 'A' | 'B' | 'C' | 'D'] || 'chrome'
-    };
-    this.pieces.push(newPiece);
-    this.selectedPieceIds.clear();
-    this.selectedPieceIds.add(newPiece.id);
-
-    this.saveHistory();
-    this.renderCanvas();
-    this.showBalloonPill();
-  }
-
-  private insertBigBalloonAt(x: number, y: number): void {
-    const newPiece: BalloonPiece = {
-      id: `big-${Date.now()}`,
-      x,
-      y,
-      sizeInches: 18,
-      slot: this.activeColorSlot,
-      finish: this.palette.finishes?.[this.activeColorSlot as 'A' | 'B' | 'C' | 'D'] || 'satin'
-    };
-    this.pieces.push(newPiece);
-    this.selectedPieceIds.clear();
-    this.selectedPieceIds.add(newPiece.id);
-
-    this.saveHistory();
-    this.renderCanvas();
-    this.showBalloonPill();
+    this.insertClusterQuadAt(x, y);
   }
 
   private deletePieceById(id: string): void {
@@ -1755,18 +2155,27 @@ export class BalloonStudioModal {
   }
 
   private duplicateSelected(): void {
-    const p = this.getActiveSelectedPiece();
-    if (!p) return;
-    const newPiece: BalloonPiece = {
-      ...JSON.parse(JSON.stringify(p)),
-      id: `dup-${Date.now()}`,
-      x: p.x + 14,
-      y: p.y + 14
-    };
-    this.pieces.push(newPiece);
-    this.selectedPieceIds.clear();
-    this.selectedPieceIds.add(newPiece.id);
+    if (this.selectedPieceIds.size === 0) return;
+    const newItems: BalloonPiece[] = [];
+    const newIds = new Set<string>();
 
+    this.selectedPieceIds.forEach((id) => {
+      const p = this.pieces.find((x) => x.id === id);
+      if (p) {
+        const cloned: BalloonPiece = {
+          ...JSON.parse(JSON.stringify(p)),
+          id: `dup-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          x: p.x + 16,
+          y: p.y + 16,
+          source: 'user'
+        };
+        newItems.push(cloned);
+        newIds.add(cloned.id);
+      }
+    });
+
+    this.pieces.push(...newItems);
+    this.selectedPieceIds = newIds;
     this.saveHistory();
     this.renderCanvas();
     this.showBalloonPill();
@@ -1781,7 +2190,6 @@ export class BalloonStudioModal {
     this.renderCanvas();
     this.hideBalloonPill();
   }
-
   // ----------------------------------------------------------------------
   // COMEÇAR DO ZERO & CARREGAR TEMPLATES
   // ----------------------------------------------------------------------
@@ -1791,22 +2199,26 @@ export class BalloonStudioModal {
     const el = document.getElementById('bs-editor-current-title');
     if (el) el.textContent = this.arrangementTitle;
 
-    // Inicia com um cluster base acolhedor de 4 balões no centro
+    // Inicia com um cluster base de apoio
     this.pieces = [
-      { id: 'c1', x: 230, y: 230, sizeInches: 18, slot: 'A', finish: 'satin' },
-      { id: 'c2', x: 260, y: 220, sizeInches: 12, slot: 'B', finish: 'satin' },
-      { id: 'c3', x: 240, y: 250, sizeInches: 12, slot: 'C', finish: 'chrome' },
-      { id: 'c4', x: 270, y: 250, sizeInches: 10, slot: 'D', finish: 'matte' },
-      { id: 'c5', x: 252, y: 236, sizeInches: 5, slot: 'C', finish: 'chrome' }
+      { id: 'c1', x: 230, y: 230, sizeInches: 18, slot: 'A', finish: 'satin', source: 'user' },
+      { id: 'c2', x: 260, y: 220, sizeInches: 12, slot: 'B', finish: 'satin', source: 'user' },
+      { id: 'c3', x: 240, y: 250, sizeInches: 12, slot: 'C', finish: 'chrome', source: 'user' },
+      { id: 'c4', x: 270, y: 250, sizeInches: 10, slot: 'D', finish: 'matte', source: 'user' },
+      { id: 'c5', x: 252, y: 236, sizeInches: 5, slot: 'C', finish: 'chrome', source: 'user' }
     ];
     this.baseTemplatePieces = JSON.parse(JSON.stringify(this.pieces));
     this.selectedPieceIds.clear();
     this.history = [];
     this.historyIndex = -1;
+    this.currentGhostGuide = 'round';
+    this.currentVolumeLevel = 'padrao';
+    this.hasConfirmedVariar = false;
     this.saveHistory();
 
     this.setScreen('editor');
     this.computeBaseViewBox();
+    this.renderBackdropSketchGuide();
   }
 
   public loadTemplate(templateId: string): void {
@@ -1817,28 +2229,32 @@ export class BalloonStudioModal {
     const titleEl = document.getElementById('bs-editor-current-title');
     if (titleEl) titleEl.textContent = this.arrangementTitle;
 
-    this.pieces = JSON.parse(JSON.stringify(tmpl.pieces));
-    this.baseTemplatePieces = JSON.parse(JSON.stringify(tmpl.pieces));
+    this.pieces = JSON.parse(JSON.stringify(tmpl.pieces)).map((p: any) => ({ ...p, source: 'model' as const }));
+    this.baseTemplatePieces = JSON.parse(JSON.stringify(this.pieces));
     this.palette = JSON.parse(JSON.stringify(tmpl.palette));
     this.activeColorCount = this.palette.colorCount || 4;
     if (!this.palette.E) this.palette.E = '#ffffff';
 
     // Garante nomes amigáveis em português
     if (!this.palette.names) {
-      this.palette.names = { A: 'Rosa Quartzo', B: 'Blush Suave', C: 'Ouro Cromo', D: 'Branco Neve' };
+      this.palette.names = { A: 'Rosa Quartzo', B: 'Blush Suave', C: 'Ouro Cromo', D: 'Branco Neve', E: 'Pérola' };
     }
     if (!this.palette.finishes) {
-      this.palette.finishes = { A: 'satin', B: 'satin', C: 'chrome', D: 'matte' };
+      this.palette.finishes = { A: 'satin', B: 'satin', C: 'chrome', D: 'matte', E: 'satin' };
     }
 
     this.selectedPieceIds.clear();
     this.history = [];
     this.historyIndex = -1;
+    this.currentGhostGuide = 'round';
+    this.currentVolumeLevel = 'padrao';
+    this.hasConfirmedVariar = false;
     this.saveHistory();
 
     this.computeBaseViewBox();
     this.renderCanvas();
     this.syncPaletteSwatches();
+    this.renderBackdropSketchGuide();
     this.renderTabActivePanel();
   }
 
@@ -1933,7 +2349,7 @@ export class BalloonStudioModal {
     const totalCount = Math.ceil(stats.totalCount * mult);
     const estimatedMeters = Math.max(1, Math.round((stats.widthCm + stats.heightCm) * 0.012 * 10) / 10);
 
-    let text = `🎈 *${this.arrangementTitle}*\n`;
+    let text = `*${this.arrangementTitle}*\n`;
     text += `Medidas: ${stats.widthCm} cm × ${stats.heightCm} cm\n`;
     text += `Total: ${totalCount} balões ${this.includeSpareBalloons ? '(inclui 10% de reserva)' : ''}\n\n`;
 
@@ -1974,9 +2390,9 @@ export class BalloonStudioModal {
       await navigator.clipboard.writeText(text);
       const btn = document.getElementById('bs-btn-copy-shopping-text');
       if (btn) {
-        btn.textContent = '✓ Copiado com Sucesso!';
+        btn.textContent = 'Copiado com Sucesso!';
         setTimeout(() => {
-          btn.textContent = '📋 Copiar Lista';
+          btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> <span>Copiar Lista</span>`;
         }, 2000);
       }
     } catch (_) {

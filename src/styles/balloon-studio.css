@@ -1635,3 +1635,275 @@ input:checked + .bs-slider-round:before {
 .bs-elem-thumb-trio i:nth-child(1) { top: 0; left: 6px; }
 .bs-elem-thumb-trio i:nth-child(2) { bottom: 1px; left: 0; }
 .bs-elem-thumb-trio i:nth-child(3) { bottom: 1px; right: 0; }
+
+/* ======================================================================
+   NOVA ARQUITETURA DE ABAS & GAVETAS (CORES / INCLUIR / AJUSTES)
+   ====================================================================== */
+
+/* Destaque para a aba central Incluir */
+.bs-dock-tab-primary {
+  background: var(--primary, #B58938) !important;
+  color: #FFFFFF !important;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(181, 137, 56, 0.35);
+  transform: translateY(-4px);
+  height: 48px;
+}
+
+.bs-dock-tab-primary:hover {
+  background: var(--primary-hover, #9A7229) !important;
+  color: #FFFFFF !important;
+}
+
+.bs-dock-tab-primary.active {
+  background: #1C1917 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(28, 25, 23, 0.4);
+}
+
+.bs-dock-tab-primary .bs-dock-tab-icon {
+  color: #FFFFFF;
+}
+
+/* Banner de Ferramenta Ativa com Botão Cancelar */
+.bs-tool-banner {
+  position: absolute;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(28, 25, 23, 0.94);
+  color: #FFFFFF;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 999px;
+  z-index: 15;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  pointer-events: auto;
+  white-space: nowrap;
+  animation: bsFadeIn 0.18s ease-out;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bs-tool-cancel-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bs-tool-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Botão direto de inserir no card de elemento */
+.bs-elem-btn-insert-now {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--primary, #B58938);
+  background: #FFFFFF;
+  color: var(--primary-hover, #9A7229);
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.bs-elem-btn-insert-now:hover {
+  background: var(--primary, #B58938);
+  color: #FFFFFF;
+}
+
+/* Sub-abas na Gaveta de Cores/Capas */
+.bs-sheet-subtabs {
+  display: flex;
+  background: var(--bg-app, #FAF8F5);
+  padding: 3px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  margin-bottom: 12px;
+  gap: 4px;
+}
+
+.bs-sheet-subtab {
+  flex: 1;
+  height: 36px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-dim, #78716C);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.bs-sheet-subtab.active {
+  background: #FFFFFF;
+  color: var(--text-main, #1C1917);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Grade de Capas no Bottom Sheet */
+.bs-covers-status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--primary-light, #F7F1E3);
+  border: 1px solid rgba(181, 137, 56, 0.3);
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+
+.bs-covers-status-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bs-covers-status-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.bs-btn-remove-cover {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid #dc2626;
+  background: #ffffff;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bs-btn-remove-cover:hover {
+  background: #fef2f2;
+}
+
+.bs-covers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 10px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px 2px;
+}
+
+.bs-cover-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 6px;
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  text-align: center;
+}
+
+.bs-cover-tile:hover, .bs-cover-tile.active {
+  border-color: var(--primary, #B58938);
+  box-shadow: 0 3px 10px rgba(181, 137, 56, 0.25);
+  transform: translateY(-2px);
+}
+
+.bs-cover-tile-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  border: 1.5px solid var(--border-subtle, #E6E1DA);
+}
+
+.bs-cover-tile-upload {
+  border: 1.5px dashed var(--primary, #B58938);
+  background: var(--primary-light, #F7F1E3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-hover, #9A7229);
+}
+
+.bs-cover-tile-name {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-main, #1C1917);
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Modal de Adicionar Arranjo Modelo */
+.bs-models-append-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  max-height: 55dvh;
+  overflow-y: auto;
+  padding: 6px 2px;
+}
+
+.bs-append-card {
+  display: flex;
+  flex-direction: column;
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  border-radius: 14px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.bs-append-card:hover {
+  border-color: var(--primary, #B58938);
+  box-shadow: 0 4px 12px rgba(181, 137, 56, 0.2);
+  transform: translateY(-2px);
+}
+
+.bs-append-card-thumb {
+  height: 90px;
+  background: var(--bg-app, #FAF8F5);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.bs-append-card-thumb svg {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.bs-append-card-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-main, #1C1917);
+  margin-top: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

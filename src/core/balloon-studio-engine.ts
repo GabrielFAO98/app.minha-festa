@@ -16,6 +16,8 @@ export interface BalloonPiece {
   finish: BalloonFinish;
   glitterColor?: string;
   rotation?: number;
+  source?: 'model' | 'user';
+  coverUrl?: string;
 }
 
 export interface BalloonPaletteConfig {
@@ -28,6 +30,8 @@ export interface BalloonPaletteConfig {
   name?: string;
   names?: Partial<Record<'A' | 'B' | 'C' | 'D' | 'E', string>>;
   finishes?: Partial<Record<'A' | 'B' | 'C' | 'D' | 'E', BalloonFinish>>;
+  covers?: Partial<Record<BalloonSlot, string>>;
+  coverNames?: Partial<Record<BalloonSlot, string>>;
 }
 
 export interface ArrangementStats {
@@ -243,6 +247,19 @@ export const STUDIO_PALETTE_PRESETS: { id: string; name: string; palette: Balloo
 ];
 
 // Gera definições SVG (filtros de sombra e gradientes de cada acabamento)
+export function escapeXml(str: string): string {
+  return (str || '').replace(/[<>&'"]/g, (c) => {
+    switch (c) {
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '&': return '&amp;';
+      case "'": return '&apos;';
+      case '"': return '&quot;';
+      default: return c;
+    }
+  });
+}
+
 export function generateStudioDefs(palette: BalloonPaletteConfig, idPrefix: string = ""): string {
   let defs = `
     <filter id="${idPrefix}balloonShadow" x="-25%" y="-25%" width="150%" height="150%">
@@ -329,6 +346,14 @@ export function generateStudioDefs(palette: BalloonPaletteConfig, idPrefix: stri
       <stop offset="100%" stop-color="#ffffff" stop-opacity="0.40"/>
     </radialGradient>
     `;
+
+    if (palette.covers && palette.covers[slot]) {
+      defs += `
+    <pattern id="${idPrefix}pat_cover_${slot}" patternContentUnits="objectBoundingBox" width="1" height="1">
+      <image href="${escapeXml(palette.covers[slot]!)}" width="1" height="1" preserveAspectRatio="xMidYMid slice"/>
+    </pattern>
+      `;
+    }
   }
 
   return defs;
@@ -394,15 +419,17 @@ export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPalet
     interior = `<g>${specks}</g>`;
   }
 
+  const hasCover = Boolean(palette.covers && palette.covers[effectiveSlot]);
   const isMini = sizeInches === 5;
-  const isMatte = effectiveFinish === 'matte';
-  const isChrome = effectiveFinish === 'chrome';
+  const isMatte = !hasCover && effectiveFinish === 'matte';
+  const isChrome = !hasCover && effectiveFinish === 'chrome';
   const glareGrad = isChrome ? `url(#${idPrefix}glare_chrome)` : `url(#${idPrefix}glare_soft)`;
 
   return `
   <g id="piece-${piece.id}" class="balloon-piece" ${filterAttr}>
     ${isCrystalOrGlitter ? `<ellipse cx="${x + 2}" cy="${y + 4}" rx="${rx}" ry="${ry}" fill="#0f172a" opacity="0.12"/>` : ''}
-    <ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#${gradId})"/>
+    ${hasCover ? `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#${idPrefix}pat_cover_${effectiveSlot})"/>` : `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#${gradId})"/>`}
+    ${hasCover ? `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#${idPrefix}grad_satin_${effectiveSlot})" opacity="0.32"/>` : ''}
     ${interior}
     ${!isMatte ? `
       <ellipse cx="${gx}" cy="${gy}" rx="${gw}" ry="${gh}" transform="rotate(-25 ${gx} ${gy})" fill="${glareGrad}"/>
@@ -580,7 +607,8 @@ export function applyVolumeLevel(
       y: p.y + Math.round(Math.cos(i) * 16),
       sizeInches: p.sizeInches === 18 ? 10 : 5,
       slot: p.slot,
-      finish: p.finish
+      finish: p.finish,
+      source: 'model'
     });
   }
   return [...templatePieces, ...extra];

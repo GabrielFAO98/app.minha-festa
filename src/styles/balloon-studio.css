@@ -549,6 +549,19 @@
   filter: drop-shadow(0 10px 24px rgba(28, 25, 23, 0.08));
 }
 
+/* Cenário de Fundo Estático de Referência Real (Painel Redondo + Pessoa 1,70m + Piso) */
+#bs-backdrop-sketch-layer {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#bs-backdrop-sketch-layer text {
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}
+
 /* Estado Vazio (quando tela estiver em branco) */
 .bs-canvas-empty-state {
   position: absolute;

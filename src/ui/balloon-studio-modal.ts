@@ -357,6 +357,7 @@ export class BalloonStudioModal {
             <!-- SVG Interativo -->
             <svg id="bs-canvas-svg" class="bs-canvas-svg" xmlns="http://www.w3.org/2000/svg">
               <defs id="bs-svg-defs"></defs>
+              <g id="bs-backdrop-sketch-layer"></g>
               <g id="bs-balloons-layer"></g>
               <g id="bs-highlight-layer"></g>
             </svg>
@@ -914,6 +915,7 @@ export class BalloonStudioModal {
     if (editorScreen) editorScreen.style.display = screen === 'editor' ? 'flex' : 'none';
 
     if (screen === 'editor') {
+      this.computeBaseViewBox();
       this.renderCanvas();
       this.syncPaletteSwatches();
       // Não reabre menus automaticamente; apenas renderiza se a gaveta estiver explicitamente aberta
@@ -934,17 +936,15 @@ export class BalloonStudioModal {
   // SISTEMA DE ZOOM POR PINÇA E GESTOS NO CANVAS
   // ----------------------------------------------------------------------
 
-  // Calcula viewBox base estável baseado na envoltória inicial do modelo
+  // Calcula viewBox base estável baseado na cenografia física real (Painel + Pessoa + Piso) e no modelo
   private computeBaseViewBox(): void {
-    if (this.pieces.length === 0) {
-      this.baseViewBox = { x: 0, y: 0, width: 500, height: 500 };
-      this.zoomLevel = 1.0;
-      this.panOffset = { x: 0, y: 0 };
-      this.applyViewport();
-      return;
-    }
+    // Dimensões de referência padrão da cenografia física real (Painel Ø 1,80m + Pessoa 1,70m + Piso)
+    let minX = -30;
+    let maxX = 475;
+    let minY = -25;
+    let maxY = 525;
 
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    // Se houver balões que se expandam além do espaço de referência, expande com margem
     for (const p of this.pieces) {
       const r = BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28;
       if (p.x - r < minX) minX = p.x - r;
@@ -953,11 +953,12 @@ export class BalloonStudioModal {
       if (p.y + r > maxY) maxY = p.y + r;
     }
 
-    const pad = 60;
-    const w = Math.max(300, (maxX - minX) + pad * 2);
-    const h = Math.max(300, (maxY - minY) + pad * 2);
-    const size = Math.max(w, h);
-    const cx = (minX + maxX) / 2;
+    // Leva em conta o espaço ocupado pela barra vertical à direita (+50px de clearance)
+    const pad = 30;
+    const sceneW = (maxX - minX) + pad * 2 + 35; // clearance para a quick bar
+    const sceneH = (maxY - minY) + pad * 2;
+    const size = Math.max(sceneW, sceneH);
+    const cx = (minX + maxX) / 2 + 18;
     const cy = (minY + maxY) / 2;
 
     this.baseViewBox = {
@@ -1440,6 +1441,7 @@ export class BalloonStudioModal {
     const balloonsLayer = document.getElementById('bs-balloons-layer');
     if (balloonsLayer && defsEl) {
       balloonsLayer.innerHTML = piecesHtml;
+      this.renderStaticBackdrop();
     } else {
       const defs = generateStudioDefs(this.palette, 'bs-cv-');
       this.cachedDefsKey = paletteKey;
@@ -1449,6 +1451,7 @@ export class BalloonStudioModal {
         <g id="bs-balloons-layer">${piecesHtml}</g>
         <g id="bs-highlight-layer"></g>
       `;
+      this.renderStaticBackdrop();
     }
     
     if (updateDimensions) {
@@ -1464,6 +1467,144 @@ export class BalloonStudioModal {
     }
 
     this.renderSelectionHighlights();
+  }
+
+  // Cenário de fundo estático em escala real (Painel Redondo Ø 1,80 m + Pessoa 1,70 m + Solo)
+  private renderStaticBackdrop(): void {
+    let layer: Element | null = document.getElementById('bs-backdrop-sketch-layer');
+    if (!layer && this.canvasSvgEl) {
+      layer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      layer.id = 'bs-backdrop-sketch-layer';
+      const balloonsLayer = document.getElementById('bs-balloons-layer');
+      if (balloonsLayer) {
+        this.canvasSvgEl.insertBefore(layer, balloonsLayer);
+      } else {
+        this.canvasSvgEl.appendChild(layer);
+      }
+    }
+    if (!layer) return;
+
+    // Se já estiver renderizado, mantém estático (não reconstrói nem muda de posição com o arrasto de balões)
+    if (layer.children.length > 0) return;
+
+    const floorY = 510;
+    const panelCx = 205;
+    const panelCy = 205;
+    const panelRadius = 173; // 180cm de diâmetro (180 / 0.52 ≈ 346.1px -> r = 173px)
+    const personHeight = 327; // 170cm de altura (170 / 0.52 ≈ 326.9px)
+    const personCx = 412; // Posicionada confortavelmente ao lado do painel e com folga da barra lateral
+
+    layer.innerHTML = `
+      <!-- Piso / Linha de Chão de Referência -->
+      <g class="bs-ghost-floor">
+        <line x1="-80" y1="${floorY}" x2="520" y2="${floorY}" stroke="#8c857b" stroke-width="1.6" stroke-linecap="round"/>
+        <!-- Traços arquitetônicos de piso -->
+        ${Array.from({ length: 22 }).map((_, i) => {
+          const x = -70 + i * 26;
+          return `<line x1="${x}" y1="${floorY}" x2="${x - 9}" y2="${floorY + 7}" stroke="#a8a29e" stroke-width="1" opacity="0.65"/>`;
+        }).join('')}
+        <!-- Etiqueta do piso -->
+        <rect x="-42" y="${floorY - 18}" width="36" height="15" rx="3" fill="#FAF8F5" stroke="#d6d3d1" stroke-width="0.8"/>
+        <text x="-24" y="${floorY - 7}" fill="#8c857b" font-size="8.5" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" letter-spacing="0.5">PISO</text>
+      </g>
+
+      <!-- Painel Redondo de Festa (Ø 1,80 m) -->
+      <g class="bs-ghost-panel">
+        <!-- Aro circular com contorno de croqui -->
+        <circle cx="${panelCx}" cy="${panelCy}" r="${panelRadius}"
+          fill="rgba(255, 255, 255, 0.45)" stroke="#8c857b" stroke-width="1.8" stroke-dasharray="6 4"/>
+        <circle cx="${panelCx}" cy="${panelCy}" r="${panelRadius - 2.5}"
+          fill="none" stroke="#d6d3d1" stroke-width="0.8" opacity="0.5"/>
+
+        <!-- Estrutura de Pés / Tripé de Chão -->
+        <line x1="${panelCx}" y1="${panelCy + panelRadius}" x2="${panelCx}" y2="${floorY}" stroke="#8c857b" stroke-width="2.2"/>
+        <line x1="${panelCx}" y1="${panelCy + panelRadius + 45}" x2="${panelCx - 52}" y2="${floorY}" stroke="#8c857b" stroke-width="1.6"/>
+        <line x1="${panelCx}" y1="${panelCy + panelRadius + 45}" x2="${panelCx + 52}" y2="${floorY}" stroke="#8c857b" stroke-width="1.6"/>
+        <line x1="${panelCx - 68}" y1="${floorY}" x2="${panelCx - 36}" y2="${floorY}" stroke="#78716c" stroke-width="2.6" stroke-linecap="round"/>
+        <line x1="${panelCx + 36}" y1="${floorY}" x2="${panelCx + 68}" y2="${floorY}" stroke="#78716c" stroke-width="2.6" stroke-linecap="round"/>
+        <line x1="${panelCx - 14}" y1="${floorY}" x2="${panelCx + 14}" y2="${floorY}" stroke="#78716c" stroke-width="2.6" stroke-linecap="round"/>
+
+        <!-- Cota de Diâmetro do Painel (Ø 1,80 m) posicionada no quadrante visível livre de balões -->
+        <g class="bs-ghost-dim-panel">
+          <!-- Linha horizontal de cota -->
+          <line x1="${panelCx - panelRadius}" y1="${panelCy}" x2="${panelCx + panelRadius}" y2="${panelCy}" stroke="#a8a29e" stroke-width="1" stroke-dasharray="3 3"/>
+          <polyline points="${panelCx - panelRadius + 7} ${panelCy - 4} ${panelCx - panelRadius} ${panelCy} ${panelCx - panelRadius + 7} ${panelCy + 4}" fill="none" stroke="#78716c" stroke-width="1.2"/>
+          <polyline points="${panelCx + panelRadius - 7} ${panelCy - 4} ${panelCx + panelRadius} ${panelCy} ${panelCx + panelRadius - 7} ${panelCy + 4}" fill="none" stroke="#78716c" stroke-width="1.2"/>
+          
+          <!-- Etiqueta deslocada para a direita interna do aro (área 100% limpa e visível) -->
+          <rect x="${panelCx + 32}" y="${panelCy - 11}" width="88" height="22" rx="11"
+            fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1" filter="drop-shadow(0 2px 4px rgba(28,25,23,0.08))"/>
+          <text x="${panelCx + 76}" y="${panelCy + 4}" fill="#44403c" font-size="11" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">Ø 1,80 m</text>
+        </g>
+      </g>
+
+      <!-- Pessoa em Escala Real (1,70 m) -->
+      ${this.buildPersonSilhouetteSvg(personCx, floorY, personHeight)}
+    `;
+  }
+
+  // Gera o SVG do contorno elegante da pessoa com cota de altura (1,70 m)
+  private buildPersonSilhouetteSvg(cx: number, floorY: number, heightPx: number): string {
+    const topY = floorY - heightPx; // 510 - 327 = 183
+    const headH = Math.round(heightPx * 0.125); // ~41px
+    const headW = Math.round(headH * 0.72); // ~29px
+    const headCy = topY + headH / 2; // ~203.5
+
+    const shoulderY = topY + Math.round(heightPx * 0.16); // ~235
+    const shoulderHalfW = Math.round(heightPx * 0.085); // ~28px
+    const waistY = topY + Math.round(heightPx * 0.38); // ~307
+    const waistHalfW = Math.round(heightPx * 0.055); // ~18px
+    const hipY = topY + Math.round(heightPx * 0.50); // ~346
+    const hipHalfW = Math.round(heightPx * 0.075); // ~25px
+    const kneeY = topY + Math.round(heightPx * 0.73); // ~422
+    const ankleY = floorY - Math.round(heightPx * 0.04); // ~497
+
+    const bodyPath = `
+      M ${cx - 5} ${topY + headH}
+      C ${cx - 7} ${shoulderY - 5}, ${cx - shoulderHalfW + 4} ${shoulderY - 2}, ${cx - shoulderHalfW} ${shoulderY + 6}
+      C ${cx - shoulderHalfW - 3} ${shoulderY + 25}, ${cx - waistHalfW - 6} ${waistY - 10}, ${cx - waistHalfW} ${waistY}
+      C ${cx - waistHalfW + 2} ${waistY + 15}, ${cx - hipHalfW - 2} ${hipY - 10}, ${cx - hipHalfW} ${hipY}
+      C ${cx - hipHalfW + 1} ${hipY + 30}, ${cx - 15} ${kneeY}, ${cx - 11} ${ankleY}
+      L ${cx - 16} ${floorY}
+      L ${cx - 4} ${floorY}
+      L ${cx - 3} ${ankleY}
+      C ${cx - 2} ${kneeY + 15}, ${cx - 2} ${hipY + 35}, ${cx} ${hipY + 18}
+      C ${cx + 2} ${hipY + 35}, ${cx + 2} ${kneeY + 15}, ${cx + 3} ${ankleY}
+      L ${cx + 4} ${floorY}
+      L ${cx + 16} ${floorY}
+      L ${cx + 11} ${ankleY}
+      C ${cx + 15} ${kneeY}, ${cx + hipHalfW - 1} ${hipY + 30}, ${cx + hipHalfW} ${hipY}
+      C ${cx + hipHalfW + 2} ${hipY - 10}, ${cx + waistHalfW - 2} ${waistY + 15}, ${cx + waistHalfW} ${waistY}
+      C ${cx + waistHalfW + 6} ${waistY - 10}, ${cx + shoulderHalfW + 3} ${shoulderY + 25}, ${cx + shoulderHalfW} ${shoulderY + 6}
+      C ${cx + shoulderHalfW - 4} ${shoulderY - 2}, ${cx + 7} ${shoulderY - 5}, ${cx + 5} ${topY + headH}
+      Z
+    `.replace(/\s+/g, ' ').trim();
+
+    const dimX = cx + 44;
+
+    return `
+      <g class="bs-ghost-person">
+        <!-- Cabeça -->
+        <ellipse cx="${cx}" cy="${headCy}" rx="${Math.round(headW / 2)}" ry="${Math.round(headH / 2)}"
+          fill="rgba(255, 255, 255, 0.45)" stroke="#8c857b" stroke-width="1.6"/>
+        <!-- Silhueta anatômica proporcional -->
+        <path d="${bodyPath}"
+          fill="rgba(255, 255, 255, 0.45)" stroke="#8c857b" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+
+        <!-- Cota de Altura (1,70 m) -->
+        <g class="bs-ghost-dim-person">
+          <line x1="${cx + 22}" y1="${topY}" x2="${dimX + 8}" y2="${topY}" stroke="#a8a29e" stroke-width="1" stroke-dasharray="2 2"/>
+          <line x1="${cx + 22}" y1="${floorY}" x2="${dimX + 8}" y2="${floorY}" stroke="#a8a29e" stroke-width="1" stroke-dasharray="2 2"/>
+          <line x1="${dimX}" y1="${topY + 3}" x2="${dimX}" y2="${floorY - 3}" stroke="#78716c" stroke-width="1.2"/>
+          <polyline points="${dimX - 3.5} ${topY + 6} ${dimX} ${topY} ${dimX + 3.5} ${topY + 6}" fill="none" stroke="#78716c" stroke-width="1.2"/>
+          <polyline points="${dimX - 3.5} ${floorY - 6} ${dimX} ${floorY} ${dimX + 3.5} ${floorY - 6}" fill="none" stroke="#78716c" stroke-width="1.2"/>
+          <!-- Etiqueta com 1,70 m -->
+          <rect x="${dimX - 22}" y="${topY + Math.round(heightPx * 0.5) - 10}" width="44" height="20" rx="4"
+            fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1"/>
+          <text x="${dimX}" y="${topY + Math.round(heightPx * 0.5) + 4}" fill="#57534e" font-size="10" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">1,70 m</text>
+        </g>
+      </g>
+    `;
   }
 
   // Desenha anel de destaque dourado sutil no balão selecionado

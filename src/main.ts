@@ -33,6 +33,9 @@ async function bootstrap() {
   const exportModal = new ExportModal(canvasEngine);
   const projectsModal = new ProjectsModal(canvasEngine, confirmModal);
 
+  (window as any).canvasEngine = canvasEngine;
+  (window as any).projectsModal = projectsModal;
+
   let bottomDock: BottomDock | null = null;
   let desktopStudio: DesktopStudio | null = null;
 

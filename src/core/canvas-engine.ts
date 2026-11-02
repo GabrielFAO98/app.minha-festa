@@ -2979,29 +2979,37 @@ export class CanvasEngine {
   }
 
   exportHDImage(): string {
-    this.deselect();
     if (!this.stage) return '';
+
+    // Salva o estado de visibilidade da camada de interface (transformer e alças de seleção)
+    const wasUiVisible = this.uiLayer?.visible() ?? true;
+    if (this.uiLayer) {
+      this.uiLayer.visible(false);
+    }
 
     // Salva o zoom/pan atual do usuário
     const prevZoom = this.zoomLevel;
     const prevPanX = this.panX;
     const prevPanY = this.panY;
-
-    // Reseta temporariamente para o enquadramento completo 100%
-    this.zoomLevel = 1;
-    this.panX = 0;
-    this.panY = 0;
-    this.applyViewTransform();
-
-    const exportScale = this.baseScale;
-    const exportX = this.baseOffsetX;
-    const exportY = this.baseOffsetY;
-    const exportW = this.VIRTUAL_WIDTH * exportScale;
-    const exportH = this.VIRTUAL_HEIGHT * exportScale;
-    const pixelRatio = Math.max(1, 1 / exportScale);
+    const needsTransformReset = prevZoom !== 1 || prevPanX !== 0 || prevPanY !== 0;
 
     let dataUrl = '';
     try {
+      // Reseta temporariamente para o enquadramento completo 100%
+      if (needsTransformReset) {
+        this.zoomLevel = 1;
+        this.panX = 0;
+        this.panY = 0;
+        this.applyViewTransform();
+      }
+
+      const exportScale = this.baseScale;
+      const exportX = this.baseOffsetX;
+      const exportY = this.baseOffsetY;
+      const exportW = this.VIRTUAL_WIDTH * exportScale;
+      const exportH = this.VIRTUAL_HEIGHT * exportScale;
+      const pixelRatio = Math.max(1, 1 / exportScale);
+
       // Composição com sombra de contato realista para exportação HD
       const exportCanvas = document.createElement('canvas');
       exportCanvas.width = exportW * pixelRatio;
@@ -3037,27 +3045,33 @@ export class CanvasEngine {
 
         dataUrl = exportCanvas.toDataURL('image/png') || '';
       }
+
+      if (!dataUrl && this.stage) {
+        dataUrl = this.stage.toDataURL({
+          x: exportX,
+          y: exportY,
+          width: exportW,
+          height: exportH,
+          pixelRatio,
+          mimeType: 'image/png'
+        }) || '';
+      }
     } catch {
       dataUrl = '';
-    }
+    } finally {
+      // Restaura a visibilidade da interface mantendo a seleção intacta
+      if (this.uiLayer) {
+        this.uiLayer.visible(wasUiVisible);
+        this.uiLayer.draw();
+      }
 
-    if (!dataUrl) {
-      dataUrl = this.stage.toDataURL({
-        x: exportX,
-        y: exportY,
-        width: exportW,
-        height: exportH,
-        pixelRatio,
-        mimeType: 'image/png'
-      }) || '';
-    }
-
-    // Restaura o zoom e pan que o usuário estava usando
-    if (prevZoom !== 1 || prevPanX !== 0 || prevPanY !== 0) {
-      this.zoomLevel = prevZoom;
-      this.panX = prevPanX;
-      this.panY = prevPanY;
-      this.applyViewTransform();
+      // Restaura o zoom e pan que o usuário estava usando
+      if (needsTransformReset) {
+        this.zoomLevel = prevZoom;
+        this.panX = prevPanX;
+        this.panY = prevPanY;
+        this.applyViewTransform();
+      }
     }
 
     return dataUrl;

@@ -1,43 +1,6 @@
 // Texturas Realistas para Cenrio VERTICAL (Proporo 9:16  1080 x 1920)
 import { svgToDataUrl } from './presets-data';
 
-// 1. Parede Boiserie Clssica Branca Vertical (1080 x 1380)
-export const TEXTURE_WALL_BOISERIE = svgToDataUrl(`
-<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1380" viewBox="0 0 1080 1380">
-  <defs>
-    <radialGradient id="wallLightVert" cx="50%" cy="25%" r="75%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="60%" stop-color="#f8fafc"/>
-      <stop offset="100%" stop-color="#e2e8f0"/>
-    </radialGradient>
-    <filter id="moldingShadowVert" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="2" dy="4" stdDeviation="4" flood-color="#64748b" flood-opacity="0.16"/>
-      <feDropShadow dx="-2" dy="-2" stdDeviation="2" flood-color="#ffffff" flood-opacity="0.9"/>
-    </filter>
-  </defs>
-  <rect width="1080" height="1380" fill="url(#wallLightVert)"/>
-  <rect x="0" y="30" width="1080" height="16" fill="#e2e8f0" opacity="0.6"/>
-  <g filter="url(#moldingShadowVert)">
-    <rect x="50" y="80" width="280" height="850" rx="4" fill="none" stroke="#cbd5e1" stroke-width="7"/>
-    <rect x="68" y="98" width="244" height="814" rx="2" fill="none" stroke="#94a3b8" stroke-width="2" opacity="0.6"/>
-    <rect x="50" y="960" width="280" height="360" rx="4" fill="none" stroke="#cbd5e1" stroke-width="7"/>
-    <rect x="68" y="978" width="244" height="324" rx="2" fill="none" stroke="#94a3b8" stroke-width="2" opacity="0.6"/>
-
-    <rect x="400" y="80" width="280" height="850" rx="4" fill="none" stroke="#cbd5e1" stroke-width="7"/>
-    <rect x="418" y="98" width="244" height="814" rx="2" fill="none" stroke="#94a3b8" stroke-width="2" opacity="0.6"/>
-    <rect x="400" y="960" width="280" height="360" rx="4" fill="none" stroke="#cbd5e1" stroke-width="7"/>
-    <rect x="418" y="978" width="244" height="324" rx="2" fill="none" stroke="#94a3b8" stroke-width="2" opacity="0.6"/>
-
-    <rect x="750" y="80" width="280" height="850" rx="4" fill="none" stroke="#cbd5e1" stroke-width="7"/>
-    <rect x="768" y="98" width="244" height="814" rx="2" fill="none" stroke="#94a3b8" stroke-width="2" opacity="0.6"/>
-    <rect x="750" y="960" width="280" height="360" rx="4" fill="none" stroke="#cbd5e1" stroke-width="7"/>
-    <rect x="768" y="978" width="244" height="324" rx="2" fill="none" stroke="#94a3b8" stroke-width="2" opacity="0.6"/>
-  </g>
-  <rect x="0" y="1348" width="1080" height="32" fill="#f1f5f9"/>
-  <rect x="0" y="1348" width="1080" height="6" fill="#cbd5e1"/>
-</svg>
-`);
-
 // 2. Parede Tijolinho Branco Vertical (1080 x 1380)
 export const TEXTURE_WALL_BRICK = svgToDataUrl(`
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1380" viewBox="0 0 1080 1380">
@@ -309,14 +272,6 @@ export const REALISTIC_ENVIRONMENTS: RealisticEnvironment[] = [
     previewThumb: '/cenarios/cenario-cimento-loft.jpg'
   },
   {
-    id: 'boiserie-wood',
-    name: 'Boiserie Vetorial e Madeira',
-    category: 'Ilustrado',
-    wallTexture: TEXTURE_WALL_BOISERIE,
-    floorTexture: TEXTURE_FLOOR_WOOD,
-    previewThumb: TEXTURE_WALL_BOISERIE
-  },
-  {
     id: 'greenery-grass',
     name: 'Muro Inglês e Gramado',
     category: 'Ilustrado',
@@ -359,7 +314,6 @@ export const REALISTIC_ENVIRONMENTS: RealisticEnvironment[] = [
 ];
 
 export const WALL_OPTIONS = [
-  { id: 'wall-boiserie', name: 'Boiserie Branca', texture: TEXTURE_WALL_BOISERIE },
   { id: 'wall-greenery', name: 'Muro Inglês Verde', texture: TEXTURE_WALL_GREENERY },
   { id: 'wall-brick', name: 'Tijolinho Branco', texture: TEXTURE_WALL_BRICK },
   { id: 'wall-slats', name: 'Painel Ripado', texture: TEXTURE_WALL_WOOD_SLATS },

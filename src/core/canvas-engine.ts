@@ -13,7 +13,8 @@ import {
   createTopShadingOverlay
 } from './mask-renderer';
 import { generateOrganicBeanTableSVG, generateOrganicBeanTabletopOnlySVG, generateSkirtTableSVG, generateSkirtTablePartSVG, svgToDataUrl } from './presets-data';
-import { TEXTURE_WALL_BOISERIE, TEXTURE_FLOOR_WOOD } from './textures-data';
+import { TEXTURE_FLOOR_WOOD } from './textures-data';
+export const DEFAULT_SCENARIO_BG = '/cenarios/cenario-boiserie-madeira.jpg';
 import { generateBalloonArchDataUrl } from './balloon-generator';
 import { getItemCustomizationMode, generateModularSvgDataUrl } from './modular-svg-generator';
 
@@ -136,9 +137,9 @@ export class CanvasEngine {
 
     this.pxPerCm = this.VIRTUAL_WIDTH / 280;
 
-    this.wallTextureUrl = TEXTURE_WALL_BOISERIE;
-    this.floorTextureUrl = TEXTURE_FLOOR_WOOD;
-    this.bgImageUrl = '/cenarios/cenario-boiserie-madeira.jpg';
+    this.wallTextureUrl = '';
+    this.floorTextureUrl = '';
+    this.bgImageUrl = DEFAULT_SCENARIO_BG;
 
     this.undoStack = [];
     this.redoStack = [];
@@ -418,10 +419,13 @@ export class CanvasEngine {
     if (!this.bgLayer) return;
     this.bgLayer.destroyChildren();
 
+    // Se nenhum cenário fotográfico e nenhuma parede personalizada estiverem definidos, garante o cenário padrão
+    const effectiveBg = this.bgImageUrl || (!this.wallTextureUrl ? DEFAULT_SCENARIO_BG : null);
+
     // 1. Cenário Fotográfico Completo (Foto real com parede ~60% e chão ~40%)
-    if (this.bgImageUrl) {
+    if (effectiveBg) {
       try {
-        const bgImg = await loadImageAsync(this.bgImageUrl);
+        const bgImg = await loadImageAsync(effectiveBg);
         const bgNode = new Konva.Image({
           name: 'bg-element',
           x: 0,
@@ -431,6 +435,7 @@ export class CanvasEngine {
           image: bgImg,
           listening: false
         });
+        this.bgLayer.destroyChildren();
         this.bgLayer.add(bgNode);
         this.bgLayer.batchDraw();
         return;
@@ -462,6 +467,7 @@ export class CanvasEngine {
       listening: false
     });
 
+    this.bgLayer.destroyChildren();
     this.bgLayer.add(wallNode);
     this.bgLayer.add(floorNode);
     this.bgLayer.batchDraw();
@@ -2958,11 +2964,17 @@ export class CanvasEngine {
     this.notifyLayersChange();
   }
 
-  clearScene() {
+  clearScene(resetBackground = true) {
     this.deselect();
     this.decorLayer.destroyChildren();
     this.decorLayer.batchDraw();
     this.notifyLayersChange();
+    if (resetBackground) {
+      this.bgImageUrl = DEFAULT_SCENARIO_BG;
+      this.wallTextureUrl = '';
+      this.floorTextureUrl = '';
+      this.renderEnvironment();
+    }
     this.saveSnapshot();
   }
 

@@ -215,6 +215,7 @@ export async function saveProject(projectData: Partial<ProjectData>): Promise<Pr
     balloonData: projectData.balloonData,
     wallTextureUrl: projectData.wallTextureUrl,
     floorTextureUrl: projectData.floorTextureUrl,
+    bgImageUrl: projectData.bgImageUrl,
     thumbnailUrl: projectData.thumbnailUrl,
     updatedAt: Date.now(),
     createdAt: projectData.createdAt || Date.now()

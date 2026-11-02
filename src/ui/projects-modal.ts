@@ -1,6 +1,6 @@
 // Gerenciador de Projetos: Tela Exclusiva de Cenários e Modal de Salvar
 import { getAllProjects, getScenarioProjects, saveProject, deleteProject } from '../core/db';
-import type { CanvasEngine } from '../core/canvas-engine';
+import { CanvasEngine, DEFAULT_SCENARIO_BG } from '../core/canvas-engine';
 import type { ConfirmModal } from './confirm-modal';
 import { renameModal } from './rename-modal';
 import type { ProjectData } from '../types';
@@ -156,7 +156,7 @@ export class ProjectsModal {
         elements: elements,
         wallTextureUrl: this.canvasEngine.wallTextureUrl,
         floorTextureUrl: this.canvasEngine.floorTextureUrl,
-        bgImageUrl: this.canvasEngine.bgImageUrl || undefined,
+        bgImageUrl: this.canvasEngine.bgImageUrl || DEFAULT_SCENARIO_BG,
         thumbnailUrl: thumb
       });
 
@@ -412,6 +412,8 @@ export class ProjectsModal {
         const floor = proj.floorTextureUrl || proj.floorTexture;
         if (wall || floor) {
           await this.canvasEngine.setEnvironmentTextures(wall || null, floor || null);
+        } else {
+          await this.canvasEngine.setEnvironmentScenario(DEFAULT_SCENARIO_BG);
         }
       }
 
@@ -448,7 +450,7 @@ export class ProjectsModal {
   }
 
   executeNewProject(): void {
-    this.canvasEngine.clearScene();
+    this.canvasEngine.clearScene(true);
     this.currentProjectId = null;
     this.currentProjectTitle = 'Novo Cenário';
     this.hasCustomName = false;

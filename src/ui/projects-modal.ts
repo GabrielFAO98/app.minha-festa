@@ -162,7 +162,6 @@ export class ProjectsModal {
 
       this.hasEverBeenSaved = true;
       this.isDirty = false;
-      this.showSaveFeedback();
     } catch (err) {
       console.warn('Erro ao salvar cenário automaticamente:', err);
     }
@@ -562,19 +561,27 @@ export class ProjectsModal {
   }
 
   showSaveFeedback(): void {
-    // Feedback visual suave no botão salvar
     if (this.btnHeaderSave) {
-      const originalText = this.btnHeaderSave.innerHTML;
-      this.btnHeaderSave.classList.add('btn-saved-pulse');
-      this.btnHeaderSave.innerHTML = `
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-        <span>Salvo</span>
+      const originalHtml = `
+        <svg class="header-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+        <span class="header-btn-label">Salvar</span>
       `;
+      this.btnHeaderSave.innerHTML = `
+        <svg class="header-btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span class="header-btn-label">Salvo!</span>
+      `;
+      this.btnHeaderSave.classList.add('btn-header-save-success');
 
       setTimeout(() => {
         if (this.btnHeaderSave) {
-          this.btnHeaderSave.classList.remove('btn-saved-pulse');
-          this.btnHeaderSave.innerHTML = originalText;
+          this.btnHeaderSave.innerHTML = originalHtml;
+          this.btnHeaderSave.classList.remove('btn-header-save-success');
         }
       }, 1800);
     }

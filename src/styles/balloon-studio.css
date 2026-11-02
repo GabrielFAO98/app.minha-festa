@@ -674,24 +674,7 @@
   transform: translateY(-1px);
 }
 
-/* Banner de Ferramenta Ativa */
-.bs-tool-banner {
-  position: absolute;
-  top: 48px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(28, 25, 23, 0.92);
-  color: #FFFFFF;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 5px 14px;
-  border-radius: 999px;
-  z-index: 15;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
-  pointer-events: none;
-  white-space: nowrap;
-  animation: bsFadeIn 0.18s ease-out;
-}
+
 
 /* Pílula Flutuante no Balão Selecionado */
 .bs-balloon-pill {
@@ -1869,38 +1852,75 @@ input:checked + .bs-slider-round:before {
 
 
 
-/* Banner de Ferramenta Ativa com Botão Cancelar */
+/* Banner / Faixa de Notificação de Ferramenta Ativa (Livre de sobreposição com a barra de ações) */
 .bs-tool-banner {
-  position: absolute;
-  top: 48px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(28, 25, 23, 0.94);
-  color: #FFFFFF;
-  font-size: 11.5px;
-  font-weight: 600;
+  width: 100%;
+  min-height: 38px;
+  background: #1C1917;
+  color: #FAF8F5;
   padding: 6px 14px;
-  border-radius: 999px;
-  z-index: 15;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
-  pointer-events: auto;
-  white-space: nowrap;
-  animation: bsFadeIn 0.18s ease-out;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  z-index: 50;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
+  animation: bsSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes bsSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bs-tool-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+#bs-tool-banner-text {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #FAF8F5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
 }
 
 .bs-tool-cancel-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   color: #FFFFFF;
   font-size: 11px;
   font-weight: 700;
-  padding: 3px 9px;
+  padding: 4px 11px;
   border-radius: 999px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all var(--transition-fast, 0.18s ease);
+}
+
+.bs-tool-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.bs-tool-cancel-btn:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .bs-tool-cancel-btn:hover {

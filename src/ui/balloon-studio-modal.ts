@@ -294,6 +294,14 @@ export class BalloonStudioModal {
             </div>
           </header>
 
+          <!-- Banner / Faixa de Modo Ativo com Botão Cancelar -->
+          <div id="bs-tool-active-banner" class="bs-tool-banner" style="display:none">
+            <div class="bs-tool-banner-content">
+              <span id="bs-tool-banner-text">Toque no cenário para posicionar</span>
+            </div>
+            <button id="bs-btn-cancel-tool" class="bs-tool-cancel-btn" title="Cancelar modo">Cancelar</button>
+          </div>
+
           <!-- Centro: Canvas Interativo com Zoom Estável por Pinça -->
           <main class="bs-canvas-area" id="bs-canvas-container">
             <!-- Chips Flutuantes -->
@@ -339,11 +347,7 @@ export class BalloonStudioModal {
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </button>
 
-            <!-- Banner de Ferramenta Ativa com Botão Cancelar -->
-            <div id="bs-tool-active-banner" class="bs-tool-banner" style="display:none">
-              <span id="bs-tool-banner-text">Toque no cenário para posicionar</span>
-              <button id="bs-btn-cancel-tool" class="bs-tool-cancel-btn" title="Cancelar inserção">Cancelar</button>
-            </div>
+
 
             <!-- Estado Vazio (quando tela estiver em branco) -->
             <div id="bs-canvas-empty-state" class="bs-canvas-empty-state" style="display:none">

@@ -59,6 +59,8 @@ export class BalloonStudioModal {
   // Ferramenta ativa no canvas (Ajustar por padrão)
   private activeTouchTool:
     | 'adjust'
+    | 'multi-select'
+    | 'pan'
     | 'eraser'
     | 'balloon-5'
     | 'balloon-7'
@@ -72,14 +74,20 @@ export class BalloonStudioModal {
     | 'light-point'
     | 'big-balloon' = 'adjust';
 
-  // Aba ativa no dock inferior (Ordem: Cores | Incluir | Ajustes)
-  private activeBottomTab: 'cores' | 'incluir' | 'ajustes' = 'cores';
-  private isBottomDrawerOpen: boolean = true;
+  // Aba ativa no dock inferior (Inicia sem nenhum menu aberto)
+  private activeBottomTab: 'cores' | 'incluir' | 'ajustes' | null = null;
+  private isBottomDrawerOpen: boolean = false;
   private activeColorCount: number = 4;
-  private currentGhostGuide: 'none' | 'roman' | 'round' | 'rect' | 'table' = 'round';
   private hasConfirmedVariar: boolean = false;
   private colorSheetSubtab: 'colors' | 'covers' = 'colors';
   private cachedCovers: CoverItemRecord[] = [];
+
+  // Estado da ferramenta de arrastar tela (Pan)
+  private isPanningWithTool: boolean = false;
+  private panPointerId: number = -1;
+  private panStartClient = { x: 0, y: 0 };
+  private panStartPan = { x: 0, y: 0 };
+  private quickBarPreviewTimer: number | null = null;
 
   // Viewport e Zoom Controlado EXCLUSIVAMENTE por Pinça (Estável, sem pular ao arrastar balões)
   private baseViewBox = { x: 0, y: 0, width: 600, height: 600 };
@@ -216,22 +224,6 @@ export class BalloonStudioModal {
             </div>
 
             <div class="bs-header-right-actions">
-              <!-- Desfazer / Refazer -->
-              <div class="bs-undo-redo-group">
-                <button id="bs-btn-editor-undo" class="bs-btn-header-icon" title="Desfazer (Ctrl+Z)">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                    <path d="M3 7v6h6"></path>
-                    <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
-                  </svg>
-                </button>
-                <button id="bs-btn-editor-redo" class="bs-btn-header-icon" title="Refazer (Ctrl+Y)">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                    <path d="M21 7v6h-6"></path>
-                    <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
-                  </svg>
-                </button>
-              </div>
-
               <!-- Ação Principal de Saída -->
               <button id="bs-btn-conclude-flow" class="bs-btn-conclude" title="Concluir e usar no cenário">
                 <span>Concluir</span>
@@ -248,16 +240,33 @@ export class BalloonStudioModal {
             <div id="bs-chip-dimension" class="bs-canvas-chip bs-chip-dim">180 × 230 cm</div>
             <div id="bs-canvas-quick-bar" class="bs-canvas-quick-bar">
               <button id="bs-quick-btn-adjust" class="bs-quick-btn active" title="Modo Ajustar: selecione e arraste balões livremente">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"></path><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"></path><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"></path><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"></path></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"></path><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"></path><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"></path><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"></path></svg>
                 <span>Ajustar</span>
               </button>
+              <button id="bs-quick-btn-multiselect" class="bs-quick-btn" title="Seleção Múltipla: selecione vários balões">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="12" height="12" rx="2" stroke-dasharray="2 1.5"></rect><path d="M8 21h11a2 2 0 0 0 2-2V8"></path></svg>
+                <span>Múltiplos</span>
+              </button>
+              <button id="bs-quick-btn-pan" class="bs-quick-btn" title="Arrastar Tela: mova o cenário livremente com 1 dedo">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="5 9 2 12 5 15"></polyline><polyline points="9 5 12 2 15 5"></polyline><polyline points="15 19 12 22 9 19"></polyline><polyline points="19 9 22 12 19 15"></polyline><line x1="2" y1="12" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="22"></line></svg>
+                <span>Mover Tela</span>
+              </button>
               <button id="bs-quick-btn-eraser" class="bs-quick-btn" title="Modo Apagar: toque em qualquer balão para excluir">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path><path d="M22 21H7"></path><path d="m5 11 9 9"></path></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path><path d="M22 21H7"></path><path d="m5 11 9 9"></path></svg>
                 <span>Apagar</span>
               </button>
+              <div class="bs-quick-divider"></div>
               <button id="bs-quick-btn-mirror" class="bs-quick-btn" title="Inverter o arranjo horizontalmente (espelhar)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2 2"></line><path d="M8 7 2 12l6 5V7z" fill="currentColor" fill-opacity="0.18"></path><path d="M16 7l6 5-6 5V7z" fill="currentColor" fill-opacity="0.75"></path></svg>
                 <span>Inverter</span>
+              </button>
+              <button id="bs-quick-btn-undo" class="bs-quick-btn" title="Desfazer (Ctrl+Z)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
+                <span>Desfazer</span>
+              </button>
+              <button id="bs-quick-btn-redo" class="bs-quick-btn" title="Refazer (Ctrl+Y)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path></svg>
+                <span>Refazer</span>
               </button>
             </div>
             <button id="bs-btn-reset-view" class="bs-canvas-chip bs-chip-reset" style="display:none" title="Resetar zoom e centralizar">
@@ -288,7 +297,6 @@ export class BalloonStudioModal {
             <!-- SVG Interativo -->
             <svg id="bs-canvas-svg" class="bs-canvas-svg" xmlns="http://www.w3.org/2000/svg">
               <defs id="bs-svg-defs"></defs>
-              <g id="bs-backdrop-sketch-layer"></g>
               <g id="bs-balloons-layer"></g>
               <g id="bs-highlight-layer"></g>
             </svg>
@@ -321,19 +329,19 @@ export class BalloonStudioModal {
           </section>
 
           <!-- Painel Ativo da Aba -->
-          <section class="bs-tab-panel" id="bs-tab-active-panel">
+          <section class="bs-tab-panel" id="bs-tab-active-panel" style="display:none">
             <!-- Conteúdo injetado dinamicamente: Cores, Incluir ou Ajustes -->
           </section>
 
           <!-- Dock Inferior com 3 Abas: Cores | Incluir (Centro Destacado) | Ajustes -->
           <nav class="bs-tabs-dock">
-            <button class="bs-dock-tab ${this.activeBottomTab === 'cores' && this.isBottomDrawerOpen ? 'active' : ''}" data-tab="cores">
+            <button class="bs-dock-tab" data-tab="cores">
               <span class="bs-dock-tab-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z"></path></svg>
               </span>
               <span>Cores</span>
             </button>
-            <button class="bs-dock-tab ${this.activeBottomTab === 'incluir' && this.isBottomDrawerOpen ? 'active' : ''}" data-tab="incluir">
+            <button class="bs-dock-tab" data-tab="incluir">
               <span class="bs-dock-tab-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -342,7 +350,7 @@ export class BalloonStudioModal {
               </span>
               <span>Incluir</span>
             </button>
-            <button class="bs-dock-tab ${this.activeBottomTab === 'ajustes' && this.isBottomDrawerOpen ? 'active' : ''}" data-tab="ajustes">
+            <button class="bs-dock-tab" data-tab="ajustes">
               <span class="bs-dock-tab-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
@@ -606,22 +614,33 @@ export class BalloonStudioModal {
       }
     });
 
-    document.getElementById('bs-btn-editor-undo')?.addEventListener('click', () => this.undo());
-    document.getElementById('bs-btn-editor-redo')?.addEventListener('click', () => this.redo());
+
 
     document.getElementById('bs-btn-conclude-flow')?.addEventListener('click', () => {
       this.openConcludeModal();
     });
 
-    // 3. Quick Bar do Canvas
-    document.getElementById('bs-quick-btn-mirror')?.addEventListener('click', () => {
-      this.mirrorArrangement();
-    });
+    // 3. Quick Bar Vertical do Canvas
     document.getElementById('bs-quick-btn-adjust')?.addEventListener('click', () => {
       this.setActiveTouchTool('adjust');
     });
+    document.getElementById('bs-quick-btn-multiselect')?.addEventListener('click', () => {
+      this.setActiveTouchTool(this.activeTouchTool === 'multi-select' ? 'adjust' : 'multi-select');
+    });
+    document.getElementById('bs-quick-btn-pan')?.addEventListener('click', () => {
+      this.setActiveTouchTool(this.activeTouchTool === 'pan' ? 'adjust' : 'pan');
+    });
     document.getElementById('bs-quick-btn-eraser')?.addEventListener('click', () => {
       this.setActiveTouchTool(this.activeTouchTool === 'eraser' ? 'adjust' : 'eraser');
+    });
+    document.getElementById('bs-quick-btn-mirror')?.addEventListener('click', () => {
+      this.mirrorArrangement();
+    });
+    document.getElementById('bs-quick-btn-undo')?.addEventListener('click', () => {
+      this.undo();
+    });
+    document.getElementById('bs-quick-btn-redo')?.addEventListener('click', () => {
+      this.redo();
     });
 
     // Botão cancelar modo ativo no banner
@@ -1141,8 +1160,7 @@ export class BalloonStudioModal {
       <g id="bs-balloons-layer">${piecesHtml}</g>
       <g id="bs-highlight-layer"></g>
     `;
-    this.renderBackdropSketchGuide();
-
+    
     if (updateDimensions) {
       const dimBadge = document.getElementById('bs-chip-dimension');
       if (dimBadge) dimBadge.textContent = `${widthCm} × ${heightCm} cm`;
@@ -1190,19 +1208,29 @@ export class BalloonStudioModal {
 
   private showBalloonPill(): void {
     const pill = document.getElementById('bs-floating-balloon-pill');
-    const p = this.getActiveSelectedPiece();
-    if (!pill || !p) return;
+    if (!pill || this.selectedPieceIds.size === 0) return;
 
     const colorDot = document.getElementById('bs-pill-swatch-dot');
     const colorName = document.getElementById('bs-pill-color-name');
     const sizeText = document.getElementById('bs-pill-size-text');
 
-    const slotHex = (this.palette as any)[p.slot] || '#c97a8e';
-    const slotFriendlyName = this.palette.names?.[p.slot as 'A' | 'B' | 'C' | 'D'] || `Cor ${p.slot}`;
+    if (this.selectedPieceIds.size > 1) {
+      if (colorDot) colorDot.style.background = '#d4af37';
+      if (colorName) colorName.textContent = `${this.selectedPieceIds.size} balões`;
+      const allSelected = this.pieces.filter((p) => this.selectedPieceIds.has(p.id));
+      const firstSize = allSelected[0]?.sizeInches;
+      const allSameSize = allSelected.every((p) => p.sizeInches === firstSize);
+      if (sizeText) sizeText.textContent = allSameSize ? `${firstSize}"` : 'Grupo';
+    } else {
+      const p = this.getActiveSelectedPiece();
+      if (!p) return;
+      const slotHex = (this.palette as any)[p.slot] || '#c97a8e';
+      const slotFriendlyName = this.palette.names?.[p.slot as 'A' | 'B' | 'C' | 'D' | 'E'] || `Cor ${p.slot}`;
 
-    if (colorDot) colorDot.style.background = slotHex;
-    if (colorName) colorName.textContent = slotFriendlyName;
-    if (sizeText) sizeText.textContent = `${p.sizeInches}"`;
+      if (colorDot) colorDot.style.background = slotHex;
+      if (colorName) colorName.textContent = slotFriendlyName;
+      if (sizeText) sizeText.textContent = `${p.sizeInches}"`;
+    }
 
     pill.style.display = 'flex';
     this.updateBalloonPillPosition();
@@ -1215,13 +1243,36 @@ export class BalloonStudioModal {
 
   private updateBalloonPillPosition(): void {
     const pill = document.getElementById('bs-floating-balloon-pill');
-    const p = this.getActiveSelectedPiece();
-    if (!pill || !p || !this.canvasSvgEl || pill.style.display === 'none') return;
+    if (!pill || this.selectedPieceIds.size === 0 || !this.canvasSvgEl || pill.style.display === 'none') return;
 
-    const r = BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28;
+    const selectedPieces = this.pieces.filter((p) => this.selectedPieceIds.has(p.id));
+    if (selectedPieces.length === 0) return;
+
+    let targetX = 0;
+    let targetY = Infinity;
+
+    if (selectedPieces.length === 1) {
+      const p = selectedPieces[0];
+      const r = BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28;
+      targetX = p.x;
+      targetY = p.y - r - 8;
+    } else {
+      let minX = Infinity;
+      let maxX = -Infinity;
+      let minY = Infinity;
+      selectedPieces.forEach((p) => {
+        const r = BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28;
+        if (p.x - r < minX) minX = p.x - r;
+        if (p.x + r > maxX) maxX = p.x + r;
+        if (p.y - r < minY) minY = p.y - r;
+      });
+      targetX = (minX + maxX) / 2;
+      targetY = minY - 10;
+    }
+
     const pt = this.canvasSvgEl.createSVGPoint();
-    pt.x = p.x;
-    pt.y = p.y - r - 8;
+    pt.x = targetX;
+    pt.y = targetY;
 
     const ctm = this.canvasSvgEl.getScreenCTM();
     if (ctm) {
@@ -1415,6 +1466,7 @@ export class BalloonStudioModal {
     this.renderCanvas();
     this.syncPaletteSwatches();
     this.renderCoverPickerInSheet();
+    this.renderTabActivePanel();
   }
 
   private removeCoverFromSlot(slot: BalloonSlot): void {
@@ -1441,6 +1493,7 @@ export class BalloonStudioModal {
     this.saveHistory();
     this.renderCanvas();
     this.syncPaletteSwatches();
+    this.renderTabActivePanel();
     this.showBalloonPill();
   }
 
@@ -1745,55 +1798,12 @@ export class BalloonStudioModal {
       return;
     }
 
-    // ABA 3: AJUSTES (PAINEL DE FUNDO, VOLUME E MODELOS)
+    // ABA 3: AJUSTES (VOLUME E MODELOS)
     if (this.activeBottomTab === 'ajustes') {
       panel.innerHTML = `
         <div class="bs-panel-forma">
-          <!-- 1. Estrutura / Painel de Fundo (Sketch Guia) -->
+          <!-- 1. Volume do Arranjo -->
           <div class="bs-label-row">
-            <span>Painel de Fundo:</span>
-            <em id="bs-active-guide-label">${
-              this.currentGhostGuide === 'roman' ? 'Romano' :
-              this.currentGhostGuide === 'round' ? 'Redondo' :
-              this.currentGhostGuide === 'rect' ? 'Retangular' :
-              this.currentGhostGuide === 'table' ? 'Mesa' : 'Nenhum'
-            }</em>
-          </div>
-          <div class="bs-guides-selector">
-            <button class="bs-guide-btn-chip ${this.currentGhostGuide === 'none' ? 'active' : ''}" data-guide="none">
-              <span class="bs-guide-icon">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
-              </span>
-              <span>Nenhum</span>
-            </button>
-            <button class="bs-guide-btn-chip ${this.currentGhostGuide === 'round' ? 'active' : ''}" data-guide="round">
-              <span class="bs-guide-icon">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle></svg>
-              </span>
-              <span>Redondo</span>
-            </button>
-            <button class="bs-guide-btn-chip ${this.currentGhostGuide === 'roman' ? 'active' : ''}" data-guide="roman">
-              <span class="bs-guide-icon">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V10a7 7 0 0 1 14 0v11"></path></svg>
-              </span>
-              <span>Romano</span>
-            </button>
-            <button class="bs-guide-btn-chip ${this.currentGhostGuide === 'rect' ? 'active' : ''}" data-guide="rect">
-              <span class="bs-guide-icon">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="1"></rect></svg>
-              </span>
-              <span>Pórtico</span>
-            </button>
-            <button class="bs-guide-btn-chip ${this.currentGhostGuide === 'table' ? 'active' : ''}" data-guide="table">
-              <span class="bs-guide-icon">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="9" rx="9" ry="4"></ellipse><path d="M3 9v6c0 2.2 4 4 9 4s9-1.8 9-4V9"></path></svg>
-              </span>
-              <span>Mesa</span>
-            </button>
-          </div>
-
-          <!-- 2. Volume do Arranjo -->
-          <div class="bs-label-row" style="margin-top:12px">
             <span>Volume do Arranjo:</span>
             <em>${this.currentVolumeLevel === 'enxuto' ? 'Enxuto' : (this.currentVolumeLevel === 'cheio' ? 'Super Cheio' : 'Padrão')}</em>
           </div>
@@ -1803,8 +1813,8 @@ export class BalloonStudioModal {
             <button class="bs-seg-btn ${this.currentVolumeLevel === 'cheio' ? 'active' : ''}" data-volume="cheio">Super Cheio</button>
           </div>
 
-          <!-- 3. Ações do Arranjo (Botões amplos, sem quebras nem corte) -->
-          <div class="bs-ajustes-actions" style="margin-top:10px">
+          <!-- 2. Ações do Arranjo (Botões amplos, sem quebras nem corte) -->
+          <div class="bs-ajustes-actions" style="margin-top:12px">
             <button id="bs-btn-forma-append-model" class="bs-btn-ajuste-full" title="Somar um modelo ao arranjo atual">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
               <span>Adicionar Arranjo Modelo</span>
@@ -1816,26 +1826,6 @@ export class BalloonStudioModal {
           </div>
         </div>
       `;
-
-      // Seleção de Sketch Guia
-      panel.querySelectorAll('.bs-guide-btn-chip').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-          const guide = (e.currentTarget as HTMLElement).dataset.guide as any;
-          if (guide) {
-            this.currentGhostGuide = guide;
-            panel.querySelectorAll('.bs-guide-btn-chip').forEach((b) => b.classList.remove('active'));
-            (e.currentTarget as HTMLElement).classList.add('active');
-            const label = document.getElementById('bs-active-guide-label');
-            if (label) {
-              label.textContent = guide === 'roman' ? 'Romano' :
-                guide === 'round' ? 'Redondo' :
-                guide === 'rect' ? 'Retangular' :
-                guide === 'table' ? 'Mesa' : 'Nenhum';
-            }
-            this.renderBackdropSketchGuide();
-          }
-        });
-      });
 
       // Volume do arranjo
       panel.querySelectorAll('.bs-seg-btn[data-volume]').forEach((btn) => {
@@ -1948,13 +1938,29 @@ export class BalloonStudioModal {
   }
 
   // Atualiza a ferramenta ativa com feedback visual claro e destaque na quick bar
-  private setActiveTouchTool(tool: 'adjust' | 'eraser' | 'balloon-5' | 'balloon-7' | 'balloon-10' | 'balloon-12' | 'balloon-18' | 'balloon-24' | 'cluster-quad' | 'cluster-trio' | 'base-balloon' | 'light-point' | 'big-balloon'): void {
+
+  // Exibe as legendas da barra de ações por 2 segundos ao abrir o estúdio
+  private triggerQuickBarPreview(): void {
+    const bar = document.getElementById('bs-canvas-quick-bar');
+    if (!bar) return;
+    bar.classList.add('bs-quick-bar-preview');
+    if (this.quickBarPreviewTimer) clearTimeout(this.quickBarPreviewTimer);
+    this.quickBarPreviewTimer = window.setTimeout(() => {
+      bar.classList.remove('bs-quick-bar-preview');
+    }, 2000);
+  }
+
+  private setActiveTouchTool(tool: 'adjust' | 'multi-select' | 'pan' | 'eraser' | 'balloon-5' | 'balloon-7' | 'balloon-10' | 'balloon-12' | 'balloon-18' | 'balloon-24' | 'cluster-quad' | 'cluster-trio' | 'base-balloon' | 'light-point' | 'big-balloon'): void {
     this.activeTouchTool = tool;
 
-    // Atualiza destaque na barra de ações rápidas: apenas ajustar ou apagar fica destacado
+    // Atualiza destaque na barra de ações rápidas
     const btnAdjust = document.getElementById('bs-quick-btn-adjust');
+    const btnMulti = document.getElementById('bs-quick-btn-multiselect');
+    const btnPan = document.getElementById('bs-quick-btn-pan');
     const btnEraser = document.getElementById('bs-quick-btn-eraser');
     if (btnAdjust) btnAdjust.classList.toggle('active', tool === 'adjust');
+    if (btnMulti) btnMulti.classList.toggle('active', tool === 'multi-select');
+    if (btnPan) btnPan.classList.toggle('active', tool === 'pan');
     if (btnEraser) btnEraser.classList.toggle('active', tool === 'eraser');
 
     const banner = document.getElementById('bs-tool-active-banner');
@@ -1965,7 +1971,11 @@ export class BalloonStudioModal {
         banner.style.display = 'none';
       } else {
         banner.style.display = 'flex';
-        if (tool === 'eraser') {
+        if (tool === 'multi-select') {
+          text.textContent = 'Toque nos balões para selecionar vários';
+        } else if (tool === 'pan') {
+          text.textContent = 'Arraste com um dedo para mover o cenário';
+        } else if (tool === 'eraser') {
           text.textContent = 'Toque em qualquer balão para apagar';
         } else if (tool === 'balloon-5' || tool === 'light-point') {
           text.textContent = 'Toque no cenário para posicionar ponto de luz de 5"';
@@ -2034,83 +2044,6 @@ export class BalloonStudioModal {
     this.renderTabActivePanel();
   }
 
-  // Renderiza o esboço arquitetural/guia de fundo para apoio visual
-  private renderBackdropSketchGuide(): void {
-    const layer = document.getElementById('bs-backdrop-sketch-layer');
-    if (!layer) return;
-
-    if (this.currentGhostGuide === 'none' || this.pieces.length === 0) {
-      layer.innerHTML = '';
-      return;
-    }
-
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const p of this.pieces) {
-      const r = BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28;
-      if (p.x - r < minX) minX = p.x - r;
-      if (p.x + r > maxX) maxX = p.x + r;
-      if (p.y - r < minY) minY = p.y - r;
-      if (p.y + r > maxY) maxY = p.y + r;
-    }
-
-    if (minX === Infinity) {
-      minX = 120; maxX = 320; minY = 80; maxY = 420;
-    }
-
-    const cx = Math.round((minX + maxX) / 2);
-    const baseY = Math.round(maxY + 4);
-    const archW = Math.max(160, Math.min(270, Math.round((maxX - minX) * 0.95)));
-    const archH = Math.max(200, Math.min(380, Math.round((maxY - minY) * 1.05)));
-    const topY = Math.max(20, baseY - archH);
-
-    let sketchHtml = '';
-    const strokeColor = 'rgba(181, 137, 56, 0.40)';
-    const fillColor = 'rgba(181, 137, 56, 0.04)';
-
-    if (this.currentGhostGuide === 'round') {
-      const r = Math.min(archW, archH) / 2 + 10;
-      const roundCy = topY + r + 15;
-      sketchHtml = `
-        <g class="bs-backdrop-guide">
-          <circle cx="${cx}" cy="${roundCy}" r="${r}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="6 4"/>
-          <line x1="${cx - r * 0.4}" y1="${baseY}" x2="${cx + r * 0.4}" y2="${baseY}" stroke="${strokeColor}" stroke-width="2.5"/>
-          <line x1="${cx - 15}" y1="${roundCy + r}" x2="${cx - 15}" y2="${baseY}" stroke="${strokeColor}" stroke-width="1.8"/>
-          <line x1="${cx + 15}" y1="${roundCy + r}" x2="${cx + 15}" y2="${baseY}" stroke="${strokeColor}" stroke-width="1.8"/>
-        </g>
-      `;
-    } else if (this.currentGhostGuide === 'roman') {
-      const r = archW / 2;
-      const leftX = cx - r;
-      const rightX = cx + r;
-      sketchHtml = `
-        <g class="bs-backdrop-guide">
-          <path d="M ${leftX} ${baseY} L ${leftX} ${topY + r} A ${r} ${r} 0 0 1 ${rightX} ${topY + r} L ${rightX} ${baseY} Z" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="6 4"/>
-          <line x1="${leftX - 10}" y1="${baseY}" x2="${rightX + 10}" y2="${baseY}" stroke="${strokeColor}" stroke-width="2.5"/>
-        </g>
-      `;
-    } else if (this.currentGhostGuide === 'rect') {
-      const leftX = cx - archW / 2;
-      sketchHtml = `
-        <g class="bs-backdrop-guide">
-          <rect x="${leftX}" y="${topY}" width="${archW}" height="${archH}" rx="8" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="6 4"/>
-          <line x1="${leftX - 12}" y1="${baseY}" x2="${leftX + archW + 12}" y2="${baseY}" stroke="${strokeColor}" stroke-width="2.5"/>
-        </g>
-      `;
-    } else if (this.currentGhostGuide === 'table') {
-      const tableW = Math.max(120, archW * 0.7);
-      const tableH = Math.max(70, archH * 0.35);
-      const leftX = cx - tableW / 2;
-      sketchHtml = `
-        <g class="bs-backdrop-guide">
-          <rect x="${leftX}" y="${baseY - tableH}" width="${tableW}" height="${tableH}" rx="14" fill="${fillColor}" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="6 4"/>
-          <line x1="${leftX - 8}" y1="${baseY}" x2="${leftX + tableW + 8}" y2="${baseY}" stroke="${strokeColor}" stroke-width="2.5"/>
-        </g>
-      `;
-    }
-
-    layer.innerHTML = sketchHtml;
-  }
-
   // Inserção no centro do canvas (usada pelo botão + Inserir)
   private insertPieceAtCenter(type: 'balloon-5' | 'balloon-7' | 'balloon-10' | 'balloon-12' | 'balloon-18' | 'balloon-24' | 'cluster-quad' | 'cluster-trio'): void {
     const cx = this.baseViewBox.x + this.baseViewBox.width / 2 + this.panOffset.x;
@@ -2164,7 +2097,7 @@ export class BalloonStudioModal {
     ];
     this.pieces.push(...clusterPieces);
     this.selectedPieceIds.clear();
-    this.selectedPieceIds.add(clusterPieces[0].id);
+    clusterPieces.forEach((p) => this.selectedPieceIds.add(p.id));
     this.saveHistory();
     this.renderCanvas();
     this.showBalloonPill();
@@ -2184,7 +2117,7 @@ export class BalloonStudioModal {
     ];
     this.pieces.push(...trioPieces);
     this.selectedPieceIds.clear();
-    this.selectedPieceIds.add(trioPieces[0].id);
+    trioPieces.forEach((p) => this.selectedPieceIds.add(p.id));
     this.saveHistory();
     this.renderCanvas();
     this.showBalloonPill();
@@ -2285,15 +2218,13 @@ export class BalloonStudioModal {
     this.selectedPieceIds.clear();
     this.history = [];
     this.historyIndex = -1;
-    this.currentGhostGuide = 'round';
-    this.currentVolumeLevel = 'padrao';
+        this.currentVolumeLevel = 'padrao';
     this.hasConfirmedVariar = false;
     this.saveHistory();
 
     this.setScreen('editor');
     this.computeBaseViewBox();
-    this.renderBackdropSketchGuide();
-  }
+      }
 
   public loadTemplate(templateId: string): void {
     const tmpl = BALLOON_STUDIO_TEMPLATES.find((t) => t.id === templateId) || BALLOON_STUDIO_TEMPLATES[0];
@@ -2320,16 +2251,14 @@ export class BalloonStudioModal {
     this.selectedPieceIds.clear();
     this.history = [];
     this.historyIndex = -1;
-    this.currentGhostGuide = 'round';
-    this.currentVolumeLevel = 'padrao';
+        this.currentVolumeLevel = 'padrao';
     this.hasConfirmedVariar = false;
     this.saveHistory();
 
     this.computeBaseViewBox();
     this.renderCanvas();
     this.syncPaletteSwatches();
-    this.renderBackdropSketchGuide();
-    this.renderTabActivePanel();
+        this.renderTabActivePanel();
   }
 
   private applyPalettePreset(newPalette: BalloonPaletteConfig): void {
@@ -2337,6 +2266,7 @@ export class BalloonStudioModal {
     this.saveHistory();
     this.renderCanvas();
     this.syncPaletteSwatches();
+    this.renderTabActivePanel();
   }
 
   // ----------------------------------------------------------------------
@@ -2603,6 +2533,7 @@ export class BalloonStudioModal {
       this.palette = JSON.parse(JSON.stringify(state.palette));
       this.renderCanvas();
       this.syncPaletteSwatches();
+      this.renderTabActivePanel();
       this.showBalloonPill();
     }
   }
@@ -2615,6 +2546,7 @@ export class BalloonStudioModal {
       this.palette = JSON.parse(JSON.stringify(state.palette));
       this.renderCanvas();
       this.syncPaletteSwatches();
+      this.renderTabActivePanel();
       this.showBalloonPill();
     }
   }

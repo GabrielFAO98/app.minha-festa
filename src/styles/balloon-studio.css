@@ -1412,56 +1412,91 @@ input:checked + .bs-slider-round:before {
   color: var(--primary-hover, #9A7229);
 }
 
-/* Barra Rápida de Opções do Canvas (Ajustar, Apagar, Inverter) */
+/* Barra Vertical de Ações do Canvas (Ajustar, Múltiplos, Mover Tela, Apagar, Inverter, Desfazer, Refazer) */
 .bs-canvas-quick-bar {
   position: absolute;
   top: 10px;
   right: 12px;
-  height: 32px;
-  padding: 2px 4px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid var(--border-subtle, #E6E1DA);
-  box-shadow: 0 3px 12px rgba(28, 25, 23, 0.08);
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  z-index: 25;
   user-select: none;
+  pointer-events: auto;
 }
 
 .bs-quick-btn {
-  height: 26px;
-  padding: 0 9px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0 8px;
   border-radius: 999px;
-  border: none;
-  background: transparent;
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(28, 25, 23, 0.08);
   color: var(--text-muted, #57534E);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   cursor: pointer;
-  transition: all var(--transition-fast, 0.18s ease);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
 }
 
-.bs-quick-btn:hover {
-  background: rgba(0, 0, 0, 0.04);
-  color: var(--text-main, #1C1917);
+.bs-quick-btn svg {
+  flex-shrink: 0;
 }
 
+/* Legenda do botão oculta por padrão */
+.bs-quick-btn span {
+  display: none;
+  margin-left: 1px;
+}
+
+.bs-quick-btn:hover {
+  background: #FFFFFF;
+  color: var(--text-main, #1C1917);
+  border-color: var(--primary, #B58938);
+}
+
+/* Quando selecionado / ativo, expande com a legenda visível */
 .bs-quick-btn.active {
   background: var(--primary, #B58938);
   color: #FFFFFF;
-  box-shadow: 0 2px 6px rgba(181, 137, 56, 0.3);
+  border-color: var(--primary, #B58938);
+  box-shadow: 0 2px 8px rgba(181, 137, 56, 0.35);
+  padding: 0 10px;
+}
+
+.bs-quick-btn.active span {
+  display: inline-block;
+}
+
+/* Ao abrir o estúdio: exibe todas as legendas por 2 segundos */
+.bs-canvas-quick-bar.bs-quick-bar-preview .bs-quick-btn {
+  padding: 0 10px;
+}
+
+.bs-canvas-quick-bar.bs-quick-bar-preview .bs-quick-btn span {
+  display: inline-block;
 }
 
 .bs-quick-btn:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
+}
+
+.bs-quick-divider {
+  width: 18px;
+  height: 1px;
+  background: var(--border-subtle, #E6E1DA);
+  margin: 1px 0;
+  align-self: center;
+  opacity: 0.8;
 }
 
 /* Card de Cor Personalizada na Gaveta de Cor (Posicionado Acima de Cores da Moda) */
@@ -1522,52 +1557,7 @@ input:checked + .bs-slider-round:before {
   background: #B58938;
 }
 
-/* Seletor de Estrutura de Fundo (Sketch Guia) */
-.bs-guides-selector {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  margin-top: 6px;
-  padding: 2px 0 4px;
-}
 
-.bs-guides-selector::-webkit-scrollbar {
-  display: none;
-}
-
-.bs-guide-btn-chip {
-  height: 32px;
-  padding: 0 10px;
-  border-radius: 999px;
-  background: #FFFFFF;
-  border: 1px solid var(--border-subtle, #E6E1DA);
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--text-main, #1C1917);
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: all var(--transition-fast, 0.18s ease);
-}
-
-.bs-guide-btn-chip:hover {
-  border-color: var(--primary, #B58938);
-}
-
-.bs-guide-btn-chip.active {
-  background: var(--primary-light, #F7F1E3);
-  border-color: var(--primary, #B58938);
-  color: var(--primary-hover, #9A7229);
-  font-weight: 700;
-}
-
-.bs-guide-icon {
-  font-size: 13px;
-  opacity: 0.8;
-}
 
 /* Grid de Elementos para Incluir (Menu Incluir) */
 .bs-elements-catalog-grid {

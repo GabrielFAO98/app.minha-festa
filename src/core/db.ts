@@ -185,14 +185,24 @@ export async function getAllProjects(): Promise<ProjectData[]> {
   return await db.projects.reverse().sortBy('updatedAt');
 }
 
+export async function getProject(id: string): Promise<ProjectData | undefined> {
+  return await db.projects.get(id);
+}
+
 export async function saveProject(projectData: Partial<ProjectData>): Promise<ProjectData> {
-  const projectId = projectData.id || ('proj-' + Date.now());
+  const isBalloon = projectData.projectType === 'balloon';
+  const defaultTitle = isBalloon ? 'Novo Arranjo' : 'Novo Cenário';
+  const prefix = isBalloon ? 'bal-' : 'proj-';
+  const projectId = projectData.id || (prefix + Date.now());
+
   const project: ProjectData = {
     id: projectId,
-    title: projectData.title || 'Novo Cenário',
+    title: projectData.title || defaultTitle,
     clientName: projectData.clientName || '',
+    projectType: projectData.projectType || 'scenario',
     notes: projectData.notes || '',
     elements: projectData.elements || [],
+    balloonData: projectData.balloonData,
     wallTextureUrl: projectData.wallTextureUrl,
     floorTextureUrl: projectData.floorTextureUrl,
     thumbnailUrl: projectData.thumbnailUrl,

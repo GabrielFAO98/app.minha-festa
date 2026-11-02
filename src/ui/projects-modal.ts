@@ -2,14 +2,19 @@
 import { getAllProjects, saveProject, deleteProject } from '../core/db';
 import type { CanvasEngine } from '../core/canvas-engine';
 import type { ConfirmModal } from './confirm-modal';
+import { RenameModal } from './rename-modal';
 import type { ProjectData } from '../types';
 
 export class ProjectsModal {
   canvasEngine: CanvasEngine;
   confirmModal: ConfirmModal;
+  renameModal: RenameModal;
+
   currentProjectId: string | null;
   currentProjectTitle: string;
-  private lastSavedSnapshot: string = '';
+  hasEverBeenSaved = false;
+  isDirty = false;
+  private autosaveTimer: any = null;
 
   // Tela Exclusiva de Projetos
   projectsScreenEl: HTMLElement | null;
@@ -18,7 +23,7 @@ export class ProjectsModal {
   btnProjectsBack: HTMLElement | null;
   btnProjectsNewScene: HTMLElement | null;
 
-  // Modal para Salvar Cenário Atual
+  // Modal para Salvar Cenário Atual (Renomeação Manual)
   saveModalEl: HTMLElement | null;
   titleInput: HTMLInputElement | null;
   btnSave: HTMLElement | null;
@@ -31,11 +36,14 @@ export class ProjectsModal {
   btnHeaderProjects: HTMLElement | null;
 
   onProjectLoaded?: (() => void) | null;
+  onOpenBalloonProject?: ((project: ProjectData) => void) | null;
+  onExitRequested?: (() => void) | null;
   private openedFromStudio = false;
 
   constructor(canvasEngine: CanvasEngine, confirmModal: ConfirmModal) {
     this.canvasEngine = canvasEngine;
     this.confirmModal = confirmModal;
+    this.renameModal = new RenameModal();
     this.currentProjectId = null;
     this.currentProjectTitle = 'Novo Cenário';
 
@@ -61,6 +69,11 @@ export class ProjectsModal {
   }
 
   setupEvents(): void {
+    // Escuta alterações na cena para autosave contínuo
+    this.canvasEngine.onSceneChange = () => {
+      this.markDirtyAndScheduleAutosave();
+    };
+
     // Tela de Projetos: Botão Voltar
     this.btnProjectsBack?.addEventListener('click', () => {
       this.closeProjectsScreen();
@@ -89,79 +102,145 @@ export class ProjectsModal {
       }
     });
 
-    // Header: Botão Projetos abre a Tela Exclusiva
+    // Tecla Escape para fechar modais
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (this.saveModalEl?.classList.contains('open')) {
+          this.closeSaveModal(false);
+        } else if (this.isProjectsScreenOpen()) {
+          this.closeProjectsScreen();
+        }
+      }
+    });
+
+    // Header: Botão Salvar
+    this.btnHeaderSave?.addEventListener('click', () => {
+      this.quickSave();
+    });
+
+    // Header: Botão Projetos
     this.btnHeaderProjects?.addEventListener('click', () => {
       this.openProjectsScreen(true);
     });
+  }
 
-    // Atalho Global Ctrl+S para Salvar Rápido
-    window.addEventListener('keydown', (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        this.quickSave();
+  // ========================================================
+  // AUTOSAVE CONTÍNUO (SALVAMENTO AUTOMÁTICO EM SEGUNDO PLANO)
+  // ========================================================
+  markDirtyAndScheduleAutosave(): void {
+    const elements = this.canvasEngine.getSceneElements();
+    if (elements.length === 0) return;
+
+    this.isDirty = true;
+    if (this.autosaveTimer) clearTimeout(this.autosaveTimer);
+
+    this.autosaveTimer = setTimeout(async () => {
+      await this.performAutosave();
+    }, 800);
+  }
+
+  async performAutosave(): Promise<void> {
+    const elements = this.canvasEngine.getSceneElements();
+    if (elements.length === 0) return;
+
+    if (!this.currentProjectId) {
+      this.currentProjectId = 'proj-' + Date.now();
+    }
+
+    try {
+      const thumb = this.canvasEngine.exportHDImage();
+      await saveProject({
+        id: this.currentProjectId,
+        title: this.currentProjectTitle || 'Novo Cenário',
+        projectType: 'scenario',
+        elements: elements,
+        wallTextureUrl: this.canvasEngine.wallTextureUrl,
+        floorTextureUrl: this.canvasEngine.floorTextureUrl,
+        bgImageUrl: this.canvasEngine.bgImageUrl || undefined,
+        thumbnailUrl: thumb
+      });
+
+      this.hasEverBeenSaved = true;
+      this.isDirty = false;
+      this.showSaveFeedback();
+    } catch (err) {
+      console.warn('Erro ao salvar cenário automaticamente:', err);
+    }
+  }
+
+  // Verificação Segura ao tentar sair da tela de Cenário
+  async requestExit(): Promise<boolean> {
+    if (this.autosaveTimer) {
+      clearTimeout(this.autosaveTimer);
+      this.autosaveTimer = null;
+      if (this.isDirty) {
+        await this.performAutosave();
       }
-    });
-  }
+    }
 
-  // ========================================================
-  // RASTREAMENTO DE ALTERAÇÕES (DIRTY STATE)
-  // ========================================================
-  getSceneSnapshot(): string {
-    return JSON.stringify({
-      elements: this.canvasEngine.getSceneElements(),
-      wall: this.canvasEngine.wallTextureUrl || '',
-      floor: this.canvasEngine.floorTextureUrl || '',
-      bg: this.canvasEngine.bgImageUrl || ''
-    });
-  }
+    // Se o usuário não incluiu nem alterou nada no cenário, sai direto sem prompt!
+    if (!this.hasEverBeenSaved) {
+      return true;
+    }
 
-  markClean(): void {
-    this.lastSavedSnapshot = this.getSceneSnapshot();
+    // Se o projeto foi salvo automaticamente, pergunta se quer renomear
+    const result = await this.renameModal.prompt({
+      currentTitle: this.currentProjectTitle,
+      itemType: 'cenário'
+    });
+
+    if (result.action === 'cancel') {
+      return false; // Cancela a saída, permanece editando
+    }
+
+    if (result.action === 'rename' && result.title) {
+      this.currentProjectTitle = result.title;
+      if (this.titleDisplay) {
+        this.titleDisplay.textContent = this.currentProjectTitle;
+      }
+      if (this.currentProjectId) {
+        await saveProject({
+          id: this.currentProjectId,
+          title: this.currentProjectTitle,
+          projectType: 'scenario',
+          elements: this.canvasEngine.getSceneElements(),
+          wallTextureUrl: this.canvasEngine.wallTextureUrl,
+          floorTextureUrl: this.canvasEngine.floorTextureUrl,
+          bgImageUrl: this.canvasEngine.bgImageUrl || undefined,
+          thumbnailUrl: this.canvasEngine.exportHDImage()
+        });
+      }
+    }
+
+    return true; // Prossegue com a saída
   }
 
   hasUnsavedChanges(): boolean {
-    const elements = this.canvasEngine.getSceneElements();
-    if (!this.lastSavedSnapshot) {
-      return elements.length > 0;
-    }
-    const current = this.getSceneSnapshot();
-    return current !== this.lastSavedSnapshot;
+    return this.isDirty;
+  }
+
+  markClean(): void {
+    this.isDirty = false;
   }
 
   // ========================================================
-  // TELA EXCLUSIVA DE PROJETOS SALVOS
+  // TELA DE PROJETOS SALVOS (CENÁRIOS E ARRANJOS DE BALÕES)
   // ========================================================
   async openProjectsScreen(fromStudio = false): Promise<void> {
     this.openedFromStudio = fromStudio;
     await this.renderProjectsGrid();
 
-    // Se estiver na Home, oculta a Home temporariamente
-    const homeEl = document.getElementById('home-screen');
-    if (homeEl && !fromStudio) {
-      homeEl.classList.add('hidden');
-    }
-
     this.projectsScreenEl?.classList.remove('hidden');
+    this.projectsScreenEl?.focus();
   }
 
   closeProjectsScreen(): void {
     this.projectsScreenEl?.classList.add('hidden');
-
-    // Se veio do menu inicial, restaura a exibição do menu inicial
-    if (!this.openedFromStudio) {
-      const homeEl = document.getElementById('home-screen');
-      homeEl?.classList.remove('hidden');
-    }
+    this.onExitRequested?.();
   }
 
-  // Compatibilidade com chamadas diretas
-  open(): void {
-    this.openProjectsScreen(false);
-  }
-
-  close(): void {
-    this.closeProjectsScreen();
-    this.closeSaveModal(false);
+  isProjectsScreenOpen(): boolean {
+    return Boolean(this.projectsScreenEl && !this.projectsScreenEl.classList.contains('hidden'));
   }
 
   async renderProjectsGrid(): Promise<void> {
@@ -169,7 +248,7 @@ export class ProjectsModal {
     const projects = await getAllProjects();
     this.projectsGridEl.innerHTML = '';
 
-    const countText = `${projects.length} ${projects.length === 1 ? 'cenário salvo' : 'cenários salvos'}`;
+    const countText = `${projects.length} ${projects.length === 1 ? 'projeto salvo' : 'projetos salvos'}`;
     if (this.projectsCountEl) {
       this.projectsCountEl.textContent = countText;
     }
@@ -182,8 +261,8 @@ export class ProjectsModal {
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
             </svg>
           </div>
-          <h2 class="projects-empty-title">Nenhum cenário salvo ainda</h2>
-          <p class="projects-empty-desc">Crie decorações exclusivas no estúdio e salve para acessá-las quando quiser.</p>
+          <h2 class="projects-empty-title">Nenhum projeto salvo ainda</h2>
+          <p class="projects-empty-desc">Crie decorações e arranjos exclusivos no estúdio e eles serão salvos automaticamente.</p>
           <button id="btn-empty-create-scene" class="btn-primary" style="margin-top: 6px; padding: 0 18px; height: 38px;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             <span>Criar Novo Cenário</span>
@@ -199,7 +278,8 @@ export class ProjectsModal {
 
     const fragment = document.createDocumentFragment();
     projects.forEach((proj) => {
-      const isCurrentActive = proj.id === this.currentProjectId;
+      const isBalloon = proj.projectType === 'balloon';
+      const isCurrentActive = !isBalloon && proj.id === this.currentProjectId;
       const card = document.createElement('div');
       card.className = `project-card ${isCurrentActive ? 'active-project' : ''}`;
 
@@ -210,15 +290,22 @@ export class ProjectsModal {
         minute: '2-digit'
       });
 
+      const badgeTypeLabel = isBalloon ? 'Arranjo de Balões' : 'Cenário';
+      const countLabel = isBalloon
+        ? `${proj.balloonData?.pieces.length || 0} balões`
+        : `${proj.elements?.length || 0} peças`;
+      const openBtnText = isBalloon ? 'Abrir no Estúdio' : 'Abrir Cenário';
+
       card.innerHTML = `
         <div class="project-card-thumb-wrap">
-          <img src="${proj.thumbnailUrl || ''}" alt="${proj.title}" class="project-card-thumb" />
+          <img src="${proj.thumbnailUrl || ''}" alt="${proj.title}" class="project-card-thumb" style="object-fit: contain; background: #FAF8F5;" />
+          <span class="project-badge-type" style="position: absolute; top: 8px; left: 8px; background: rgba(28, 25, 23, 0.78); color: #FFF; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; backdrop-filter: blur(4px);">${badgeTypeLabel}</span>
           ${isCurrentActive ? '<span class="project-badge-active">Ativo</span>' : ''}
         </div>
         <div class="project-card-info">
           <h3 class="project-card-title">${proj.title}</h3>
           <div class="project-card-meta">
-            <span>${proj.elements?.length || 0} peças</span>
+            <span>${countLabel}</span>
             <span class="meta-dot">•</span>
             <span>${dateStr}</span>
           </div>
@@ -227,9 +314,9 @@ export class ProjectsModal {
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
-              <span>Abrir Cenário</span>
+              <span>${openBtnText}</span>
             </button>
-            <button class="btn-proj-delete" data-proj-id="${proj.id}" title="Excluir este cenário">
+            <button class="btn-proj-delete" data-proj-id="${proj.id}" title="Excluir este projeto">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -239,26 +326,25 @@ export class ProjectsModal {
         </div>
       `;
 
-      // Ação Abrir Cenário com Verificação Segura de Salvamento
+      // Ação Abrir Projeto
       card.querySelector('.btn-proj-open')?.addEventListener('click', async (e) => {
         e.stopPropagation();
         await this.handleOpenProject(proj);
       });
 
-      // Tornar o card inteiro clicável para abrir o cenário no estúdio
       card.addEventListener('click', async (e) => {
         const target = e.target as HTMLElement;
         if (target.closest('.btn-proj-delete')) return;
         await this.handleOpenProject(proj);
       });
 
-      // Ação Excluir Cenário com Modal Elegante de Confirmação
+      // Ação Excluir Projeto com Confirmação
       card.querySelector('.btn-proj-delete')?.addEventListener('click', async (e) => {
         e.stopPropagation();
         const confirmed = await this.confirmModal.ask({
-          title: 'Excluir Cenário',
-          message: `Deseja excluir permanentemente o cenário "${proj.title}"? Esta ação não pode ser desfeita.`,
-          confirmLabel: 'Excluir Cenário',
+          title: isBalloon ? 'Excluir Arranjo' : 'Excluir Cenário',
+          message: `Deseja excluir permanentemente ${isBalloon ? 'o arranjo' : 'o cenário'} "${proj.title}"? Esta ação não pode ser desfeita.`,
+          confirmLabel: isBalloon ? 'Excluir Arranjo' : 'Excluir Cenário',
           cancelLabel: 'Cancelar',
           danger: true
         });
@@ -267,6 +353,8 @@ export class ProjectsModal {
           if (this.currentProjectId === proj.id) {
             this.currentProjectId = null;
             this.currentProjectTitle = 'Novo Cenário';
+            this.hasEverBeenSaved = false;
+            this.isDirty = false;
             if (this.titleDisplay) this.titleDisplay.textContent = 'Novo Cenário';
           }
           await deleteProject(proj.id);
@@ -283,33 +371,23 @@ export class ProjectsModal {
   // Abertura Segura: Salva cenário atual antes de carregar o escolhido
   async handleOpenProject(proj: ProjectData): Promise<void> {
     try {
-      // Se o projeto clicado já é o que está ativo, apenas entra no estúdio diretamente
+      if (proj.projectType === 'balloon') {
+        this.closeProjectsScreen();
+        this.onOpenBalloonProject?.(proj);
+        return;
+      }
+
+      // Se o projeto clicado já é o que está ativo, apenas entra diretamente
       if (this.currentProjectId === proj.id) {
-        this.projectsScreenEl?.classList.add('hidden');
-        const homeEl = document.getElementById('home-screen');
-        homeEl?.classList.add('hidden');
+        this.closeProjectsScreen();
         this.onProjectLoaded?.();
         this.canvasEngine.fitToView();
         return;
       }
 
-      // Se há alterações não salvas no cenário atual, solicita confirmação
-      if (this.hasUnsavedChanges()) {
-        const choice = await this.confirmModal.promptUnsaved({
-          title: 'Abrir Outro Cenário',
-          message: `Você possui alterações não salvas no cenário atual. Deseja salvar antes de abrir "${proj.title}"?`,
-          saveLabel: 'Salvar e Abrir',
-          discardLabel: 'Descartar e Abrir',
-          cancelLabel: 'Cancelar'
-        });
-
-        if (choice === 'cancel') return;
-
-        if (choice === 'save') {
-          const saved = await this.quickSave();
-          if (!saved) return;
-        }
-      }
+      // Se há alterações no cenário atual, pergunta sobre renomear/salvar antes de trocar
+      const canExit = await this.requestExit();
+      if (!canExit) return;
 
       await this.loadProject(proj);
     } catch (err) {
@@ -333,6 +411,8 @@ export class ProjectsModal {
 
       this.currentProjectId = proj.id;
       this.currentProjectTitle = proj.title || 'Meu Cenário';
+      this.hasEverBeenSaved = true;
+      this.isDirty = false;
 
       if (this.titleDisplay) {
         this.titleDisplay.textContent = this.currentProjectTitle;
@@ -343,11 +423,7 @@ export class ProjectsModal {
 
       this.canvasEngine.saveSnapshot();
       this.markClean();
-
-      // Oculta a tela de projetos e o menu inicial para exibir o estúdio
-      this.projectsScreenEl?.classList.add('hidden');
-      const homeEl = document.getElementById('home-screen');
-      homeEl?.classList.add('hidden');
+      this.closeProjectsScreen();
 
       this.onProjectLoaded?.();
       this.canvasEngine.fitToView();
@@ -358,22 +434,8 @@ export class ProjectsModal {
 
   // Iniciar Novo Cenário com Verificação Prévia de Salvamento
   async createNewProject(): Promise<void> {
-    if (this.hasUnsavedChanges()) {
-      const choice = await this.confirmModal.promptUnsaved({
-        title: 'Criar Novo Cenário',
-        message: 'Você possui alterações não salvas no cenário atual. Deseja salvar antes de iniciar um novo?',
-        saveLabel: 'Salvar e Criar Novo',
-        discardLabel: 'Descartar e Criar Novo',
-        cancelLabel: 'Cancelar'
-      });
-
-      if (choice === 'cancel') return;
-
-      if (choice === 'save') {
-        const saved = await this.quickSave();
-        if (!saved) return;
-      }
-    }
+    const canExit = await this.requestExit();
+    if (!canExit) return;
 
     this.executeNewProject();
   }
@@ -382,6 +444,8 @@ export class ProjectsModal {
     this.canvasEngine.clearScene();
     this.currentProjectId = null;
     this.currentProjectTitle = 'Novo Cenário';
+    this.hasEverBeenSaved = false;
+    this.isDirty = false;
 
     if (this.titleDisplay) {
       this.titleDisplay.textContent = 'Novo Cenário';
@@ -392,17 +456,14 @@ export class ProjectsModal {
 
     this.canvasEngine.saveSnapshot();
     this.markClean();
-
-    this.projectsScreenEl?.classList.add('hidden');
-    const homeEl = document.getElementById('home-screen');
-    homeEl?.classList.add('hidden');
+    this.closeProjectsScreen();
 
     this.onProjectLoaded?.();
     this.canvasEngine.fitToView();
   }
 
   // ========================================================
-  // MODAL DE SALVAR CENÁRIO NO ESTÚDIO
+  // MODAL DE SALVAR CENÁRIO NO ESTÚDIO (RENOMEAÇÃO MANUAL)
   // ========================================================
   openSaveModal(): Promise<boolean> {
     return new Promise((resolve) => {
@@ -423,7 +484,6 @@ export class ProjectsModal {
     }
   }
 
-  // Salvar Rápido (acionado pelo botão Salvar do Header ou Ctrl+S)
   async quickSave(): Promise<boolean> {
     const elements = this.canvasEngine.getSceneElements();
 
@@ -432,32 +492,31 @@ export class ProjectsModal {
       return false;
     }
 
-    // Se o projeto ainda não tem nome/ID, abre o modal para o usuário nomear
     if (!this.currentProjectId) {
       return await this.openSaveModal();
     }
 
-    // Se já tem ID ativo, atualiza o projeto sem criar duplicatas
     const thumb = this.canvasEngine.exportHDImage();
 
     await saveProject({
       id: this.currentProjectId,
       title: this.currentProjectTitle,
+      projectType: 'scenario',
       elements: elements,
-      wallTexture: this.canvasEngine.wallTextureUrl,
-      floorTexture: this.canvasEngine.floorTextureUrl,
+      wallTextureUrl: this.canvasEngine.wallTextureUrl,
+      floorTextureUrl: this.canvasEngine.floorTextureUrl,
       bgImageUrl: this.canvasEngine.bgImageUrl || undefined,
       thumbnailUrl: thumb
     });
 
+    this.hasEverBeenSaved = true;
     this.markClean();
     this.showSaveFeedback();
     return true;
   }
 
-  // Salvar a partir do campo de texto do modal (permite nomear ou renomear)
   async saveFromModal(): Promise<boolean> {
-    const title = this.titleInput?.value.trim() || this.currentProjectTitle || 'Minha Decoração';
+    const title = this.titleInput?.value.trim() || this.currentProjectTitle || 'Novo Cenário';
     const elements = this.canvasEngine.getSceneElements();
 
     if (elements.length === 0) {
@@ -470,42 +529,42 @@ export class ProjectsModal {
     const saved = await saveProject({
       id: this.currentProjectId || undefined,
       title: title,
+      projectType: 'scenario',
       elements: elements,
-      wallTexture: this.canvasEngine.wallTextureUrl,
-      floorTexture: this.canvasEngine.floorTextureUrl,
+      wallTextureUrl: this.canvasEngine.wallTextureUrl,
+      floorTextureUrl: this.canvasEngine.floorTextureUrl,
       bgImageUrl: this.canvasEngine.bgImageUrl || undefined,
       thumbnailUrl: thumb
     });
 
     this.currentProjectId = saved.id;
     this.currentProjectTitle = saved.title;
+    this.hasEverBeenSaved = true;
 
     if (this.titleDisplay) {
-      this.titleDisplay.textContent = saved.title;
+      this.titleDisplay.textContent = this.currentProjectTitle;
     }
 
     this.markClean();
-    this.showSaveFeedback();
     this.closeSaveModal(true);
+    this.showSaveFeedback();
     return true;
   }
 
-  // Feedback visual discreto e elegante de "Salvo!"
   showSaveFeedback(): void {
+    // Feedback visual suave no botão salvar
     if (this.btnHeaderSave) {
-      const originalHtml = this.btnHeaderSave.innerHTML;
+      const originalText = this.btnHeaderSave.innerHTML;
+      this.btnHeaderSave.classList.add('btn-saved-pulse');
       this.btnHeaderSave.innerHTML = `
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="20 6 9 17 4 12"></polyline>
-        </svg>
-        <span class="header-btn-label">Salvo!</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <span>Salvo</span>
       `;
-      this.btnHeaderSave.classList.add('btn-header-save-success');
 
       setTimeout(() => {
         if (this.btnHeaderSave) {
-          this.btnHeaderSave.innerHTML = originalHtml;
-          this.btnHeaderSave.classList.remove('btn-header-save-success');
+          this.btnHeaderSave.classList.remove('btn-saved-pulse');
+          this.btnHeaderSave.innerHTML = originalText;
         }
       }, 1800);
     }

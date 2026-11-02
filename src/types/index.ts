@@ -1,3 +1,4 @@
+import type { BalloonPiece, BalloonPaletteConfig } from '../core/balloon-studio-engine';
 // Tipos centrais da aplicação Minha Festa (Decoração Pegue-Monte)
 
 export type ItemCategory =
@@ -113,8 +114,16 @@ export interface ProjectData {
   id: string;
   title: string;
   clientName?: string;
+  projectType?: 'scenario' | 'balloon';
   notes?: string;
-  elements: SceneElement[];
+  elements?: SceneElement[];
+  balloonData?: {
+    pieces: BalloonPiece[];
+    palette: BalloonPaletteConfig;
+    distributionMode?: 'mesclado' | 'degrade' | 'blocos';
+    volumeLevel?: 'enxuto' | 'padrao' | 'cheio';
+    selectedTemplateId?: string;
+  };
   wallTextureUrl?: string;
   floorTextureUrl?: string;
   wallTexture?: string;

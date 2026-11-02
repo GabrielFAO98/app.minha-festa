@@ -1,6 +1,7 @@
 import { initDatabase, getItemsByCategory } from './core/db';
 import { DEFAULT_PRESET_ITEMS } from './core/presets-data';
 import { CanvasEngine } from './core/canvas-engine';
+import { ScreenManager } from './core/screen-manager';
 import { ItemToolbar } from './ui/item-toolbar';
 import { BottomDock } from './ui/bottom-dock';
 import { CoverModal } from './ui/cover-modal';
@@ -8,6 +9,7 @@ import { BalloonModal } from './ui/balloon-modal';
 import { InventoryModal } from './ui/inventory-modal';
 import { ExportModal } from './ui/export-modal';
 import { ConfirmModal } from './ui/confirm-modal';
+import { RenameModal } from './ui/rename-modal';
 import { ProjectsModal } from './ui/projects-modal';
 import { DesktopStudio } from './ui/desktop-studio';
 import { HomeScreen } from './ui/home-screen';
@@ -24,21 +26,33 @@ async function bootstrap() {
   const canvasEngine = new CanvasEngine();
   canvasEngine.init(container);
 
-  // 3. Inicializar Modais
+  // 3. Inicializar Modais e Componentes de UI
   const confirmModal = new ConfirmModal();
+  const renameModal = new RenameModal();
   const coverModal = new CoverModal(canvasEngine);
   const balloonModal = new BalloonModal(canvasEngine);
   const exportModal = new ExportModal(canvasEngine);
   const projectsModal = new ProjectsModal(canvasEngine, confirmModal);
 
+  let bottomDock: BottomDock | null = null;
+  let desktopStudio: DesktopStudio | null = null;
+
+  // 4. Inicializar Estúdio de Balões com callbacks integrados
   const balloonStudioModal = new BalloonStudioModal(
     async (newItem) => {
-      await canvasEngine.addItem(newItem);
-      if (homeScreen.active) {
-        homeScreen.hide();
-        history.pushState({ screen: 'studio' }, '');
+      // Callback: Inserir no Cenário
+      if (balloonStudioModal.openedFromScenario) {
+        await canvasEngine.addItem(newItem);
+        screenManager.navigateTo('scenario');
+        canvasEngine.fitToView();
+      } else {
+        // Veio da Home: Inicia novo cenário com este arranjo
+        projectsModal.executeNewProject();
+        await canvasEngine.addItem(newItem);
+        screenManager.navigateTo('scenario');
         canvasEngine.fitToView();
       }
+
       if (bottomDock) {
         bottomDock.invalidateCustomItemsCache();
         if (bottomDock.activeTab === 'my-items') {
@@ -50,6 +64,7 @@ async function bootstrap() {
       }
     },
     async (_savedItem) => {
+      // Callback: Apenas Salvo no Acervo
       if (bottomDock) {
         bottomDock.invalidateCustomItemsCache();
         if (bottomDock.activeTab === 'my-items') {
@@ -62,8 +77,36 @@ async function bootstrap() {
     }
   );
 
-  let bottomDock: BottomDock | null = null;
-  let desktopStudio: DesktopStudio | null = null;
+  // 5. Gerenciador de Telas (Screen Manager) com controle rigoroso de estado
+  let isExitingScreen = false;
+  const screenManager = new ScreenManager({
+    onBeforeExitScreen: async (fromScreen, toScreen) => {
+      if (isExitingScreen) return true;
+      isExitingScreen = true;
+      try {
+        if (fromScreen === 'scenario') {
+          return await projectsModal.requestExit();
+        }
+        if (fromScreen === 'balloon-studio') {
+          return await balloonStudioModal.requestExit();
+        }
+        return true;
+      } finally {
+        isExitingScreen = false;
+      }
+    },
+    onScreenChange: (newScreen) => {
+      if (newScreen === 'home') {
+        homeScreen.show();
+      } else {
+        homeScreen.hide();
+      }
+      if (newScreen === 'scenario') {
+        canvasEngine.fitToView();
+      }
+      history.pushState({ screen: newScreen }, '');
+    }
+  });
 
   const inventoryModal = new InventoryModal(
     async (newItem) => {
@@ -92,21 +135,21 @@ async function bootstrap() {
     }
   );
 
-  // 4. Barra de Ações Mobile da Peça
+  // 6. Barra de Ações Mobile da Peça
   const itemToolbar = new ItemToolbar(
     canvasEngine,
     (meta) => coverModal.open(meta),
     (node) => balloonModal.open(node)
   );
 
-  // 5. Barra Inferior Mobile (Dock)
+  // 7. Barra Inferior Mobile (Dock)
   bottomDock = new BottomDock(
     canvasEngine,
     (item) => inventoryModal.open(item),
     (meta) => coverModal.open(meta)
   );
 
-  // 6. Modo Desktop Studio (Sidebar Esquerda Catálogo + Sidebar Direita Inspetor/Camadas)
+  // 8. Modo Desktop Studio (Sidebar Esquerda Catálogo + Sidebar Direita Inspetor/Camadas)
   desktopStudio = new DesktopStudio(
     canvasEngine,
     () => inventoryModal.open(),
@@ -114,7 +157,7 @@ async function bootstrap() {
     (node) => balloonModal.open(node)
   );
 
-  // Barra Flutuante Estilo Facebook para Enquadramento de Capa no Palco
+  // Barra Flutuante para Enquadramento de Capa no Palco
   const repositionBar = document.getElementById('cover-reposition-bar');
   const stageZoomSlider = document.getElementById('stage-cover-zoom-slider') as HTMLInputElement | null;
   const stageZoomValue = document.getElementById('stage-cover-zoom-value');
@@ -180,7 +223,7 @@ async function bootstrap() {
     }
   };
 
-  // 7. Header Actions, Salvar e Histórico (Desfazer / Refazer)
+  // 9. Header Actions, Salvar e Histórico (Desfazer / Refazer)
   const btnHeaderUndo = document.getElementById('btn-header-undo') as HTMLButtonElement | null;
   const btnHeaderRedo = document.getElementById('btn-header-redo') as HTMLButtonElement | null;
   const btnHeaderSave = document.getElementById('btn-header-save');
@@ -188,9 +231,13 @@ async function bootstrap() {
   const btnHeaderExport = document.getElementById('btn-header-export');
   const btnHeaderBalloonStudio = document.getElementById('btn-header-balloon-studio');
 
+  // Abre o Estúdio a partir do Cenário (marcando fromScenario: true)
   btnHeaderBalloonStudio?.addEventListener('click', () => {
-    balloonStudioModal.open();
-    history.pushState({ screen: 'balloon-studio' }, '');
+    balloonStudioModal.open({
+      fromScenario: true,
+      onExit: () => screenManager.forceNavigateTo('scenario')
+    });
+    screenManager.navigateTo('balloon-studio');
   });
 
   btnHeaderUndo?.addEventListener('click', () => {
@@ -210,15 +257,19 @@ async function bootstrap() {
     projectsModal.quickSave();
   });
 
-  btnHeaderProjects?.addEventListener('click', () => {
-    projectsModal.openProjectsScreen(true);
+  btnHeaderProjects?.addEventListener('click', async () => {
+    const canExit = await projectsModal.requestExit();
+    if (canExit) {
+      projectsModal.openProjectsScreen(true);
+      screenManager.navigateTo('projects');
+    }
   });
 
   btnHeaderExport?.addEventListener('click', () => {
     exportModal.open();
   });
 
-  // 8. Controles de Zoom do Projeto (+, -, 100%)
+  // 10. Controles de Zoom do Projeto (+, -, 100%)
   const btnZoomIn = document.getElementById('btn-zoom-in');
   const btnZoomOut = document.getElementById('btn-zoom-out');
   const btnZoomReset = document.getElementById('btn-zoom-reset');
@@ -257,183 +308,120 @@ async function bootstrap() {
     }
   };
 
-  // 9. Carrega Cenário Inicial e Salva Estado Base de Histórico
-  await loadDefaultScene(canvasEngine);
-  canvasEngine.saveSnapshot();
-  projectsModal.markClean();
-
-  // 10. Menu Inicial (Home Screen) & Controlador de Splash Screen
+  // 11. Menu Inicial (Home Screen) & Controlador de Splash Screen
   const homeScreen = new HomeScreen({
     onNewScene: async () => {
-      await projectsModal.createNewProject();
+      projectsModal.executeNewProject();
+      screenManager.navigateTo('scenario');
+      canvasEngine.fitToView();
     },
     onOpenProjects: () => {
       projectsModal.openProjectsScreen(false);
+      screenManager.navigateTo('projects');
     },
     onOpenBalloonStudio: () => {
-      balloonStudioModal.open();
-      history.pushState({ screen: 'balloon-studio' }, '');
+      balloonStudioModal.open({
+        fromScenario: false,
+        onExit: () => screenManager.forceNavigateTo('home')
+      });
+      screenManager.navigateTo('balloon-studio');
     },
     onBeforeExitToHome: async () => {
-      if (projectsModal.hasUnsavedChanges()) {
-        const choice = await confirmModal.promptUnsaved({
-          title: 'Sair do Cenário',
-          message: 'Você possui alterações não salvas. Deseja salvar antes de voltar ao menu inicial?',
-          saveLabel: 'Salvar e Sair',
-          discardLabel: 'Sair sem Salvar',
-          cancelLabel: 'Continuar no Cenário'
-        });
-
-        if (choice === 'cancel') return false;
-
-        if (choice === 'save') {
-          const saved = await projectsModal.quickSave();
-          if (!saved) return false;
-        }
-      }
-      return true;
+      return await projectsModal.requestExit();
+    },
+    onReturnToHome: () => {
+      screenManager.navigateTo('home');
     }
   });
 
+  // Conexão de Projetos: ao carregar cenário ou arranjo
   projectsModal.onProjectLoaded = () => {
-    homeScreen.hide();
-    history.pushState({ screen: 'studio' }, '');
+    screenManager.navigateTo('scenario');
     canvasEngine.fitToView();
   };
 
-  // Configuração de Histórico Mobile e Interceptação do Botão Voltar / Gestos
+  projectsModal.onOpenBalloonProject = (balloonProj) => {
+    balloonStudioModal.open({
+      projectToLoad: balloonProj,
+      fromScenario: false,
+      onExit: () => screenManager.forceNavigateTo('projects')
+    });
+    screenManager.navigateTo('balloon-studio');
+  };
+
+  projectsModal.onExitRequested = () => {
+    screenManager.navigateTo('home');
+  };
+
+  // Inicia rigorosamente na Home
+  screenManager.forceNavigateTo('home');
   history.replaceState({ screen: 'home' }, '');
 
+  // Interceptação global do Botão Voltar do Mobile / Navegador
   window.addEventListener('popstate', async () => {
-    // 1. Se a gaveta inferior (bottom dock) estiver aberta, fecha a gaveta
+    // 1. Se a gaveta inferior estiver aberta, fecha
     if (bottomDock?.sheetEl?.classList.contains('open')) {
       bottomDock.closeSheet();
-      history.pushState({ screen: 'studio' }, '');
+      history.pushState({ screen: screenManager.activeScreen }, '');
       return;
     }
 
-    // 1b. Se o Estúdio de Balões estiver aberto, delega navegação interna antes de fechar
-    if (balloonStudioModal.isOpen()) {
+    // 2. Se o Estúdio de Balões estiver aberto, delega navegação com autosave/renomear
+    if (screenManager.activeScreen === 'balloon-studio') {
       const handled = balloonStudioModal.handleBackNavigation();
-      if (handled) {
-        history.pushState({ screen: 'balloon-studio' }, '');
-      } else {
-        history.pushState({ screen: homeScreen.active ? 'home' : 'studio' }, '');
+      if (!handled) {
+        screenManager.navigateTo('home');
       }
       return;
     }
 
-    // 2. Se modal de confirmação estiver aberto, fecha
+    // 3. Se modal de confirmação estiver aberto, fecha
     if (confirmModal.isOpen) {
       confirmModal.close();
-      history.pushState({ screen: 'studio' }, '');
       return;
     }
 
-    // 3. Se outros modais estiverem abertos, fecha
+    if (renameModal.isOpen) {
+      renameModal.close();
+      return;
+    }
+
+    // 4. Se outros modais flutuantes estiverem abertos, fecha
     const openModal = document.querySelector<HTMLElement>('.modal-backdrop.open');
     if (openModal) {
       openModal.classList.remove('open');
-      history.pushState({ screen: 'studio' }, '');
       return;
     }
 
-    // 4. Se a tela de projetos estiver aberta, fecha
-    const projScreen = document.getElementById('projects-screen');
-    if (projScreen && !projScreen.classList.contains('hidden')) {
+    // 5. Se estiver na tela de projetos, volta para a home
+    if (screenManager.activeScreen === 'projects') {
       projectsModal.closeProjectsScreen();
-      history.pushState({ screen: 'studio' }, '');
+      screenManager.navigateTo('home');
       return;
     }
 
-    // 5. Se estiver no estúdio (Home oculta), pede confirmação antes de sair
-    if (!homeScreen.active) {
-      history.pushState({ screen: 'studio' }, '');
-
-      const canExit = await homeScreen.requestReturnToHome();
+    // 6. Se estiver no cenário, pede confirmação de saída com renomeação se houver alterações
+    if (screenManager.activeScreen === 'scenario') {
+      const canExit = await projectsModal.requestExit();
       if (canExit) {
-        history.replaceState({ screen: 'home' }, '');
+        screenManager.navigateTo('home');
+      } else {
+        history.pushState({ screen: 'scenario' }, '');
       }
+      return;
     }
   });
 
-  // Alerta nativo caso feche a aba ou recarregue a página com alterações não salvas
+  // Alerta nativo caso feche a aba com alterações pendentes
   window.addEventListener('beforeunload', (e) => {
-    if (projectsModal.hasUnsavedChanges()) {
+    if (projectsModal.hasUnsavedChanges() || balloonStudioModal.isDirty) {
       e.preventDefault();
       e.returnValue = '';
     }
   });
 
-  // 11. Desativa a Splash Screen suavemente (tempo mínimo elegante de 650ms)
+  // 12. Desativa a Splash Screen suavemente
   HomeScreen.dismissSplashScreen(650, splashStartTime);
-}
-
-async function loadDefaultScene(canvasEngine: CanvasEngine) {
-  try {
-    const allPanels = await getItemsByCategory('paineis');
-    const allCylinders = await getItemsByCategory('cilindros');
-
-    const arch = allPanels.find((p) => p.id === 'preset-arco-romano') || DEFAULT_PRESET_ITEMS.find((p) => p.id === 'preset-arco-romano');
-    const panel = allPanels.find((p) => p.id === 'preset-painel-redondo') || DEFAULT_PRESET_ITEMS.find((p) => p.id === 'preset-painel-redondo');
-    const cylG = allCylinders.find((c) => c.id === 'preset-cilindro-g') || DEFAULT_PRESET_ITEMS.find((c) => c.id === 'preset-cilindro-g');
-    const cylM = allCylinders.find((c) => c.id === 'preset-cilindro-m') || DEFAULT_PRESET_ITEMS.find((c) => c.id === 'preset-cilindro-m');
-    const cylP = allCylinders.find((c) => c.id === 'preset-cilindro-p') || DEFAULT_PRESET_ITEMS.find((c) => c.id === 'preset-cilindro-p');
-
-    const floorY = canvasEngine.WALL_HEIGHT; // 1147px (horizonte de encontro da parede com o piso)
-    const pxPerCm = canvasEngine.pxPerCm;
-
-    // 1. Painel Arco Romano 1,00x2,00m (Fundo Esquerda - painel alto e imponente)
-    if (arch) {
-      const archH = (arch.heightCm || 200) * pxPerCm;
-      await canvasEngine.addItem(arch, {
-        x: 160,
-        y: Math.round(floorY + 45 - archH)
-      }, false, false);
-    }
-
-    // 2. Painel Redondo 1,50m (Fundo Centro-Direita, sobrepondo o Arco com elegância)
-    if (panel) {
-      const panelH = (panel.heightCm || 190) * pxPerCm;
-      await canvasEngine.addItem(panel, {
-        x: 360,
-        y: Math.round(floorY + 45 - panelH)
-      }, false, false);
-    }
-
-    // 3. Trio de Cilindros P, M, G rigorosamente alinhados na mesma linha de base no piso
-    // Larguras: P=147px, M=170px, G=193px. Espaçamento uniforme de 20px, perfeitamente centralizados no palco (x: 265 a 815)
-    const baselineY = Math.round(floorY + 225); // 1372px (base comum horizontal no piso de madeira)
-
-    if (cylP) {
-      const cylPH = (cylP.heightCm || 45) * pxPerCm;
-      await canvasEngine.addItem(cylP, {
-        x: 265,
-        y: Math.round(baselineY - cylPH)
-      }, false, false);
-    }
-
-    if (cylM) {
-      const cylMH = (cylM.heightCm || 60) * pxPerCm;
-      await canvasEngine.addItem(cylM, {
-        x: 432,
-        y: Math.round(baselineY - cylMH)
-      }, false, false);
-    }
-
-    if (cylG) {
-      const cylGH = (cylG.heightCm || 80) * pxPerCm;
-      await canvasEngine.addItem(cylG, {
-        x: 622,
-        y: Math.round(baselineY - cylGH)
-      }, false, false);
-    }
-
-    canvasEngine.deselect();
-    canvasEngine.fitToView();
-  } catch (err) {
-    console.warn('Erro ao carregar elementos iniciais:', err);
-  }
 }
 
 if (document.readyState === 'loading') {

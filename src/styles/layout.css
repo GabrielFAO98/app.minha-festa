@@ -1076,3 +1076,112 @@ body {
     background: linear-gradient(90deg, rgba(247, 241, 227, 0) 0%, #F7F1E3 26%, #F7F1E3 100%);
   }
 }
+
+
+/* ======================================================================
+   GERENCIAMENTO ESTRITO DE TELAS (SCREEN MANAGER)
+   Garante que apenas UMA tela exista e consuma recursos por vez.
+   ====================================================================== */
+
+/* 1. TELA: HOME (Menu Inicial) */
+.app-shell[data-screen="home"] .app-header,
+.app-shell[data-screen="home"] .app-stage-area,
+.app-shell[data-screen="home"] .dock-mobile,
+.app-shell[data-screen="home"] .desktop-sidebar-left,
+.app-shell[data-screen="home"] .desktop-sidebar-right,
+.app-shell[data-screen="home"] .projects-screen,
+.app-shell[data-screen="home"] #cover-reposition-bar,
+.app-shell[data-screen="home"] #item-mobile-toolbar {
+  display: none !important;
+}
+
+.app-shell[data-screen="home"] .home-screen {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* 2. TELA: CENÁRIO (Palco Konva + Ferramentas) */
+.app-shell[data-screen="scenario"] .home-screen,
+.app-shell[data-screen="scenario"] .projects-screen {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.app-shell[data-screen="scenario"] .app-header {
+  display: flex !important;
+}
+
+.app-shell[data-screen="scenario"] .app-stage-area {
+  display: flex !important;
+}
+
+.app-shell[data-screen="scenario"] .dock-mobile {
+  display: flex !important;
+}
+
+/* 3. TELA: PROJETOS SALVOS */
+.app-shell[data-screen="projects"] .app-header,
+.app-shell[data-screen="projects"] .app-stage-area,
+.app-shell[data-screen="projects"] .dock-mobile,
+.app-shell[data-screen="projects"] .desktop-sidebar-left,
+.app-shell[data-screen="projects"] .desktop-sidebar-right,
+.app-shell[data-screen="projects"] .home-screen,
+.app-shell[data-screen="projects"] #cover-reposition-bar,
+.app-shell[data-screen="projects"] #item-mobile-toolbar {
+  display: none !important;
+}
+
+.app-shell[data-screen="projects"] .projects-screen {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* 4. TELA: ESTÚDIO DE BALÕES (Tela Primária e Independente) */
+.app-shell[data-screen="balloon-studio"] .app-header,
+.app-shell[data-screen="balloon-studio"] .app-stage-area,
+.app-shell[data-screen="balloon-studio"] .dock-mobile,
+.app-shell[data-screen="balloon-studio"] .desktop-sidebar-left,
+.app-shell[data-screen="balloon-studio"] .desktop-sidebar-right,
+.app-shell[data-screen="balloon-studio"] .home-screen,
+.app-shell[data-screen="balloon-studio"] .projects-screen,
+.app-shell[data-screen="balloon-studio"] #cover-reposition-bar,
+.app-shell[data-screen="balloon-studio"] #item-mobile-toolbar {
+  display: none !important;
+}
+
+body.screen-balloon-studio .balloon-studio-overlay {
+  display: flex !important;
+}
+
+body:not(.screen-balloon-studio) .balloon-studio-overlay {
+  display: none !important;
+}
+
+/* Indicador de Salvamento Automático Discreto no Header */
+.autosave-indicator {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted, #78716C);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(181, 137, 56, 0.08);
+  border: 1px solid rgba(181, 137, 56, 0.2);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.autosave-indicator.visible {
+  opacity: 1;
+}
+
+.autosave-indicator svg {
+  color: var(--primary, #B58938);
+}

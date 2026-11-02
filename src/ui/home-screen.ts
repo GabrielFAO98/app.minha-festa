@@ -4,6 +4,7 @@ export interface HomeScreenCallbacks {
   onOpenProjects: () => void;
   onOpenBalloonStudio?: () => void;
   onBeforeExitToHome?: () => Promise<boolean>;
+  onReturnToHome?: () => void;
 }
 
 export class HomeScreen {
@@ -72,6 +73,7 @@ export class HomeScreen {
       if (!allowed) return false;
     }
     this.show();
+    this.callbacks.onReturnToHome?.();
     return true;
   }
 

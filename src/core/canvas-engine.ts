@@ -115,6 +115,7 @@ export class CanvasEngine {
   onHistoryChange: ((canUndo: boolean, canRedo: boolean) => void) | null;
   onCoverRepositionChange: ((isActive: boolean, meta: PresetItem | null) => void) | null;
   onZoomChange: ((zoomPercent: number) => void) | null;
+  onSceneChange: (() => void) | null;
 
   constructor() {
     this.stage = null;
@@ -202,6 +203,7 @@ export class CanvasEngine {
     this.onHistoryChange = null;
     this.onCoverRepositionChange = null;
     this.onZoomChange = null;
+    this.onSceneChange = null;
   }
 
   init(container: HTMLElement | null) {
@@ -3159,6 +3161,7 @@ export class CanvasEngine {
 
     this.redoStack = [];
     this.notifyHistoryChange();
+    this.onSceneChange?.();
   }
 
   async undo() {

@@ -25,13 +25,23 @@ import {
   type BalloonModelTemplate,
   type ArrangementStats
 } from '../core/balloon-studio-engine';
-import { addCustomItem, getAllCovers, addCustomCover, type CoverItemRecord } from '../core/db';
+import { addCustomItem, getAllCovers, addCustomCover, saveProject, type CoverItemRecord } from '../core/db';
+import { RenameModal } from './rename-modal';
+import type { ProjectData } from '../types';
 import { optimizeUserUploadedImage } from '../core/image-optimizer';
 import type { PresetItem } from '../types';
 
 export class BalloonStudioModal {
   private overlayEl: HTMLElement | null = null;
   private canvasSvgEl: SVGSVGElement | null = null;
+  private renameModal: RenameModal = new RenameModal();
+
+  private currentBalloonProjectId: string | null = null;
+  public hasEverBeenSaved = false;
+  public isDirty = false;
+  private autosaveTimer: any = null;
+  public openedFromScenario = false;
+  private onExitCallback?: (() => void);
 
   // Telas: 'gallery' (tela inicial com modelos) ou 'editor' (área de criação)
   private currentScreen: 'gallery' | 'editor' = 'gallery';
@@ -581,7 +591,9 @@ export class BalloonStudioModal {
     if (!this.overlayEl) return;
 
     // 1. Ações da Galeria Inicial
-    document.getElementById('bs-btn-close-gallery')?.addEventListener('click', () => this.close());
+    document.getElementById('bs-btn-close-gallery')?.addEventListener('click', async () => {
+      await this.requestExit();
+    });
 
     // Card de Começar do Zero (Em Primeiro Lugar)
     document.getElementById('bs-card-start-zero')?.addEventListener('click', () => {
@@ -601,8 +613,8 @@ export class BalloonStudioModal {
     });
 
     // 2. Ações do Topo do Editor
-    document.getElementById('bs-btn-back-to-gallery')?.addEventListener('click', () => {
-      this.setScreen('gallery');
+    document.getElementById('bs-btn-back-to-gallery')?.addEventListener('click', async () => {
+      await this.requestExit();
     });
 
     document.getElementById('bs-editor-title-container')?.addEventListener('click', () => {
@@ -2523,6 +2535,8 @@ export class BalloonStudioModal {
     });
     if (this.history.length > 30) this.history.shift();
     this.historyIndex = this.history.length - 1;
+
+    this.markDirtyAndScheduleAutosave();
   }
 
   private undo(): void {
@@ -2551,31 +2565,207 @@ export class BalloonStudioModal {
     }
   }
 
+
+  // ----------------------------------------------------------------------
+  // AUTOSAVE CONTÍNUO DO ESTÚDIO DE BALÕES
+  // ----------------------------------------------------------------------
+  public markDirtyAndScheduleAutosave(): void {
+    if (this.pieces.length === 0) return;
+    this.isDirty = true;
+
+    if (this.autosaveTimer) clearTimeout(this.autosaveTimer);
+    this.autosaveTimer = setTimeout(async () => {
+      await this.performAutosave();
+    }, 800);
+  }
+
+  public async performAutosave(): Promise<void> {
+    if (this.pieces.length === 0) return;
+
+    if (!this.currentBalloonProjectId) {
+      this.currentBalloonProjectId = 'bal-' + Date.now();
+    }
+
+    try {
+      const thumb = this.exportSvgThumbnail();
+      await saveProject({
+        id: this.currentBalloonProjectId,
+        title: this.arrangementTitle || 'Novo Arranjo',
+        projectType: 'balloon',
+        elements: [],
+        balloonData: {
+          pieces: JSON.parse(JSON.stringify(this.pieces)),
+          palette: JSON.parse(JSON.stringify(this.palette)),
+          distributionMode: this.currentDistributionMode,
+          volumeLevel: this.currentVolumeLevel,
+          selectedTemplateId: this.selectedTemplateId
+        },
+        thumbnailUrl: thumb,
+        updatedAt: Date.now()
+      });
+
+      this.hasEverBeenSaved = true;
+      this.isDirty = false;
+      this.showAutosaveFeedback();
+    } catch (err) {
+      console.warn('Erro no autosave do estúdio de balões:', err);
+    }
+  }
+
+  private exportSvgThumbnail(): string {
+    if (!this.canvasSvgEl) return '';
+    try {
+      const clone = this.canvasSvgEl.cloneNode(true) as SVGSVGElement;
+      const hl = clone.querySelector('#bs-highlight-layer');
+      if (hl) hl.innerHTML = '';
+      const xml = new XMLSerializer().serializeToString(clone);
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(xml);
+    } catch {
+      return '';
+    }
+  }
+
+  private showAutosaveFeedback(): void {
+    const el = document.getElementById('bs-autosave-tag');
+    if (el) {
+      el.classList.add('visible');
+      setTimeout(() => el.classList.remove('visible'), 1600);
+    }
+  }
+
+  // Verificação Segura ao tentar sair do Estúdio
+  public async requestExit(): Promise<boolean> {
+    console.log('[BS] requestExit called! isDirty:', this.isDirty, 'hasEverBeenSaved:', this.hasEverBeenSaved);
+    if (this.autosaveTimer) {
+      clearTimeout(this.autosaveTimer);
+      this.autosaveTimer = null;
+      if (this.isDirty) {
+        await this.performAutosave();
+      }
+    }
+
+    // Se nunca foi salvo (o usuário não fez nada), sai direto sem prompt!
+    if (!this.hasEverBeenSaved) {
+      this.close();
+      this.onExitCallback?.();
+      return true;
+    }
+
+    // Se o projeto foi salvo automaticamente, pergunta se quer renomear
+    const result = await this.renameModal.prompt({
+      currentTitle: this.arrangementTitle,
+      itemType: 'arranjo'
+    });
+
+    if (result.action === 'cancel') {
+      return false; // Cancela a saída, permanece editando
+    }
+
+    if (result.action === 'rename' && result.title) {
+      this.arrangementTitle = result.title;
+      const titleEl = document.getElementById('bs-editor-current-title');
+      if (titleEl) titleEl.textContent = this.arrangementTitle;
+
+      if (this.currentBalloonProjectId) {
+        await saveProject({
+          id: this.currentBalloonProjectId,
+          title: this.arrangementTitle,
+          projectType: 'balloon',
+          elements: [],
+          balloonData: {
+            pieces: JSON.parse(JSON.stringify(this.pieces)),
+            palette: JSON.parse(JSON.stringify(this.palette)),
+            distributionMode: this.currentDistributionMode,
+            volumeLevel: this.currentVolumeLevel,
+            selectedTemplateId: this.selectedTemplateId
+          },
+          thumbnailUrl: this.exportSvgThumbnail(),
+          updatedAt: Date.now()
+        });
+      }
+    }
+
+    this.close();
+    this.onExitCallback?.();
+    return true; // Prossegue com a saída
+  }
+
   // ----------------------------------------------------------------------
   // API PÚBLICA
   // ----------------------------------------------------------------------
 
-  public open(
-    templateId = 'modelo-arco-l-luxo',
-    callbacks?: { onInsert?: (item: PresetItem) => void; onSaved?: (item: PresetItem) => void }
-  ): void {
+  public open(options?: {
+    fromScenario?: boolean;
+    templateId?: string;
+    projectToLoad?: ProjectData;
+    onInsert?: (item: PresetItem) => void;
+    onSaved?: (item: PresetItem) => void;
+    onExit?: () => void;
+  }): void {
     this.createDomStructure();
     if (!this.overlayEl) return;
 
-    this.onInsertCallback = callbacks?.onInsert;
-    this.onSavedCallback = callbacks?.onSaved;
+    this.openedFromScenario = Boolean(options?.fromScenario);
+    this.onInsertCallback = options?.onInsert;
+    this.onSavedCallback = options?.onSaved;
+    this.onExitCallback = options?.onExit;
 
     this.overlayEl.style.display = 'flex';
     document.body.classList.add('bs-studio-open');
+    document.body.classList.add('screen-balloon-studio');
 
-    // Abre na Galeria Inicial
-    this.setScreen('gallery');
+    // Atualiza texto do botão no modal de concluir
+    const btnInsert = document.getElementById('bs-btn-confirm-insert-scene');
+    if (btnInsert) {
+      btnInsert.textContent = this.openedFromScenario ? 'Inserir no Cenário Atual' : 'Criar Cenário com este Arranjo';
+    }
+
+    if (options?.projectToLoad) {
+      this.loadBalloonProject(options.projectToLoad);
+    } else if (options?.templateId) {
+      this.currentBalloonProjectId = null;
+      this.hasEverBeenSaved = false;
+      this.isDirty = false;
+      this.loadTemplate(options.templateId);
+      this.setScreen('editor');
+    } else {
+      this.currentBalloonProjectId = null;
+      this.hasEverBeenSaved = false;
+      this.isDirty = false;
+      this.setScreen('gallery');
+    }
+  }
+
+  public loadBalloonProject(proj: ProjectData): void {
+    this.currentBalloonProjectId = proj.id;
+    this.arrangementTitle = proj.title || 'Arranjo de Balões';
+    const el = document.getElementById('bs-editor-current-title');
+    if (el) el.textContent = this.arrangementTitle;
+
+    if (proj.balloonData) {
+      this.pieces = JSON.parse(JSON.stringify(proj.balloonData.pieces || []));
+      this.palette = JSON.parse(JSON.stringify(proj.balloonData.palette || this.palette));
+      this.currentDistributionMode = (proj.balloonData.distributionMode as any) || 'mesclado';
+      this.currentVolumeLevel = (proj.balloonData.volumeLevel as any) || 'padrao';
+      this.selectedTemplateId = proj.balloonData.selectedTemplateId || '';
+    }
+
+    this.hasEverBeenSaved = true;
+    this.isDirty = false;
+    this.history = [];
+    this.historyIndex = -1;
+    this.saveHistory();
+
+    this.setScreen('editor');
+    this.renderCanvas();
+    this.syncPaletteSwatches();
   }
 
   public close(): void {
     if (this.overlayEl) {
       this.overlayEl.style.display = 'none';
       document.body.classList.remove('bs-studio-open');
+      document.body.classList.remove('screen-balloon-studio');
       this.hideBalloonPill();
     }
   }

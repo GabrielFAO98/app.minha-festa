@@ -305,7 +305,6 @@ export class ProjectsModal {
       card.innerHTML = `
         <div class="project-card-thumb-wrap">
           <img src="${proj.thumbnailUrl || ''}" alt="${proj.title}" class="project-card-thumb" style="object-fit: contain; background: #FAF8F5;" />
-          <span class="project-badge-type" style="position: absolute; top: 8px; left: 8px; background: rgba(28, 25, 23, 0.78); color: #FFF; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; backdrop-filter: blur(4px);">Cenário</span>
           ${isCurrentActive ? '<span class="project-badge-active">Ativo</span>' : ''}
         </div>
         <div class="project-card-info">

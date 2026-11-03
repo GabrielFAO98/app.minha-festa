@@ -111,6 +111,13 @@ export class BalloonStudioModal {
   private multiSelectToggleCandidate: string | null = null;
   private hasMovedDrag: boolean = false;
 
+  // Estado do Retângulo de Seleção (Marquee Box)
+  private isMarqueeSelecting = false;
+  private marqueePointerId = -1;
+  private marqueeStartSvg = { x: 0, y: 0 };
+  private marqueeCurrentSvg = { x: 0, y: 0 };
+  private marqueeInitialSelected = new Set<string>();
+
   // Viewport e Zoom Controlado por Pinça de Alto Desempenho e Pan Fluido
   private baseViewBox = { x: 0, y: 0, width: 600, height: 600 };
   private zoomLevel = 1.0;
@@ -328,13 +335,22 @@ export class BalloonStudioModal {
             </div>
           </header>
 
-          <!-- Banner / Faixa de Modo Ativo com Botão Cancelar -->
+          <!-- Banner / Faixa de Modo Ativo com Ações Rápidas -->
           <div id="bs-tool-active-banner" class="bs-tool-banner" style="display:none">
-            <div class="bs-tool-banner-content">
+            <div class="bs-tool-banner-content" id="bs-tool-banner-content">
               <span id="bs-tool-banner-text">Toque no cenário para posicionar</span>
+              <div id="bs-multiselect-actions" class="bs-multiselect-actions" style="display:none">
+                <span id="bs-multiselect-count-badge" class="bs-multi-badge">0 sel.</span>
+                <button type="button" id="bs-btn-multi-all" class="bs-multi-chip-btn" title="Selecionar todos os balões">Tudo</button>
+                <button type="button" id="bs-btn-multi-by-size" class="bs-multi-chip-btn" title="Selecionar por tamanho">Tamanho ▾</button>
+                <button type="button" id="bs-btn-multi-by-color" class="bs-multi-chip-btn" title="Selecionar por cor">Cor ▾</button>
+                <button type="button" id="bs-btn-multi-clear" class="bs-multi-chip-btn" title="Limpar seleção">Limpar</button>
+              </div>
             </div>
-            <button id="bs-btn-cancel-tool" class="bs-tool-cancel-btn" title="Cancelar modo">Cancelar</button>
+            <button id="bs-btn-cancel-tool" class="bs-tool-cancel-btn" title="Concluir ou cancelar modo">Cancelar</button>
           </div>
+          <!-- Menu dropdown flutuante de seleção por categoria -->
+          <div id="bs-multiselect-filter-dropdown" class="bs-multiselect-filter-dropdown" style="display:none"></div>
 
           <!-- Centro: Canvas Interativo com Zoom Estável por Pinça -->
           <main class="bs-canvas-area" id="bs-canvas-container">
@@ -398,6 +414,7 @@ export class BalloonStudioModal {
               <g id="bs-backdrop-sketch-layer"></g>
               <g id="bs-balloons-layer"></g>
               <g id="bs-highlight-layer"></g>
+              <g id="bs-marquee-layer"></g>
             </svg>
 
             <!-- Pílula Flutuante no Balão Selecionado -->
@@ -791,6 +808,47 @@ export class BalloonStudioModal {
     // Botão cancelar modo ativo no banner
     document.getElementById('bs-btn-cancel-tool')?.addEventListener('click', () => {
       this.setActiveTouchTool('adjust');
+    });
+
+    // Ações Rápidas de Seleção Múltipla
+    document.getElementById('bs-btn-multi-all')?.addEventListener('click', () => {
+      this.selectedPieceIds.clear();
+      this.pieces.forEach((p) => this.selectedPieceIds.add(p.id));
+      this.renderSelectionHighlights();
+      this.showBalloonPill();
+      this.updateMultiSelectBadge();
+      const dropdown = document.getElementById('bs-multiselect-filter-dropdown');
+      if (dropdown) dropdown.style.display = 'none';
+    });
+
+    document.getElementById('bs-btn-multi-by-size')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.renderMultiSelectFilterDropdown('size');
+    });
+
+    document.getElementById('bs-btn-multi-by-color')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.renderMultiSelectFilterDropdown('color');
+    });
+
+    document.getElementById('bs-btn-multi-clear')?.addEventListener('click', () => {
+      this.selectedPieceIds.clear();
+      this.renderSelectionHighlights();
+      this.hideBalloonPill();
+      this.updateMultiSelectBadge();
+      const dropdown = document.getElementById('bs-multiselect-filter-dropdown');
+      if (dropdown) dropdown.style.display = 'none';
+    });
+
+    // Fecha dropdown se clicar fora
+    document.addEventListener('click', (e) => {
+      const dropdown = document.getElementById('bs-multiselect-filter-dropdown');
+      if (dropdown && dropdown.style.display !== 'none') {
+        const target = e.target as HTMLElement;
+        if (!target.closest('#bs-multiselect-filter-dropdown') && !target.closest('#bs-btn-multi-by-size') && !target.closest('#bs-btn-multi-by-color')) {
+          dropdown.style.display = 'none';
+        }
+      }
     });
 
     document.getElementById('bs-btn-reset-view')?.addEventListener('click', () => {
@@ -1292,20 +1350,18 @@ export class BalloonStudioModal {
             canvas.setPointerCapture(e.pointerId);
           } catch (_) {}
         } else {
-          // Tocou no fundo livre no modo múltiplos: inicia possibilidade de Pan (arrastar a tela)
-          this.isPanning = true;
-          this.panPointerId = e.pointerId;
-          this.panStartClient = { x: e.clientX, y: e.clientY };
-          this.panStartPan = { ...this.panOffset };
-          this.hasMovedPan = false;
+          // Tocou no fundo livre no modo múltiplos: inicia o Retângulo de Seleção (Marquee Box)
+          this.isMarqueeSelecting = true;
+          this.marqueePointerId = e.pointerId;
+          const svgPt = this.screenToSvgCoordinates(e.clientX, e.clientY);
+          this.marqueeStartSvg = svgPt;
+          this.marqueeCurrentSvg = { ...svgPt };
+          this.marqueeInitialSelected = new Set(this.selectedPieceIds);
+          this.hideBalloonPill();
 
-          const rect = this.canvasSvgEl.getBoundingClientRect();
-          this.cachedCanvasRect = rect;
-          this.cachedCanvasWidth = rect.width || 400;
-          this.cachedCanvasHeight = rect.height || 400;
+          const marqueeLayer = document.getElementById('bs-marquee-layer');
+          if (marqueeLayer) marqueeLayer.innerHTML = '';
 
-          const container = document.getElementById('bs-canvas-container');
-          if (container) container.classList.add('is-panning');
           try {
             canvas.setPointerCapture(e.pointerId);
           } catch (_) {}
@@ -1384,6 +1440,59 @@ export class BalloonStudioModal {
     canvas.addEventListener('pointermove', (e: PointerEvent) => {
       if (this.activePointers.has(e.pointerId)) {
         this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      }
+
+      // Retângulo de Seleção (Marquee Box) no Modo Múltiplos
+      if (this.isMarqueeSelecting && e.pointerId === this.marqueePointerId && this.activePointers.size === 1) {
+        const svgPt = this.screenToSvgCoordinates(e.clientX, e.clientY);
+        this.marqueeCurrentSvg = svgPt;
+
+        const minX = Math.min(this.marqueeStartSvg.x, svgPt.x);
+        const maxX = Math.max(this.marqueeStartSvg.x, svgPt.x);
+        const minY = Math.min(this.marqueeStartSvg.y, svgPt.y);
+        const maxY = Math.max(this.marqueeStartSvg.y, svgPt.y);
+        const w = maxX - minX;
+        const h = maxY - minY;
+
+        // Atualiza a seleção em tempo real com todos os balões capturados pelo retângulo
+        const currentSelected = new Set(this.marqueeInitialSelected);
+        let newlyEnclosedCount = 0;
+
+        for (let i = 0; i < this.pieces.length; i++) {
+          const p = this.pieces[i];
+          const r = (BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28) * 0.70;
+          const intersects = (p.x + r >= minX) && (p.x - r <= maxX) && (p.y + r >= minY) && (p.y - r <= maxY);
+          if (intersects) {
+            currentSelected.add(p.id);
+            if (p.groupId) {
+              for (const sibling of this.pieces) {
+                if (sibling.groupId === p.groupId) currentSelected.add(sibling.id);
+              }
+            }
+            newlyEnclosedCount++;
+          }
+        }
+
+        this.selectedPieceIds = currentSelected;
+        this.renderSelectionHighlights();
+        this.updateMultiSelectBadge();
+
+        const marqueeLayer = document.getElementById('bs-marquee-layer');
+        if (marqueeLayer) {
+          const badgeHtml = currentSelected.size > 0
+            ? `<g transform="translate(${maxX}, ${minY})">
+                <rect x="-34" y="-20" width="34" height="17" rx="4" fill="#D97706"/>
+                <text x="-17" y="-8" fill="#FFFFFF" font-size="10" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">${currentSelected.size}</text>
+               </g>`
+            : '';
+
+          marqueeLayer.innerHTML = `
+            <rect x="${minX}" y="${minY}" width="${Math.max(1, w)}" height="${Math.max(1, h)}" rx="3"
+              fill="rgba(217, 119, 6, 0.12)" stroke="#D97706" stroke-width="1.8" stroke-dasharray="4 3"/>
+            ${badgeHtml}
+          `;
+        }
+        return;
       }
 
       // Mover Tela (Pan) - seja pela ferramenta dedicada ou por arrastar o fundo livre
@@ -1473,6 +1582,29 @@ export class BalloonStudioModal {
 
     const onPointerEnd = (e: PointerEvent) => {
       this.activePointers.delete(e.pointerId);
+
+      // Finaliza Retângulo de Seleção (Marquee Box)
+      if (this.isMarqueeSelecting && e.pointerId === this.marqueePointerId) {
+        this.isMarqueeSelecting = false;
+        this.marqueePointerId = -1;
+        const marqueeLayer = document.getElementById('bs-marquee-layer');
+        if (marqueeLayer) marqueeLayer.innerHTML = '';
+        try {
+          if (canvas.hasPointerCapture(e.pointerId)) {
+            canvas.releasePointerCapture(e.pointerId);
+          }
+        } catch (_) {}
+
+        if (this.selectedPieceIds.size > 0) {
+          this.showBalloonPill();
+          if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            try { navigator.vibrate(20); } catch (_) {}
+          }
+        } else {
+          this.hideBalloonPill();
+        }
+        this.updateMultiSelectBadge();
+      }
 
       // Finaliza pan da tela (tanto da ferramenta 'pan' quanto do arraste no espaço livre)
       if (this.isPanning && e.pointerId === this.panPointerId) {
@@ -1634,6 +1766,7 @@ export class BalloonStudioModal {
         <g id="bs-backdrop-sketch-layer"></g>
         <g id="bs-balloons-layer">${piecesHtml}</g>
         <g id="bs-highlight-layer"></g>
+        <g id="bs-marquee-layer"></g>
       `;
       this.renderStaticBackdrop();
     }
@@ -1838,6 +1971,100 @@ export class BalloonStudioModal {
       }
     });
     layer.innerHTML = h;
+    this.updateMultiSelectBadge();
+  }
+
+  private updateMultiSelectBadge(): void {
+    const badge = document.getElementById('bs-multiselect-count-badge');
+    if (badge) {
+      badge.textContent = `${this.selectedPieceIds.size} sel.`;
+      badge.style.display = this.selectedPieceIds.size > 0 ? 'inline-block' : 'none';
+    }
+  }
+
+  // Renderiza menu flutuante para selecionar balões por tamanho ou por cor
+  private renderMultiSelectFilterDropdown(type: 'size' | 'color'): void {
+    const dropdown = document.getElementById('bs-multiselect-filter-dropdown');
+    if (!dropdown) return;
+
+    if (dropdown.style.display !== 'none' && dropdown.getAttribute('data-type') === type) {
+      dropdown.style.display = 'none';
+      return;
+    }
+
+    dropdown.setAttribute('data-type', type);
+    dropdown.style.display = 'block';
+
+    if (type === 'size') {
+      const sizeCounts: Record<number, number> = {};
+      for (const p of this.pieces) {
+        sizeCounts[p.sizeInches] = (sizeCounts[p.sizeInches] || 0) + 1;
+      }
+      const sortedSizes = Object.keys(sizeCounts).map(Number).sort((a, b) => a - b);
+
+      dropdown.innerHTML = `
+        <div class="bs-filter-dropdown-title">Selecionar por Tamanho:</div>
+        <div class="bs-filter-dropdown-chips">
+          ${sortedSizes.map((sz) => `
+            <button type="button" class="bs-filter-chip" data-filter-size="${sz}">
+              ${sz}" <span style="opacity:0.65;font-size:10px">(${sizeCounts[sz]})</span>
+            </button>
+          `).join('')}
+        </div>
+      `;
+
+      dropdown.querySelectorAll('[data-filter-size]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const sz = Number(btn.getAttribute('data-filter-size'));
+          this.selectedPieceIds.clear();
+          this.pieces.filter((p) => p.sizeInches === sz).forEach((p) => this.selectedPieceIds.add(p.id));
+          this.renderSelectionHighlights();
+          this.showBalloonPill();
+          this.updateMultiSelectBadge();
+          dropdown.style.display = 'none';
+        });
+      });
+    } else if (type === 'color') {
+      const slotCounts: Record<string, number> = {};
+      for (const p of this.pieces) {
+        const slot = p.slot || 'A';
+        slotCounts[slot] = (slotCounts[slot] || 0) + 1;
+      }
+
+      const slots: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
+      const activeSlots = slots.filter((s) => (slotCounts[s] || 0) > 0);
+
+      dropdown.innerHTML = `
+        <div class="bs-filter-dropdown-title">Selecionar por Família de Cor:</div>
+        <div class="bs-filter-dropdown-chips">
+          ${activeSlots.map((s) => {
+            const hex = this.palette[s] || '#D4AF37';
+            const name = (this.palette.names && this.palette.names[s]) || getFriendlyColorName(hex);
+            return `
+              <button type="button" class="bs-filter-chip" data-filter-slot="${s}">
+                <span class="bs-filter-dot" style="background:${hex}"></span>
+                <span>${name}</span>
+                <span style="opacity:0.65;font-size:10px">(${slotCounts[s]})</span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      `;
+
+      dropdown.querySelectorAll('[data-filter-slot]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const slot = btn.getAttribute('data-filter-slot');
+          this.selectedPieceIds.clear();
+          this.pieces.filter((p) => p.slot === slot).forEach((p) => this.selectedPieceIds.add(p.id));
+          this.renderSelectionHighlights();
+          this.showBalloonPill();
+          this.updateMultiSelectBadge();
+          dropdown.style.display = 'none';
+        });
+      });
+    }
   }
 
   // ----------------------------------------------------------------------
@@ -2731,14 +2958,26 @@ export class BalloonStudioModal {
     const banner = document.getElementById('bs-tool-active-banner');
     const text = document.getElementById('bs-tool-banner-text');
 
+    const multiActions = document.getElementById('bs-multiselect-actions');
+    const cancelBtn = document.getElementById('bs-btn-cancel-tool');
+    const dropdown = document.getElementById('bs-multiselect-filter-dropdown');
+    if (dropdown) dropdown.style.display = 'none';
+
     if (banner && text) {
       if (tool === 'adjust') {
         banner.style.display = 'none';
       } else {
         banner.style.display = 'flex';
         if (tool === 'multi-select') {
-          text.textContent = 'Toque nos balões para selecionar vários';
-        } else if (tool === 'pan') {
+          text.style.display = 'none';
+          if (multiActions) multiActions.style.display = 'flex';
+          if (cancelBtn) cancelBtn.textContent = 'Concluir';
+          this.updateMultiSelectBadge();
+        } else {
+          text.style.display = 'block';
+          if (multiActions) multiActions.style.display = 'none';
+          if (cancelBtn) cancelBtn.textContent = 'Cancelar';
+          if (tool === 'pan') {
           text.textContent = 'Arraste com um dedo para mover o cenário';
         } else if (tool === 'eraser') {
           text.textContent = 'Toque em qualquer balão para apagar';
@@ -2769,6 +3008,7 @@ export class BalloonStudioModal {
         }
       }
     }
+  }
 
     if (this.activeBottomTab === 'incluir' && this.isBottomDrawerOpen) {
       this.renderTabActivePanel();

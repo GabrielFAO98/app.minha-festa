@@ -525,8 +525,25 @@
   cursor: grab;
 }
 
-.bs-canvas-area.tool-pan.is-panning {
-  cursor: grabbing;
+.bs-canvas-area.is-panning {
+  cursor: grabbing !important;
+}
+
+.bs-canvas-area.is-panning .balloon-piece {
+  pointer-events: none !important;
+}
+
+.bs-canvas-area.is-pinching {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.bs-canvas-area.is-pinching .balloon-piece {
+  pointer-events: none !important;
+}
+
+.bs-canvas-area.is-pinching #bs-backdrop-sketch-layer {
+  pointer-events: none !important;
 }
 
 .bs-canvas-area.tool-pan .balloon-piece {

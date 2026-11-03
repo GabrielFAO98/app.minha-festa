@@ -98,16 +98,20 @@ export class BalloonStudioModal {
   private colorSheetSubtab: 'colors' | 'covers' = 'colors';
   private cachedCovers: CoverItemRecord[] = [];
 
-  // Estado da ferramenta de arrastar tela (Pan)
-  private isPanningWithTool: boolean = false;
+  // Estado de movimentação da tela (Pan) - seja por ferramenta ou por arrasto no fundo livre
+  private isPanning: boolean = false;
   private panPointerId: number = -1;
   private panStartClient = { x: 0, y: 0 };
   private panStartPan = { x: 0, y: 0 };
+  private hasMovedPan: boolean = false;
+  private cachedCanvasRect: DOMRect | null = null;
+  private cachedCanvasWidth: number = 400;
+  private cachedCanvasHeight: number = 400;
   private quickBarPreviewTimer: number | null = null;
   private multiSelectToggleCandidate: string | null = null;
   private hasMovedDrag: boolean = false;
 
-  // Viewport e Zoom Controlado EXCLUSIVAMENTE por Pinça (Estável, sem pular ao arrastar balões)
+  // Viewport e Zoom Controlado por Pinça de Alto Desempenho e Pan Fluido
   private baseViewBox = { x: 0, y: 0, width: 600, height: 600 };
   private zoomLevel = 1.0;
   private panOffset = { x: 0, y: 0 };
@@ -117,7 +121,9 @@ export class BalloonStudioModal {
   private pinchStartZoom = 1;
   private pinchStartPan = { x: 0, y: 0 };
   private pinchStartMidpoint = { x: 0, y: 0 };
+  private pinchStartSvgFocal = { x: 0, y: 0 };
   private multiTouchCooldown = 0;
+  private viewportRafId: number | null = null;
 
   // Arraste de peças individuais com 1 único ponteiro (Otimizado com GPU transform)
   private isDragging = false;
@@ -1021,8 +1027,17 @@ export class BalloonStudioModal {
     this.applyViewport();
   }
 
+  // Agendamento via rAF para manter 60/120fps fluidos sem engasgos ou layout thrashing
+  private scheduleViewportUpdate(): void {
+    if (this.viewportRafId) return;
+    this.viewportRafId = requestAnimationFrame(() => {
+      this.viewportRafId = null;
+      this.applyViewport(true);
+    });
+  }
+
   // Aplica o viewBox calculado ao SVG (NUNCA altera com o simples arrasto de balões)
-  private applyViewport(): void {
+  private applyViewport(skipPillUpdate = false): void {
     if (!this.canvasSvgEl) return;
     const w = this.baseViewBox.width / this.zoomLevel;
     const h = this.baseViewBox.height / this.zoomLevel;
@@ -1042,7 +1057,9 @@ export class BalloonStudioModal {
       if (badge) badge.textContent = `${Math.round(this.zoomLevel * 100)}%`;
     }
 
-    this.updateBalloonPillPosition();
+    if (!skipPillUpdate && !this.isPinching && !this.isPanning) {
+      this.updateBalloonPillPosition();
+    }
   }
 
   public resetViewportZoom(): void {
@@ -1079,16 +1096,32 @@ export class BalloonStudioModal {
         }
         this.hideBalloonPill();
 
-        // Inicia pinça de zoom
+        // Inicia pinça de zoom de alto desempenho com ancoragem focal
+        if (this.isPanning) {
+          this.isPanning = false;
+          this.panPointerId = -1;
+          const container = document.getElementById('bs-canvas-container');
+          if (container) container.classList.remove('is-panning');
+        }
+
         const pts = Array.from(this.activePointers.values());
         this.isPinching = true;
         this.pinchStartDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
         this.pinchStartZoom = this.zoomLevel;
         this.pinchStartPan = { ...this.panOffset };
-        this.pinchStartMidpoint = {
-          x: (pts[0].x + pts[1].x) / 2,
-          y: (pts[0].y + pts[1].y) / 2
-        };
+
+        const rect = this.canvasSvgEl.getBoundingClientRect();
+        this.cachedCanvasRect = rect;
+        this.cachedCanvasWidth = rect.width || 400;
+        this.cachedCanvasHeight = rect.height || 400;
+
+        const midClientX = (pts[0].x + pts[1].x) / 2;
+        const midClientY = (pts[0].y + pts[1].y) / 2;
+        this.pinchStartMidpoint = { x: midClientX, y: midClientY };
+        this.pinchStartSvgFocal = this.screenToSvgCoordinates(midClientX, midClientY);
+
+        const container = document.getElementById('bs-canvas-container');
+        if (container) container.classList.add('is-pinching');
         return;
       }
 
@@ -1099,12 +1132,19 @@ export class BalloonStudioModal {
       const pieceGroup = target.closest('.balloon-piece') as unknown as SVGElement | null;
 
       // Execução conforme a ferramenta ativa:
-      // 1. Mover a Tela (Pan com 1 dedo ou mouse)
+      // 1. Mover a Tela (Pan explícito da ferramenta)
       if (this.activeTouchTool === 'pan') {
-        this.isPanningWithTool = true;
+        this.isPanning = true;
         this.panPointerId = e.pointerId;
         this.panStartClient = { x: e.clientX, y: e.clientY };
         this.panStartPan = { ...this.panOffset };
+        this.hasMovedPan = false;
+
+        const rect = this.canvasSvgEl.getBoundingClientRect();
+        this.cachedCanvasRect = rect;
+        this.cachedCanvasWidth = rect.width || 400;
+        this.cachedCanvasHeight = rect.height || 400;
+
         this.hideBalloonPill();
         const container = document.getElementById('bs-canvas-container');
         if (container) container.classList.add('is-panning');
@@ -1252,10 +1292,23 @@ export class BalloonStudioModal {
             canvas.setPointerCapture(e.pointerId);
           } catch (_) {}
         } else {
-          // Tocou no fundo no modo múltiplos: limpa a seleção
-          this.selectedPieceIds.clear();
-          this.renderSelectionHighlights();
-          this.hideBalloonPill();
+          // Tocou no fundo livre no modo múltiplos: inicia possibilidade de Pan (arrastar a tela)
+          this.isPanning = true;
+          this.panPointerId = e.pointerId;
+          this.panStartClient = { x: e.clientX, y: e.clientY };
+          this.panStartPan = { ...this.panOffset };
+          this.hasMovedPan = false;
+
+          const rect = this.canvasSvgEl.getBoundingClientRect();
+          this.cachedCanvasRect = rect;
+          this.cachedCanvasWidth = rect.width || 400;
+          this.cachedCanvasHeight = rect.height || 400;
+
+          const container = document.getElementById('bs-canvas-container');
+          if (container) container.classList.add('is-panning');
+          try {
+            canvas.setPointerCapture(e.pointerId);
+          } catch (_) {}
         }
         return;
       }
@@ -1308,10 +1361,23 @@ export class BalloonStudioModal {
           canvas.setPointerCapture(e.pointerId);
         } catch (_) {}
       } else {
-        // Clicou no fundo do canvas
-        this.selectedPieceIds.clear();
-        this.renderSelectionHighlights();
-        this.hideBalloonPill();
+        // Tocou no fundo livre do canvas no modo normal: inicia Pan fluido (arrastar a tela diretamente)
+        this.isPanning = true;
+        this.panPointerId = e.pointerId;
+        this.panStartClient = { x: e.clientX, y: e.clientY };
+        this.panStartPan = { ...this.panOffset };
+        this.hasMovedPan = false;
+
+        const rect = this.canvasSvgEl.getBoundingClientRect();
+        this.cachedCanvasRect = rect;
+        this.cachedCanvasWidth = rect.width || 400;
+        this.cachedCanvasHeight = rect.height || 400;
+
+        const container = document.getElementById('bs-canvas-container');
+        if (container) container.classList.add('is-panning');
+        try {
+          canvas.setPointerCapture(e.pointerId);
+        } catch (_) {}
       }
     });
 
@@ -1320,38 +1386,62 @@ export class BalloonStudioModal {
         this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       }
 
-      // Mover Tela com a ferramenta 'pan' (1 dedo ou mouse)
-      if (this.isPanningWithTool && e.pointerId === this.panPointerId && this.activePointers.size === 1) {
+      // Mover Tela (Pan) - seja pela ferramenta dedicada ou por arrastar o fundo livre
+      if (this.isPanning && e.pointerId === this.panPointerId && this.activePointers.size === 1) {
         const dx = e.clientX - this.panStartClient.x;
         const dy = e.clientY - this.panStartClient.y;
-        const svgScale = (this.baseViewBox.width / this.zoomLevel) / (canvas.clientWidth || 400);
 
-        this.panOffset.x = this.panStartPan.x - dx * svgScale;
-        this.panOffset.y = this.panStartPan.y - dy * svgScale;
+        if (Math.hypot(dx, dy) > 3) {
+          this.hasMovedPan = true;
+          this.hideBalloonPill();
+        }
 
-        this.applyViewport();
+        const cWidth = this.cachedCanvasWidth || 400;
+        const svgScale = (this.baseViewBox.width / this.zoomLevel) / cWidth;
+
+        this.panOffset.x = Math.round(this.panStartPan.x - dx * svgScale);
+        this.panOffset.y = Math.round(this.panStartPan.y - dy * svgScale);
+
+        this.scheduleViewportUpdate();
         return;
       }
 
-      // Gesto de pinça com 2 dedos
+      // Gesto de pinça com 2 dedos (Ultra fluido com ancoragem focal e zero layout thrashing)
       if (this.activePointers.size >= 2 && this.isPinching) {
         const pts = Array.from(this.activePointers.values());
         const currentDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
         const scale = currentDist / this.pinchStartDist;
-        this.zoomLevel = Math.max(0.5, Math.min(3.5, this.pinchStartZoom * scale));
+        const newZoom = Math.max(0.5, Math.min(3.5, this.pinchStartZoom * scale));
+        this.zoomLevel = newZoom;
 
-        const currentMid = {
-          x: (pts[0].x + pts[1].x) / 2,
-          y: (pts[0].y + pts[1].y) / 2
-        };
-        const dx = currentMid.x - this.pinchStartMidpoint.x;
-        const dy = currentMid.y - this.pinchStartMidpoint.y;
-        const svgScale = (this.baseViewBox.width / this.zoomLevel) / (canvas.clientWidth || 400);
+        const currentMidX = (pts[0].x + pts[1].x) / 2;
+        const currentMidY = (pts[0].y + pts[1].y) / 2;
 
-        this.panOffset.x = this.pinchStartPan.x - dx * svgScale;
-        this.panOffset.y = this.pinchStartPan.y - dy * svgScale;
+        const rect = this.cachedCanvasRect;
+        const cWidth = this.cachedCanvasWidth || 400;
+        const cHeight = this.cachedCanvasHeight || 400;
+        const rectLeft = rect ? rect.left : 0;
+        const rectTop = rect ? rect.top : 0;
 
-        this.applyViewport();
+        const u = Math.max(0, Math.min(1, (currentMidX - rectLeft) / cWidth));
+        const v = Math.max(0, Math.min(1, (currentMidY - rectTop) / cHeight));
+
+        const viewBoxW = this.baseViewBox.width / newZoom;
+        const viewBoxH = this.baseViewBox.height / newZoom;
+
+        const targetVx = this.pinchStartSvgFocal.x - u * viewBoxW;
+        const targetVy = this.pinchStartSvgFocal.y - v * viewBoxH;
+
+        const targetCenterX = targetVx + viewBoxW / 2;
+        const targetCenterY = targetVy + viewBoxH / 2;
+
+        const baseCenterX = this.baseViewBox.x + this.baseViewBox.width / 2;
+        const baseCenterY = this.baseViewBox.y + this.baseViewBox.height / 2;
+
+        this.panOffset.x = Math.round(targetCenterX - baseCenterX);
+        this.panOffset.y = Math.round(targetCenterY - baseCenterY);
+
+        this.scheduleViewportUpdate();
         return;
       }
 
@@ -1384,9 +1474,10 @@ export class BalloonStudioModal {
     const onPointerEnd = (e: PointerEvent) => {
       this.activePointers.delete(e.pointerId);
 
-      // Finaliza pan da ferramenta 'pan'
-      if (this.isPanningWithTool && e.pointerId === this.panPointerId) {
-        this.isPanningWithTool = false;
+      // Finaliza pan da tela (tanto da ferramenta 'pan' quanto do arraste no espaço livre)
+      if (this.isPanning && e.pointerId === this.panPointerId) {
+        const didMove = this.hasMovedPan;
+        this.isPanning = false;
         this.panPointerId = -1;
         const container = document.getElementById('bs-canvas-container');
         if (container) container.classList.remove('is-panning');
@@ -1395,12 +1486,37 @@ export class BalloonStudioModal {
             canvas.releasePointerCapture(e.pointerId);
           }
         } catch (_) {}
+
+        if (this.viewportRafId) {
+          cancelAnimationFrame(this.viewportRafId);
+          this.viewportRafId = null;
+        }
+
+        if (!didMove) {
+          // Clique/toque simples no fundo livre sem arrastar: limpa seleção
+          this.selectedPieceIds.clear();
+          this.renderSelectionHighlights();
+          this.hideBalloonPill();
+        } else {
+          // Se moveu a tela e havia algo selecionado, reposiciona a pílula
+          if (this.selectedPieceIds.size > 0) {
+            this.showBalloonPill();
+          }
+        }
+        this.applyViewport();
       }
 
       if (this.activePointers.size < 2 && this.isPinching) {
         this.isPinching = false;
+        const container = document.getElementById('bs-canvas-container');
+        if (container) container.classList.remove('is-pinching');
+        if (this.viewportRafId) {
+          cancelAnimationFrame(this.viewportRafId);
+          this.viewportRafId = null;
+        }
         // Cooldown de 240ms pós-pinça
         this.multiTouchCooldown = Date.now() + 240;
+        this.applyViewport();
       }
 
       if (this.isDragging && e.pointerId === this.dragPointerId) {
@@ -2588,7 +2704,7 @@ export class BalloonStudioModal {
 
     // Limpa ponteiros órfãos para evitar travamento de toque
     this.activePointers.clear();
-    this.isPanningWithTool = false;
+    this.isPanning = false;
     this.isDragging = false;
     this.isPinching = false;
     this.multiSelectToggleCandidate = null;

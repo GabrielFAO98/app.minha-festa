@@ -365,15 +365,10 @@ export class BalloonStudioModal {
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="12" height="12" rx="2" stroke-dasharray="2 1.5"></rect><path d="M8 21h11a2 2 0 0 0 2-2V8"></path></svg>
                 <span>Múltiplos</span>
               </button>
-              <button id="bs-quick-btn-pan" class="bs-quick-btn" title="Arrastar Tela: mova o cenário livremente com 1 dedo">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="5 9 2 12 5 15"></polyline><polyline points="9 5 12 2 15 5"></polyline><polyline points="15 19 12 22 9 19"></polyline><polyline points="19 9 22 12 19 15"></polyline><line x1="2" y1="12" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="22"></line></svg>
-                <span>Mover Tela</span>
-              </button>
               <button id="bs-quick-btn-eraser" class="bs-quick-btn" title="Modo Apagar: toque em qualquer balão para excluir">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path><path d="M22 21H7"></path><path d="m5 11 9 9"></path></svg>
                 <span>Apagar</span>
               </button>
-              <div class="bs-quick-divider"></div>
               <button id="bs-quick-btn-mirror" class="bs-quick-btn" title="Inverter o arranjo horizontalmente (espelhar)">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2 2"></line><path d="M8 7 2 12l6 5V7z" fill="currentColor" fill-opacity="0.18"></path><path d="M16 7l6 5-6 5V7z" fill="currentColor" fill-opacity="0.75"></path></svg>
                 <span>Inverter</span>
@@ -788,9 +783,6 @@ export class BalloonStudioModal {
     });
     document.getElementById('bs-quick-btn-multiselect')?.addEventListener('click', () => {
       this.setActiveTouchTool(this.activeTouchTool === 'multi-select' ? 'adjust' : 'multi-select');
-    });
-    document.getElementById('bs-quick-btn-pan')?.addEventListener('click', () => {
-      this.setActiveTouchTool(this.activeTouchTool === 'pan' ? 'adjust' : 'pan');
     });
     document.getElementById('bs-quick-btn-eraser')?.addEventListener('click', () => {
       this.setActiveTouchTool(this.activeTouchTool === 'eraser' ? 'adjust' : 'eraser');
@@ -2948,11 +2940,9 @@ export class BalloonStudioModal {
     // Atualiza destaque na barra de ações rápidas
     const btnAdjust = document.getElementById('bs-quick-btn-adjust');
     const btnMulti = document.getElementById('bs-quick-btn-multiselect');
-    const btnPan = document.getElementById('bs-quick-btn-pan');
     const btnEraser = document.getElementById('bs-quick-btn-eraser');
     if (btnAdjust) btnAdjust.classList.toggle('active', tool === 'adjust');
     if (btnMulti) btnMulti.classList.toggle('active', tool === 'multi-select');
-    if (btnPan) btnPan.classList.toggle('active', tool === 'pan');
     if (btnEraser) btnEraser.classList.toggle('active', tool === 'eraser');
 
     const banner = document.getElementById('bs-tool-active-banner');

@@ -1635,7 +1635,7 @@ input:checked + .bs-slider-round:before {
   color: var(--primary-hover, #9A7229);
 }
 
-/* Barra Vertical de Ações do Canvas (Ajustar, Múltiplos, Mover Tela, Apagar, Inverter, Desfazer, Refazer) */
+/* Barra Vertical de Ações do Canvas (Ajustar, Múltiplos, Apagar, Inverter, Desfazer, Refazer) */
 .bs-canvas-quick-bar {
   position: absolute;
   top: 10px;
@@ -1705,15 +1705,6 @@ input:checked + .bs-slider-round:before {
 
 .bs-quick-btn:active {
   transform: scale(0.95);
-}
-
-.bs-quick-divider {
-  width: 18px;
-  height: 1px;
-  background: var(--border-subtle, #E6E1DA);
-  margin: 1px 0;
-  align-self: center;
-  opacity: 0.8;
 }
 
 /* Card de Cor Personalizada na Gaveta de Cor (Posicionado Acima de Cores da Moda) */

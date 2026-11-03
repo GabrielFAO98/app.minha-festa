@@ -546,7 +546,6 @@
   height: 100%;
   touch-action: none;
   overflow: visible;
-  filter: drop-shadow(0 10px 24px rgba(28, 25, 23, 0.08));
 }
 
 /* Cenário de Fundo Estático de Referência Real (Painel Redondo + Pessoa 1,70m + Piso) */
@@ -601,12 +600,32 @@
   touch-action: none;
 }
 
-.balloon-piece:hover {
-  filter: brightness(1.06);
+@media (hover: hover) and (pointer: fine) {
+  .balloon-piece:hover {
+    opacity: 0.94;
+  }
 }
 
 .balloon-piece:active {
   cursor: grabbing;
+}
+
+/* Otimização de arraste mobile de alta performance */
+.is-dragging-balloon {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.is-dragging-balloon .balloon-piece {
+  pointer-events: none !important;
+}
+
+.is-dragging-balloon .balloon-piece.is-dragged {
+  pointer-events: auto !important;
+}
+
+.is-dragging-balloon #bs-backdrop-sketch-layer {
+  pointer-events: none !important;
 }
 
 /* Chips Flutuantes do Canvas */

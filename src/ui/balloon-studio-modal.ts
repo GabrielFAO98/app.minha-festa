@@ -145,6 +145,28 @@ export class BalloonStudioModal {
     }
   }
 
+  // Limpa com segurança o estado de arraste e restaura os eventos de toque
+  private cleanupDragState(): void {
+    this.isDragging = false;
+    this.dragPointerId = null;
+    this.dragInverseCtm = null;
+    if (this.dragRafId) {
+      cancelAnimationFrame(this.dragRafId);
+      this.dragRafId = null;
+    }
+    const container = document.getElementById('bs-canvas-container');
+    if (container) container.classList.remove('is-dragging-balloon');
+    for (let i = 0; i < this.draggedDomElements.length; i++) {
+      this.draggedDomElements[i].removeAttribute('transform');
+      this.draggedDomElements[i].classList.remove('is-dragged');
+    }
+    if (this.highlightLayerEl) {
+      this.highlightLayerEl.removeAttribute('transform');
+    }
+    this.draggedDomElements = [];
+    this.highlightLayerEl = null;
+  }
+
   // Histórico Undo / Redo
   private history: { pieces: BalloonPiece[]; palette: BalloonPaletteConfig }[] = [];
   private historyIndex = -1;
@@ -1042,21 +1064,7 @@ export class BalloonStudioModal {
       // DOIS DEDOS: CANCELA IMEDIATAMENTE QUALQUER ARRASTO DE BALÃO!
       if (this.activePointers.size >= 2) {
         if (this.isDragging) {
-          this.isDragging = false;
-          this.dragPointerId = null;
-          this.dragInverseCtm = null;
-          if (this.dragRafId) {
-            cancelAnimationFrame(this.dragRafId);
-            this.dragRafId = null;
-          }
-          for (let i = 0; i < this.draggedDomElements.length; i++) {
-            this.draggedDomElements[i].removeAttribute('transform');
-          }
-          if (this.highlightLayerEl) {
-            this.highlightLayerEl.removeAttribute('transform');
-          }
-          this.draggedDomElements = [];
-          this.highlightLayerEl = null;
+          this.cleanupDragState();
 
           // Reverte os balões para a posição original anterior ao toque acidental
           this.selectedPieceIds.forEach((id) => {
@@ -1354,7 +1362,14 @@ export class BalloonStudioModal {
         const dy = svgPt.y - this.dragStartSvgY;
 
         if (Math.hypot(dx, dy) > 3) {
-          this.hasMovedDrag = true;
+          if (!this.hasMovedDrag) {
+            this.hasMovedDrag = true;
+            const container = document.getElementById('bs-canvas-container');
+            if (container) container.classList.add('is-dragging-balloon');
+            for (let i = 0; i < this.draggedDomElements.length; i++) {
+              this.draggedDomElements[i].classList.add('is-dragged');
+            }
+          }
         }
 
         this.currentDragDx = dx;
@@ -1389,44 +1404,32 @@ export class BalloonStudioModal {
       }
 
       if (this.isDragging && e.pointerId === this.dragPointerId) {
-        if (this.dragRafId) {
-          cancelAnimationFrame(this.dragRafId);
-          this.dragRafId = null;
-        }
+        const didMove = this.hasMovedDrag;
+        const finalDx = this.currentDragDx;
+        const finalDy = this.currentDragDy;
 
-        // Remove transformações temporárias do arraste
-        for (let i = 0; i < this.draggedDomElements.length; i++) {
-          this.draggedDomElements[i].removeAttribute('transform');
-        }
-        if (this.highlightLayerEl) {
-          this.highlightLayerEl.removeAttribute('transform');
-        }
-        this.draggedDomElements = [];
-        this.highlightLayerEl = null;
+        this.cleanupDragState();
 
         // No modo múltiplos, se tocou em uma peça já selecionada sem arrastar, desmarca ela
-        if (this.activeTouchTool === 'multi-select' && !this.hasMovedDrag && this.multiSelectToggleCandidate) {
+        if (this.activeTouchTool === 'multi-select' && !didMove && this.multiSelectToggleCandidate) {
           this.selectedPieceIds.delete(this.multiSelectToggleCandidate);
           this.multiSelectToggleCandidate = null;
         }
 
-        this.isDragging = false;
-        this.dragPointerId = null;
-        this.dragInverseCtm = null;
         try {
           if (canvas.hasPointerCapture(e.pointerId)) {
             canvas.releasePointerCapture(e.pointerId);
           }
         } catch (_) {}
 
-        if (this.hasMovedDrag) {
+        if (didMove) {
           // Atualiza as posições finais consolidadas das peças movidas
           this.selectedPieceIds.forEach((id) => {
             const init = this.dragPieceInitialPositions.get(id);
             const p = this.pieces.find((x) => x.id === id);
             if (init && p) {
-              p.x = Math.round(init.x + this.currentDragDx);
-              p.y = Math.round(init.y + this.currentDragDy);
+              p.x = Math.round(init.x + finalDx);
+              p.y = Math.round(init.y + finalDy);
             }
           });
 
@@ -1607,8 +1610,8 @@ export class BalloonStudioModal {
             fill="none" stroke="#78716c" stroke-width="1.2"/>
 
           <!-- Etiqueta Diâmetro Ø 1,50 m centralizada no aro -->
-          <rect x="${panelCx - 44}" y="${panelCy - 11}" width="88" height="22" rx="11"
-            fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1" filter="drop-shadow(0 2px 4px rgba(28,25,23,0.08))"/>
+          <rect x="${panelCx - 44}" y="${panelCy - 9.5}" width="88" height="22" rx="11" fill="rgba(28,25,23,0.06)"/>
+          <rect x="${panelCx - 44}" y="${panelCy - 11}" width="88" height="22" rx="11" fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1"/>
           <text x="${panelCx}" y="${panelCy + 4}" fill="#44403c" font-size="11" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">Ø 1,50 m</text>
         </g>
 
@@ -1621,8 +1624,8 @@ export class BalloonStudioModal {
           <polyline points="${panelCx - panelRadius - 33.5} ${panelTopY + 7} ${panelCx - panelRadius - 30} ${panelTopY} ${panelCx - panelRadius - 26.5} ${panelTopY + 7}" fill="none" stroke="#78716c" stroke-width="1.2"/>
           <polyline points="${panelCx - panelRadius - 33.5} ${floorY - 7} ${panelCx - panelRadius - 30} ${floorY} ${panelCx - panelRadius - 26.5} ${floorY - 7}" fill="none" stroke="#78716c" stroke-width="1.2"/>
 
-          <rect x="${panelCx - panelRadius - 52}" y="${panelTopY + 172}" width="44" height="20" rx="4"
-            fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1" filter="drop-shadow(0 2px 4px rgba(28,25,23,0.08))"/>
+          <rect x="${panelCx - panelRadius - 52}" y="${panelTopY + 173.5}" width="44" height="20" rx="4" fill="rgba(28,25,23,0.06)"/>
+          <rect x="${panelCx - panelRadius - 52}" y="${panelTopY + 172}" width="44" height="20" rx="4" fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1"/>
           <text x="${panelCx - panelRadius - 30}" y="${panelTopY + 186}" fill="#57534e" font-size="10" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">1,90 m</text>
         </g>
       </g>
@@ -1688,8 +1691,8 @@ export class BalloonStudioModal {
           <polyline points="${dimX - 3.5} ${topY + 7} ${dimX} ${topY} ${dimX + 3.5} ${topY + 7}" fill="none" stroke="#78716c" stroke-width="1.2"/>
           <polyline points="${dimX - 3.5} ${floorY - 7} ${dimX} ${floorY} ${dimX + 3.5} ${floorY - 7}" fill="none" stroke="#78716c" stroke-width="1.2"/>
           <!-- Etiqueta com 1,70 m -->
-          <rect x="${dimX - 22}" y="${topY + 153}" width="44" height="20" rx="4"
-            fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1" filter="drop-shadow(0 2px 4px rgba(28,25,23,0.08))"/>
+          <rect x="${dimX - 22}" y="${topY + 154.5}" width="44" height="20" rx="4" fill="rgba(28,25,23,0.06)"/>
+          <rect x="${dimX - 22}" y="${topY + 153}" width="44" height="20" rx="4" fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1"/>
           <text x="${dimX}" y="${topY + 167}" fill="#57534e" font-size="10" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">1,70 m</text>
         </g>
       </g>

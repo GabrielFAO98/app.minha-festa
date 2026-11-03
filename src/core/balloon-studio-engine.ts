@@ -305,12 +305,11 @@ export function escapeXml(str: string): string {
 
 export function generateStudioDefs(palette: BalloonPaletteConfig, idPrefix: string = ""): string {
   let defs = `
-    <filter id="${idPrefix}balloonShadow" x="-25%" y="-25%" width="150%" height="150%">
-      <feDropShadow dx="1.6" dy="3.6" stdDeviation="3.2" flood-color="#090d16" flood-opacity="0.22"/>
-    </filter>
-    <filter id="${idPrefix}floorShadowBlur" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="6"/>
-    </filter>
+    <radialGradient id="${idPrefix}floorShadowGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0f172a" stop-opacity="0.22"/>
+      <stop offset="60%" stop-color="#0f172a" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0"/>
+    </radialGradient>
     <radialGradient id="${idPrefix}glare_soft" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
       <stop offset="65%" stop-color="#ffffff" stop-opacity="0.10"/>
@@ -480,7 +479,9 @@ export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPalet
     }
 
     return `
-  <g id="piece-${piece.id}" class="balloon-piece balloon-piece-star" filter="url(#${idPrefix}balloonShadow)">
+  <g id="piece-${piece.id}" class="balloon-piece balloon-piece-star">
+    <!-- Sombra vetorial leve de alto desempenho (zero overhead de filtro SVG) -->
+    <path d="${generateStarPath(x + 1.4, y + 2.8, starR + 1)}" fill="#090d16" opacity="0.14"/>
     <!-- Válvula inferior de enchimento -->
     <rect x="${(x - tabW / 2).toFixed(1)}" y="${tabY.toFixed(1)}" width="${tabW}" height="${tabH}" rx="1.5" fill="${darkEdge}" opacity="0.85"/>
     <!-- Borda perimetral térmica da costura do foil -->
@@ -508,7 +509,6 @@ export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPalet
 
   let interior = '';
   const isCrystalOrGlitter = effectiveFinish === 'crystal' || effectiveFinish === 'glitter';
-  const filterAttr = isCrystalOrGlitter ? '' : `filter="url(#${idPrefix}balloonShadow)"`;
 
   if (effectiveFinish === 'glitter') {
     const glt = glitterColor || palette.C || '#d4af37';
@@ -552,8 +552,9 @@ export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPalet
   const glareGrad = isChrome ? `url(#${idPrefix}glare_chrome)` : `url(#${idPrefix}glare_soft)`;
 
   return `
-  <g id="piece-${piece.id}" class="balloon-piece" ${filterAttr}>
-    ${isCrystalOrGlitter ? `<ellipse cx="${x + 2}" cy="${y + 4}" rx="${rx}" ry="${ry}" fill="#0f172a" opacity="0.12"/>` : ''}
+  <g id="piece-${piece.id}" class="balloon-piece">
+    <!-- Sombra vetorial leve de alto desempenho (zero overhead de filtro SVG) -->
+    <ellipse cx="${(x + 1.4).toFixed(1)}" cy="${(y + 2.8).toFixed(1)}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}" fill="#090d16" opacity="${isCrystalOrGlitter ? 0.10 : 0.14}"/>
     ${hasCover ? `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#${idPrefix}pat_cover_${effectiveSlot})"/>` : `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#${gradId})"/>`}
     ${hasCover ? `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#${idPrefix}grad_satin_${effectiveSlot})" opacity="0.32"/>` : ''}
     ${interior}
@@ -783,7 +784,7 @@ export function renderArrangementSvg(
 
   if (options.hasFloorShadow !== false) {
     const floorY = maxY + 6;
-    svg += `<ellipse cx="${(minX + maxX) / 2}" cy="${floorY}" rx="${(maxX - minX) * 0.40}" ry="12" fill="#0f172a" opacity="0.22" filter="url(#${idPrefix}floorShadowBlur)"/>`;
+    svg += `<ellipse cx="${(minX + maxX) / 2}" cy="${floorY}" rx="${(maxX - minX) * 0.40}" ry="12" fill="url(#${idPrefix}floorShadowGrad)"/>`;
   }
 
   // Ordena por profundidade física automática (maiores atrás, pontos de luz 5" na frente)

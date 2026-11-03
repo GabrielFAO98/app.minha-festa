@@ -1553,53 +1553,77 @@ export class BalloonStudioModal {
     if (layer.children.length > 0) return;
 
     const floorY = 510;
-    const panelCx = 205;
-    const panelCy = 205;
-    const panelRadius = 173; // 180cm de diâmetro (180 / 0.52 ≈ 346.1px -> r = 173px)
+    // Dimensões do Painel Redondo Oficial (Catálogo Decoraly: 150cm diâmetro x 190cm altura total)
+    // Escala métrica do app: 0.52 cm por pixel (12" = 30cm = 56px diâmetro)
+    const panelRadius = 144; // 150cm / 0.52 ≈ 288px -> r = 144px
+    const panelTotalHeight = 365; // 190cm / 0.52 ≈ 365px
+    const panelTopY = floorY - panelTotalHeight; // 145px (1,90 m do chão)
+    const panelCy = panelTopY + panelRadius; // 289px (1,15 m do chão)
+    const panelCx = 185; // Alinhado ergonomicamente à esquerda da pessoa
     const personHeight = 327; // 170cm de altura (170 / 0.52 ≈ 326.9px)
-    const personCx = 412; // Posicionada confortavelmente ao lado do painel e com folga da barra lateral
+    const personCx = 412; // Posicionada confortavelmente ao lado do painel
 
     layer.innerHTML = `
       <!-- Piso / Linha de Chão de Referência -->
       <g class="bs-ghost-floor">
         <line x1="-80" y1="${floorY}" x2="520" y2="${floorY}" stroke="#8c857b" stroke-width="1.6" stroke-linecap="round"/>
         <!-- Traços arquitetônicos de piso -->
-        ${Array.from({ length: 22 }).map((_, i) => {
-          const x = -70 + i * 26;
-          return `<line x1="${x}" y1="${floorY}" x2="${x - 9}" y2="${floorY + 7}" stroke="#a8a29e" stroke-width="1" opacity="0.65"/>`;
+        ${Array.from({ length: 24 }).map((_, i) => {
+          const x = -70 + i * 25;
+          return `<line x1="${x}" y1="${floorY}" x2="${x - 8}" y2="${floorY + 6}" stroke="#a8a29e" stroke-width="1" opacity="0.6"/>`;
         }).join('')}
         <!-- Etiqueta do piso -->
-        <rect x="-42" y="${floorY - 18}" width="36" height="15" rx="3" fill="#FAF8F5" stroke="#d6d3d1" stroke-width="0.8"/>
-        <text x="-24" y="${floorY - 7}" fill="#8c857b" font-size="8.5" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" letter-spacing="0.5">PISO</text>
+        <rect x="-44" y="${floorY - 18}" width="38" height="15" rx="3" fill="#FAF8F5" stroke="#d6d3d1" stroke-width="0.8"/>
+        <text x="-25" y="${floorY - 7}" fill="#8c857b" font-size="8.5" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" letter-spacing="0.5">PISO</text>
       </g>
 
-      <!-- Painel Redondo de Festa (Ø 1,80 m) -->
+      <!-- Painel Redondo de Festa (Estrutura Real de Decoração: Ø 1,50 m x 1,90 m) -->
       <g class="bs-ghost-panel">
-        <!-- Aro circular com contorno de croqui -->
+        <!-- Pés tubulares de ferro da estrutura (2 colunas com sapatas no chão, padrão real de locação) -->
+        <line x1="${panelCx - 58}" y1="${panelCy + 75}" x2="${panelCx - 58}" y2="${floorY}" stroke="#8c857b" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="${panelCx + 58}" y1="${panelCy + 75}" x2="${panelCx + 58}" y2="${floorY}" stroke="#8c857b" stroke-width="2.2" stroke-linecap="round"/>
+        
+        <!-- Sapatas retas no chão para estabilidade -->
+        <line x1="${panelCx - 78}" y1="${floorY}" x2="${panelCx - 38}" y2="${floorY}" stroke="#78716c" stroke-width="3" stroke-linecap="round"/>
+        <line x1="${panelCx + 38}" y1="${floorY}" x2="${panelCx + 78}" y2="${floorY}" stroke="#78716c" stroke-width="3" stroke-linecap="round"/>
+
+        <!-- Travessa horizontal inferior de reforço da estrutura tubular -->
+        <line x1="${panelCx - 58}" y1="${floorY - 28}" x2="${panelCx + 58}" y2="${floorY - 28}" stroke="#a8a29e" stroke-width="1.4" stroke-dasharray="3 3"/>
+
+        <!-- Aro circular do painel em contorno croqui elegante -->
         <circle cx="${panelCx}" cy="${panelCy}" r="${panelRadius}"
           fill="rgba(255, 255, 255, 0.45)" stroke="#8c857b" stroke-width="1.8" stroke-dasharray="6 4"/>
         <circle cx="${panelCx}" cy="${panelCy}" r="${panelRadius - 2.5}"
           fill="none" stroke="#d6d3d1" stroke-width="0.8" opacity="0.5"/>
 
-        <!-- Estrutura de Pés / Tripé de Chão -->
-        <line x1="${panelCx}" y1="${panelCy + panelRadius}" x2="${panelCx}" y2="${floorY}" stroke="#8c857b" stroke-width="2.2"/>
-        <line x1="${panelCx}" y1="${panelCy + panelRadius + 45}" x2="${panelCx - 52}" y2="${floorY}" stroke="#8c857b" stroke-width="1.6"/>
-        <line x1="${panelCx}" y1="${panelCy + panelRadius + 45}" x2="${panelCx + 52}" y2="${floorY}" stroke="#8c857b" stroke-width="1.6"/>
-        <line x1="${panelCx - 68}" y1="${floorY}" x2="${panelCx - 36}" y2="${floorY}" stroke="#78716c" stroke-width="2.6" stroke-linecap="round"/>
-        <line x1="${panelCx + 36}" y1="${floorY}" x2="${panelCx + 68}" y2="${floorY}" stroke="#78716c" stroke-width="2.6" stroke-linecap="round"/>
-        <line x1="${panelCx - 14}" y1="${floorY}" x2="${panelCx + 14}" y2="${floorY}" stroke="#78716c" stroke-width="2.6" stroke-linecap="round"/>
+        <!-- Cota de Diâmetro do Painel (Ø 1,50 m) com seta inclinada clara a 40° -->
+        <g class="bs-ghost-dim-diameter">
+          <line x1="${panelCx - Math.round(panelRadius * 0.76)}" y1="${panelCy + Math.round(panelRadius * 0.65)}"
+                x2="${panelCx + Math.round(panelRadius * 0.76)}" y2="${panelCy - Math.round(panelRadius * 0.65)}"
+                stroke="#a8a29e" stroke-width="1" stroke-dasharray="3 3"/>
+          <polyline points="${panelCx - Math.round(panelRadius * 0.76) + 8} ${panelCy + Math.round(panelRadius * 0.65) - 2} ${panelCx - Math.round(panelRadius * 0.76)} ${panelCy + Math.round(panelRadius * 0.65)} ${panelCx - Math.round(panelRadius * 0.76) + 2} ${panelCy + Math.round(panelRadius * 0.65) - 8}"
+            fill="none" stroke="#78716c" stroke-width="1.2"/>
+          <polyline points="${panelCx + Math.round(panelRadius * 0.76) - 8} ${panelCy - Math.round(panelRadius * 0.65) + 2} ${panelCx + Math.round(panelRadius * 0.76)} ${panelCy - Math.round(panelRadius * 0.65)} ${panelCx + Math.round(panelRadius * 0.76) - 2} ${panelCy - Math.round(panelRadius * 0.65) + 8}"
+            fill="none" stroke="#78716c" stroke-width="1.2"/>
 
-        <!-- Cota de Diâmetro do Painel (Ø 1,80 m) posicionada no quadrante visível livre de balões -->
-        <g class="bs-ghost-dim-panel">
-          <!-- Linha horizontal de cota -->
-          <line x1="${panelCx - panelRadius}" y1="${panelCy}" x2="${panelCx + panelRadius}" y2="${panelCy}" stroke="#a8a29e" stroke-width="1" stroke-dasharray="3 3"/>
-          <polyline points="${panelCx - panelRadius + 7} ${panelCy - 4} ${panelCx - panelRadius} ${panelCy} ${panelCx - panelRadius + 7} ${panelCy + 4}" fill="none" stroke="#78716c" stroke-width="1.2"/>
-          <polyline points="${panelCx + panelRadius - 7} ${panelCy - 4} ${panelCx + panelRadius} ${panelCy} ${panelCx + panelRadius - 7} ${panelCy + 4}" fill="none" stroke="#78716c" stroke-width="1.2"/>
-          
-          <!-- Etiqueta deslocada para a direita interna do aro (área 100% limpa e visível) -->
-          <rect x="${panelCx + 32}" y="${panelCy - 11}" width="88" height="22" rx="11"
+          <!-- Etiqueta Diâmetro Ø 1,50 m centralizada no aro -->
+          <rect x="${panelCx - 44}" y="${panelCy - 11}" width="88" height="22" rx="11"
             fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1" filter="drop-shadow(0 2px 4px rgba(28,25,23,0.08))"/>
-          <text x="${panelCx + 76}" y="${panelCy + 4}" fill="#44403c" font-size="11" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">Ø 1,80 m</text>
+          <text x="${panelCx}" y="${panelCy + 4}" fill="#44403c" font-size="11" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">Ø 1,50 m</text>
+        </g>
+
+        <!-- Cota de Altura Total da Estrutura (1,90 m) no lado esquerdo -->
+        <g class="bs-ghost-dim-panel-height">
+          <line x1="${panelCx - panelRadius - 10}" y1="${panelTopY}" x2="${panelCx - panelRadius - 40}" y2="${panelTopY}" stroke="#a8a29e" stroke-width="0.9" stroke-dasharray="2 2"/>
+          <line x1="${panelCx - 78}" y1="${floorY}" x2="${panelCx - panelRadius - 40}" y2="${floorY}" stroke="#a8a29e" stroke-width="0.9" stroke-dasharray="2 2"/>
+          
+          <line x1="${panelCx - panelRadius - 30}" y1="${panelTopY + 4}" x2="${panelCx - panelRadius - 30}" y2="${floorY - 4}" stroke="#78716c" stroke-width="1.2"/>
+          <polyline points="${panelCx - panelRadius - 33.5} ${panelTopY + 7} ${panelCx - panelRadius - 30} ${panelTopY} ${panelCx - panelRadius - 26.5} ${panelTopY + 7}" fill="none" stroke="#78716c" stroke-width="1.2"/>
+          <polyline points="${panelCx - panelRadius - 33.5} ${floorY - 7} ${panelCx - panelRadius - 30} ${floorY} ${panelCx - panelRadius - 26.5} ${floorY - 7}" fill="none" stroke="#78716c" stroke-width="1.2"/>
+
+          <rect x="${panelCx - panelRadius - 52}" y="${panelTopY + 172}" width="44" height="20" rx="4"
+            fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1" filter="drop-shadow(0 2px 4px rgba(28,25,23,0.08))"/>
+          <text x="${panelCx - panelRadius - 30}" y="${panelTopY + 186}" fill="#57534e" font-size="10" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">1,90 m</text>
         </g>
       </g>
 
@@ -1645,7 +1669,7 @@ export class BalloonStudioModal {
       Z
     `.replace(/\s+/g, ' ').trim();
 
-    const dimX = cx + 44;
+    const dimX = cx + 42;
 
     return `
       <g class="bs-ghost-person">
@@ -1656,23 +1680,22 @@ export class BalloonStudioModal {
         <path d="${bodyPath}"
           fill="rgba(255, 255, 255, 0.45)" stroke="#8c857b" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
 
-        <!-- Cota de Altura (1,70 m) -->
+        <!-- Cota de Altura (1,70 m) dedicada e sem interferência no painel -->
         <g class="bs-ghost-dim-person">
-          <line x1="${cx + 22}" y1="${topY}" x2="${dimX + 8}" y2="${topY}" stroke="#a8a29e" stroke-width="1" stroke-dasharray="2 2"/>
-          <line x1="${cx + 22}" y1="${floorY}" x2="${dimX + 8}" y2="${floorY}" stroke="#a8a29e" stroke-width="1" stroke-dasharray="2 2"/>
-          <line x1="${dimX}" y1="${topY + 3}" x2="${dimX}" y2="${floorY - 3}" stroke="#78716c" stroke-width="1.2"/>
-          <polyline points="${dimX - 3.5} ${topY + 6} ${dimX} ${topY} ${dimX + 3.5} ${topY + 6}" fill="none" stroke="#78716c" stroke-width="1.2"/>
-          <polyline points="${dimX - 3.5} ${floorY - 6} ${dimX} ${floorY} ${dimX + 3.5} ${floorY - 6}" fill="none" stroke="#78716c" stroke-width="1.2"/>
+          <line x1="${cx + 20}" y1="${topY}" x2="${dimX + 6}" y2="${topY}" stroke="#a8a29e" stroke-width="0.9" stroke-dasharray="2 2"/>
+          <line x1="${cx + 20}" y1="${floorY}" x2="${dimX + 6}" y2="${floorY}" stroke="#a8a29e" stroke-width="0.9" stroke-dasharray="2 2"/>
+          <line x1="${dimX}" y1="${topY + 4}" x2="${dimX}" y2="${floorY - 4}" stroke="#78716c" stroke-width="1.2"/>
+          <polyline points="${dimX - 3.5} ${topY + 7} ${dimX} ${topY} ${dimX + 3.5} ${topY + 7}" fill="none" stroke="#78716c" stroke-width="1.2"/>
+          <polyline points="${dimX - 3.5} ${floorY - 7} ${dimX} ${floorY} ${dimX + 3.5} ${floorY - 7}" fill="none" stroke="#78716c" stroke-width="1.2"/>
           <!-- Etiqueta com 1,70 m -->
-          <rect x="${dimX - 22}" y="${topY + Math.round(heightPx * 0.5) - 10}" width="44" height="20" rx="4"
-            fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1"/>
-          <text x="${dimX}" y="${topY + Math.round(heightPx * 0.5) + 4}" fill="#57534e" font-size="10" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">1,70 m</text>
+          <rect x="${dimX - 22}" y="${topY + 153}" width="44" height="20" rx="4"
+            fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1" filter="drop-shadow(0 2px 4px rgba(28,25,23,0.08))"/>
+          <text x="${dimX}" y="${topY + 167}" fill="#57534e" font-size="10" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">1,70 m</text>
         </g>
       </g>
     `;
   }
 
-  // Desenha anel de destaque dourado sutil no balão selecionado
   private renderSelectionHighlights(): void {
     const layer = document.getElementById('bs-highlight-layer');
     if (!layer) return;

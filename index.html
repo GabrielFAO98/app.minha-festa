@@ -450,68 +450,70 @@
 
       <!-- Linha Principal (Padrão 1 Linha): Lixeira à esquerda, Capa/Cor ao centro e Camadas à direita -->
       <div class="item-toolbar-main-row">
-        <!-- 1. Botão de Excluir à Esquerda (Sempre disponível no início da linha) -->
-        <button id="btn-action-delete" class="item-action-btn btn-delete-direct" title="Excluir Peça" aria-label="Excluir Peça">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-          </svg>
-          <span class="btn-delete-text">Excluir</span>
-        </button>
-
-        <!-- 2. Moldura vinculada de Capa/Cor e Enquadramento -->
-        <div id="cover-action-frame" class="cover-action-frame">
-          <button id="btn-action-cover" class="item-action-btn btn-cover-direct" title="Vestir Capa / Cor ou Pintar">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"/>
+        <div class="toolbar-main-content">
+          <!-- 1. Botão de Excluir à Esquerda (Sempre disponível no início da linha) -->
+          <button id="btn-action-delete" class="item-action-btn btn-delete-direct" title="Excluir Peça" aria-label="Excluir Peça">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
             </svg>
-            <span id="label-action-cover">Capa / Cor</span>
+            <span class="btn-delete-text">Excluir</span>
           </button>
 
-          <button id="btn-action-reposition" class="item-action-btn btn-reposition-direct" style="display: none;" title="Ajustar Enquadramento da Capa">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
-            </svg>
-            <span>Enquadrar</span>
-          </button>
-        </div>
+          <!-- 2. Moldura vinculada de Capa/Cor e Enquadramento -->
+          <div id="cover-action-frame" class="cover-action-frame">
+            <button id="btn-action-cover" class="item-action-btn btn-cover-direct" title="Vestir Capa / Cor ou Pintar">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"/>
+              </svg>
+              <span id="label-action-cover">Capa / Cor</span>
+            </button>
 
-        <!-- 3. Grupo de Camadas: Frente, Trás, Topo, Fundo com divisórias sutis -->
-        <div class="toolbar-layers-cluster" role="group" aria-label="Ordem das Camadas">
-          <button id="btn-action-front" class="item-action-btn btn-layer-action" title="Trazer para Frente (Avançar 1 camada)">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="19" x2="12" y2="5"></line>
-              <polyline points="5 12 12 5 19 12"></polyline>
-            </svg>
-            <span class="btn-layer-text">Frente</span>
-          </button>
-          <div class="layer-btn-divider" aria-hidden="true"></div>
-          <button id="btn-action-back" class="item-action-btn btn-layer-action" title="Enviar para Trás (Recuar 1 camada)">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <polyline points="19 12 12 19 5 12"></polyline>
-            </svg>
-            <span class="btn-layer-text">Trás</span>
-          </button>
-          <div class="layer-btn-divider" aria-hidden="true"></div>
-          <button id="btn-action-to-front" class="item-action-btn btn-layer-action" title="Trazer para o Topo (Frente de tudo)" aria-label="Trazer para o Topo">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="4" y1="3" x2="20" y2="3"></line>
-              <line x1="4" y1="7" x2="20" y2="7"></line>
-              <line x1="12" y1="21" x2="12" y2="11"></line>
-              <polyline points="6 15 12 10 18 15"></polyline>
-            </svg>
-            <span class="btn-layer-text layer-text-extreme">Topo</span>
-          </button>
-          <div class="layer-btn-divider" aria-hidden="true"></div>
-          <button id="btn-action-to-back" class="item-action-btn btn-layer-action" title="Enviar para o Fundo (Atrás de tudo)" aria-label="Enviar para o Fundo">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="4" y1="21" x2="20" y2="21"></line>
-              <line x1="4" y1="17" x2="20" y2="17"></line>
-              <line x1="12" y1="3" x2="12" y2="13"></line>
-              <polyline points="6 9 12 14 18 9"></polyline>
-            </svg>
-            <span class="btn-layer-text layer-text-extreme">Fundo</span>
-          </button>
+            <button id="btn-action-reposition" class="item-action-btn btn-reposition-direct" style="display: none;" title="Ajustar Enquadramento da Capa">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+              </svg>
+              <span>Enquadrar</span>
+            </button>
+          </div>
+
+          <!-- 3. Grupo de Camadas: Frente, Trás, Topo, Fundo com divisórias sutis -->
+          <div class="toolbar-layers-cluster" role="group" aria-label="Ordem das Camadas">
+            <button id="btn-action-front" class="item-action-btn btn-layer-action" title="Trazer para Frente (Avançar 1 camada)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="19" x2="12" y2="5"></line>
+                <polyline points="5 12 12 5 19 12"></polyline>
+              </svg>
+              <span class="btn-layer-text">Frente</span>
+            </button>
+            <div class="layer-btn-divider" aria-hidden="true"></div>
+            <button id="btn-action-back" class="item-action-btn btn-layer-action" title="Enviar para Trás (Recuar 1 camada)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <polyline points="19 12 12 19 5 12"></polyline>
+              </svg>
+              <span class="btn-layer-text">Trás</span>
+            </button>
+            <div class="layer-btn-divider" aria-hidden="true"></div>
+            <button id="btn-action-to-front" class="item-action-btn btn-layer-action" title="Trazer para o Topo (Frente de tudo)" aria-label="Trazer para o Topo">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="4" y1="3" x2="20" y2="3"></line>
+                <line x1="4" y1="7" x2="20" y2="7"></line>
+                <line x1="12" y1="21" x2="12" y2="11"></line>
+                <polyline points="6 15 12 10 18 15"></polyline>
+              </svg>
+              <span class="btn-layer-text layer-text-extreme">Topo</span>
+            </button>
+            <div class="layer-btn-divider" aria-hidden="true"></div>
+            <button id="btn-action-to-back" class="item-action-btn btn-layer-action" title="Enviar para o Fundo (Atrás de tudo)" aria-label="Enviar para o Fundo">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="4" y1="21" x2="20" y2="21"></line>
+                <line x1="4" y1="17" x2="20" y2="17"></line>
+                <line x1="12" y1="3" x2="12" y2="13"></line>
+                <polyline points="6 9 12 14 18 9"></polyline>
+              </svg>
+              <span class="btn-layer-text layer-text-extreme">Fundo</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

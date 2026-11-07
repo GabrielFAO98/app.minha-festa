@@ -454,11 +454,10 @@ body {
 .item-toolbar-main-row {
   height: 40px;
   min-height: 40px;
-  padding: 3px 12px;
+  width: 100%;
+  padding: 0;
   display: flex;
   align-items: center;
-  justify-content: flex-start; /* NUNCA corta o botão da esquerda */
-  gap: 8px;
   box-sizing: border-box;
   overflow-x: auto;
   scrollbar-width: none;
@@ -466,13 +465,21 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Quando NÃO há capa (poucos botões), centraliza perfeitamente sem estourar */
-.item-toolbar-main-row.no-cover {
-  justify-content: center;
-}
-
 .item-toolbar-main-row::-webkit-scrollbar {
   display: none;
+}
+
+/* Conteúdo interno da barra principal: centraliza automaticamente (margin: 0 auto) quando cabe na tela,
+   mas alinha à esquerda com scroll livre quando os botões excedem a largura (sem cortar a lixeira) */
+.toolbar-main-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 auto;
+  padding: 3px 12px;
+  min-width: max-content;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 /* Moldura que vincula Capa/Cor ao botão Enquadrar */

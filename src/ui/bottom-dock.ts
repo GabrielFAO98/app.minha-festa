@@ -168,8 +168,8 @@ export class BottomDock {
       btn.classList.toggle('active', (btn as HTMLElement).dataset.tab === tabName);
     });
 
-    // Oculta a barra flutuante de ações da peça para não competir com a gaveta
-    const floatingToolbar = document.getElementById('item-actions-floating');
+    // Oculta a barra de ações da peça para não competir com a gaveta
+    const floatingToolbar = document.getElementById('item-toolbar');
     if (floatingToolbar) {
       floatingToolbar.classList.remove('active');
     }

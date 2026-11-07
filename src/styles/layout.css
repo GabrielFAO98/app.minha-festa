@@ -334,78 +334,243 @@ body {
 /* BARRA FLUTUANTE DE AÇÕES DA PEÇA (MOBILE) */
 .item-actions-floating {
   position: absolute;
-  bottom: 66px;
-  left: 50%;
-  transform: translateX(-50%) translateY(20px);
+  bottom: 54px; /* Fixada diretamente sobre o dock inferior (54px) */
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: 100%;
   z-index: 45;
-  max-width: calc(100vw - 16px);
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-full);
-  padding: 6px 8px;
+  background-color: var(--bg-surface, #FFFFFF);
+  border: none;
+  border-top: 2px solid var(--primary, #B58938);
+  border-bottom: 1px solid var(--border-subtle, #E6E1DA);
+  border-radius: 0; /* Completa e reta nas beiradas, ocupando todo o espaço da div */
+  padding: 0;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(197, 160, 89, 0.2);
+  flex-direction: column;
+  box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.08), 0 -1px 3px rgba(181, 137, 56, 0.15);
   opacity: 0;
   pointer-events: none;
-  overflow-x: auto;
-  scrollbar-width: none;
-  white-space: nowrap;
-  -webkit-overflow-scrolling: touch;
-  transition: opacity var(--transition-fast), transform var(--transition-fast);
-}
-
-.item-actions-floating::-webkit-scrollbar {
-  display: none;
+  transform: translateY(100%);
+  transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .item-actions-floating.active {
   opacity: 1;
   pointer-events: auto;
-  transform: translateX(-50%) translateY(0);
+  transform: translateY(0);
 }
 
+/* Efeito de pulso dourado ao selecionar um produto no cenário */
+.item-actions-floating.just-selected {
+  animation: toolbarSelectedPulse 0.35s ease-out;
+}
+
+@keyframes toolbarSelectedPulse {
+  0% {
+    box-shadow: 0 -4px 20px rgba(181, 137, 56, 0.4), 0 0 0 2px rgba(181, 137, 56, 0.25);
+  }
+  100% {
+    box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.08), 0 -1px 3px rgba(181, 137, 56, 0.15);
+  }
+}
+
+/* 1. Header de Identificação Visual do Elemento Selecionado */
+.item-toolbar-header {
+  height: 32px;
+  min-height: 32px;
+  background: linear-gradient(90deg, rgba(247, 241, 227, 0.75) 0%, rgba(255, 255, 255, 0.98) 55%);
+  border-bottom: 1px solid rgba(230, 225, 218, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+.item-toolbar-identity {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  flex: 1;
+}
+
+.item-toolbar-thumb-wrap {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 4px;
+  background-color: var(--bg-thumb-contrast, #EAE6DF);
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.item-toolbar-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.item-toolbar-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.item-toolbar-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.item-toolbar-indicator-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--primary, #B58938);
+  box-shadow: 0 0 6px var(--primary, #B58938);
+  animation: dotPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes dotPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.25); opacity: 0.7; }
+}
+
+.item-toolbar-badge-text {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--primary, #B58938);
+}
+
+.item-toolbar-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-toolbar-name {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-main, #1C1917);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-toolbar-dimens {
+  font-size: 0.67rem;
+  font-weight: 500;
+  color: var(--text-dim, #78716C);
+  flex-shrink: 0;
+}
+
+.item-toolbar-close-btn {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--text-dim, #78716C);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all var(--transition-fast);
+}
+
+.item-toolbar-close-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-main, #1C1917);
+}
+
+.item-toolbar-close-btn:active {
+  transform: scale(0.9);
+}
+
+/* 2. Linha de Ações */
+.item-toolbar-actions-row {
+  height: 40px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+}
+
+.item-toolbar-actions-row::-webkit-scrollbar {
+  display: none;
+}
+
+.toolbar-actions-divider {
+  width: 1px;
+  height: 20px;
+  background-color: var(--border-subtle, #E6E1DA);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+/* Botões de Ação Compactos */
 .item-action-btn {
-  height: 38px;
-  padding: 0 12px;
-  border-radius: var(--radius-full);
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-main);
-  font-size: 0.74rem;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 7px;
+  background-color: var(--bg-surface, #FFFFFF);
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  color: var(--text-main, #1C1917);
+  font-size: 0.72rem;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   white-space: nowrap;
   flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   transition: all var(--transition-fast);
   cursor: pointer;
 }
 
 .item-action-btn:hover {
-  background-color: var(--primary-light);
-  border-color: var(--primary);
-  color: var(--primary);
+  background-color: var(--primary-light, #F7F1E3);
+  border-color: var(--primary, #B58938);
+  color: var(--primary, #B58938);
 }
 
 .item-action-btn:active {
-  transform: scale(0.94);
-  background-color: var(--primary-light);
+  transform: scale(0.95);
+  background-color: var(--primary-light, #F7F1E3);
 }
 
 .item-action-btn.btn-delete-direct {
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #ef4444;
-  min-width: 38px;
-  width: 38px;
+  min-width: 32px;
+  width: 32px;
   padding: 0;
   justify-content: center;
-  font-size: 1rem;
-  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.12);
+  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.08);
 }
 
 .item-action-btn.btn-delete-direct:hover {
@@ -415,17 +580,23 @@ body {
 }
 
 .item-action-btn.btn-cover-direct {
-  background: var(--primary);
-  border: 1px solid var(--primary);
+  background: var(--primary, #B58938);
+  border: 1px solid var(--primary, #B58938);
   color: #ffffff;
-  padding: 0 14px;
-  box-shadow: 0 2px 8px var(--primary-glow);
+  padding: 0 10px;
+  box-shadow: 0 2px 6px var(--primary-glow);
   font-weight: 600;
 }
 
 .item-action-btn.btn-cover-direct:hover {
-  background: var(--primary-hover);
-  border-color: var(--primary-hover);
+  background: var(--primary-hover, #9A7229);
+  border-color: var(--primary-hover, #9A7229);
+}
+
+.item-action-btn.btn-reposition-direct {
+  background: var(--primary-light, #F7F1E3);
+  border-color: var(--primary, #B58938);
+  color: var(--primary-hover, #9A7229);
 }
 
 .item-action-btn.btn-group-direct {
@@ -435,17 +606,59 @@ body {
   font-weight: 700;
 }
 
-.item-action-btn.btn-group-direct:hover {
-  background: #FFFFFF;
-  border-color: var(--primary, #B58938);
-}
-
 .item-action-btn.btn-multiselect-direct.active {
   background: var(--primary, #B58938);
   border-color: var(--primary, #B58938);
   color: #FFFFFF;
   font-weight: 700;
-  box-shadow: 0 2px 8px var(--primary-glow);
+  box-shadow: 0 2px 6px var(--primary-glow);
+}
+
+/* Cluster Segmentado de Camadas Compacto */
+.toolbar-layers-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background-color: #F5F2EC;
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  border-radius: 7px;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.toolbar-layers-cluster .btn-layer-action {
+  height: 28px;
+  padding: 0 7px;
+  border: none;
+  background: transparent;
+  border-radius: 5px;
+  color: var(--text-main, #1C1917);
+  box-shadow: none;
+  font-size: 0.70rem;
+  font-weight: 600;
+  gap: 3px;
+}
+
+.toolbar-layers-cluster .btn-layer-action:hover {
+  background: #FFFFFF;
+  color: var(--primary, #B58938);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.toolbar-layers-cluster .btn-layer-action:active {
+  transform: scale(0.94);
+  background: #FFFFFF;
+}
+
+@media (max-width: 420px) {
+  .toolbar-layers-cluster #btn-action-to-front .btn-layer-text,
+  .toolbar-layers-cluster #btn-action-to-back .btn-layer-text {
+    display: none;
+  }
+  .toolbar-layers-cluster #btn-action-to-front,
+  .toolbar-layers-cluster #btn-action-to-back {
+    padding: 0 6px;
+  }
 }
 
 /* ========================================================== */

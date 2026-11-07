@@ -130,11 +130,6 @@ export class ItemToolbar {
     this.selectedMeta = meta;
     this.selectedNode = node;
 
-    const thumbEl = document.getElementById('item-toolbar-thumb') as HTMLImageElement | null;
-    const badgeTextEl = document.getElementById('item-toolbar-badge-text');
-    const nameEl = document.getElementById('item-toolbar-name');
-    const dimensEl = document.getElementById('item-toolbar-dimens');
-
     const btnCover = document.getElementById('btn-action-cover');
     const btnReposition = document.getElementById('btn-action-reposition');
     const btnGroup = document.getElementById('btn-action-group');
@@ -179,34 +174,9 @@ export class ItemToolbar {
       }
     }
 
-    // Atualização dos dados de identificação visual da peça selecionada
-    if (isGroup) {
-      if (badgeTextEl) badgeTextEl.textContent = 'GRUPO';
-      if (nameEl) nameEl.textContent = `Grupo (${totalSelected} peças)`;
-      if (dimensEl) dimensEl.textContent = '';
-    } else if (totalSelected > 1) {
-      if (badgeTextEl) badgeTextEl.textContent = 'SELEÇÃO MÚLTIPLA';
-      if (nameEl) nameEl.textContent = `${totalSelected} peças selecionadas`;
-      if (dimensEl) dimensEl.textContent = '';
-    } else {
-      if (badgeTextEl) badgeTextEl.textContent = 'PEÇA SELECIONADA';
-      if (nameEl) nameEl.textContent = meta.name;
-      if (dimensEl) dimensEl.textContent = meta.widthCm && meta.heightCm ? `${meta.widthCm} × ${meta.heightCm} cm` : '';
-    }
-
-    if (thumbEl) {
-      const thumbUrl = meta.customCoverUrl || meta.previewUrl || '';
-      if (thumbUrl) {
-        thumbEl.src = thumbUrl;
-        thumbEl.style.display = 'block';
-      } else {
-        thumbEl.style.display = 'none';
-      }
-    }
-
     const mode = getItemCustomizationMode(meta);
 
-    const paletteSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"/></svg>`;
+    const paletteSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"/></svg>`;
     const cropSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
 
     if (totalSelected > 1) {
@@ -219,15 +189,15 @@ export class ItemToolbar {
       if (meta.type === 'moinho') {
         const colorLabel = (meta.currentColor || 'marrom').toUpperCase();
         btnCover.style.display = 'inline-flex';
-        btnCover.innerHTML = `${paletteSvg} <span>${colorLabel}</span>`;
+        btnCover.innerHTML = `${paletteSvg} <span id="label-action-cover">${colorLabel}</span>`;
         btnCover.title = 'Alternar Acabamento do Moinho';
       } else if (mode === 'structural') {
         btnCover.style.display = 'inline-flex';
-        btnCover.innerHTML = `${paletteSvg} <span>Capa / Cor</span>`;
-        btnCover.title = 'Vestir Capa ou Pintar Estrutura';
+        btnCover.innerHTML = `${paletteSvg} <span id="label-action-cover">Capa / Estampa</span>`;
+        btnCover.title = 'Vestir Capa / Estampa ou Pintar Peça';
       } else if (mode === 'modular') {
         btnCover.style.display = 'inline-flex';
-        btnCover.innerHTML = `${paletteSvg} <span>Cores</span>`;
+        btnCover.innerHTML = `${paletteSvg} <span id="label-action-cover">Cores</span>`;
         btnCover.title = 'Personalizar Cores dos Elementos';
       } else {
         btnCover.style.display = 'none';

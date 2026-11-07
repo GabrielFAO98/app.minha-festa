@@ -375,118 +375,54 @@ body {
   }
 }
 
-/* 1. Header de Identificação Visual do Elemento Selecionado */
-.item-toolbar-header {
-  height: 32px;
-  min-height: 32px;
-  background: linear-gradient(90deg, rgba(247, 241, 227, 0.75) 0%, rgba(255, 255, 255, 0.98) 55%);
-  border-bottom: 1px solid rgba(230, 225, 218, 0.75);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 10px;
-  box-sizing: border-box;
-}
-
-.item-toolbar-identity {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-  flex: 1;
-}
-
-.item-toolbar-thumb-wrap {
-  width: 22px;
-  height: 22px;
-  min-width: 22px;
-  border-radius: 4px;
-  background-color: var(--bg-thumb-contrast, #EAE6DF);
-  border: 1px solid var(--border-subtle, #E6E1DA);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-.item-toolbar-thumb {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.item-toolbar-info {
+/* 1. Linha Superior: Capa/Estampa e Seleção Múltipla */
+.item-toolbar-top-row {
+  height: 38px;
+  min-height: 38px;
+  padding: 3px 10px;
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 0;
-  overflow: hidden;
+  border-bottom: 1px solid rgba(230, 225, 218, 0.75);
+  background: linear-gradient(90deg, rgba(247, 241, 227, 0.45) 0%, rgba(255, 255, 255, 0.98) 60%);
+  box-sizing: border-box;
+  overflow-x: auto;
+  scrollbar-width: none;
   white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
 }
 
-.item-toolbar-badge-row {
+.item-toolbar-top-row::-webkit-scrollbar {
+  display: none;
+}
+
+/* 2. Linha Inferior: Camadas, Agrupar e Lixeira */
+.item-toolbar-bottom-row {
+  height: 38px;
+  min-height: 38px;
+  padding: 3px 10px;
   display: flex;
   align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.item-toolbar-indicator-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: var(--primary, #B58938);
-  box-shadow: 0 0 6px var(--primary, #B58938);
-  animation: dotPulse 1.8s infinite ease-in-out;
-}
-
-@keyframes dotPulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.25); opacity: 0.7; }
-}
-
-.item-toolbar-badge-text {
-  font-size: 0.62rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--primary, #B58938);
-}
-
-.item-toolbar-name-row {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  gap: 8px;
+  box-sizing: border-box;
+  overflow-x: auto;
+  scrollbar-width: none;
   white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
 }
 
-.item-toolbar-name {
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: var(--text-main, #1C1917);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.item-toolbar-dimens {
-  font-size: 0.67rem;
-  font-weight: 500;
-  color: var(--text-dim, #78716C);
-  flex-shrink: 0;
+.item-toolbar-bottom-row::-webkit-scrollbar {
+  display: none;
 }
 
 .item-toolbar-close-btn {
-  width: 22px;
-  height: 22px;
-  min-width: 22px;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  margin-left: auto;
   border-radius: 50%;
-  background: transparent;
-  border: none;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--border-subtle, #E6E1DA);
   color: var(--text-dim, #78716C);
   display: flex;
   align-items: center;
@@ -494,33 +430,16 @@ body {
   cursor: pointer;
   padding: 0;
   transition: all var(--transition-fast);
+  flex-shrink: 0;
 }
 
 .item-toolbar-close-btn:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(0, 0, 0, 0.08);
   color: var(--text-main, #1C1917);
 }
 
 .item-toolbar-close-btn:active {
   transform: scale(0.9);
-}
-
-/* 2. Linha de Ações */
-.item-toolbar-actions-row {
-  height: 40px;
-  padding: 4px 8px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  white-space: nowrap;
-  -webkit-overflow-scrolling: touch;
-  box-sizing: border-box;
-}
-
-.item-toolbar-actions-row::-webkit-scrollbar {
-  display: none;
 }
 
 .toolbar-actions-divider {
@@ -531,10 +450,10 @@ body {
   flex-shrink: 0;
 }
 
-/* Botões de Ação Compactos */
+/* Botões de Ação */
 .item-action-btn {
-  height: 32px;
-  padding: 0 8px;
+  height: 31px;
+  padding: 0 10px;
   border-radius: 7px;
   background-color: var(--bg-surface, #FFFFFF);
   border: 1px solid var(--border-subtle, #E6E1DA);
@@ -543,7 +462,7 @@ body {
   font-weight: 600;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   white-space: nowrap;
   flex-shrink: 0;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
@@ -562,35 +481,30 @@ body {
   background-color: var(--primary-light, #F7F1E3);
 }
 
-.item-action-btn.btn-delete-direct {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #ef4444;
-  min-width: 32px;
-  width: 32px;
-  padding: 0;
-  justify-content: center;
-  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.08);
-}
-
-.item-action-btn.btn-delete-direct:hover {
-  background: #fee2e2;
-  border-color: #ef4444;
-  color: #dc2626;
-}
-
+/* Botão de Capa / Estampa com visual bem distinto (degradê violeta nobre vibrante) */
 .item-action-btn.btn-cover-direct {
-  background: var(--primary, #B58938);
-  border: 1px solid var(--primary, #B58938);
-  color: #ffffff;
-  padding: 0 10px;
-  box-shadow: 0 2px 6px var(--primary-glow);
-  font-weight: 600;
+  background: linear-gradient(135deg, #7C3AED 0%, #6366F1 100%);
+  border: 1px solid #6D28D9;
+  color: #FFFFFF;
+  padding: 0 12px;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.item-action-btn.btn-cover-direct svg {
+  color: #FFFFFF;
 }
 
 .item-action-btn.btn-cover-direct:hover {
-  background: var(--primary-hover, #9A7229);
-  border-color: var(--primary-hover, #9A7229);
+  background: linear-gradient(135deg, #6D28D9 0%, #4F46E5 100%);
+  border-color: #5B21B6;
+  color: #FFFFFF;
+}
+
+.item-action-btn.btn-cover-direct:active {
+  transform: scale(0.95);
+  background: #5B21B6;
 }
 
 .item-action-btn.btn-reposition-direct {
@@ -599,11 +513,10 @@ body {
   color: var(--primary-hover, #9A7229);
 }
 
-.item-action-btn.btn-group-direct {
-  background: var(--primary-light, #F7F1E3);
-  border-color: rgba(181, 137, 56, 0.45);
-  color: var(--primary-hover, #9A7229);
-  font-weight: 700;
+.item-action-btn.btn-multiselect-direct {
+  background: #FFFFFF;
+  border-color: var(--border-subtle, #E6E1DA);
+  color: var(--text-main, #1C1917);
 }
 
 .item-action-btn.btn-multiselect-direct.active {
@@ -614,7 +527,30 @@ body {
   box-shadow: 0 2px 6px var(--primary-glow);
 }
 
-/* Cluster Segmentado de Camadas Compacto */
+.item-action-btn.btn-group-direct {
+  background: var(--primary-light, #F7F1E3);
+  border-color: rgba(181, 137, 56, 0.45);
+  color: var(--primary-hover, #9A7229);
+  font-weight: 700;
+}
+
+/* Lixeira na linha de baixo */
+.item-action-btn.btn-delete-direct {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #EF4444;
+  padding: 0 9px;
+  gap: 4px;
+  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.08);
+}
+
+.item-action-btn.btn-delete-direct:hover {
+  background: #FEE2E2;
+  border-color: #EF4444;
+  color: #DC2626;
+}
+
+/* Cluster Segmentado de Camadas com texto completo de todos os botões restaurado */
 .toolbar-layers-cluster {
   display: inline-flex;
   align-items: center;
@@ -627,7 +563,7 @@ body {
 }
 
 .toolbar-layers-cluster .btn-layer-action {
-  height: 28px;
+  height: 27px;
   padding: 0 7px;
   border: none;
   background: transparent;
@@ -639,6 +575,10 @@ body {
   gap: 3px;
 }
 
+.toolbar-layers-cluster .btn-layer-action .btn-layer-text {
+  display: inline !important; /* Texto completo sempre visível em todos os tamanhos de tela */
+}
+
 .toolbar-layers-cluster .btn-layer-action:hover {
   background: #FFFFFF;
   color: var(--primary, #B58938);
@@ -648,17 +588,6 @@ body {
 .toolbar-layers-cluster .btn-layer-action:active {
   transform: scale(0.94);
   background: #FFFFFF;
-}
-
-@media (max-width: 420px) {
-  .toolbar-layers-cluster #btn-action-to-front .btn-layer-text,
-  .toolbar-layers-cluster #btn-action-to-back .btn-layer-text {
-    display: none;
-  }
-  .toolbar-layers-cluster #btn-action-to-front,
-  .toolbar-layers-cluster #btn-action-to-back {
-    padding: 0 6px;
-  }
 }
 
 /* ========================================================== */

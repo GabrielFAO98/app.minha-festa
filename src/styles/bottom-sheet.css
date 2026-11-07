@@ -164,14 +164,15 @@
 
 /* Container de Categorias (Grid 4x2 sem espaçamento, ocupando 100% da div) */
 .category-pills {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0;
-  padding: 0;
-  margin: 0;
-  width: 100%;
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
   background-color: #ffffff;
   border-bottom: 1px solid var(--border-subtle);
+  box-sizing: border-box;
 }
 
 .category-pills::-webkit-scrollbar {

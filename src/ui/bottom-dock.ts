@@ -210,7 +210,7 @@ export class BottomDock {
   // ABA 1: Peças Base (Elementos) - Resposta Instantânea 0ms (In-Memory com Filtro O(1))
   renderPresetsTab(): void {
     if (this.sheetTitle) this.sheetTitle.textContent = 'Elementos';
-    if (this.categoriesBar) this.categoriesBar.style.display = 'flex';
+    if (this.categoriesBar) this.categoriesBar.style.display = 'grid';
     this.renderCategoryPills('presets');
 
     if (!this.presetsRendered && this.panePresets) {
@@ -388,7 +388,7 @@ export class BottomDock {
   // ABA 2: Meu Acervo Pessoal (Com Cache em Memória)
   async renderMyItemsTab(forceReload = false): Promise<void> {
     if (this.sheetTitle) this.sheetTitle.textContent = 'Meu Acervo';
-    if (this.categoriesBar) this.categoriesBar.style.display = 'flex';
+    if (this.categoriesBar) this.categoriesBar.style.display = 'grid';
     this.renderCategoryPills('my-items');
     if (!this.paneMyItems) return;
 

@@ -73,6 +73,7 @@ export class CanvasEngine {
   private pinchStageStartZoom: number;
   private pinchStageStartCenter: { x: number; y: number };
   private pinchStageStartPan: { x: number; y: number };
+  private pinchStageStartVirtualFocus: { x: number; y: number };
 
   // Modo Enquadrar Capa (Pinça + Arraste Direto)
   isRepositioningCover: boolean;
@@ -163,6 +164,7 @@ export class CanvasEngine {
     this.pinchStageStartZoom = 1;
     this.pinchStageStartCenter = { x: 0, y: 0 };
     this.pinchStageStartPan = { x: 0, y: 0 };
+    this.pinchStageStartVirtualFocus = { x: 0, y: 0 };
 
     this.isRepositioningCover = false;
     this.activeCoverRepositionPart = 'bottom';
@@ -275,7 +277,9 @@ export class CanvasEngine {
   /**
    * Delimita o deslocamento (pan) do palco para garantir que o cenário nunca se perca fora da tela,
    * ao mesmo tempo em que oferece uma margem de respiro (bleed) generosa para posicionar e visualizar
-   * elementos que transbordam propositalmente os limites (ex: arcos e cascatas de balões, tapetes).
+   * Delimita o deslocamento (pan) do palco para garantir que o cenário nunca se perca fora da tela,
+   * ao mesmo tempo em que oferece uma margem de respiro generosa (bleed) para posicionar, visualizar
+   * e manipular elementos grandes que transbordam o palco (ex: arcos de balões, displays, painéis largos).
    */
   clampPan(): void {
     if (!this.stage) return;
@@ -283,18 +287,12 @@ export class CanvasEngine {
     const containerH = this.stage.height();
     const finalScale = this.baseScale * this.zoomLevel;
 
-    if (this.zoomLevel <= 1.001) {
-      this.panX = 0;
-      this.panY = 0;
-      return;
-    }
-
     const stageScaledW = this.VIRTUAL_WIDTH * finalScale;
     const stageScaledH = this.VIRTUAL_HEIGHT * finalScale;
 
-    // Margem generosa para permitir visualizar itens que transbordam o palco (ex: arcos orgânicos nas laterais)
-    const bleedX = Math.max(120, 320 * finalScale);
-    const bleedY = Math.max(120, 320 * finalScale);
+    // Margem ampla e generosa para permitir visualizar e acessar bordas/alças de itens grandes fora do cenário
+    const bleedX = Math.max(containerW * 0.95, 1400 * finalScale);
+    const bleedY = Math.max(containerH * 0.95, 1400 * finalScale);
 
     // Limites de Pan X (impede que o palco saia fora da tela além do limite de respiro)
     let minPanX: number;
@@ -348,14 +346,9 @@ export class CanvasEngine {
 
   setZoom(newZoom: number, focusScreenX?: number, focusScreenY?: number) {
     if (!this.stage) return;
-    // Trava estritamente em no mínimo 1.0 (100%) e máximo 3.5 (350%)
-    const clampedZoom = Math.max(1.0, Math.min(3.5, newZoom));
+    // Permite zoom out até 0.4 (40%) para visualizar arranjos e peças gigantes, e zoom in até 3.5 (350%)
+    const clampedZoom = Math.max(0.4, Math.min(3.5, newZoom));
     if (Math.abs(clampedZoom - this.zoomLevel) < 0.001) {
-      if (clampedZoom <= 1.001 && (this.panX !== 0 || this.panY !== 0)) {
-        this.panX = 0;
-        this.panY = 0;
-        this.applyViewTransform();
-      }
       return;
     }
 
@@ -371,27 +364,40 @@ export class CanvasEngine {
     const virtualX = (screenFocusX - (this.baseOffsetX + this.panX)) / (oldScale || 1);
     const virtualY = (screenFocusY - (this.baseOffsetY + this.panY)) / (oldScale || 1);
 
-    // Ajusta o pan para que o ponto da tela permaneça no mesmo local sob o novo zoom
-    if (clampedZoom <= 1.001) {
-      this.panX = 0;
-      this.panY = 0;
-    } else {
-      this.panX = screenFocusX - this.baseOffsetX - virtualX * newScale;
-      this.panY = screenFocusY - this.baseOffsetY - virtualY * newScale;
-      this.clampPan();
-    }
+    // Ajusta o pan para que o ponto focal da tela permaneça no mesmo local sob o novo zoom
+    this.panX = screenFocusX - this.baseOffsetX - virtualX * newScale;
+    this.panY = screenFocusY - this.baseOffsetY - virtualY * newScale;
+    this.clampPan();
 
-    this.zoomLevel = clampedZoom <= 1.001 ? 1.0 : clampedZoom;
+    this.zoomLevel = clampedZoom;
     this.applyViewTransform();
   }
 
   zoomIn() {
-    const nextZoom = Math.min(3.5, Math.round((this.zoomLevel + 0.25) * 4) / 4);
+    let nextZoom: number;
+    if (this.zoomLevel < 0.5) {
+      nextZoom = 0.5;
+    } else if (this.zoomLevel < 0.75) {
+      nextZoom = 0.75;
+    } else if (this.zoomLevel < 1.0) {
+      nextZoom = 1.0;
+    } else {
+      nextZoom = Math.min(3.5, Math.round((this.zoomLevel + 0.25) * 4) / 4);
+    }
     this.setZoom(nextZoom);
   }
 
   zoomOut() {
-    const nextZoom = Math.max(1.0, Math.round((this.zoomLevel - 0.25) * 4) / 4);
+    let nextZoom: number;
+    if (this.zoomLevel > 1.0) {
+      nextZoom = Math.max(1.0, Math.round((this.zoomLevel - 0.25) * 4) / 4);
+    } else if (this.zoomLevel > 0.75) {
+      nextZoom = 0.75;
+    } else if (this.zoomLevel > 0.5) {
+      nextZoom = 0.5;
+    } else {
+      nextZoom = 0.4;
+    }
     this.setZoom(nextZoom);
   }
 
@@ -403,7 +409,6 @@ export class CanvasEngine {
   }
 
   panBy(screenDx: number, screenDy: number) {
-    if (this.zoomLevel <= 1.001) return;
     this.panX += screenDx;
     this.panY += screenDy;
     this.clampPan();
@@ -1143,20 +1148,22 @@ export class CanvasEngine {
           // 1. Gesto de Pinça na Capa (quando em modo Enquadrar Capa ativo)
           if (this.isRepositioningCover && this.selectedNode) {
             const meta = this.selectedNode.getAttr('itemMeta') || {};
-            if (meta.customCoverUrl) {
+            const hasCover = Boolean(meta.customCoverUrl || meta.tabletopCoverUrl);
+            if (hasCover) {
               const t1 = touchEvt.touches[0];
               const t2 = touchEvt.touches[1];
               const center = getTouchCenter(t1, t2);
               this.isDraggingCoverInternal = false;
               this.isPinchingCover = true;
+              this.isPinchingStage = false;
               this.pinchStartDist = Math.max(12, getTouchDistance(t1, t2));
-              this.pinchStartScale = meta.coverScale || 1;
+              this.pinchStartScale = (this.activeCoverRepositionPart === 'top' ? meta.tabletopCoverScale : meta.coverScale) || 1;
               this.pinchStartCenterX = center.x;
               this.pinchStartCenterY = center.y;
-              this.dragStartCoverOffsetX = meta.coverOffsetX || 0;
-              this.dragStartCoverOffsetY = meta.coverOffsetY || 0;
-              return;
+              this.dragStartCoverOffsetX = (this.activeCoverRepositionPart === 'top' ? meta.tabletopOffsetX : meta.coverOffsetX) || 0;
+              this.dragStartCoverOffsetY = (this.activeCoverRepositionPart === 'top' ? meta.tabletopOffsetY : meta.coverOffsetY) || 0;
             }
+            return;
           }
 
           // 2. Gesto de Pinça e Pan do Palco Inteiro
@@ -1170,6 +1177,16 @@ export class CanvasEngine {
           this.pinchStageStartZoom = this.zoomLevel;
           this.pinchStageStartCenter = { x: center.x, y: center.y };
           this.pinchStageStartPan = { x: this.panX, y: this.panY };
+
+          const contentEl = this.stage?.content || this.stage?.container();
+          const rect = contentEl ? contentEl.getBoundingClientRect() : { left: 0, top: 0 };
+          const centerScreenX = (center.x - rect.left) / (this.dragContainerScaleX || 1);
+          const centerScreenY = (center.y - rect.top) / (this.dragContainerScaleY || 1);
+          const startScale = this.baseScale * this.zoomLevel;
+          this.pinchStageStartVirtualFocus = {
+            x: (centerScreenX - (this.baseOffsetX + this.panX)) / (startScale || 1),
+            y: (centerScreenY - (this.baseOffsetY + this.panY)) / (startScale || 1)
+          };
           return;
         }
 
@@ -1255,8 +1272,13 @@ export class CanvasEngine {
           this.dragStartClientX = clientX;
           this.dragStartClientY = clientY;
           const meta = this.selectedNode.getAttr('itemMeta') || {};
-          this.dragStartCoverOffsetX = meta.coverOffsetX || 0;
-          this.dragStartCoverOffsetY = meta.coverOffsetY || 0;
+          if (this.activeCoverRepositionPart === 'top' && meta.tabletopCoverUrl) {
+            this.dragStartCoverOffsetX = meta.tabletopOffsetX || 0;
+            this.dragStartCoverOffsetY = meta.tabletopOffsetY || 0;
+          } else {
+            this.dragStartCoverOffsetX = meta.coverOffsetX || 0;
+            this.dragStartCoverOffsetY = meta.coverOffsetY || 0;
+          }
           return;
         } else {
           this.exitCoverRepositionMode();
@@ -1268,14 +1290,12 @@ export class CanvasEngine {
 
       if (candidates.length === 0) {
         this.deselect();
-        // Se o palco está com zoom (> 1), permite arrastar (pan) clicando no fundo vazio
-        if (this.zoomLevel > 1) {
-          this.dragStartClientX = clientX;
-          this.dragStartClientY = clientY;
-          this.pinchStageStartPan = { x: this.panX, y: this.panY };
-          this.isPinchingStage = true;
-          this.pinchStageStartDist = 0; // Marca como pan de 1 ponteiro
-        }
+        // Permite arrastar (pan) clicando no fundo vazio
+        this.dragStartClientX = clientX;
+        this.dragStartClientY = clientY;
+        this.pinchStageStartPan = { x: this.panX, y: this.panY };
+        this.isPinchingStage = true;
+        this.pinchStageStartDist = 0; // Marca como pan de 1 ponteiro
         return;
       }
 
@@ -1381,10 +1401,28 @@ export class CanvasEngine {
             }
           }
 
-          if (this.isPinchingCover && this.selectedNode) {
-            // Continua gesto de pinça na capa abaixo
+          if (this.isRepositioningCover && this.selectedNode) {
+            // Em modo de enquadramento da capa: se a pinça ainda não iniciou, inicia agora
+            if (!this.isPinchingCover) {
+              const meta = this.selectedNode.getAttr('itemMeta') || {};
+              const hasCover = Boolean(meta.customCoverUrl || meta.tabletopCoverUrl);
+              if (hasCover) {
+                const t1 = touchEvt.touches[0];
+                const t2 = touchEvt.touches[1];
+                const center = getTouchCenter(t1, t2);
+                this.isDraggingCoverInternal = false;
+                this.isPinchingCover = true;
+                this.isPinchingStage = false;
+                this.pinchStartDist = Math.max(12, getTouchDistance(t1, t2));
+                this.pinchStartScale = (this.activeCoverRepositionPart === 'top' ? meta.tabletopCoverScale : meta.coverScale) || 1;
+                this.pinchStartCenterX = center.x;
+                this.pinchStartCenterY = center.y;
+                this.dragStartCoverOffsetX = (this.activeCoverRepositionPart === 'top' ? meta.tabletopOffsetX : meta.coverOffsetX) || 0;
+                this.dragStartCoverOffsetY = (this.activeCoverRepositionPart === 'top' ? meta.tabletopOffsetY : meta.coverOffsetY) || 0;
+              }
+            }
           } else {
-            // Se ainda não estava em modo pinça de palco, inicia imediatamente
+            // Se ainda não estava em modo pinça de palco (e NÃO está em enquadramento), inicia imediatamente
             if (!this.isPinchingStage) {
               const t1 = touchEvt.touches[0];
               const t2 = touchEvt.touches[1];
@@ -1394,13 +1432,23 @@ export class CanvasEngine {
               this.pinchStageStartZoom = this.zoomLevel;
               this.pinchStageStartCenter = { x: center.x, y: center.y };
               this.pinchStageStartPan = { x: this.panX, y: this.panY };
+
+              const contentEl = this.stage?.content || this.stage?.container();
+              const rect = contentEl ? contentEl.getBoundingClientRect() : { left: 0, top: 0 };
+              const centerScreenX = (center.x - rect.left) / (this.dragContainerScaleX || 1);
+              const centerScreenY = (center.y - rect.top) / (this.dragContainerScaleY || 1);
+              const startScale = this.baseScale * this.zoomLevel;
+              this.pinchStageStartVirtualFocus = {
+                x: (centerScreenX - (this.baseOffsetX + this.panX)) / (startScale || 1),
+                y: (centerScreenY - (this.baseOffsetY + this.panY)) / (startScale || 1)
+              };
             }
           }
         }
       }
 
-      // 1. PINCH-TO-ZOOM / PAN DO PALCO INTEIRO
-      if (this.isPinchingStage) {
+      // 1. PINCH-TO-ZOOM / PAN DO PALCO INTEIRO (Somente quando NÃO em enquadramento de capa)
+      if (this.isPinchingStage && !this.isRepositioningCover) {
         if (evt.cancelable) evt.preventDefault();
 
         if (isTouch) {
@@ -1412,28 +1460,25 @@ export class CanvasEngine {
             const center = getTouchCenter(t1, t2);
 
             const scaleRatio = dist / this.pinchStageStartDist;
-            const targetZoom = Math.max(1.0, Math.min(3.5, this.pinchStageStartZoom * scaleRatio));
+            const targetZoom = Math.max(0.4, Math.min(3.5, this.pinchStageStartZoom * scaleRatio));
+            this.zoomLevel = targetZoom;
 
-            // Aplica zoom mantendo o centro do toque estável
+            // Mantém o centro focal original exatamente estável sob os dois dedos
             const contentEl = this.stage?.content || this.stage?.container();
             const rect = contentEl ? contentEl.getBoundingClientRect() : { left: 0, top: 0 };
-            const focusScreenX = (center.x - rect.left) / this.dragContainerScaleX;
-            const focusScreenY = (center.y - rect.top) / this.dragContainerScaleY;
+            const currentScreenX = (center.x - rect.left) / (this.dragContainerScaleX || 1);
+            const currentScreenY = (center.y - rect.top) / (this.dragContainerScaleY || 1);
+            const newScale = this.baseScale * targetZoom;
 
-            this.setZoom(targetZoom, focusScreenX, focusScreenY);
-
-            // Adiciona translação do gesto com 2 dedos
-            const panDx = (center.x - this.pinchStageStartCenter.x) / this.dragContainerScaleX;
-            const panDy = (center.y - this.pinchStageStartCenter.y) / this.dragContainerScaleY;
-            this.panX = this.pinchStageStartPan.x + panDx;
-            this.panY = this.pinchStageStartPan.y + panDy;
+            this.panX = currentScreenX - this.baseOffsetX - this.pinchStageStartVirtualFocus.x * newScale;
+            this.panY = currentScreenY - this.baseOffsetY - this.pinchStageStartVirtualFocus.y * newScale;
             this.clampPan();
             this.applyViewTransform();
             return;
           }
         }
 
-        // Pan com 1 ponteiro (mouse ou 1 dedo em fundo vazio quando zoom > 1)
+        // Pan com 1 ponteiro (mouse ou 1 dedo em fundo vazio)
         const clientX = isTouch
           ? (evt as TouchEvent).touches[0].clientX
           : (evt as MouseEvent).clientX;
@@ -1441,8 +1486,8 @@ export class CanvasEngine {
           ? (evt as TouchEvent).touches[0].clientY
           : (evt as MouseEvent).clientY;
 
-        const screenDx = (clientX - this.dragStartClientX) / this.dragContainerScaleX;
-        const screenDy = (clientY - this.dragStartClientY) / this.dragContainerScaleY;
+        const screenDx = (clientX - this.dragStartClientX) / (this.dragContainerScaleX || 1);
+        const screenDy = (clientY - this.dragStartClientY) / (this.dragContainerScaleY || 1);
         this.panX = this.pinchStageStartPan.x + screenDx;
         this.panY = this.pinchStageStartPan.y + screenDy;
         this.clampPan();
@@ -1533,9 +1578,15 @@ export class CanvasEngine {
           const flipSignX = (this.selectedNode.scaleX() || 1) < 0 ? -1 : 1;
 
           const meta = this.selectedNode.getAttr('itemMeta') || {};
-          meta.coverScale = newScale;
-          meta.coverOffsetX = this.dragStartCoverOffsetX + (virtualDx / nodeScaleX) * flipSignX;
-          meta.coverOffsetY = this.dragStartCoverOffsetY + (virtualDy / nodeScaleY);
+          if (this.activeCoverRepositionPart === 'top' && meta.tabletopCoverUrl) {
+            meta.tabletopCoverScale = newScale;
+            meta.tabletopOffsetX = this.dragStartCoverOffsetX + (virtualDx / nodeScaleX) * flipSignX;
+            meta.tabletopOffsetY = this.dragStartCoverOffsetY + (virtualDy / nodeScaleY);
+          } else {
+            meta.coverScale = newScale;
+            meta.coverOffsetX = this.dragStartCoverOffsetX + (virtualDx / nodeScaleX) * flipSignX;
+            meta.coverOffsetY = this.dragStartCoverOffsetY + (virtualDy / nodeScaleY);
+          }
           this.selectedNode.setAttr('itemMeta', meta);
 
           this.pendingCoverRefresh = true;
@@ -1568,8 +1619,13 @@ export class CanvasEngine {
         const nodeScaleY = Math.abs(this.selectedNode.scaleY() || 1);
         const flipSignX = (this.selectedNode.scaleX() || 1) < 0 ? -1 : 1;
         const meta = this.selectedNode.getAttr('itemMeta') || {};
-        meta.coverOffsetX = this.dragStartCoverOffsetX + (virtualDx / nodeScaleX) * flipSignX;
-        meta.coverOffsetY = this.dragStartCoverOffsetY + (virtualDy / nodeScaleY);
+        if (this.activeCoverRepositionPart === 'top' && meta.tabletopCoverUrl) {
+          meta.tabletopOffsetX = this.dragStartCoverOffsetX + (virtualDx / nodeScaleX) * flipSignX;
+          meta.tabletopOffsetY = this.dragStartCoverOffsetY + (virtualDy / nodeScaleY);
+        } else {
+          meta.coverOffsetX = this.dragStartCoverOffsetX + (virtualDx / nodeScaleX) * flipSignX;
+          meta.coverOffsetY = this.dragStartCoverOffsetY + (virtualDy / nodeScaleY);
+        }
         this.selectedNode.setAttr('itemMeta', meta);
         this.pendingCoverRefresh = true;
         this.scheduleFastDraw();
@@ -1590,8 +1646,8 @@ export class CanvasEngine {
           this.uiLayer?.drawScene();
         }
 
-        // Permite transbordamento generoso para elementos decorativos (arcos, tapetes, displays)
-        const MARGIN = 350;
+        // Permite transbordamento generoso para elementos decorativos grandes (arcos de balões, tapetes, displays)
+        const MARGIN = 1400;
         if (this.selectedNodes.length > 1) {
           this.selectedNodes.forEach((n) => {
             const startPos = this.dragStartNodesPositions.get(n);
@@ -1645,8 +1701,13 @@ export class CanvasEngine {
           this.dragStartClientX = touchEvt.touches[0].clientX;
           this.dragStartClientY = touchEvt.touches[0].clientY;
           const meta = this.selectedNode.getAttr('itemMeta') || {};
-          this.dragStartCoverOffsetX = meta.coverOffsetX || 0;
-          this.dragStartCoverOffsetY = meta.coverOffsetY || 0;
+          if (this.activeCoverRepositionPart === 'top' && meta.tabletopCoverUrl) {
+            this.dragStartCoverOffsetX = meta.tabletopOffsetX || 0;
+            this.dragStartCoverOffsetY = meta.tabletopOffsetY || 0;
+          } else {
+            this.dragStartCoverOffsetX = meta.coverOffsetX || 0;
+            this.dragStartCoverOffsetY = meta.coverOffsetY || 0;
+          }
           return;
         }
 

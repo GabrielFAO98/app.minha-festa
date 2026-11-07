@@ -375,16 +375,16 @@ body {
   }
 }
 
-/* 1. Linha Superior: Capa/Estampa e Seleção Múltipla */
-.item-toolbar-top-row {
-  height: 38px;
-  min-height: 38px;
-  padding: 3px 10px;
+/* 1. Linha Superior Secundária: Contexto de Grupo e Multi-Seleção (Oculta por padrão) */
+.item-toolbar-group-row {
+  height: 35px;
+  min-height: 35px;
+  padding: 2px 10px;
   display: flex;
   align-items: center;
   gap: 8px;
-  border-bottom: 1px solid rgba(230, 225, 218, 0.75);
-  background: linear-gradient(90deg, rgba(247, 241, 227, 0.45) 0%, rgba(255, 255, 255, 0.98) 60%);
+  border-bottom: 1px solid rgba(230, 225, 218, 0.8);
+  background: linear-gradient(90deg, rgba(247, 241, 227, 0.65) 0%, rgba(255, 255, 255, 0.98) 75%);
   box-sizing: border-box;
   overflow-x: auto;
   scrollbar-width: none;
@@ -392,14 +392,28 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-.item-toolbar-top-row::-webkit-scrollbar {
+.item-toolbar-group-row::-webkit-scrollbar {
   display: none;
 }
 
-/* 2. Linha Inferior: Camadas, Agrupar e Lixeira */
-.item-toolbar-bottom-row {
-  height: 38px;
-  min-height: 38px;
+.group-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.70rem;
+  font-weight: 700;
+  color: var(--primary-hover, #9A7229);
+  padding: 2px 8px;
+  background: var(--primary-light, #F7F1E3);
+  border-radius: 6px;
+  border: 1px solid rgba(181, 137, 56, 0.28);
+  flex-shrink: 0;
+}
+
+/* 2. Linha Principal (Padrão 1 Linha): Capa/Cor, Camadas e Lixeira */
+.item-toolbar-main-row {
+  height: 40px;
+  min-height: 40px;
   padding: 3px 10px;
   display: flex;
   align-items: center;
@@ -411,46 +425,27 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
-.item-toolbar-bottom-row::-webkit-scrollbar {
+.item-toolbar-main-row::-webkit-scrollbar {
   display: none;
 }
 
-.item-toolbar-close-btn {
-  width: 26px;
-  height: 26px;
-  min-width: 26px;
-  margin-left: auto;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.04);
-  border: 1px solid var(--border-subtle, #E6E1DA);
-  color: var(--text-dim, #78716C);
-  display: flex;
+/* Moldura que vincula Capa/Cor ao botão Enquadrar */
+.cover-action-frame {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
+  border-radius: 9px;
   transition: all var(--transition-fast);
   flex-shrink: 0;
 }
 
-.item-toolbar-close-btn:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: var(--text-main, #1C1917);
+.cover-action-frame.has-reposition {
+  padding: 2px;
+  background: rgba(124, 58, 237, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.28);
+  gap: 4px;
 }
 
-.item-toolbar-close-btn:active {
-  transform: scale(0.9);
-}
-
-.toolbar-actions-divider {
-  width: 1px;
-  height: 20px;
-  background-color: var(--border-subtle, #E6E1DA);
-  margin: 0 2px;
-  flex-shrink: 0;
-}
-
-/* Botões de Ação */
+/* Botões de Ação da Barra */
 .item-action-btn {
   height: 31px;
   padding: 0 10px;
@@ -481,13 +476,13 @@ body {
   background-color: var(--primary-light, #F7F1E3);
 }
 
-/* Botão de Capa / Estampa com visual bem distinto (degradê violeta nobre vibrante) */
+/* Botão de Capa / Cor com visual bem distinto (degradê violeta nobre vibrante) */
 .item-action-btn.btn-cover-direct {
   background: linear-gradient(135deg, #7C3AED 0%, #6366F1 100%);
   border: 1px solid #6D28D9;
   color: #FFFFFF;
-  padding: 0 12px;
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
+  padding: 0 11px;
+  box-shadow: 0 2px 7px rgba(124, 58, 237, 0.32);
   font-weight: 700;
   letter-spacing: 0.01em;
 }
@@ -507,26 +502,22 @@ body {
   background: #5B21B6;
 }
 
+/* Botão Enquadrar (discreto e integrado na moldura da capa) */
 .item-action-btn.btn-reposition-direct {
-  background: var(--primary-light, #F7F1E3);
-  border-color: var(--primary, #B58938);
-  color: var(--primary-hover, #9A7229);
-}
-
-.item-action-btn.btn-multiselect-direct {
   background: #FFFFFF;
-  border-color: var(--border-subtle, #E6E1DA);
-  color: var(--text-main, #1C1917);
+  border-color: rgba(124, 58, 237, 0.25);
+  color: #6D28D9;
+  font-size: 0.69rem;
+  padding: 0 8px;
+  height: 27px;
 }
 
-.item-action-btn.btn-multiselect-direct.active {
-  background: var(--primary, #B58938);
-  border-color: var(--primary, #B58938);
-  color: #FFFFFF;
-  font-weight: 700;
-  box-shadow: 0 2px 6px var(--primary-glow);
+.item-action-btn.btn-reposition-direct:hover {
+  background: rgba(124, 58, 237, 0.12);
+  border-color: #6D28D9;
 }
 
+/* Ações de Grupo */
 .item-action-btn.btn-group-direct {
   background: var(--primary-light, #F7F1E3);
   border-color: rgba(181, 137, 56, 0.45);
@@ -534,13 +525,30 @@ body {
   font-weight: 700;
 }
 
-/* Lixeira na linha de baixo */
+.item-action-btn.btn-isolate-direct {
+  background: #FFFFFF;
+  border: 1px solid rgba(181, 137, 56, 0.4);
+  color: var(--primary-hover, #9A7229);
+  font-weight: 700;
+}
+
+.item-action-btn.btn-exit-isolate-direct {
+  background: var(--primary, #B58938);
+  border: 1px solid var(--primary, #B58938);
+  color: #FFFFFF;
+  font-weight: 700;
+  box-shadow: 0 1px 4px var(--primary-glow);
+}
+
+/* Botão de Excluir Compacto (somente ícone) */
 .item-action-btn.btn-delete-direct {
+  width: 32px;
+  min-width: 32px;
+  padding: 0;
+  justify-content: center;
   background: #FEF2F2;
   border: 1px solid #FECACA;
   color: #EF4444;
-  padding: 0 9px;
-  gap: 4px;
   box-shadow: 0 1px 2px rgba(239, 68, 68, 0.08);
 }
 
@@ -550,7 +558,7 @@ body {
   color: #DC2626;
 }
 
-/* Cluster Segmentado de Camadas com texto completo de todos os botões restaurado */
+/* Cluster Segmentado de Camadas */
 .toolbar-layers-cluster {
   display: inline-flex;
   align-items: center;
@@ -575,8 +583,16 @@ body {
   gap: 3px;
 }
 
+/* Topo e Fundo são somente ícones compactos */
+.toolbar-layers-cluster #btn-action-to-front,
+.toolbar-layers-cluster #btn-action-to-back {
+  padding: 0 6px;
+  min-width: 25px;
+  justify-content: center;
+}
+
 .toolbar-layers-cluster .btn-layer-action .btn-layer-text {
-  display: inline !important; /* Texto completo sempre visível em todos os tamanhos de tela */
+  display: inline;
 }
 
 .toolbar-layers-cluster .btn-layer-action:hover {

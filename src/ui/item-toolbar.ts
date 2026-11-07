@@ -10,6 +10,7 @@ export class ItemToolbar {
   onOpenCoverModal?: ((meta: PresetItem) => void) | null;
   onOpenBalloonModal?: ((node: Konva.Group | Konva.Node) => void) | null;
   toolbarEl: HTMLElement | null;
+  stageMultiBtn: HTMLElement | null;
   selectedMeta: PresetItem | null;
   selectedNode: Konva.Group | Konva.Node | null;
 
@@ -22,6 +23,7 @@ export class ItemToolbar {
     this.onOpenCoverModal = onOpenCoverModal;
     this.onOpenBalloonModal = onOpenBalloonModal;
     this.toolbarEl = document.getElementById('item-toolbar');
+    this.stageMultiBtn = document.getElementById('btn-stage-multiselect');
     this.selectedMeta = null;
     this.selectedNode = null;
 
@@ -31,10 +33,13 @@ export class ItemToolbar {
   setupUI(): void {
     if (!this.toolbarEl) return;
 
-    const btnDeselect = document.getElementById('btn-action-deselect');
-    btnDeselect?.addEventListener('click', (e) => {
+    // Botão de Seleção Múltipla no Topo Direito do Palco (junto com Desfazer / Refazer)
+    this.stageMultiBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.canvasEngine.deselect();
+      const active = this.canvasEngine.toggleMultiSelectMode();
+      this.stageMultiBtn?.classList.toggle('active', active);
+      const currentMeta = this.canvasEngine.selectedNode?.getAttr('itemMeta') as PresetItem | undefined;
+      this.updateSelection(currentMeta || null, this.canvasEngine.selectedNode);
     });
 
     const btnDelete = document.getElementById('btn-action-delete');
@@ -53,8 +58,6 @@ export class ItemToolbar {
     });
 
     const btnGroup = document.getElementById('btn-action-group');
-    const btnMulti = document.getElementById('btn-action-multiselect');
-
     btnGroup?.addEventListener('click', (e) => {
       e.stopPropagation();
       if (this.canvasEngine.isGroupSelected()) {
@@ -64,10 +67,16 @@ export class ItemToolbar {
       }
     });
 
-    btnMulti?.addEventListener('click', (e) => {
+    const btnIsolate = document.getElementById('btn-action-isolate-item');
+    btnIsolate?.addEventListener('click', (e) => {
       e.stopPropagation();
-      const active = this.canvasEngine.toggleMultiSelectMode();
-      btnMulti.classList.toggle('active', active);
+      this.canvasEngine.isolateGroupMember();
+    });
+
+    const btnExitIsolate = document.getElementById('btn-action-exit-isolation');
+    btnExitIsolate?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.canvasEngine.exitGroupMemberIsolation();
     });
 
     btnCover?.addEventListener('click', async (e) => {
@@ -130,19 +139,30 @@ export class ItemToolbar {
     this.selectedMeta = meta;
     this.selectedNode = node;
 
-    const btnCover = document.getElementById('btn-action-cover');
-    const btnReposition = document.getElementById('btn-action-reposition');
+    // Sincroniza o botão de seleção múltipla do palco
+    if (this.stageMultiBtn) {
+      this.stageMultiBtn.classList.toggle('active', this.canvasEngine.isMultiSelectMode);
+    }
+
+    const groupRow = document.getElementById('item-toolbar-group-row');
+    const badgeText = document.getElementById('group-toolbar-badge-text');
     const btnGroup = document.getElementById('btn-action-group');
     const labelGroup = document.getElementById('label-action-group');
-    const btnMulti = document.getElementById('btn-action-multiselect');
+    const btnIsolate = document.getElementById('btn-action-isolate-item');
+    const btnExitIsolate = document.getElementById('btn-action-exit-isolation');
+
+    const coverFrame = document.getElementById('cover-action-frame');
+    const btnCover = document.getElementById('btn-action-cover');
+    const btnReposition = document.getElementById('btn-action-reposition');
 
     const totalSelected = this.canvasEngine.selectedNodes.length;
     const isGroup = this.canvasEngine.isGroupSelected();
+    const isIsolated = Boolean(this.canvasEngine.isolatedGroupId);
 
     if (!node || !meta || totalSelected === 0) {
       this.toolbarEl?.classList.remove('active');
       this.toolbarEl?.classList.remove('just-selected');
-      if (btnMulti) btnMulti.classList.remove('active');
+      if (groupRow) groupRow.style.display = 'none';
       return;
     }
 
@@ -156,12 +176,28 @@ export class ItemToolbar {
       this.toolbarEl?.classList.add('just-selected');
     }
 
-    if (btnMulti) {
-      btnMulti.classList.toggle('active', this.canvasEngine.isMultiSelectMode);
+    // Gerencia a barra superior secundária (Agrupamento, Multi-Seleção e Isolamento)
+    const showGroupRow = isGroup || totalSelected > 1 || isIsolated || this.canvasEngine.isMultiSelectMode;
+    if (groupRow) {
+      groupRow.style.display = showGroupRow ? 'flex' : 'none';
+    }
+
+    if (showGroupRow && badgeText) {
+      if (isIsolated) {
+        badgeText.textContent = 'Editando peça do grupo';
+      } else if (isGroup) {
+        badgeText.textContent = `Grupo (${totalSelected} peças)`;
+      } else if (totalSelected > 1) {
+        badgeText.textContent = `${totalSelected} peças selecionadas`;
+      } else {
+        badgeText.textContent = 'Seleção Múltipla';
+      }
     }
 
     if (btnGroup && labelGroup) {
-      if (isGroup) {
+      if (isIsolated) {
+        btnGroup.style.display = 'none';
+      } else if (isGroup) {
         btnGroup.style.display = 'inline-flex';
         labelGroup.textContent = 'Desagrupar';
         btnGroup.title = 'Desvincular peças agrupadas';
@@ -174,16 +210,27 @@ export class ItemToolbar {
       }
     }
 
-    const mode = getItemCustomizationMode(meta);
+    if (btnIsolate) {
+      btnIsolate.style.display = isGroup && !isIsolated ? 'inline-flex' : 'none';
+    }
 
-    const paletteSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"/></svg>`;
-    const cropSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
+    if (btnExitIsolate) {
+      btnExitIsolate.style.display = isIsolated ? 'inline-flex' : 'none';
+    }
 
-    if (totalSelected > 1) {
-      if (btnCover) btnCover.style.display = 'none';
-      if (btnReposition) btnReposition.style.display = 'none';
+    // Se múltiplos itens estiverem selecionados (e não estiver em modo edição de peça isolada)
+    if (totalSelected > 1 && !isIsolated) {
+      if (coverFrame) coverFrame.style.display = 'none';
       return;
     }
+
+    if (coverFrame) {
+      coverFrame.style.display = 'inline-flex';
+    }
+
+    const mode = getItemCustomizationMode(meta);
+    const paletteSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"/></svg>`;
+    const cropSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
 
     if (btnCover) {
       if (meta.type === 'moinho') {
@@ -193,8 +240,8 @@ export class ItemToolbar {
         btnCover.title = 'Alternar Acabamento do Moinho';
       } else if (mode === 'structural') {
         btnCover.style.display = 'inline-flex';
-        btnCover.innerHTML = `${paletteSvg} <span id="label-action-cover">Capa / Estampa</span>`;
-        btnCover.title = 'Vestir Capa / Estampa ou Pintar Peça';
+        btnCover.innerHTML = `${paletteSvg} <span id="label-action-cover">Capa / Cor</span>`;
+        btnCover.title = 'Vestir Capa / Cor ou Pintar Peça';
       } else if (mode === 'modular') {
         btnCover.style.display = 'inline-flex';
         btnCover.innerHTML = `${paletteSvg} <span id="label-action-cover">Cores</span>`;
@@ -204,14 +251,16 @@ export class ItemToolbar {
       }
     }
 
+    const hasAnyCover = Boolean(meta.customCoverUrl || meta.tabletopCoverUrl);
     if (btnReposition) {
-      const hasAnyCover = Boolean(meta.customCoverUrl || meta.tabletopCoverUrl);
       if (mode === 'structural' && hasAnyCover) {
         btnReposition.style.display = 'inline-flex';
         btnReposition.innerHTML = `${cropSvg} <span>Enquadrar</span>`;
         btnReposition.title = 'Ajustar Enquadramento da Capa';
+        coverFrame?.classList.add('has-reposition');
       } else {
         btnReposition.style.display = 'none';
+        coverFrame?.classList.remove('has-reposition');
       }
     }
   }

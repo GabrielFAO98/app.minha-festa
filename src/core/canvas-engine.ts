@@ -37,6 +37,7 @@ export class CanvasEngine {
   selectedNode: Konva.Group | null;
   selectedNodes: Konva.Group[] = [];
   isMultiSelectMode: boolean = false;
+  isolatedGroupId: string | null = null;
   private dragStartNodesPositions = new Map<Konva.Group, { x: number; y: number }>();
 
   // Botões de Ação nos Cantos do Quadro de Seleção e Alça de Arraste
@@ -1285,22 +1286,34 @@ export class CanvasEngine {
       const isMulti = isShift || this.isMultiSelectMode;
 
       if (clickedMeta?.groupId && !isMulti) {
-        // Clicou em peça vinculada a um grupo: seleciona todo o grupo automaticamente (estilo Canva)
-        const groupNodes = this.getSceneNodes().filter((n) => {
-          const m = n.getAttr('itemMeta') as PresetItem | undefined;
-          return m?.groupId && m.groupId === clickedMeta.groupId;
-        });
-
-        const isGroupAlreadySelected =
-          this.selectedNodes.length === groupNodes.length &&
-          groupNodes.every((n) => this.selectedNodes.includes(n));
-
-        if (isGroupAlreadySelected) {
-          this.wasAlreadySelectedOnDown = true;
+        if (this.isolatedGroupId === clickedMeta.groupId) {
+          // No modo de edição de peça isolada deste grupo: seleciona a peça individual clicada
+          const isNodeAlreadySelected = this.selectedNode === clicked && this.selectedNodes.length === 1;
+          if (isNodeAlreadySelected) {
+            this.wasAlreadySelectedOnDown = true;
+          } else {
+            this.wasAlreadySelectedOnDown = false;
+            this.wasSelectedByCycleOrLayer = false;
+            this.selectNodes([clicked]);
+          }
         } else {
-          this.wasAlreadySelectedOnDown = false;
-          this.wasSelectedByCycleOrLayer = false;
-          this.selectNodes(groupNodes);
+          // Clicou em peça vinculada a um grupo: seleciona todo o grupo automaticamente (estilo Canva)
+          const groupNodes = this.getSceneNodes().filter((n) => {
+            const m = n.getAttr('itemMeta') as PresetItem | undefined;
+            return m?.groupId && m.groupId === clickedMeta.groupId;
+          });
+
+          const isGroupAlreadySelected =
+            this.selectedNodes.length === groupNodes.length &&
+            groupNodes.every((n) => this.selectedNodes.includes(n));
+
+          if (isGroupAlreadySelected) {
+            this.wasAlreadySelectedOnDown = true;
+          } else {
+            this.wasAlreadySelectedOnDown = false;
+            this.wasSelectedByCycleOrLayer = false;
+            this.selectNodes(groupNodes);
+          }
         }
       } else if (isMulti) {
         // Multi-seleção ativa (Shift ou botão Vários)
@@ -2252,6 +2265,10 @@ export class CanvasEngine {
       this.exitCoverRepositionMode(false);
     }
 
+    if (this.isolatedGroupId && (!nodes[0] || (nodes[0].getAttr('itemMeta') as PresetItem | undefined)?.groupId !== this.isolatedGroupId)) {
+      this.isolatedGroupId = null;
+    }
+
     nodes.forEach((node) => {
       if (node && !(node as any).__patchedRotation) {
         (node as any).__patchedRotation = true;
@@ -2293,6 +2310,7 @@ export class CanvasEngine {
     this.selectedNode = null;
     this.selectedNodes = [];
     this.isMultiSelectMode = false;
+    this.isolatedGroupId = null;
     this.wasSelectedByCycleOrLayer = false;
     if (this.transformer) {
       this.transformer.padding(4);
@@ -2338,6 +2356,7 @@ export class CanvasEngine {
         node.setAttr('itemMeta', meta);
       }
     });
+    this.isolatedGroupId = null;
     this.saveSnapshot();
     this.notifyLayersChange();
     if (this.onSelectionChange) {
@@ -2347,6 +2366,7 @@ export class CanvasEngine {
   }
 
   isGroupSelected(): boolean {
+    if (this.isolatedGroupId) return false;
     if (this.selectedNodes.length === 0) return false;
     if (this.selectedNodes.length === 1) {
       const meta = this.selectedNodes[0].getAttr('itemMeta') as PresetItem | undefined;
@@ -2355,6 +2375,29 @@ export class CanvasEngine {
     const firstGroup = (this.selectedNodes[0].getAttr('itemMeta') as PresetItem | undefined)?.groupId;
     if (!firstGroup) return false;
     return this.selectedNodes.every((n) => (n.getAttr('itemMeta') as PresetItem | undefined)?.groupId === firstGroup);
+  }
+
+  isolateGroupMember(node?: Konva.Group): boolean {
+    const target = node || this.selectedNode || this.selectedNodes[0];
+    if (!target) return false;
+    const meta = target.getAttr('itemMeta') as PresetItem | undefined;
+    if (!meta?.groupId) return false;
+    this.isolatedGroupId = meta.groupId;
+    this.selectNodes([target]);
+    return true;
+  }
+
+  exitGroupMemberIsolation(): boolean {
+    const gid = this.isolatedGroupId;
+    this.isolatedGroupId = null;
+    if (!gid) return false;
+    const groupNodes = this.getSceneNodes().filter(
+      (n) => (n.getAttr('itemMeta') as PresetItem | undefined)?.groupId === gid
+    );
+    if (groupNodes.length > 0) {
+      this.selectNodes(groupNodes);
+    }
+    return true;
   }
 
   toggleMultiSelectMode(): boolean {

@@ -113,6 +113,19 @@
   pointer-events: none;
 }
 
+.stage-controls-divider {
+  width: 1px;
+  height: 18px;
+  background-color: var(--border-subtle);
+  margin: 0 2px;
+}
+
+.btn-stage-multiselect.active {
+  background: var(--primary, #B58938) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 1px 4px rgba(181, 137, 56, 0.4);
+}
+
 /* Controle Flutuante de Zoom do Projeto */
 .stage-zoom-controls {
   position: absolute;

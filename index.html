@@ -282,6 +282,14 @@
                 <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"></path>
               </svg>
             </button>
+            <div class="stage-controls-divider" aria-hidden="true"></div>
+            <button id="btn-stage-multiselect" class="btn-history-ctrl btn-stage-multiselect" title="Modo Seleção Múltipla" aria-label="Seleção Múltipla">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="12" height="12" rx="2" stroke-dasharray="3 2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                <polyline points="12 15 14 17 18 13"></polyline>
+              </svg>
+            </button>
           </div>
 
           <!-- BARRA INFERIOR DE ENQUADRAMENTO DE CAPA (PINÇA + ARRASTE) -->
@@ -400,43 +408,65 @@
       </aside>
     </div>
 
-    <!-- BARRA DE OPÇÕES DA PEÇA SELECIONADA (MOBILE DOCK-ATTACHED - 2 LINHAS) -->
+    <!-- BARRA DE OPÇÕES DA PEÇA SELECIONADA (MOBILE DOCK-ATTACHED) -->
     <div id="item-toolbar" class="item-actions-floating" role="region" aria-label="Opções do elemento selecionado">
-      <!-- 1. Linha Superior: Capa/Estampa e Seleção Múltipla -->
-      <div class="item-toolbar-top-row">
-        <button id="btn-action-cover" class="item-action-btn btn-cover-direct" title="Vestir Capa / Estampa">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"/>
+      <!-- Linha Superior Secundária: Contexto de Grupo e Multi-Seleção (Oculta por padrão) -->
+      <div id="item-toolbar-group-row" class="item-toolbar-group-row" style="display: none;">
+        <div class="group-status-badge">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+            <path d="M10 6.5h4a2 2 0 0 1 2 2v4M14 17.5h-4a2 2 0 0 1-2-2v-4"></path>
           </svg>
-          <span id="label-action-cover">Capa / Estampa</span>
+          <span id="group-toolbar-badge-text">Grupo (2 peças)</span>
+        </div>
+
+        <button id="btn-action-group" class="item-action-btn btn-group-direct" title="Agrupar ou Desagrupar Peças">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+            <path d="M10 6.5h4a2 2 0 0 1 2 2v4M14 17.5h-4a2 2 0 0 1-2-2v-4"></path>
+          </svg>
+          <span id="label-action-group">Desagrupar</span>
         </button>
 
-        <button id="btn-action-reposition" class="item-action-btn btn-reposition-direct" style="display: none;" title="Ajustar Enquadramento da Capa">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+        <button id="btn-action-isolate-item" class="item-action-btn btn-isolate-direct" style="display: none;" title="Editar apenas uma peça deste grupo sem desagrupar">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M3 12h3m12 0h3M12 3v3m0 12v3"></path>
           </svg>
-          <span>Enquadrar</span>
+          <span>Editar Peça</span>
         </button>
 
-        <button id="btn-action-multiselect" class="item-action-btn btn-multiselect-direct" title="Selecionar Vários Itens (Seleção Múltipla)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="8" y="8" width="12" height="12" rx="2"></rect>
-            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+        <button id="btn-action-exit-isolation" class="item-action-btn btn-exit-isolate-direct" style="display: none;" title="Concluir edição da peça e voltar a selecionar o grupo completo">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 14 4 9 9 4"></polyline>
+            <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
           </svg>
-          <span id="label-action-multiselect">Seleção Múltipla</span>
-        </button>
-
-        <button id="btn-action-deselect" class="item-toolbar-close-btn" title="Desmarcar elemento" aria-label="Desmarcar elemento">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
+          <span>Voltar ao Grupo</span>
         </button>
       </div>
 
-      <!-- 2. Linha Inferior: Camadas (com texto completo), Agrupar e Lixeira -->
-      <div class="item-toolbar-bottom-row">
-        <!-- Grupo de Camadas com texto completo de todos os botões restaurado -->
+      <!-- Linha Principal (Padrão 1 Linha): Capa/Cor, Camadas e Lixeira -->
+      <div class="item-toolbar-main-row">
+        <!-- Moldura vinculada de Capa/Cor e Enquadramento -->
+        <div id="cover-action-frame" class="cover-action-frame">
+          <button id="btn-action-cover" class="item-action-btn btn-cover-direct" title="Vestir Capa / Cor ou Pintar">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"/>
+            </svg>
+            <span id="label-action-cover">Capa / Cor</span>
+          </button>
+
+          <button id="btn-action-reposition" class="item-action-btn btn-reposition-direct" style="display: none;" title="Ajustar Enquadramento da Capa">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+            </svg>
+            <span>Enquadrar</span>
+          </button>
+        </div>
+
+        <!-- Grupo de Camadas: Frente e Trás com texto, Topo e Fundo somente ícones com 2 linhas -->
         <div class="toolbar-layers-cluster" role="group" aria-label="Ordem das Camadas">
           <button id="btn-action-front" class="item-action-btn btn-layer-action" title="Trazer para Frente (Avançar 1 camada)">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -452,40 +482,28 @@
             </svg>
             <span class="btn-layer-text">Trás</span>
           </button>
-          <button id="btn-action-to-front" class="item-action-btn btn-layer-action" title="Trazer para o Topo (Frente de tudo)">
+          <button id="btn-action-to-front" class="item-action-btn btn-layer-action" title="Trazer para o Topo (Frente de tudo)" aria-label="Trazer para o Topo">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="4" y1="4" x2="20" y2="4"></line>
-              <line x1="12" y1="20" x2="12" y2="8"></line>
-              <polyline points="5 14 12 7 19 14"></polyline>
+              <line x1="4" y1="3" x2="20" y2="3"></line>
+              <line x1="4" y1="7" x2="20" y2="7"></line>
+              <line x1="12" y1="21" x2="12" y2="11"></line>
+              <polyline points="6 15 12 10 18 15"></polyline>
             </svg>
-            <span class="btn-layer-text">Topo</span>
           </button>
-          <button id="btn-action-to-back" class="item-action-btn btn-layer-action" title="Enviar para o Fundo (Atrás de tudo)">
+          <button id="btn-action-to-back" class="item-action-btn btn-layer-action" title="Enviar para o Fundo (Atrás de tudo)" aria-label="Enviar para o Fundo">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="4" y1="20" x2="20" y2="20"></line>
-              <line x1="12" y1="4" x2="12" y2="16"></line>
-              <polyline points="19 10 12 17 5 10"></polyline>
+              <line x1="4" y1="21" x2="20" y2="21"></line>
+              <line x1="4" y1="17" x2="20" y2="17"></line>
+              <line x1="12" y1="3" x2="12" y2="13"></line>
+              <polyline points="6 9 12 14 18 9"></polyline>
             </svg>
-            <span class="btn-layer-text">Fundo</span>
           </button>
         </div>
 
-        <button id="btn-action-group" class="item-action-btn btn-group-direct" style="display: none;" title="Agrupar ou Desagrupar Peças">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
-            <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
-            <path d="M10 6.5h4a2 2 0 0 1 2 2v4M14 17.5h-4a2 2 0 0 1-2-2v-4"></path>
-          </svg>
-          <span id="label-action-group">Agrupar</span>
-        </button>
-
-        <div class="toolbar-actions-divider" aria-hidden="true"></div>
-
         <button id="btn-action-delete" class="item-action-btn btn-delete-direct" title="Excluir Peça" aria-label="Excluir Peça">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
           </svg>
-          <span class="btn-delete-text">Excluir</span>
         </button>
       </div>
     </div>

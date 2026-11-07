@@ -451,8 +451,3 @@
   color: var(--primary);
 }
 
-.btn-reposition-direct {
-  background: var(--primary-light) !important;
-  border: 1px solid var(--border-focus) !important;
-  color: var(--primary) !important;
-}

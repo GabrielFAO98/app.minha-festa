@@ -454,16 +454,21 @@ body {
 .item-toolbar-main-row {
   height: 40px;
   min-height: 40px;
-  padding: 3px 10px;
+  padding: 3px 12px;
   display: flex;
   align-items: center;
-  justify-content: center; /* Centralizado para não deixar vão quando há menos opções */
+  justify-content: flex-start; /* NUNCA corta o botão da esquerda */
   gap: 8px;
   box-sizing: border-box;
   overflow-x: auto;
   scrollbar-width: none;
   white-space: nowrap;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Quando NÃO há capa (poucos botões), centraliza perfeitamente sem estourar */
+.item-toolbar-main-row.no-cover {
+  justify-content: center;
 }
 
 .item-toolbar-main-row::-webkit-scrollbar {
@@ -483,7 +488,8 @@ body {
 .cover-action-frame.has-reposition {
   padding: 2px 3px;
   background: rgba(124, 58, 237, 0.05);
-  border: 1px dashed rgba(124, 58, 237, 0.35);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  border-radius: 9px;
 }
 
 /* Botões de Ação da Barra */
@@ -543,16 +549,16 @@ body {
   background: #5B21B6;
 }
 
-/* Botão Enquadrar: Identidade visual com cores invertidas do botão de Capa */
+/* Botão Enquadrar: Visual tonal suave (fundo lavanda pastel, texto e ícone violeta) */
 .item-action-btn.btn-reposition-direct {
-  background: #FFFFFF;
-  border: 1.5px solid #7C3AED;
+  background: #F5F3FF;
+  border: 1px solid #DDD6FE;
   color: #6D28D9;
   font-size: 0.72rem;
   font-weight: 700;
   padding: 0 10px;
   height: 31px;
-  box-shadow: 0 1px 3px rgba(124, 58, 237, 0.15);
+  box-shadow: 0 1px 2px rgba(124, 58, 237, 0.08);
 }
 
 .item-action-btn.btn-reposition-direct svg {
@@ -560,14 +566,14 @@ body {
 }
 
 .item-action-btn.btn-reposition-direct:hover {
-  background: #F5F3FF;
-  border-color: #5B21B6;
+  background: #EDE9FE;
+  border-color: #C4B5FD;
   color: #5B21B6;
 }
 
 .item-action-btn.btn-reposition-direct:active {
   transform: scale(0.95);
-  background: #EDE9FE;
+  background: #DDD6FE;
 }
 
 /* Ações de Grupo */
@@ -593,14 +599,13 @@ body {
   box-shadow: 0 1px 4px var(--primary-glow);
 }
 
-/* Botão de Excluir à Esquerda (com texto dinâmico para preencher) */
+/* Botão de Excluir à Esquerda (Sempre visível e intacto) */
 .item-action-btn.btn-delete-direct {
-  padding: 0 10px;
-  gap: 5px;
   background: #FEF2F2;
   border: 1px solid #FECACA;
   color: #EF4444;
   box-shadow: 0 1px 2px rgba(239, 68, 68, 0.08);
+  flex-shrink: 0;
 }
 
 .item-action-btn.btn-delete-direct:hover {
@@ -609,20 +614,26 @@ body {
   color: #DC2626;
 }
 
-.item-action-btn.btn-delete-direct .btn-delete-text {
-  display: inline;
+/* Quando há capa presente (muitos botões na linha), o excluir fica compacto com ícone apenas */
+.item-toolbar-main-row:not(.no-cover) .btn-delete-direct {
+  width: 32px;
+  min-width: 32px;
+  padding: 0;
+  justify-content: center;
 }
 
-@media (max-width: 380px) {
-  .item-toolbar-main-row:not(.no-cover) .btn-delete-direct .btn-delete-text {
-    display: none;
-  }
-  .item-toolbar-main-row:not(.no-cover) .btn-delete-direct {
-    padding: 0;
-    width: 32px;
-    min-width: 32px;
-    justify-content: center;
-  }
+.item-toolbar-main-row:not(.no-cover) .btn-delete-direct .btn-delete-text {
+  display: none !important;
+}
+
+/* Quando NÃO há capa, o botão de excluir exibe ícone + texto para preencher harmoniosamente */
+.item-toolbar-main-row.no-cover .btn-delete-direct {
+  padding: 0 10px;
+  gap: 5px;
+}
+
+.item-toolbar-main-row.no-cover .btn-delete-direct .btn-delete-text {
+  display: inline;
 }
 
 /* Cluster Segmentado de Camadas com Divisórias e Clique-Solte */

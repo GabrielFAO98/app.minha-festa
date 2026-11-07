@@ -313,42 +313,42 @@ export class BottomDock {
       {
         id: 'todos',
         label: 'Todos',
-        iconSvg: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect></svg>`
+        iconSvg: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect></svg>`
       },
       {
         id: 'paineis',
         label: 'Painéis',
-        iconSvg: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V9a7 7 0 0 1 14 0v12"></path><line x1="2" y1="21" x2="22" y2="21"></line></svg>`
+        iconSvg: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V9a7 7 0 0 1 14 0v12"></path><line x1="2" y1="21" x2="22" y2="21"></line></svg>`
       },
       {
         id: 'cilindros',
         label: 'Cilindros',
-        iconSvg: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6.5" rx="7" ry="3"></ellipse><path d="M5 6.5v11c0 1.66 3.13 3 7 3s7-1.34 7-3v-11"></path></svg>`
+        iconSvg: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6.5" rx="7" ry="3"></ellipse><path d="M5 6.5v11c0 1.66 3.13 3 7 3s7-1.34 7-3v-11"></path></svg>`
       },
       {
         id: 'mesas',
         label: 'Mesas',
-        iconSvg: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="3.5" rx="1"></rect><line x1="6" y1="9.5" x2="6" y2="20"></line><line x1="18" y1="9.5" x2="18" y2="20"></line><line x1="6" y1="14" x2="18" y2="14"></line></svg>`
+        iconSvg: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="3.5" rx="1"></rect><line x1="6" y1="9.5" x2="6" y2="20"></line><line x1="18" y1="9.5" x2="18" y2="20"></line><line x1="6" y1="14" x2="18" y2="14"></line></svg>`
       },
       {
         id: 'baloes',
         label: 'Balões',
-        iconSvg: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5C7.8 2.5 5 5.7 5 9.5c0 3.8 4.2 7.5 7 9.5 2.8-2 7-5.7 7-9.5 0-3.8-2.8-7-7-7z"></path><path d="M12 19v2.5"></path></svg>`
+        iconSvg: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5C7.8 2.5 5 5.7 5 9.5c0 3.8 4.2 7.5 7 9.5 2.8-2 7-5.7 7-9.5 0-3.8-2.8-7-7-7z"></path><path d="M12 19v2.5"></path></svg>`
       },
       {
         id: 'tapetes',
         label: 'Tapetes',
-        iconSvg: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="9.5" ry="5.5"></ellipse><ellipse cx="12" cy="12" rx="5.5" ry="3"></ellipse></svg>`
+        iconSvg: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="9.5" ry="5.5"></ellipse><ellipse cx="12" cy="12" rx="5.5" ry="3"></ellipse></svg>`
       },
       {
         id: 'displays',
         label: 'Displays',
-        iconSvg: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v12H7V4z"></path><line x1="12" y1="16" x2="12" y2="21"></line><line x1="8" y1="21" x2="16" y2="21"></line></svg>`
+        iconSvg: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v12H7V4z"></path><line x1="12" y1="16" x2="12" y2="21"></line><line x1="8" y1="21" x2="16" y2="21"></line></svg>`
       },
       {
         id: 'acessorios',
         label: 'Acessórios',
-        iconSvg: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16"></path><path d="M5 8c0 2.8 3.1 5 7 5s7-2.2 7-5"></path><line x1="12" y1="13" x2="12" y2="19"></line><line x1="8" y1="20" x2="16" y2="20"></line></svg>`
+        iconSvg: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16"></path><path d="M5 8c0 2.8 3.1 5 7 5s7-2.2 7-5"></path><line x1="12" y1="13" x2="12" y2="19"></line><line x1="8" y1="20" x2="16" y2="20"></line></svg>`
       }
     ];
 

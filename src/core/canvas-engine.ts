@@ -1827,58 +1827,55 @@ export class CanvasEngine {
           ctx.save();
           ctx.fillStyle = 'rgba(15, 23, 42, 0.72)'; // Fundo escuro imersivo
 
+          // 1. Retângulo exterior gigante cobrindo todo o palco
           ctx.beginPath();
-          ctx.rect(-20000, -20000, 40000, 40000);
+          ctx.rect(-50000, -50000, 100000, 100000);
 
-          const transform = node.getTransform();
           const w = node.width();
           const h = node.height();
-
-          const isRoundPanel = itemMeta?.type === 'panel_round' || itemMeta?.type?.startsWith('panel_circle');
-
-          if (isRoundPanel) {
-            const center = transform.point({ x: w / 2, y: h / 2 });
-            const radius = (w / 2) * Math.abs(node.scaleX() || 1);
-            ctx.moveTo(center.x + radius, center.y);
-            ctx.arc(center.x, center.y, radius, 0, Math.PI * 2, true);
-          } else {
-            const p1 = transform.point({ x: 0, y: 0 });
-            const p2 = transform.point({ x: w, y: 0 });
-            const p3 = transform.point({ x: w, y: h });
-            const p4 = transform.point({ x: 0, y: h });
-
-            ctx.moveTo(p1.x, p1.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.lineTo(p3.x, p3.y);
-            ctx.lineTo(p4.x, p4.y);
-            ctx.closePath();
+          const rawType = itemMeta?.type || '';
+          let effectiveType = rawType;
+          if (rawType.startsWith('table_skirt')) {
+            effectiveType = this.activeCoverRepositionPart === 'top' ? (rawType + '_top') : (rawType + '_bottom');
           }
 
+          const clipFunc = createClipFunction(effectiveType, w, h);
+
+          // 2. Aplica a matriz de transformação do nó selecionado
+          const m = node.getTransform().getMatrix();
+          ctx.save();
+          ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+
+          // Executa a função de recorte exata da estampa da peça
+          const origBeginPath = ctx.beginPath;
+          ctx.beginPath = () => {};
+          if (clipFunc) {
+            clipFunc(ctx);
+          } else {
+            ctx.rect(0, 0, w, h);
+            ctx.closePath();
+          }
+          ctx.beginPath = origBeginPath;
+          ctx.restore();
+
+          // 3. Preenche usando 'evenodd': o exterior escurece e a área da estampa fica perfeitamente vazada
           (ctx as any).fill('evenodd');
 
-          // Moldura pontilhada branca destacando a área de recorte
+          // 4. Desenha a moldura pontilhada branca exatamente no contorno da área recortada
+          ctx.save();
+          ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
           ctx.strokeStyle = '#FFFFFF';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 2.5;
           ctx.setLineDash([6, 6]);
-          if (isRoundPanel) {
-            const center = transform.point({ x: w / 2, y: h / 2 });
-            const radius = (w / 2) * Math.abs(node.scaleX() || 1);
-            ctx.beginPath();
-            ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
-            ctx.stroke();
+          ctx.beginPath();
+          if (clipFunc) {
+            clipFunc(ctx);
           } else {
-            const p1 = transform.point({ x: 0, y: 0 });
-            const p2 = transform.point({ x: w, y: 0 });
-            const p3 = transform.point({ x: w, y: h });
-            const p4 = transform.point({ x: 0, y: h });
-            ctx.beginPath();
-            ctx.moveTo(p1.x, p1.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.lineTo(p3.x, p3.y);
-            ctx.lineTo(p4.x, p4.y);
+            ctx.rect(0, 0, w, h);
             ctx.closePath();
-            ctx.stroke();
           }
+          ctx.stroke();
+          ctx.restore();
 
           ctx.restore();
         }
@@ -1888,10 +1885,7 @@ export class CanvasEngine {
     }
 
     if (this.transformer) {
-      this.transformer.borderStroke('#dfba73');
-      this.transformer.borderDash([4, 4]);
-      this.transformer.enabledAnchors([]);
-      this.transformer.rotateEnabled(false);
+      this.transformer.visible(false);
       if (this.btnCornerFlip) this.btnCornerFlip.visible(false);
       if (this.btnCornerDuplicate) this.btnCornerDuplicate.visible(false);
       if (this.btnCornerMove) this.btnCornerMove.visible(false);

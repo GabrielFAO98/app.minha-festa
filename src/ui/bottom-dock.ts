@@ -177,6 +177,12 @@ export class BottomDock {
     // 1. Abre a gaveta imediatamente no compositor de hardware (0ms)
     this.sheetEl?.classList.add('open');
 
+    // Visibilidade da barra de categorias: exclusiva das abas de itens ('presets' e 'my-items')
+    if (this.categoriesBar) {
+      const showCategories = tabName === 'presets' || tabName === 'my-items';
+      this.categoriesBar.style.display = showCategories ? 'grid' : 'none';
+    }
+
     // 2. Alterna para o painel em memória (0ms)
     this.showPane(tabName);
     this.resetSheetScroll();

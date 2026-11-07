@@ -375,10 +375,47 @@ body {
   }
 }
 
+/* Botão Flutuante de Seleção Múltipla (linha superior sem fundo, centralizado) */
+.btn-float-multiselect {
+  position: absolute;
+  bottom: 104px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 44;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--radius-full, 9999px);
+  background-color: var(--bg-surface, #FFFFFF);
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  color: var(--text-main, #1C1917);
+  font-size: 0.74rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.btn-float-multiselect:hover {
+  background-color: var(--primary-light, #F7F1E3);
+  border-color: var(--primary, #B58938);
+  color: var(--primary, #B58938);
+  box-shadow: 0 4px 16px rgba(181, 137, 56, 0.2);
+}
+
+.btn-float-multiselect:active {
+  transform: translateX(-50%) scale(0.95);
+}
+
 /* 1. Linha Superior Secundária: Contexto de Grupo e Multi-Seleção (Oculta por padrão) */
 .item-toolbar-group-row {
-  height: 35px;
-  min-height: 35px;
+  height: 36px;
+  min-height: 36px;
   padding: 2px 10px;
   display: flex;
   align-items: center;
@@ -396,27 +433,31 @@ body {
   display: none;
 }
 
+/* Badge Informativo (sem parecer botão) */
 .group-status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 0.70rem;
+  gap: 6px;
+  font-size: 0.78rem;
   font-weight: 700;
   color: var(--primary-hover, #9A7229);
-  padding: 2px 8px;
-  background: var(--primary-light, #F7F1E3);
-  border-radius: 6px;
-  border: 1px solid rgba(181, 137, 56, 0.28);
+  padding: 0 4px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: default;
+  user-select: none;
   flex-shrink: 0;
 }
 
-/* 2. Linha Principal (Padrão 1 Linha): Capa/Cor, Camadas e Lixeira */
+/* 2. Linha Principal (Padrão 1 Linha): Lixeira à esquerda, Capa/Cor e Camadas */
 .item-toolbar-main-row {
   height: 40px;
   min-height: 40px;
   padding: 3px 10px;
   display: flex;
   align-items: center;
+  justify-content: center; /* Centralizado para não deixar vão quando há menos opções */
   gap: 8px;
   box-sizing: border-box;
   overflow-x: auto;
@@ -434,15 +475,15 @@ body {
   display: inline-flex;
   align-items: center;
   border-radius: 9px;
-  transition: all var(--transition-fast);
+  gap: 4px;
   flex-shrink: 0;
+  transition: all var(--transition-fast);
 }
 
 .cover-action-frame.has-reposition {
-  padding: 2px;
-  background: rgba(124, 58, 237, 0.08);
-  border: 1px solid rgba(124, 58, 237, 0.28);
-  gap: 4px;
+  padding: 2px 3px;
+  background: rgba(124, 58, 237, 0.05);
+  border: 1px dashed rgba(124, 58, 237, 0.35);
 }
 
 /* Botões de Ação da Barra */
@@ -476,13 +517,13 @@ body {
   background-color: var(--primary-light, #F7F1E3);
 }
 
-/* Botão de Capa / Cor com visual bem distinto (degradê violeta nobre vibrante) */
+/* Botão de Capa / Cor (degradê violeta nobre vibrante) */
 .item-action-btn.btn-cover-direct {
   background: linear-gradient(135deg, #7C3AED 0%, #6366F1 100%);
-  border: 1px solid #6D28D9;
+  border: 1.5px solid #6D28D9;
   color: #FFFFFF;
   padding: 0 11px;
-  box-shadow: 0 2px 7px rgba(124, 58, 237, 0.32);
+  box-shadow: 0 2px 7px rgba(124, 58, 237, 0.3);
   font-weight: 700;
   letter-spacing: 0.01em;
 }
@@ -502,19 +543,31 @@ body {
   background: #5B21B6;
 }
 
-/* Botão Enquadrar (discreto e integrado na moldura da capa) */
+/* Botão Enquadrar: Identidade visual com cores invertidas do botão de Capa */
 .item-action-btn.btn-reposition-direct {
   background: #FFFFFF;
-  border-color: rgba(124, 58, 237, 0.25);
+  border: 1.5px solid #7C3AED;
   color: #6D28D9;
-  font-size: 0.69rem;
-  padding: 0 8px;
-  height: 27px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0 10px;
+  height: 31px;
+  box-shadow: 0 1px 3px rgba(124, 58, 237, 0.15);
+}
+
+.item-action-btn.btn-reposition-direct svg {
+  color: #7C3AED;
 }
 
 .item-action-btn.btn-reposition-direct:hover {
-  background: rgba(124, 58, 237, 0.12);
-  border-color: #6D28D9;
+  background: #F5F3FF;
+  border-color: #5B21B6;
+  color: #5B21B6;
+}
+
+.item-action-btn.btn-reposition-direct:active {
+  transform: scale(0.95);
+  background: #EDE9FE;
 }
 
 /* Ações de Grupo */
@@ -540,12 +593,10 @@ body {
   box-shadow: 0 1px 4px var(--primary-glow);
 }
 
-/* Botão de Excluir Compacto (somente ícone) */
+/* Botão de Excluir à Esquerda (com texto dinâmico para preencher) */
 .item-action-btn.btn-delete-direct {
-  width: 32px;
-  min-width: 32px;
-  padding: 0;
-  justify-content: center;
+  padding: 0 10px;
+  gap: 5px;
   background: #FEF2F2;
   border: 1px solid #FECACA;
   color: #EF4444;
@@ -558,11 +609,27 @@ body {
   color: #DC2626;
 }
 
-/* Cluster Segmentado de Camadas */
+.item-action-btn.btn-delete-direct .btn-delete-text {
+  display: inline;
+}
+
+@media (max-width: 380px) {
+  .item-toolbar-main-row:not(.no-cover) .btn-delete-direct .btn-delete-text {
+    display: none;
+  }
+  .item-toolbar-main-row:not(.no-cover) .btn-delete-direct {
+    padding: 0;
+    width: 32px;
+    min-width: 32px;
+    justify-content: center;
+  }
+}
+
+/* Cluster Segmentado de Camadas com Divisórias e Clique-Solte */
 .toolbar-layers-cluster {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
   background-color: #F5F2EC;
   border: 1px solid var(--border-subtle, #E6E1DA);
   border-radius: 7px;
@@ -574,36 +641,77 @@ body {
   height: 27px;
   padding: 0 7px;
   border: none;
-  background: transparent;
+  background: transparent !important;
   border-radius: 5px;
   color: var(--text-main, #1C1917);
-  box-shadow: none;
+  box-shadow: none !important;
+  outline: none !important;
   font-size: 0.70rem;
   font-weight: 600;
   gap: 3px;
-}
-
-/* Topo e Fundo são somente ícones compactos */
-.toolbar-layers-cluster #btn-action-to-front,
-.toolbar-layers-cluster #btn-action-to-back {
-  padding: 0 6px;
-  min-width: 25px;
-  justify-content: center;
-}
-
-.toolbar-layers-cluster .btn-layer-action .btn-layer-text {
-  display: inline;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .toolbar-layers-cluster .btn-layer-action:hover {
-  background: #FFFFFF;
+  background: #FFFFFF !important;
   color: var(--primary, #B58938);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
 }
 
 .toolbar-layers-cluster .btn-layer-action:active {
   transform: scale(0.94);
-  background: #FFFFFF;
+  background: rgba(181, 137, 56, 0.18) !important;
+  color: var(--primary, #B58938);
+}
+
+.toolbar-layers-cluster .btn-layer-action:focus:not(:focus-visible) {
+  background: transparent !important;
+  color: var(--text-main, #1C1917);
+  box-shadow: none !important;
+}
+
+.layer-btn-divider {
+  width: 1px;
+  height: 14px;
+  background-color: rgba(200, 195, 185, 0.6);
+  margin: 0 1px;
+  flex-shrink: 0;
+}
+
+.toolbar-layers-cluster .layer-text-extreme {
+  display: none;
+}
+
+@media (min-width: 420px) {
+  .toolbar-layers-cluster .layer-text-extreme {
+    display: inline;
+  }
+}
+
+.item-toolbar-main-row.no-cover .toolbar-layers-cluster .layer-text-extreme {
+  display: inline;
+}
+
+/* Efeito de Escurecimento Geral no Modo de Enquadramento (Estilo foto de perfil Facebook) */
+body.cover-repositioning-active .app-header {
+  opacity: 0.35;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+}
+
+body.cover-repositioning-active .bottom-dock {
+  opacity: 0.35;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+}
+
+body.cover-repositioning-active .stage-zoom-controls,
+body.cover-repositioning-active .stage-history-controls,
+body.cover-repositioning-active .btn-float-multiselect {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
 }
 
 /* ========================================================== */

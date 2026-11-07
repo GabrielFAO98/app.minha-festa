@@ -196,6 +196,7 @@ async function bootstrap() {
   });
 
   canvasEngine.onCoverRepositionChange = (active, meta) => {
+    document.body.classList.toggle('cover-repositioning-active', active);
     if (repositionBar) {
       repositionBar.style.display = active ? 'flex' : 'none';
     }
@@ -215,8 +216,9 @@ async function bootstrap() {
     itemToolbar.updateSelection(meta, node);
     desktopStudio?.updateInspector(meta, node);
     bottomDock?.syncLayerSelection(meta?.instanceId || null);
-    if (!canvasEngine.isRepositioningCover && repositionBar) {
-      repositionBar.style.display = 'none';
+    if (!canvasEngine.isRepositioningCover) {
+      document.body.classList.remove('cover-repositioning-active');
+      if (repositionBar) repositionBar.style.display = 'none';
     }
   };
 

@@ -1756,6 +1756,79 @@ export class CanvasEngine {
 
     this.isRepositioningCover = true;
     this.draggingNode = null;
+
+    // Cria máscara escura de enquadramento (estilo avatar/crop do Facebook)
+    let dimOverlay = this.uiLayer?.findOne('.cover-reposition-dim') as Konva.Shape | null;
+    if (!dimOverlay && this.uiLayer) {
+      dimOverlay = new Konva.Shape({
+        name: 'cover-reposition-dim',
+        listening: false,
+        sceneFunc: (ctx, shape) => {
+          if (!this.selectedNode || !this.isRepositioningCover) return;
+          const node = this.selectedNode;
+          const itemMeta = node.getAttr('itemMeta') as PresetItem | undefined;
+
+          ctx.save();
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.72)'; // Fundo escuro imersivo
+
+          ctx.beginPath();
+          ctx.rect(-20000, -20000, 40000, 40000);
+
+          const transform = node.getTransform();
+          const w = node.width();
+          const h = node.height();
+
+          if (itemMeta?.type?.startsWith('panel_circle')) {
+            const center = transform.point({ x: w / 2, y: h / 2 });
+            const radius = (w / 2) * Math.abs(node.scaleX() || 1);
+            ctx.moveTo(center.x + radius, center.y);
+            ctx.arc(center.x, center.y, radius, 0, Math.PI * 2, true);
+          } else {
+            const p1 = transform.point({ x: 0, y: 0 });
+            const p2 = transform.point({ x: w, y: 0 });
+            const p3 = transform.point({ x: w, y: h });
+            const p4 = transform.point({ x: 0, y: h });
+
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.lineTo(p3.x, p3.y);
+            ctx.lineTo(p4.x, p4.y);
+            ctx.closePath();
+          }
+
+          (ctx as any).fill('evenodd');
+
+          // Moldura pontilhada branca destacando a área de recorte
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 6]);
+          if (itemMeta?.type?.startsWith('panel_circle')) {
+            const center = transform.point({ x: w / 2, y: h / 2 });
+            const radius = (w / 2) * Math.abs(node.scaleX() || 1);
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, radius, 0, Math.PI * 2);
+            ctx.stroke();
+          } else {
+            const p1 = transform.point({ x: 0, y: 0 });
+            const p2 = transform.point({ x: w, y: 0 });
+            const p3 = transform.point({ x: w, y: h });
+            const p4 = transform.point({ x: 0, y: h });
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.lineTo(p3.x, p3.y);
+            ctx.lineTo(p4.x, p4.y);
+            ctx.closePath();
+            ctx.stroke();
+          }
+
+          ctx.restore();
+        }
+      });
+      this.uiLayer.add(dimOverlay);
+      dimOverlay.moveToBottom();
+    }
+
     if (this.transformer) {
       this.transformer.borderStroke('#dfba73');
       this.transformer.borderDash([4, 4]);
@@ -1779,6 +1852,11 @@ export class CanvasEngine {
     this.isRepositioningCover = false;
     this.isDraggingCoverInternal = false;
     this.isPinchingCover = false;
+
+    const dimOverlay = this.uiLayer?.findOne('.cover-reposition-dim');
+    if (dimOverlay) {
+      dimOverlay.destroy();
+    }
 
     if (this.transformer) {
       this.transformer.borderStroke('#B58938');
@@ -1923,6 +2001,9 @@ export class CanvasEngine {
 
     if (redraw) {
       this.decorLayer.batchDraw();
+      if (this.isRepositioningCover) {
+        this.uiLayer?.batchDraw();
+      }
     }
   }
 

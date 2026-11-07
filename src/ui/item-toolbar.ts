@@ -10,7 +10,7 @@ export class ItemToolbar {
   onOpenCoverModal?: ((meta: PresetItem) => void) | null;
   onOpenBalloonModal?: ((node: Konva.Group | Konva.Node) => void) | null;
   toolbarEl: HTMLElement | null;
-  stageMultiBtn: HTMLElement | null;
+  floatMultiBtn: HTMLElement | null;
   selectedMeta: PresetItem | null;
   selectedNode: Konva.Group | Konva.Node | null;
 
@@ -23,7 +23,7 @@ export class ItemToolbar {
     this.onOpenCoverModal = onOpenCoverModal;
     this.onOpenBalloonModal = onOpenBalloonModal;
     this.toolbarEl = document.getElementById('item-toolbar');
-    this.stageMultiBtn = document.getElementById('btn-stage-multiselect');
+    this.floatMultiBtn = document.getElementById('btn-float-multiselect');
     this.selectedMeta = null;
     this.selectedNode = null;
 
@@ -33,11 +33,10 @@ export class ItemToolbar {
   setupUI(): void {
     if (!this.toolbarEl) return;
 
-    // Botão de Seleção Múltipla no Topo Direito do Palco (junto com Desfazer / Refazer)
-    this.stageMultiBtn?.addEventListener('click', (e) => {
+    // Botão Flutuante de Seleção Múltipla (linha superior sem fundo, centralizado)
+    this.floatMultiBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
-      const active = this.canvasEngine.toggleMultiSelectMode();
-      this.stageMultiBtn?.classList.toggle('active', active);
+      this.canvasEngine.toggleMultiSelectMode();
       const currentMeta = this.canvasEngine.selectedNode?.getAttr('itemMeta') as PresetItem | undefined;
       this.updateSelection(currentMeta || null, this.canvasEngine.selectedNode);
     });
@@ -49,6 +48,16 @@ export class ItemToolbar {
     const btnBack = document.getElementById('btn-action-back');
     const btnToFront = document.getElementById('btn-action-to-front');
     const btnToBack = document.getElementById('btn-action-to-back');
+
+    // Remove estado persistente de clique/foco para que os botões de camada não fiquem "marcados"
+    [btnFront, btnBack, btnToFront, btnToBack].forEach((btn) => {
+      const clearFocus = () => {
+        setTimeout(() => (btn as HTMLElement | null)?.blur(), 40);
+      };
+      btn?.addEventListener('pointerup', clearFocus);
+      btn?.addEventListener('click', clearFocus);
+      btn?.addEventListener('touchend', clearFocus);
+    });
 
     btnDelete?.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -139,11 +148,6 @@ export class ItemToolbar {
     this.selectedMeta = meta;
     this.selectedNode = node;
 
-    // Sincroniza o botão de seleção múltipla do palco
-    if (this.stageMultiBtn) {
-      this.stageMultiBtn.classList.toggle('active', this.canvasEngine.isMultiSelectMode);
-    }
-
     const groupRow = document.getElementById('item-toolbar-group-row');
     const badgeText = document.getElementById('group-toolbar-badge-text');
     const btnGroup = document.getElementById('btn-action-group');
@@ -151,6 +155,7 @@ export class ItemToolbar {
     const btnIsolate = document.getElementById('btn-action-isolate-item');
     const btnExitIsolate = document.getElementById('btn-action-exit-isolation');
 
+    const mainRow = this.toolbarEl?.querySelector('.item-toolbar-main-row') as HTMLElement | null;
     const coverFrame = document.getElementById('cover-action-frame');
     const btnCover = document.getElementById('btn-action-cover');
     const btnReposition = document.getElementById('btn-action-reposition');
@@ -158,16 +163,19 @@ export class ItemToolbar {
     const totalSelected = this.canvasEngine.selectedNodes.length;
     const isGroup = this.canvasEngine.isGroupSelected();
     const isIsolated = Boolean(this.canvasEngine.isolatedGroupId);
+    const isMultiMode = this.canvasEngine.isMultiSelectMode;
 
     if (!node || !meta || totalSelected === 0) {
       this.toolbarEl?.classList.remove('active');
       this.toolbarEl?.classList.remove('just-selected');
+      if (this.floatMultiBtn) this.floatMultiBtn.style.display = 'none';
       if (groupRow) groupRow.style.display = 'none';
       return;
     }
 
     if (this.canvasEngine.isRepositioningCover) {
       this.toolbarEl?.classList.remove('active');
+      if (this.floatMultiBtn) this.floatMultiBtn.style.display = 'none';
     } else {
       this.toolbarEl?.classList.add('active');
       // Pulso visual que vincula o clique da peça à barra
@@ -176,10 +184,17 @@ export class ItemToolbar {
       this.toolbarEl?.classList.add('just-selected');
     }
 
-    // Gerencia a barra superior secundária (Agrupamento, Multi-Seleção e Isolamento)
-    const showGroupRow = isGroup || totalSelected > 1 || isIsolated || this.canvasEngine.isMultiSelectMode;
+    // Gerencia o botão flutuante de seleção múltipla vs. a barra superior de grupo
+    const showGroupRow = isGroup || totalSelected > 1 || isIsolated || isMultiMode;
     if (groupRow) {
       groupRow.style.display = showGroupRow ? 'flex' : 'none';
+    }
+
+    // Se estiver no modo de grupo/múltiplos, o botão flutuante some.
+    // Se for um item individual normal, ele fica visível flutuando acima da barra
+    if (this.floatMultiBtn) {
+      const showFloatBtn = !showGroupRow && !this.canvasEngine.isRepositioningCover;
+      this.floatMultiBtn.style.display = showFloatBtn ? 'inline-flex' : 'none';
     }
 
     if (showGroupRow && badgeText) {
@@ -221,16 +236,25 @@ export class ItemToolbar {
     // Se múltiplos itens estiverem selecionados (e não estiver em modo edição de peça isolada)
     if (totalSelected > 1 && !isIsolated) {
       if (coverFrame) coverFrame.style.display = 'none';
+      mainRow?.classList.add('no-cover');
       return;
     }
 
+    const mode = getItemCustomizationMode(meta);
+    const hasCoverSupport = mode === 'structural' || mode === 'modular' || meta.type === 'moinho';
+
     if (coverFrame) {
-      coverFrame.style.display = 'inline-flex';
+      coverFrame.style.display = hasCoverSupport ? 'inline-flex' : 'none';
     }
 
-    const mode = getItemCustomizationMode(meta);
+    if (hasCoverSupport) {
+      mainRow?.classList.remove('no-cover');
+    } else {
+      mainRow?.classList.add('no-cover');
+    }
+
     const paletteSvg = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2Z"/></svg>`;
-    const cropSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
+    const cropSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
 
     if (btnCover) {
       if (meta.type === 'moinho') {

@@ -3116,37 +3116,154 @@ export class CanvasEngine {
     }
   }
 
+  private getTargetLayerNodes(targetNode?: Konva.Group | null): Konva.Group[] {
+    const primary = targetNode || this.selectedNode;
+    if (!primary) return [];
+    const meta = primary.getAttr('itemMeta') as PresetItem | undefined;
+    const isIsolated = Boolean(this.isolatedGroupId && meta?.groupId === this.isolatedGroupId);
+
+    // Se estiver isolado editando apenas 1 peça do grupo, opera só nela
+    if (isIsolated) {
+      return [primary];
+    }
+
+    // Se pertence a um grupo, move todos os itens do grupo juntos
+    if (meta?.groupId) {
+      const groupNodes = this.getSceneNodes().filter(
+        (n) => (n.getAttr('itemMeta') as PresetItem | undefined)?.groupId === meta.groupId
+      );
+      if (groupNodes.length > 0) return groupNodes;
+    }
+
+    // Se há múltiplos itens selecionados e o nó primário está na seleção
+    if (this.selectedNodes.length > 1 && this.selectedNodes.includes(primary)) {
+      return [...this.selectedNodes];
+    }
+
+    return [primary];
+  }
+
   bringForward(targetNode?: Konva.Group | null) {
-    const node = targetNode || this.selectedNode;
-    if (!node) return;
-    node.moveUp();
+    const targets = this.getTargetLayerNodes(targetNode);
+    if (targets.length === 0) return;
+
+    if (targets.length === 1) {
+      targets[0].moveUp();
+      this.decorLayer.batchDraw();
+      this.saveSnapshot();
+      this.notifyLayersChange();
+      return;
+    }
+
+    const allChildren = (this.decorLayer.getChildren() as Konva.Group[]).slice();
+    const targetSet = new Set(targets);
+    const sortedTargets = [...targets].sort((a, b) => a.zIndex() - b.zIndex());
+
+    let maxIdx = -1;
+    allChildren.forEach((c, idx) => {
+      if (targetSet.has(c) && idx > maxIdx) {
+        maxIdx = idx;
+      }
+    });
+
+    if (maxIdx >= allChildren.length - 1) return;
+
+    let swapNode: Konva.Group | null = null;
+    for (let i = maxIdx + 1; i < allChildren.length; i++) {
+      if (!targetSet.has(allChildren[i])) {
+        swapNode = allChildren[i];
+        break;
+      }
+    }
+    if (!swapNode) return;
+
+    const remaining = allChildren.filter((c) => !targetSet.has(c));
+    const insertIdx = remaining.indexOf(swapNode) + 1;
+    remaining.splice(insertIdx, 0, ...sortedTargets);
+
+    remaining.forEach((node, idx) => {
+      node.zIndex(idx);
+    });
+
     this.decorLayer.batchDraw();
     this.saveSnapshot();
     this.notifyLayersChange();
   }
 
   sendBackward(targetNode?: Konva.Group | null) {
-    const node = targetNode || this.selectedNode;
-    if (!node) return;
-    node.moveDown();
+    const targets = this.getTargetLayerNodes(targetNode);
+    if (targets.length === 0) return;
+
+    if (targets.length === 1) {
+      targets[0].moveDown();
+      this.decorLayer.batchDraw();
+      this.saveSnapshot();
+      this.notifyLayersChange();
+      return;
+    }
+
+    const allChildren = (this.decorLayer.getChildren() as Konva.Group[]).slice();
+    const targetSet = new Set(targets);
+    const sortedTargets = [...targets].sort((a, b) => a.zIndex() - b.zIndex());
+
+    let minIdx = allChildren.length;
+    allChildren.forEach((c, idx) => {
+      if (targetSet.has(c) && idx < minIdx) {
+        minIdx = idx;
+      }
+    });
+
+    if (minIdx <= 0) return;
+
+    let swapNode: Konva.Group | null = null;
+    for (let i = minIdx - 1; i >= 0; i--) {
+      if (!targetSet.has(allChildren[i])) {
+        swapNode = allChildren[i];
+        break;
+      }
+    }
+    if (!swapNode) return;
+
+    const remaining = allChildren.filter((c) => !targetSet.has(c));
+    const insertIdx = remaining.indexOf(swapNode);
+    remaining.splice(insertIdx, 0, ...sortedTargets);
+
+    remaining.forEach((node, idx) => {
+      node.zIndex(idx);
+    });
+
     this.decorLayer.batchDraw();
     this.saveSnapshot();
     this.notifyLayersChange();
   }
 
   bringToFront(targetNode?: Konva.Group | null) {
-    const node = targetNode || this.selectedNode;
-    if (!node) return;
-    node.moveToTop();
+    const targets = this.getTargetLayerNodes(targetNode);
+    if (targets.length === 0) return;
+
+    if (targets.length === 1) {
+      targets[0].moveToTop();
+    } else {
+      const sorted = [...targets].sort((a, b) => a.zIndex() - b.zIndex());
+      sorted.forEach((node) => node.moveToTop());
+    }
+
     this.decorLayer.batchDraw();
     this.saveSnapshot();
     this.notifyLayersChange();
   }
 
   sendToBack(targetNode?: Konva.Group | null) {
-    const node = targetNode || this.selectedNode;
-    if (!node) return;
-    node.moveToBottom();
+    const targets = this.getTargetLayerNodes(targetNode);
+    if (targets.length === 0) return;
+
+    if (targets.length === 1) {
+      targets[0].moveToBottom();
+    } else {
+      const sorted = [...targets].sort((a, b) => b.zIndex() - a.zIndex());
+      sorted.forEach((node) => node.moveToBottom());
+    }
+
     this.decorLayer.batchDraw();
     this.saveSnapshot();
     this.notifyLayersChange();

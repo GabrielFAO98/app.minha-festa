@@ -123,25 +123,40 @@ export class ItemToolbar {
       }
     });
 
+    const blurBtn = (btn: HTMLElement | null) => {
+      if (!btn) return;
+      btn.addEventListener('touchend', () => {
+        setTimeout(() => btn.blur(), 40);
+      }, { passive: true });
+    };
+
     btnToFront?.addEventListener('click', (e) => {
       e.stopPropagation();
+      (e.currentTarget as HTMLElement)?.blur();
       this.canvasEngine.bringToFront();
     });
+    blurBtn(btnToFront);
 
     btnFront?.addEventListener('click', (e) => {
       e.stopPropagation();
+      (e.currentTarget as HTMLElement)?.blur();
       this.canvasEngine.bringForward();
     });
+    blurBtn(btnFront);
 
     btnBack?.addEventListener('click', (e) => {
       e.stopPropagation();
+      (e.currentTarget as HTMLElement)?.blur();
       this.canvasEngine.sendBackward();
     });
+    blurBtn(btnBack);
 
     btnToBack?.addEventListener('click', (e) => {
       e.stopPropagation();
+      (e.currentTarget as HTMLElement)?.blur();
       this.canvasEngine.sendToBack();
     });
+    blurBtn(btnToBack);
   }
 
   updateSelection(meta: PresetItem | null, node: Konva.Group | Konva.Node | null): void {

@@ -671,21 +671,25 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-.toolbar-layers-cluster .btn-layer-action:hover {
-  background: #FFFFFF !important;
-  color: var(--primary, #B58938);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+@media (hover: hover) and (pointer: fine) {
+  .toolbar-layers-cluster .btn-layer-action:hover {
+    background: #FFFFFF !important;
+    color: var(--primary, #B58938) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+  }
 }
 
 .toolbar-layers-cluster .btn-layer-action:active {
   transform: scale(0.94);
   background: rgba(181, 137, 56, 0.18) !important;
-  color: var(--primary, #B58938);
+  color: var(--primary, #B58938) !important;
 }
 
-.toolbar-layers-cluster .btn-layer-action:focus:not(:focus-visible) {
+.toolbar-layers-cluster .btn-layer-action:focus,
+.toolbar-layers-cluster .btn-layer-action:focus-visible {
+  outline: none !important;
   background: transparent !important;
-  color: var(--text-main, #1C1917);
+  color: var(--text-main, #1C1917) !important;
   box-shadow: none !important;
 }
 
@@ -1359,15 +1363,28 @@ body.cover-repositioning-active .btn-float-multiselect {
   transition: all var(--transition-fast);
 }
 
-.layer-mini-btn:hover {
-  background: var(--primary-light);
-  color: var(--primary);
-  border-color: var(--primary);
-  transform: translateY(-1px);
+@media (hover: hover) and (pointer: fine) {
+  .layer-mini-btn:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+    border-color: var(--primary);
+    transform: translateY(-1px);
+  }
 }
 
 .layer-mini-btn:active {
   transform: translateY(0);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.layer-mini-btn:focus,
+.layer-mini-btn:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  background: var(--bg-surface) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-subtle) !important;
 }
 
 .layer-mini-btn svg {

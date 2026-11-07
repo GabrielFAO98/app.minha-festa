@@ -844,6 +844,7 @@ export class BottomDock {
 
       row.querySelector('.layer-btn-to-front')?.addEventListener('click', (e) => {
         e.stopPropagation();
+        (e.currentTarget as HTMLElement)?.blur();
         const targetNode = this.canvasEngine.decorLayer.getChildren().find(
           (c) => c.getAttr('itemMeta')?.instanceId === elem.instanceId
         );
@@ -855,6 +856,7 @@ export class BottomDock {
 
       row.querySelector('.layer-btn-front')?.addEventListener('click', (e) => {
         e.stopPropagation();
+        (e.currentTarget as HTMLElement)?.blur();
         const targetNode = this.canvasEngine.decorLayer.getChildren().find(
           (c) => c.getAttr('itemMeta')?.instanceId === elem.instanceId
         );
@@ -866,6 +868,7 @@ export class BottomDock {
 
       row.querySelector('.layer-btn-back')?.addEventListener('click', (e) => {
         e.stopPropagation();
+        (e.currentTarget as HTMLElement)?.blur();
         const targetNode = this.canvasEngine.decorLayer.getChildren().find(
           (c) => c.getAttr('itemMeta')?.instanceId === elem.instanceId
         );
@@ -877,6 +880,7 @@ export class BottomDock {
 
       row.querySelector('.layer-btn-to-back')?.addEventListener('click', (e) => {
         e.stopPropagation();
+        (e.currentTarget as HTMLElement)?.blur();
         const targetNode = this.canvasEngine.decorLayer.getChildren().find(
           (c) => c.getAttr('itemMeta')?.instanceId === elem.instanceId
         );

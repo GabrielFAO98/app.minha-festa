@@ -178,7 +178,7 @@
 
 .pill-btn {
   height: 28px;
-  padding: 0 10px;
+  padding: 0 9px;
   border-radius: var(--radius-full);
   background-color: #ffffff;
   color: #57534E;
@@ -192,9 +192,29 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 5px;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+}
+
+.pill-btn .pill-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+  color: currentColor;
+}
+
+.pill-btn .pill-icon svg {
+  display: block;
+}
+
+.pill-btn .pill-label {
+  display: inline-block;
+  line-height: 1;
 }
 
 .pill-btn:hover {

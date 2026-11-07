@@ -284,10 +284,18 @@
             </button>
           </div>
 
-          <!-- BARRA INFERIOR DE ENQUADRAMENTO DE CAPA (PINÇA + ARRASTE) -->
+          <!-- BARRA INFERIOR DE ENQUADRAMENTO DE CAPA (PINÇA + ARRASTE + ZOOM) -->
           <div id="cover-reposition-bar" class="cover-reposition-bar" style="display: none;">
             <div class="reposition-bar-top">
-              <span class="reposition-bar-hint">Arraste para enquadrar • Zoom (<span id="stage-cover-zoom-value">100%</span>)</span>
+              <div class="reposition-zoom-cluster">
+                <button type="button" id="btn-cover-zoom-out" class="btn-cover-zoom-step" title="Diminuir Zoom" aria-label="Diminuir Zoom">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+                <span class="reposition-bar-hint">Zoom: <span id="stage-cover-zoom-value">100%</span></span>
+                <button type="button" id="btn-cover-zoom-in" class="btn-cover-zoom-step" title="Aumentar Zoom" aria-label="Aumentar Zoom">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+              </div>
               <div class="reposition-bar-actions">
                 <button type="button" id="btn-stage-cover-reset" class="btn-reposition-bar-ghost" title="Centralizar Capa">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">

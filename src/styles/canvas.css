@@ -375,14 +375,48 @@
   flex-wrap: wrap;
 }
 
+.reposition-zoom-cluster {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-main, #F7F5F0);
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  border-radius: var(--radius-full, 9999px);
+  padding: 2px 7px;
+}
+
+.btn-cover-zoom-step {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-surface, #FFFFFF);
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  color: var(--text-main, #1C1917);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.btn-cover-zoom-step:hover {
+  background: var(--primary-light, #F7F1E3);
+  border-color: var(--primary, #B58938);
+  color: var(--primary, #B58938);
+}
+
+.btn-cover-zoom-step:active {
+  transform: scale(0.92);
+}
+
 .reposition-bar-hint {
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-main);
-  white-space: normal;
+  white-space: nowrap;
   line-height: 1.25;
-  flex: 1;
-  min-width: 130px;
 }
 
 .reposition-bar-actions {

@@ -165,8 +165,20 @@ async function bootstrap() {
   const repositionBar = document.getElementById('cover-reposition-bar');
   const stageZoomSlider = document.getElementById('stage-cover-zoom-slider') as HTMLInputElement | null;
   const stageZoomValue = document.getElementById('stage-cover-zoom-value');
+  const btnCoverZoomOut = document.getElementById('btn-cover-zoom-out');
+  const btnCoverZoomIn = document.getElementById('btn-cover-zoom-in');
   const btnStageReset = document.getElementById('btn-stage-cover-reset');
   const btnStageDone = document.getElementById('btn-stage-cover-done');
+
+  btnCoverZoomOut?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    canvasEngine.coverZoomOut(0.1);
+  });
+
+  btnCoverZoomIn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    canvasEngine.coverZoomIn(0.1);
+  });
 
   stageZoomSlider?.addEventListener('input', (e) => {
     const val = parseFloat((e.target as HTMLInputElement).value);
@@ -201,7 +213,7 @@ async function bootstrap() {
       repositionBar.style.display = active ? 'flex' : 'none';
     }
     if (active && meta) {
-      const scaleVal = meta.coverScale || 1;
+      const scaleVal = (canvasEngine.activeCoverRepositionPart === 'top' ? meta.tabletopScale : meta.coverScale) || 1;
       if (stageZoomSlider) stageZoomSlider.value = String(scaleVal);
       if (stageZoomValue) stageZoomValue.textContent = `${Math.round(scaleVal * 100)}%`;
     }

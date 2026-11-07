@@ -1088,7 +1088,7 @@ export class CanvasEngine {
         const zoomBadge = document.getElementById('stage-cover-zoom-value');
         const zoomSlider = document.getElementById('stage-cover-zoom-slider') as HTMLInputElement | null;
         const meta = this.selectedNode.getAttr('itemMeta') || {};
-        const scaleVal = meta.coverScale || 1;
+        const scaleVal = (this.activeCoverRepositionPart === 'top' ? meta.tabletopScale : meta.coverScale) || 1;
         if (zoomBadge) zoomBadge.textContent = `${Math.round(scaleVal * 100)}%`;
         if (zoomSlider) zoomSlider.value = String(scaleVal);
       }
@@ -1141,10 +1141,6 @@ export class CanvasEngine {
             this.pendingDragPos = null;
             this.hasMovedDuringDrag = false;
           }
-          if (!this.wasAlreadySelectedOnDown) {
-            this.deselect();
-          }
-
           // 1. Gesto de Pinça na Capa (quando em modo Enquadrar Capa ativo)
           if (this.isRepositioningCover && this.selectedNode) {
             const meta = this.selectedNode.getAttr('itemMeta') || {};
@@ -1157,13 +1153,17 @@ export class CanvasEngine {
               this.isPinchingCover = true;
               this.isPinchingStage = false;
               this.pinchStartDist = Math.max(12, getTouchDistance(t1, t2));
-              this.pinchStartScale = (this.activeCoverRepositionPart === 'top' ? meta.tabletopCoverScale : meta.coverScale) || 1;
+              this.pinchStartScale = (this.activeCoverRepositionPart === 'top' ? meta.tabletopScale : meta.coverScale) || 1;
               this.pinchStartCenterX = center.x;
               this.pinchStartCenterY = center.y;
               this.dragStartCoverOffsetX = (this.activeCoverRepositionPart === 'top' ? meta.tabletopOffsetX : meta.coverOffsetX) || 0;
               this.dragStartCoverOffsetY = (this.activeCoverRepositionPart === 'top' ? meta.tabletopOffsetY : meta.coverOffsetY) || 0;
             }
             return;
+          }
+
+          if (!this.wasAlreadySelectedOnDown) {
+            this.deselect();
           }
 
           // 2. Gesto de Pinça e Pan do Palco Inteiro
@@ -1266,23 +1266,18 @@ export class CanvasEngine {
 
       // 1. Se estamos no modo de enquadrar capa (ativado pelo botão)
       if (this.isRepositioningCover && this.selectedNode) {
-        const candidates = this.findOpaqueItemsAtPoint(pointerPos);
-        if (candidates.includes(this.selectedNode)) {
-          this.isDraggingCoverInternal = true;
-          this.dragStartClientX = clientX;
-          this.dragStartClientY = clientY;
-          const meta = this.selectedNode.getAttr('itemMeta') || {};
-          if (this.activeCoverRepositionPart === 'top' && meta.tabletopCoverUrl) {
-            this.dragStartCoverOffsetX = meta.tabletopOffsetX || 0;
-            this.dragStartCoverOffsetY = meta.tabletopOffsetY || 0;
-          } else {
-            this.dragStartCoverOffsetX = meta.coverOffsetX || 0;
-            this.dragStartCoverOffsetY = meta.coverOffsetY || 0;
-          }
-          return;
+        this.isDraggingCoverInternal = true;
+        this.dragStartClientX = clientX;
+        this.dragStartClientY = clientY;
+        const meta = this.selectedNode.getAttr('itemMeta') || {};
+        if (this.activeCoverRepositionPart === 'top' && meta.tabletopCoverUrl) {
+          this.dragStartCoverOffsetX = meta.tabletopOffsetX || 0;
+          this.dragStartCoverOffsetY = meta.tabletopOffsetY || 0;
         } else {
-          this.exitCoverRepositionMode();
+          this.dragStartCoverOffsetX = meta.coverOffsetX || 0;
+          this.dragStartCoverOffsetY = meta.coverOffsetY || 0;
         }
+        return;
       }
 
       // 2. Busca peças opacas exatamente sob o dedo/cursor
@@ -1396,7 +1391,7 @@ export class CanvasEngine {
             this.draggingNode = null;
             this.pendingDragPos = null;
             this.hasMovedDuringDrag = false;
-            if (!this.wasAlreadySelectedOnDown) {
+            if (!this.wasAlreadySelectedOnDown && !this.isRepositioningCover) {
               this.deselect();
             }
           }
@@ -1414,7 +1409,7 @@ export class CanvasEngine {
                 this.isPinchingCover = true;
                 this.isPinchingStage = false;
                 this.pinchStartDist = Math.max(12, getTouchDistance(t1, t2));
-                this.pinchStartScale = (this.activeCoverRepositionPart === 'top' ? meta.tabletopCoverScale : meta.coverScale) || 1;
+                this.pinchStartScale = (this.activeCoverRepositionPart === 'top' ? meta.tabletopScale : meta.coverScale) || 1;
                 this.pinchStartCenterX = center.x;
                 this.pinchStartCenterY = center.y;
                 this.dragStartCoverOffsetX = (this.activeCoverRepositionPart === 'top' ? meta.tabletopOffsetX : meta.coverOffsetX) || 0;
@@ -1579,7 +1574,7 @@ export class CanvasEngine {
 
           const meta = this.selectedNode.getAttr('itemMeta') || {};
           if (this.activeCoverRepositionPart === 'top' && meta.tabletopCoverUrl) {
-            meta.tabletopCoverScale = newScale;
+            meta.tabletopScale = newScale;
             meta.tabletopOffsetX = this.dragStartCoverOffsetX + (virtualDx / nodeScaleX) * flipSignX;
             meta.tabletopOffsetY = this.dragStartCoverOffsetY + (virtualDy / nodeScaleY);
           } else {
@@ -1784,8 +1779,8 @@ export class CanvasEngine {
       e.evt.preventDefault();
       if (this.isRepositioningCover && this.selectedNode) {
         const meta = this.selectedNode.getAttr('itemMeta') || {};
-        if (meta.customCoverUrl) {
-          const currentScale = meta.coverScale || 1;
+        if (meta.customCoverUrl || meta.tabletopCoverUrl) {
+          const currentScale = (this.activeCoverRepositionPart === 'top' ? meta.tabletopScale : meta.coverScale) || 1;
           const delta = e.evt.deltaY < 0 ? 0.08 : -0.08;
           this.setCoverScale(currentScale + delta, false);
           return;
@@ -1839,7 +1834,9 @@ export class CanvasEngine {
           const w = node.width();
           const h = node.height();
 
-          if (itemMeta?.type?.startsWith('panel_circle')) {
+          const isRoundPanel = itemMeta?.type === 'panel_round' || itemMeta?.type?.startsWith('panel_circle');
+
+          if (isRoundPanel) {
             const center = transform.point({ x: w / 2, y: h / 2 });
             const radius = (w / 2) * Math.abs(node.scaleX() || 1);
             ctx.moveTo(center.x + radius, center.y);
@@ -1863,7 +1860,7 @@ export class CanvasEngine {
           ctx.strokeStyle = '#FFFFFF';
           ctx.lineWidth = 2;
           ctx.setLineDash([6, 6]);
-          if (itemMeta?.type?.startsWith('panel_circle')) {
+          if (isRoundPanel) {
             const center = transform.point({ x: w / 2, y: h / 2 });
             const radius = (w / 2) * Math.abs(node.scaleX() || 1);
             ctx.beginPath();
@@ -1976,6 +1973,20 @@ export class CanvasEngine {
     if (this.onCoverRepositionChange && this.isRepositioningCover) {
       this.onCoverRepositionChange(true, meta);
     }
+  }
+
+  coverZoomIn(step: number = 0.1) {
+    if (!this.selectedNode) return;
+    const meta = this.selectedNode.getAttr('itemMeta') || {};
+    const curScale = (this.activeCoverRepositionPart === 'top' ? meta.tabletopScale : meta.coverScale) || 1;
+    this.setCoverScale(Math.round((curScale + step) * 100) / 100, true);
+  }
+
+  coverZoomOut(step: number = 0.1) {
+    if (!this.selectedNode) return;
+    const meta = this.selectedNode.getAttr('itemMeta') || {};
+    const curScale = (this.activeCoverRepositionPart === 'top' ? meta.tabletopScale : meta.coverScale) || 1;
+    this.setCoverScale(Math.round((curScale - step) * 100) / 100, true);
   }
 
   resetCoverTransform() {

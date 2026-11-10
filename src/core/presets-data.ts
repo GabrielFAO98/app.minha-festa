@@ -943,8 +943,8 @@ export const SVG_RUG_ROUND_FLAT = `<svg xmlns="http://www.w3.org/2000/svg" viewB
   <circle cx="130" cy="130" r="120" fill="none" stroke="#cbd5e1" stroke-width="0.9" stroke-dasharray="5,3" opacity="0.6"/>
 </svg>`;
 
-// 11c. Tapete Retangular em Perspectiva Suave 2.5D (250x85cm)
-export const SVG_RUG_RECT_3D = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 100" width="300" height="100">
+// 11c. Tapete Retangular em Perspectiva 3D de Piso (200x120cm)
+export const SVG_RUG_RECT_3D = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 140" width="280" height="140">
   <defs>
     <linearGradient id="rugRect3DGrad" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#e2e8f0"/>
@@ -957,11 +957,11 @@ export const SVG_RUG_RECT_3D = `<svg xmlns="http://www.w3.org/2000/svg" viewBox=
     </filter>
   </defs>
   <!-- Espessura Frontal da Lona/Tapete no Piso -->
-  <polygon points="8,92 292,92 292,96 8,96" fill="#94a3b8" filter="url(#rugRect3DDrop)"/>
-  <!-- Trapézio em Perspectiva Suave de Piso (Alinhado à máscara rug_rect_3d) -->
-  <polygon points="45,10 255,10 292,92 8,92" fill="url(#rugRect3DGrad)" stroke="#cbd5e1" stroke-width="1.5" filter="url(#rugRect3DDrop)"/>
+  <polygon points="9,126 271,126 271,130 9,130" fill="#94a3b8" filter="url(#rugRect3DDrop)"/>
+  <!-- Trapézio em Perspectiva de Piso (Exatamente alinhado à máscara rug_rect_3d) -->
+  <polygon points="34,14 246,14 271,126 9,126" fill="url(#rugRect3DGrad)" stroke="#cbd5e1" stroke-width="1.5" filter="url(#rugRect3DDrop)"/>
   <!-- Costura Interna em Perspectiva -->
-  <polygon points="49,13 251,13 286,89 14,89" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-dasharray="5,3" opacity="0.9"/>
+  <polygon points="37,18 243,18 266,122 14,122" fill="none" stroke="#ffffff" stroke-width="1.2" opacity="0.9"/>
 </svg>`;
 
 // 12. Luminoso LED Neon Número 1 Dourado Ultra-Realista (35x60cm)
@@ -3343,8 +3343,8 @@ export const SVG_RUG_ROUND_200 = `<svg xmlns="http://www.w3.org/2000/svg" viewBo
   <circle cx="130" cy="130" r="120" fill="none" stroke="#cbd5e1" stroke-width="0.9" stroke-dasharray="5,3" opacity="0.6"/>
 </svg>`;
 
-// 29. Tapete Retangular / Lona 2,50m x 2,00m (Perspectiva Suave 2.5D)
-export const SVG_RUG_RECT_250x200 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 100" width="300" height="100">
+// 29. Tapete Retangular / Lona 2,50m x 2,00m
+export const SVG_RUG_RECT_250x200 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 140" width="280" height="140">
   <defs>
     <linearGradient id="rugRect3DGrad" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#e2e8f0"/>
@@ -3357,100 +3357,11 @@ export const SVG_RUG_RECT_250x200 = `<svg xmlns="http://www.w3.org/2000/svg" vie
     </filter>
   </defs>
   <!-- Espessura Frontal da Lona/Tapete no Piso -->
-  <polygon points="8,92 292,92 292,96 8,96" fill="#94a3b8" filter="url(#rugRect3DDrop)"/>
-  <!-- Trapézio em Perspectiva Suave de Piso (Alinhado à máscara rug_rect_3d) -->
-  <polygon points="45,10 255,10 292,92 8,92" fill="url(#rugRect3DGrad)" stroke="#cbd5e1" stroke-width="1.5" filter="url(#rugRect3DDrop)"/>
+  <polygon points="9,126 271,126 271,130 9,130" fill="#94a3b8" filter="url(#rugRect3DDrop)"/>
+  <!-- Trapézio em Perspectiva de Piso (Exatamente alinhado à máscara rug_rect_3d) -->
+  <polygon points="34,14 246,14 271,126 9,126" fill="url(#rugRect3DGrad)" stroke="#cbd5e1" stroke-width="1.5" filter="url(#rugRect3DDrop)"/>
   <!-- Costura Interna em Perspectiva -->
-  <polygon points="49,13 251,13 286,89 14,89" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-dasharray="5,3" opacity="0.9"/>
-</svg>`;
-
-// 29b. Tapete Redondo Boho Sisal com Franjas em Perspectiva 2.5D (160x70cm)
-export const SVG_RUG_BOHO_SISAL_3D = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 120" width="280" height="120">
-  <defs>
-    <radialGradient id="sisalBaseGrad3D" cx="48%" cy="42%" r="55%">
-      <stop offset="0%" stop-color="#fef3c7"/>
-      <stop offset="35%" stop-color="#fde68a"/>
-      <stop offset="70%" stop-color="#d97706"/>
-      <stop offset="92%" stop-color="#b45309"/>
-      <stop offset="100%" stop-color="#78350f"/>
-    </radialGradient>
-    <filter id="sisalDrop3D" x="-12%" y="-15%" width="124%" height="135%">
-      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#451a03" flood-opacity="0.25"/>
-    </filter>
-  </defs>
-  <g filter="url(#sisalDrop3D)">
-    <g id="tassels"><line x1="262.0" y1="60.0" x2="273.0" y2="60.0" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="261.4" y1="65.1" x2="272.4" y2="65.6" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="259.7" y1="70.1" x2="270.4" y2="71.1" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="256.7" y1="75.1" x2="267.3" y2="76.5" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="252.7" y1="79.9" x2="262.9" y2="81.8" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="247.6" y1="84.5" x2="257.3" y2="86.9" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="241.4" y1="88.9" x2="250.6" y2="91.7" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="234.3" y1="93.0" x2="242.8" y2="96.2" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="226.3" y1="96.8" x2="234.0" y2="100.3" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="217.4" y1="100.2" x2="224.4" y2="104.1" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="207.8" y1="103.2" x2="213.9" y2="107.4" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="197.5" y1="105.9" x2="202.7" y2="110.3" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="186.7" y1="108.0" x2="190.9" y2="112.7" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="175.4" y1="109.8" x2="178.6" y2="114.5" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="163.8" y1="111.0" x2="165.9" y2="115.9" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="152.0" y1="111.7" x2="153.0" y2="116.7" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="140.0" y1="112.0" x2="140.0" y2="117.0" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="128.0" y1="111.7" x2="127.0" y2="116.7" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="116.2" y1="111.0" x2="114.1" y2="115.9" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="104.6" y1="109.8" x2="101.4" y2="114.5" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="93.3" y1="108.0" x2="89.1" y2="112.7" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="82.5" y1="105.9" x2="77.3" y2="110.3" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="72.2" y1="103.2" x2="66.1" y2="107.4" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="62.6" y1="100.2" x2="55.6" y2="104.1" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="53.7" y1="96.8" x2="46.0" y2="100.3" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="45.7" y1="93.0" x2="37.2" y2="96.2" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="38.6" y1="88.9" x2="29.4" y2="91.7" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="32.4" y1="84.5" x2="22.7" y2="86.9" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="27.3" y1="79.9" x2="17.1" y2="81.8" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="23.3" y1="75.1" x2="12.7" y2="76.5" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="20.3" y1="70.1" x2="9.6" y2="71.1" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="18.6" y1="65.1" x2="7.6" y2="65.6" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="18.0" y1="60.0" x2="7.0" y2="60.0" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="18.6" y1="54.9" x2="7.6" y2="54.4" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="20.3" y1="49.9" x2="9.6" y2="48.9" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="23.3" y1="44.9" x2="12.7" y2="43.5" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="27.3" y1="40.1" x2="17.1" y2="38.2" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="32.4" y1="35.5" x2="22.7" y2="33.1" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="38.6" y1="31.1" x2="29.4" y2="28.3" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="45.7" y1="27.0" x2="37.2" y2="23.8" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="53.7" y1="23.2" x2="46.0" y2="19.7" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="62.6" y1="19.8" x2="55.6" y2="15.9" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="72.2" y1="16.8" x2="66.1" y2="12.6" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="82.5" y1="14.1" x2="77.3" y2="9.7" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="93.3" y1="12.0" x2="89.1" y2="7.3" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="104.6" y1="10.2" x2="101.4" y2="5.5" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="116.2" y1="9.0" x2="114.1" y2="4.1" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="128.0" y1="8.3" x2="127.0" y2="3.3" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="140.0" y1="8.0" x2="140.0" y2="3.0" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="152.0" y1="8.3" x2="153.0" y2="3.3" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="163.8" y1="9.0" x2="165.9" y2="4.1" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="175.4" y1="10.2" x2="178.6" y2="5.5" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="186.7" y1="12.0" x2="190.9" y2="7.3" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="197.5" y1="14.1" x2="202.7" y2="9.7" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="207.8" y1="16.8" x2="213.9" y2="12.6" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="217.4" y1="19.8" x2="224.4" y2="15.9" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="226.3" y1="23.2" x2="234.0" y2="19.7" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="234.3" y1="27.0" x2="242.8" y2="23.8" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="241.4" y1="31.1" x2="250.6" y2="28.3" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="247.6" y1="35.5" x2="257.3" y2="33.1" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="252.7" y1="40.1" x2="262.9" y2="38.2" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="256.7" y1="44.9" x2="267.3" y2="43.5" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><line x1="259.7" y1="49.9" x2="270.4" y2="48.9" stroke="#fef3c7" stroke-width="2.2" stroke-linecap="round"/><line x1="261.4" y1="54.9" x2="272.4" y2="54.4" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/></g>
-    <ellipse cx="140" cy="60" rx="122" ry="52" fill="url(#sisalBaseGrad3D)" stroke="#78350f" stroke-width="1.8"/>
-    <ellipse cx="140" cy="60" rx="114" ry="48.5" fill="none" stroke="#78350f" stroke-width="2.8" stroke-dasharray="7,3" opacity="0.65"/><ellipse cx="140" cy="60" rx="103" ry="43.8" fill="none" stroke="#fef3c7" stroke-width="2" stroke-dasharray="5,4" opacity="0.55"/><ellipse cx="140" cy="60" rx="92" ry="39.1" fill="none" stroke="#78350f" stroke-width="2.4" stroke-dasharray="7,3" opacity="0.65"/><ellipse cx="140" cy="60" rx="81" ry="34.4" fill="none" stroke="#fef3c7" stroke-width="2" stroke-dasharray="5,4" opacity="0.55"/><ellipse cx="140" cy="60" rx="70" ry="29.8" fill="none" stroke="#78350f" stroke-width="2.4" stroke-dasharray="7,3" opacity="0.65"/><ellipse cx="140" cy="60" rx="58" ry="24.7" fill="none" stroke="#fef3c7" stroke-width="2" stroke-dasharray="5,4" opacity="0.55"/><ellipse cx="140" cy="60" rx="46" ry="19.6" fill="none" stroke="#78350f" stroke-width="2.4" stroke-dasharray="7,3" opacity="0.65"/><ellipse cx="140" cy="60" rx="34" ry="14.5" fill="none" stroke="#fef3c7" stroke-width="2" stroke-dasharray="5,4" opacity="0.55"/><ellipse cx="140" cy="60" rx="22" ry="9.4" fill="none" stroke="#78350f" stroke-width="2" stroke-dasharray="5,3" opacity="0.65"/><ellipse cx="140" cy="60" rx="11" ry="4.7" fill="none" stroke="#fef3c7" stroke-width="1.8" stroke-dasharray="4,2" opacity="0.55"/>
-    <ellipse cx="140" cy="60" rx="4" ry="1.8" fill="#78350f"/>
-  </g>
-</svg>`;
-
-// 29c. Tapete Redondo Pelúcia Pelego Shaggy em Perspectiva 2.5D (160x70cm)
-export const SVG_RUG_SHAGGY_ROUND = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 120" width="280" height="120">
-  <defs>
-    <radialGradient id="shaggyFurGrad" cx="48%" cy="40%" r="58%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="45%" stop-color="#fdfbf7"/>
-      <stop offset="80%" stop-color="#f1f5f9"/>
-      <stop offset="100%" stop-color="#cbd5e1"/>
-    </radialGradient>
-    <filter id="shaggyDrop" x="-12%" y="-15%" width="124%" height="135%">
-      <feDropShadow dx="0" dy="4.5" stdDeviation="4.5" flood-color="#0f172a" flood-opacity="0.2"/>
-    </filter>
-  </defs>
-  <!-- Sombra no Piso -->
-  <path d="M 268.0,60.0 L 262.1,69.1 L 260.5,78.6 L 244.0,85.5 L 237.6,94.7 L 219.6,100.2 L 204.4,107.3 L 181.1,107.9 L 162.0,113.0 L 140.0,112.4 L 117.5,114.0 L 98.8,108.1 L 76.8,106.4 L 60.8,100.0 L 40.7,95.3 L 35.2,85.7 L 21.4,78.3 L 19.1,69.0 L 10.1,60.0 L 20.3,51.0 L 21.6,41.7 L 34.2,34.1 L 40.4,24.6 L 61.5,20.3 L 77.0,13.7 L 98.4,11.5 L 117.4,5.8 L 140.0,8.0 L 161.9,7.3 L 181.4,11.7 L 204.9,12.4 L 219.2,20.0 L 236.9,25.5 L 244.5,34.4 L 261.5,41.2 L 261.7,50.9 L 266.9,60.0 Z" fill="#cbd5e1" filter="url(#shaggyDrop)"/>
-  <!-- Corpo da Pelúcia Shaggy -->
-  <path d="M 268.0,60.0 L 262.1,69.1 L 260.5,78.6 L 244.0,85.5 L 237.6,94.7 L 219.6,100.2 L 204.4,107.3 L 181.1,107.9 L 162.0,113.0 L 140.0,112.4 L 117.5,114.0 L 98.8,108.1 L 76.8,106.4 L 60.8,100.0 L 40.7,95.3 L 35.2,85.7 L 21.4,78.3 L 19.1,69.0 L 10.1,60.0 L 20.3,51.0 L 21.6,41.7 L 34.2,34.1 L 40.4,24.6 L 61.5,20.3 L 77.0,13.7 L 98.4,11.5 L 117.4,5.8 L 140.0,8.0 L 161.9,7.3 L 181.4,11.7 L 204.9,12.4 L 219.2,20.0 L 236.9,25.5 L 244.5,34.4 L 261.5,41.2 L 261.7,50.9 L 266.9,60.0 Z" fill="url(#shaggyFurGrad)" stroke="#e2e8f0" stroke-width="1.5"/>
-  <!-- Tufos de Pelo Internos -->
-  <ellipse cx="140" cy="60" rx="112" ry="47" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-dasharray="6,4" opacity="0.9"/>
-  <ellipse cx="140" cy="60" rx="95" ry="40" fill="none" stroke="#f1f5f9" stroke-width="1.5" stroke-dasharray="8,5" opacity="0.75"/>
-  <ellipse cx="140" cy="60" rx="72" ry="30" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.85"/>
-  <ellipse cx="140" cy="60" rx="45" ry="19" fill="none" stroke="#f1f5f9" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.7"/>
-</svg>`;
-
-// 29d. Tapete Curvo Orgânico Moderno em Perspectiva 2.5D (200x85cm)
-export const SVG_RUG_ORGANIC_CURVE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 120" width="300" height="120">
-  <defs>
-    <radialGradient id="organicCurveGrad" cx="46%" cy="40%" r="58%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="60%" stop-color="#f8fafc"/>
-      <stop offset="100%" stop-color="#e2e8f0"/>
-    </radialGradient>
-    <filter id="organicCurveDrop" x="-10%" y="-15%" width="120%" height="135%">
-      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.22"/>
-    </filter>
-  </defs>
-  <path d="M 42,60 C 40,32 88,14 150,15 C 215,16 262,32 272,60 C 282,90 232,108 165,110 C 95,112 44,92 42,60 Z" fill="#94a3b8" filter="url(#organicCurveDrop)"/>
-  <path d="M 42,60 C 40,32 88,14 150,15 C 215,16 262,32 272,60 C 282,90 232,108 165,110 C 95,112 44,92 42,60 Z" fill="url(#organicCurveGrad)" stroke="#cbd5e1" stroke-width="1.5"/>
-  <path d="M 46,60 C 44,35 90,18 149,19 C 211,20 256,35 266,60 C 275,87 228,103 164,105 C 98,107 48,89 46,60 Z" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-dasharray="5,3" opacity="0.85"/>
-</svg>`;
-
-// 29e. Tapete Retangular Boho em Tear de Juta com Franjas Laterais (240x80cm)
-export const SVG_RUG_BOHO_RECT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 100" width="300" height="100">
-  <defs>
-    <linearGradient id="bohoRectGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#fef3c7"/>
-      <stop offset="40%" stop-color="#fde68a"/>
-      <stop offset="85%" stop-color="#d97706"/>
-      <stop offset="100%" stop-color="#b45309"/>
-    </linearGradient>
-    <filter id="bohoRectDrop" x="-10%" y="-15%" width="120%" height="135%">
-      <feDropShadow dx="0" dy="4" stdDeviation="3.5" flood-color="#451a03" flood-opacity="0.25"/>
-    </filter>
-  </defs>
-  <!-- Floor Shadow -->
-  <polygon points="45,10 255,10 292,92 8,92" fill="#451a03" filter="url(#bohoRectDrop)"/>
-  <!-- Franjas laterais de algodão cru -->
-  <line x1="35.2" y1="14" x2="43.2" y2="14" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="33.4" y1="18" x2="41.4" y2="18" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="31.6" y1="22" x2="39.6" y2="22" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="29.8" y1="26" x2="37.8" y2="26" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="28.0" y1="30" x2="36.0" y2="30" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="26.2" y1="34" x2="34.2" y2="34" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="24.4" y1="38" x2="32.4" y2="38" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="22.6" y1="42" x2="30.6" y2="42" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="20.8" y1="46" x2="28.8" y2="46" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="19.0" y1="50" x2="27.0" y2="50" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="17.1" y1="54" x2="25.1" y2="54" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="15.3" y1="58" x2="23.3" y2="58" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="13.5" y1="62" x2="21.5" y2="62" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="11.7" y1="66" x2="19.7" y2="66" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="9.9" y1="70" x2="17.9" y2="70" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="8.1" y1="74" x2="16.1" y2="74" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="6.3" y1="78" x2="14.3" y2="78" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="4.5" y1="82" x2="12.5" y2="82" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/><line x1="2.7" y1="86" x2="10.7" y2="86" stroke="#fef3c7" stroke-width="1.6" stroke-linecap="round"/>
-  <line x1="256.8" y1="14" x2="264.8" y2="14" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="258.6" y1="18" x2="266.6" y2="18" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="260.4" y1="22" x2="268.4" y2="22" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="262.2" y1="26" x2="270.2" y2="26" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="264.0" y1="30" x2="272.0" y2="30" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="265.8" y1="34" x2="273.8" y2="34" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="267.6" y1="38" x2="275.6" y2="38" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="269.4" y1="42" x2="277.4" y2="42" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="271.2" y1="46" x2="279.2" y2="46" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="273.0" y1="50" x2="281.0" y2="50" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="274.9" y1="54" x2="282.9" y2="54" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="276.7" y1="58" x2="284.7" y2="58" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="278.5" y1="62" x2="286.5" y2="62" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="280.3" y1="66" x2="288.3" y2="66" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="282.1" y1="70" x2="290.1" y2="70" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="283.9" y1="74" x2="291.9" y2="74" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="285.7" y1="78" x2="293.7" y2="78" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="287.5" y1="82" x2="295.5" y2="82" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/><line x1="289.3" y1="86" x2="297.3" y2="86" stroke="#fde68a" stroke-width="1.6" stroke-linecap="round"/>
-  <!-- Corpo de Tear em Juta -->
-  <polygon points="45,10 255,10 292,92 8,92" fill="url(#bohoRectGrad)" stroke="#78350f" stroke-width="1.5"/>
-  <!-- Linhas de Trama de Tear -->
-  <line x1="44.4" y1="18" x2="255.6" y2="18" stroke="#78350f" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.45"/><line x1="41.7" y1="24" x2="258.3" y2="24" stroke="#78350f" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.45"/><line x1="39.0" y1="30" x2="261.0" y2="30" stroke="#78350f" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.45"/><line x1="36.3" y1="36" x2="263.7" y2="36" stroke="#78350f" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.45"/><line x1="33.6" y1="42" x2="266.4" y2="42" stroke="#78350f" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.45"/><line x1="30.9" y1="48" x2="269.1" y2="48" stroke="#78350f" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.45"/><line x1="28.1" y1="54" x2="271.9" y2="54" stroke="#78350f" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.45"/><line x1="25.4" y1="60" x2="274.6" y2="60" stroke="#78350f" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.45"/><line x1="22.7" y1="66" x2="277.3" y2="66" stroke="#78350f" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.45"/><line x1="20.0" y1="72" x2="280.0" y2="72" stroke="#78350f" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.45"/><line x1="17.3" y1="78" x2="282.7" y2="78" stroke="#78350f" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.45"/><line x1="14.6" y1="84" x2="285.4" y2="84" stroke="#78350f" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.45"/>
-  <!-- Borda de acabamento frontal -->
-  <polygon points="8,92 292,92 292,95 8,95" fill="#78350f" opacity="0.8"/>
+  <polygon points="37,18 243,18 266,122 14,122" fill="none" stroke="#ffffff" stroke-width="1.2" opacity="0.9"/>
 </svg>`;
 
 // 30. Bandeja de Doces Baixa 20x5cm
@@ -3935,7 +3846,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     category: 'tapetes',
     type: 'rug_rect_3d',
     widthCm: 250,
-    heightCm: 85,
+    heightCm: 200,
     previewUrl: svgToDataUrl(SVG_RUG_RECT_250x200),
     isCustom: false,
     stockQuantity: 1,
@@ -3943,7 +3854,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
   {
     id: 'preset-tapete-oval',
-    name: 'Tapete Redondo Velvet / Liso',
+    name: 'Tapete Oval em Perspectiva',
     category: 'tapetes',
     type: 'rug_oval',
     widthCm: 160,
@@ -3952,106 +3863,6 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 35
-  },
-  {
-    id: 'preset-tapete-boho-sisal',
-    name: 'Tapete Redondo Boho Sisal com Franjas',
-    category: 'tapetes',
-    type: 'rug_oval',
-    widthCm: 160,
-    heightCm: 70,
-    previewUrl: svgToDataUrl(SVG_RUG_BOHO_SISAL_3D),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 45
-  },
-  {
-    id: 'preset-tapete-shaggy-pelucia',
-    name: 'Tapete Redondo Pelúcia Pelego',
-    category: 'tapetes',
-    type: 'rug_oval',
-    widthCm: 160,
-    heightCm: 70,
-    previewUrl: svgToDataUrl(SVG_RUG_SHAGGY_ROUND),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 40
-  },
-  {
-    id: 'preset-tapete-organico-moderno',
-    name: 'Tapete Curvo Orgânico Moderno',
-    category: 'tapetes',
-    type: 'rug_oval',
-    widthCm: 200,
-    heightCm: 85,
-    previewUrl: svgToDataUrl(SVG_RUG_ORGANIC_CURVE),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 50
-  },
-  {
-    id: 'preset-tapete-boho-tear-retangular',
-    name: 'Tapete Retangular Boho Tear com Franjas',
-    category: 'tapetes',
-    type: 'rug_rect_3d',
-    widthCm: 240,
-    heightCm: 80,
-    previewUrl: svgToDataUrl(SVG_RUG_BOHO_RECT),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 55
-  },
-  {
-    id: 'preset-tapete-realista-grama',
-    name: 'Tapete Realista - Grama Sintética',
-    category: 'tapetes',
-    type: 'rug_rect_3d',
-    svgRole: 'photo',
-    widthCm: 250,
-    heightCm: 85,
-    previewUrl: '/items/tapete-realista-grama.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 70
-  },
-  {
-    id: 'preset-tapete-realista-deck-madeira',
-    name: 'Tapete Realista - Deck Madeira Rústica',
-    category: 'tapetes',
-    type: 'rug_rect_3d',
-    svgRole: 'photo',
-    widthCm: 250,
-    heightCm: 85,
-    previewUrl: '/items/tapete-realista-deck-madeira.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 75
-  },
-  {
-    id: 'preset-tapete-realista-pelego-branco',
-    name: 'Tapete Realista - Pelego Branco Luxo',
-    category: 'tapetes',
-    type: 'rug_oval',
-    svgRole: 'photo',
-    widthCm: 160,
-    heightCm: 75,
-    previewUrl: '/items/tapete-realista-pelego-branco.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 50
-  },
-  {
-    id: 'preset-tapete-realista-mandala-juta',
-    name: 'Tapete Realista - Mandala Juta Boho',
-    category: 'tapetes',
-    type: 'rug_oval',
-    svgRole: 'photo',
-    widthCm: 160,
-    heightCm: 75,
-    previewUrl: '/items/tapete-realista-mandala-juta.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 45
   },
 
   // 5. BANCADA E DISPLAYS

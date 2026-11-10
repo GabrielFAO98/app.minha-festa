@@ -4150,6 +4150,59 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     stockQuantity: 2,
     rentalPrice: 25
   },
+  // --- GUIRLANDAS POPULARES PARA PAINÉIS E CENOGRAFIA ---
+  {
+    id: 'preset-guirlanda-floral-rosas-eucalipto',
+    name: 'Guirlanda Floral Meia-Lua - Rosas Blush e Eucalipto',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 110,
+    heightCm: 100,
+    previewUrl: '/items/guirlanda-floral-arco-rosas-eucalipto.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 60
+  },
+  {
+    id: 'preset-guirlanda-folhagens-tropicais',
+    name: 'Guirlanda Tropical de Folhagens e Costela de Adão',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 100,
+    heightCm: 100,
+    previewUrl: '/items/guirlanda-folhagens-tropicais-painel.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 55
+  },
+  {
+    id: 'preset-guirlanda-boho-pampas',
+    name: 'Guirlanda Floral Boho Chic - Capim dos Pampas e Flores Secas',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 110,
+    heightCm: 110,
+    previewUrl: '/items/guirlanda-boho-capim-pampas-flores-secas.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 65
+  },
+  {
+    id: 'preset-guirlanda-floral-branca',
+    name: 'Guirlanda Floral Clássica - Rosas Brancas e Ramos Verdes',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 105,
+    heightCm: 100,
+    previewUrl: '/items/guirlanda-floral-branca-delicada.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 60
+  },
   {
     id: 'preset-display-chao',
     name: 'Display MDF Ursinho Teddy com Balão',

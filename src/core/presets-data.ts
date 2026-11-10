@@ -4384,5 +4384,126 @@ export const DEFAULT_THEME_COVERS: ThemeCover[] = [
     name: 'Patrick Estrela',
     targetType: 'all',
     imageUrl: '/covers/bob-esponja-patrick-estrela.webp'
+  },
+
+  // --- SAFÁRI BABY / REAL MERCADO (PAINÉIS REDONDOS, ROMANOS, RETANGULARES E HORIZONTAIS) ---
+  // 1. Painéis Redondos
+  {
+    id: 'cover-safari-redondo-aquarela-aventura',
+    themeName: 'Safari Baby',
+    name: 'Painel Redondo Safári Aquarela Aventura',
+    targetType: 'all',
+    imageUrl: '/covers/painel-redondo-safari-aquarela-aventura.webp'
+  },
+  {
+    id: 'cover-safari-redondo-amiguinhos-selva',
+    themeName: 'Safari Baby',
+    name: 'Painel Redondo Safári Amiguinhos da Selva',
+    targetType: 'all',
+    imageUrl: '/covers/painel-redondo-safari-amiguinhos-selva.webp'
+  },
+  {
+    id: 'cover-safari-redondo-festa-animais',
+    themeName: 'Safari Baby',
+    name: 'Painel Redondo Safári Festa dos Bichinhos',
+    targetType: 'all',
+    imageUrl: '/covers/painel-redondo-safari-festa-animais.webp'
+  },
+
+  // 2. Painéis Romanos (Arco)
+  {
+    id: 'cover-safari-romano-arco-aventura',
+    themeName: 'Safari Baby',
+    name: 'Painel Romano Safári Aventura Verde',
+    targetType: 'all',
+    imageUrl: '/covers/painel-romano-safari-arco-aventura.webp'
+  },
+  {
+    id: 'cover-safari-romano-arco-aquarela',
+    themeName: 'Safari Baby',
+    name: 'Painel Romano Safári Aquarela Tropical',
+    targetType: 'all',
+    imageUrl: '/covers/painel-romano-safari-arco-aquarela.webp'
+  },
+  {
+    id: 'cover-safari-romano-folhagens-leao',
+    themeName: 'Safari Baby',
+    name: 'Painel Romano Safári Folhagens Escuras (Leãozinho)',
+    targetType: 'all',
+    imageUrl: '/covers/painel-romano-safari-folhagens-leao.webp'
+  },
+  {
+    id: 'cover-safari-romano-folhagens-girafa',
+    themeName: 'Safari Baby',
+    name: 'Painel Romano Safári Folhagens Escuras (Girafinha)',
+    targetType: 'all',
+    imageUrl: '/covers/painel-romano-safari-folhagens-girafa.webp'
+  },
+  {
+    id: 'cover-safari-romano-boho-terracota',
+    themeName: 'Safari Baby',
+    name: 'Painel Romano Safári Boho Terracota e Creme',
+    targetType: 'all',
+    imageUrl: '/covers/painel-romano-safari-boho-terracota.webp'
+  },
+
+  // 3. Painéis Retangulares
+  {
+    id: 'cover-safari-retangular-verde-oliva',
+    themeName: 'Safari Baby',
+    name: 'Painel Retangular Safári Verde Oliva e Bichinhos',
+    targetType: 'all',
+    imageUrl: '/covers/painel-retangular-safari-verde-oliva.webp'
+  },
+  {
+    id: 'cover-safari-retangular-boho-aquarela',
+    themeName: 'Safari Baby',
+    name: 'Painel Retangular Safári Boho Aquarela',
+    targetType: 'all',
+    imageUrl: '/covers/painel-retangular-safari-boho-aquarela.webp'
+  },
+  {
+    id: 'cover-safari-retangular-aventura-floresta',
+    themeName: 'Safari Baby',
+    name: 'Painel Retangular Safári Aventura na Floresta',
+    targetType: 'all',
+    imageUrl: '/covers/painel-retangular-safari-aventura-floresta.webp'
+  },
+  {
+    id: 'cover-safari-retangular-savana-dourada',
+    themeName: 'Safari Baby',
+    name: 'Painel Retangular Safári Savana Dourada',
+    targetType: 'all',
+    imageUrl: '/covers/painel-retangular-safari-savana-dourada.webp'
+  },
+
+  // 4. Painéis Horizontais (Bônus)
+  {
+    id: 'cover-safari-horizontal-floresta-encantada',
+    themeName: 'Safari Baby',
+    name: 'Painel Horizontal Safári Floresta Encantada',
+    targetType: 'all',
+    imageUrl: '/covers/painel-horizontal-safari-floresta-encantada.webp'
+  },
+  {
+    id: 'cover-safari-horizontal-savana-ceu-azul',
+    themeName: 'Safari Baby',
+    name: 'Painel Horizontal Safári Savana Céu Azul',
+    targetType: 'all',
+    imageUrl: '/covers/painel-horizontal-safari-savana-ceu-azul.webp'
+  },
+  {
+    id: 'cover-safari-horizontal-aquarela-baby',
+    themeName: 'Safari Baby',
+    name: 'Painel Horizontal Safári Aquarela Baby',
+    targetType: 'all',
+    imageUrl: '/covers/painel-horizontal-safari-aquarela-baby.webp'
+  },
+  {
+    id: 'cover-safari-horizontal-chapeuzinho-festa',
+    themeName: 'Safari Baby',
+    name: 'Painel Horizontal Safári Chapéuzinho de Festa',
+    targetType: 'all',
+    imageUrl: '/covers/painel-horizontal-safari-chapeuzinho-festa.webp'
   }
 ];

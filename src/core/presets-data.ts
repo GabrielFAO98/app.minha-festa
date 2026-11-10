@@ -4194,6 +4194,41 @@ export const DEFAULT_THEME_COVERS: ThemeCover[] = [
     imageUrl: '/covers/arco-iris-candy-estrelas.webp'
   },
   {
+    id: 'cover-safari-baby-painel-jipe-aventura',
+    themeName: 'Safari Baby',
+    name: 'Painel Redondo Safari Baby Aventura no Jipe',
+    targetType: 'all',
+    imageUrl: '/covers/safari-baby-painel-jipe-aventura.webp'
+  },
+  {
+    id: 'cover-safari-baby-painel-guirlanda-salvia',
+    themeName: 'Safari Baby',
+    name: 'Painel Redondo Safari Baby Guirlanda Sálvia',
+    targetType: 'all',
+    imageUrl: '/covers/safari-baby-painel-guirlanda-salvia.webp'
+  },
+  {
+    id: 'cover-safari-baby-cilindro-jipe',
+    themeName: 'Safari Baby',
+    name: 'Cilindro Safari Baby Turminha no Jipe',
+    targetType: 'all',
+    imageUrl: '/covers/safari-baby-cilindro-jipe.webp'
+  },
+  {
+    id: 'cover-safari-baby-cilindro-leao',
+    themeName: 'Safari Baby',
+    name: 'Cilindro Safari Baby Leãozinho',
+    targetType: 'all',
+    imageUrl: '/covers/safari-baby-cilindro-leao.webp'
+  },
+  {
+    id: 'cover-safari-baby-cilindro-elefante',
+    themeName: 'Safari Baby',
+    name: 'Cilindro Safari Baby Elefantinho',
+    targetType: 'all',
+    imageUrl: '/covers/safari-baby-cilindro-elefante.webp'
+  },
+  {
     id: 'cover-safari-baby-tigre-e-elefante',
     themeName: 'Safari Baby',
     name: 'Safari Baby Tigre e Elefante',

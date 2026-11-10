@@ -3997,6 +3997,139 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 25
+  },
+  // --- DISPLAYS SAFARI BABY REALISTAS (TENDÊNCIA 2026) ---
+  // 5 Displays de Chão (Totens Grandes)
+  {
+    id: 'preset-display-chao-safari-leao',
+    name: 'Display de Chão Safari Baby - Leãozinho',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 60,
+    heightCm: 70,
+    previewUrl: '/items/display-safari-leao.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 28
+  },
+  {
+    id: 'preset-display-chao-safari-girafa',
+    name: 'Display de Chão Safari Baby - Girafinha',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 43,
+    heightCm: 80,
+    previewUrl: '/items/display-safari-girafa.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 30
+  },
+  {
+    id: 'preset-display-chao-safari-macaco',
+    name: 'Display de Chão Safari Baby - Macaquinho',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 51,
+    heightCm: 65,
+    previewUrl: '/items/display-safari-macaco.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 25
+  },
+  {
+    id: 'preset-display-chao-safari-elefante',
+    name: 'Display de Chão Safari Baby - Elefantinho',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 68,
+    heightCm: 68,
+    previewUrl: '/items/display-safari-elefante.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 28
+  },
+  {
+    id: 'preset-display-chao-safari-zebra',
+    name: 'Display de Chão Safari Baby - Zebrinha',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 51,
+    heightCm: 70,
+    previewUrl: '/items/display-safari-zebra.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 28
+  },
+  // 5 Displays de Mesa (Centros de Mesa / Apoio)
+  {
+    id: 'preset-display-mesa-safari-leao',
+    name: 'Display de Mesa Safari Baby - Leãozinho',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 20,
+    heightCm: 24,
+    previewUrl: '/items/display-safari-leao.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 12
+  },
+  {
+    id: 'preset-display-mesa-safari-girafa',
+    name: 'Display de Mesa Safari Baby - Girafinha',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 15,
+    heightCm: 28,
+    previewUrl: '/items/display-safari-girafa.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 14
+  },
+  {
+    id: 'preset-display-mesa-safari-macaco',
+    name: 'Display de Mesa Safari Baby - Macaquinho',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 17,
+    heightCm: 22,
+    previewUrl: '/items/display-safari-macaco.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 12
+  },
+  {
+    id: 'preset-display-mesa-safari-elefante',
+    name: 'Display de Mesa Safari Baby - Elefantinho',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 23,
+    heightCm: 23,
+    previewUrl: '/items/display-safari-elefante.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 12
+  },
+  {
+    id: 'preset-display-mesa-safari-zebra',
+    name: 'Display de Mesa Safari Baby - Zebrinha',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 17,
+    heightCm: 24,
+    previewUrl: '/items/display-safari-zebra.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 12
   }
 ];
 

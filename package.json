@@ -7,13 +7,15 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "add-covers": "node scripts/process-covers.js"
+    "add-covers": "node scripts/process-covers.js",
+    "add-items": "node scripts/process-items.js"
   },
   "dependencies": {
     "dexie": "^4.0.11",
     "konva": "^9.3.18"
   },
   "devDependencies": {
+    "@imgly/background-removal-node": "^1.4.5",
     "@types/node": "^26.6.5",
     "jpeg-js": "^0.4.4",
     "sharp": "^0.35.5",

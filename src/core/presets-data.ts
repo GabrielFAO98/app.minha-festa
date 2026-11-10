@@ -4016,32 +4016,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     stockQuantity: 1,
     rentalPrice: 25
   },
-  {
-    id: 'preset-acessorio-tronco-rustico',
-    name: 'Tronco Rústico de Madeira Cenográfico',
-    category: 'acessorios',
-    type: 'generic',
-    svgRole: 'photo',
-    widthCm: 30,
-    heightCm: 35,
-    previewUrl: '/items/acessorio-tronco-rustico-chao.webp',
-    isCustom: false,
-    stockQuantity: 2,
-    rentalPrice: 20
-  },
-  {
-    id: 'preset-acessorio-maleta-vintage',
-    name: 'Maleta Decorativa Vintage Safari',
-    category: 'acessorios',
-    type: 'generic',
-    svgRole: 'photo',
-    widthCm: 26,
-    heightCm: 25,
-    previewUrl: '/items/acessorio-maleta-vintage-safari.webp',
-    isCustom: false,
-    stockQuantity: 2,
-    rentalPrice: 20
-  },
+
   // --- ACESSÓRIOS POOL PARTY ---
   {
     id: 'preset-acessorio-boia-flamingo-rosa',
@@ -4069,47 +4044,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     stockQuantity: 2,
     rentalPrice: 20
   },
-  // --- ACESSÓRIOS CEREJINHA ---
-  {
-    id: 'preset-acessorio-cesta-piquenique-cereja',
-    name: 'Cesta de Piquenique com Cerejinhas',
-    category: 'acessorios',
-    type: 'generic',
-    svgRole: 'photo',
-    widthCm: 35,
-    heightCm: 37,
-    previewUrl: '/items/acessorio-cesta-piquenique-cereja.webp',
-    isCustom: false,
-    stockQuantity: 2,
-    rentalPrice: 20
-  },
-  {
-    id: 'preset-acessorio-bolo-fake-cerejinha',
-    name: 'Bolo Fake Cenográfico Cerejinha',
-    category: 'acessorios',
-    type: 'generic',
-    svgRole: 'photo',
-    widthCm: 35,
-    heightCm: 48,
-    previewUrl: '/items/acessorio-bolo-fake-cerejinha.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 45
-  },
   // --- ACESSÓRIOS 1 ANO ---
-  {
-    id: 'preset-acessorio-luminoso-numero-um',
-    name: 'Luminária LED Número 1 Estilo Camarim',
-    category: 'acessorios',
-    type: 'generic',
-    svgRole: 'photo',
-    widthCm: 22,
-    heightCm: 38,
-    previewUrl: '/items/acessorio-luminoso-numero-um.webp',
-    isCustom: false,
-    stockQuantity: 2,
-    rentalPrice: 25
-  },
   {
     id: 'preset-acessorio-bolo-fake-1ano',
     name: 'Bolo Fake Cenográfico Meu 1º Aninho',
@@ -4150,59 +4085,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     stockQuantity: 2,
     rentalPrice: 25
   },
-  // --- GUIRLANDAS POPULARES PARA PAINÉIS E CENOGRAFIA ---
-  {
-    id: 'preset-guirlanda-floral-rosas-eucalipto',
-    name: 'Guirlanda Floral Meia-Lua - Rosas Blush e Eucalipto',
-    category: 'acessorios',
-    type: 'generic',
-    svgRole: 'photo',
-    widthCm: 110,
-    heightCm: 100,
-    previewUrl: '/items/guirlanda-floral-arco-rosas-eucalipto.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 60
-  },
-  {
-    id: 'preset-guirlanda-folhagens-tropicais',
-    name: 'Guirlanda Tropical de Folhagens e Costela de Adão',
-    category: 'acessorios',
-    type: 'generic',
-    svgRole: 'photo',
-    widthCm: 100,
-    heightCm: 100,
-    previewUrl: '/items/guirlanda-folhagens-tropicais-painel.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 55
-  },
-  {
-    id: 'preset-guirlanda-boho-pampas',
-    name: 'Guirlanda Floral Boho Chic - Capim dos Pampas e Flores Secas',
-    category: 'acessorios',
-    type: 'generic',
-    svgRole: 'photo',
-    widthCm: 110,
-    heightCm: 110,
-    previewUrl: '/items/guirlanda-boho-capim-pampas-flores-secas.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 65
-  },
-  {
-    id: 'preset-guirlanda-floral-branca',
-    name: 'Guirlanda Floral Clássica - Rosas Brancas e Ramos Verdes',
-    category: 'acessorios',
-    type: 'generic',
-    svgRole: 'photo',
-    widthCm: 105,
-    heightCm: 100,
-    previewUrl: '/items/guirlanda-floral-branca-delicada.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 60
-  },
+
   {
     id: 'preset-display-chao',
     name: 'Display MDF Ursinho Teddy com Balão',
@@ -4356,46 +4239,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     stockQuantity: 1,
     rentalPrice: 32
   },
-  // --- DISPLAYS POOL PARTY ---
-  {
-    id: 'preset-display-chao-pool-party-sol',
-    name: 'Display de Chão Pool Party - Solzinho de Verão',
-    category: 'displays',
-    type: 'display',
-    svgRole: 'photo',
-    widthCm: 70,
-    heightCm: 70,
-    previewUrl: '/items/display-pool-party-sol.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 28
-  },
-  {
-    id: 'preset-display-chao-pool-party-flamingo',
-    name: 'Display de Chão Pool Party - Flamingo Tropical',
-    category: 'displays',
-    type: 'display',
-    svgRole: 'photo',
-    widthCm: 68,
-    heightCm: 70,
-    previewUrl: '/items/display-pool-party-flamingo.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 28
-  },
-  {
-    id: 'preset-display-chao-pool-party-sorvete',
-    name: 'Display de Chão Pool Party - Sorvetinho Colorido',
-    category: 'displays',
-    type: 'display',
-    svgRole: 'photo',
-    widthCm: 65,
-    heightCm: 65,
-    previewUrl: '/items/display-pool-party-sorvete.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 25
-  },
+
   // --- DISPLAYS CEREJINHA ---
   {
     id: 'preset-display-chao-cerejinha-par',
@@ -4410,33 +4254,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     stockQuantity: 1,
     rentalPrice: 28
   },
-  // --- DISPLAYS 1 ANO ---
-  {
-    id: 'preset-display-chao-1ano-numero-um',
-    name: 'Display de Chão 1 Ano - Número Um Gigante',
-    category: 'displays',
-    type: 'display',
-    svgRole: 'photo',
-    widthCm: 48,
-    heightCm: 80,
-    previewUrl: '/items/display-1ano-numero-um.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 30
-  },
-  {
-    id: 'preset-display-chao-1ano-ursinho',
-    name: 'Display de Chão 1 Ano - Ursinho Balão',
-    category: 'displays',
-    type: 'display',
-    svgRole: 'photo',
-    widthCm: 63,
-    heightCm: 70,
-    previewUrl: '/items/display-1ano-ursinho.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 28
-  },
+
   // --- DISPLAYS CHÁ REVELAÇÃO ---
   {
     id: 'preset-display-chao-cha-revelacao-interrogacao',
@@ -4447,19 +4265,6 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     widthCm: 44,
     heightCm: 70,
     previewUrl: '/items/display-cha-revelacao-interrogacao.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 28
-  },
-  {
-    id: 'preset-display-chao-cha-revelacao-ursinhos',
-    name: 'Display de Chão Chá Revelação - Ursinhos Gêmeos',
-    category: 'displays',
-    type: 'display',
-    svgRole: 'photo',
-    widthCm: 80,
-    heightCm: 55,
-    previewUrl: '/items/display-cha-revelacao-ursinhos.webp',
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 28

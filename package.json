@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "add-covers": "node scripts/process-covers.js",
-    "add-items": "node scripts/process-items.js"
+    "add-items": "node scripts/process-items.js",
+    "fetch-items": "node scripts/fetch-theme-items.mjs"
   },
   "dependencies": {
     "dexie": "^4.0.11",

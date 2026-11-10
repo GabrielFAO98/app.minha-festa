@@ -2,6 +2,7 @@
  * Pipeline de Aquisição Automatizada de Displays Reais do Mercado
  * Busca peças populares de MDF/acrílico em marketplaces (Shopee, Elo7, Mercado Livre),
  * baixa em alta resolução, remove o fundo com IA neural (@imgly),
+ * preenche automaticamente furos internos em áreas claras (barriga, patas, focinho),
  * remove margens transparentes (Sharp trim), valida integridade das bordas (sem cortes)
  * e calcula proporções reais para totens de chão e displays de mesa.
  */
@@ -61,6 +62,77 @@ async function downloadFile(url, destPath) {
   });
 }
 
+/**
+ * Preenche furos internos na máscara de opacidade via Flood Fill de bordas.
+ * Qualquer pixel que não seja alcançável a partir das 4 bordas externas
+ * pertence ao corpo do totem e recebe opacidade total (alpha = 255).
+ */
+function fillAlphaHoles(alphaChannel, width, height, alphaCutoff = 40) {
+  const isOutside = new Uint8Array(width * height);
+  const queue = [];
+
+  for (let x = 0; x < width; x++) {
+    const topIdx = 0 * width + x;
+    if (alphaChannel[topIdx] < alphaCutoff) {
+      isOutside[topIdx] = 1;
+      queue.push(topIdx);
+    }
+    const btmIdx = (height - 1) * width + x;
+    if (alphaChannel[btmIdx] < alphaCutoff) {
+      isOutside[btmIdx] = 1;
+      queue.push(btmIdx);
+    }
+  }
+
+  for (let y = 0; y < height; y++) {
+    const leftIdx = y * width + 0;
+    if (!isOutside[leftIdx] && alphaChannel[leftIdx] < alphaCutoff) {
+      isOutside[leftIdx] = 1;
+      queue.push(leftIdx);
+    }
+    const rightIdx = y * width + (width - 1);
+    if (!isOutside[rightIdx] && alphaChannel[rightIdx] < alphaCutoff) {
+      isOutside[rightIdx] = 1;
+      queue.push(rightIdx);
+    }
+  }
+
+  // BFS Flood Fill
+  let head = 0;
+  while (head < queue.length) {
+    const curr = queue[head++];
+    const cx = curr % width;
+    const cy = Math.floor(curr / width);
+
+    const neighbors = [
+      cx > 0 ? curr - 1 : -1,
+      cx < width - 1 ? curr + 1 : -1,
+      cy > 0 ? curr - width : -1,
+      cy < height - 1 ? curr + width : -1,
+    ];
+
+    for (const n of neighbors) {
+      if (n >= 0 && !isOutside[n]) {
+        if (alphaChannel[n] < alphaCutoff) {
+          isOutside[n] = 1;
+          queue.push(n);
+        }
+      }
+    }
+  }
+
+  const newAlpha = new Uint8Array(width * height);
+  for (let i = 0; i < width * height; i++) {
+    if (isOutside[i]) {
+      newAlpha[i] = alphaChannel[i] < alphaCutoff ? 0 : alphaChannel[i];
+    } else {
+      newAlpha[i] = 255;
+    }
+  }
+
+  return newAlpha;
+}
+
 async function checkTouch(buffer) {
   const image = sharp(buffer);
   const { data, info } = await image.raw().toBuffer({ resolveWithObject: true });
@@ -109,16 +181,48 @@ export async function processItem(searchQuery, itemSlug) {
         continue;
       }
 
+      // 1. Extrai RGB original
+      const origImage = sharp(rawFile);
+      const origMeta = await origImage.metadata();
+      const { data: origRgb } = await origImage.removeAlpha().raw().toBuffer({ resolveWithObject: true });
+
+      // 2. Remoção de fundo neural (@imgly)
       console.log(`    Removendo fundo (IA neural @imgly)...`);
       const fileUrl = pathToFileURL(rawFile).href;
       const blob = await removeBackground(fileUrl);
       const bgRemovedBuffer = Buffer.from(await blob.arrayBuffer());
 
-      // Trim automático de bordas transparentes
-      const trimmedBuffer = await sharp(bgRemovedBuffer).trim().toBuffer();
+      // 3. Extrai canal alfa e preenche furos internos (barriga, patas, etc)
+      const bgImage = sharp(bgRemovedBuffer).resize(origMeta.width, origMeta.height);
+      const { data: bgRgba } = await bgImage.raw().toBuffer({ resolveWithObject: true });
+      const alphaChannel = new Uint8Array(origMeta.width * origMeta.height);
+      for (let j = 0; j < alphaChannel.length; j++) {
+        alphaChannel[j] = bgRgba[j * 4 + 3];
+      }
+
+      const solidAlpha = fillAlphaHoles(alphaChannel, origMeta.width, origMeta.height, 40);
+
+      // 4. Combina RGB original com Alpha sólido
+      const combinedRgba = Buffer.alloc(origMeta.width * origMeta.height * 4);
+      for (let j = 0; j < origMeta.width * origMeta.height; j++) {
+        combinedRgba[j * 4 + 0] = origRgb[j * 3 + 0];
+        combinedRgba[j * 4 + 1] = origRgb[j * 3 + 1];
+        combinedRgba[j * 4 + 2] = origRgb[j * 3 + 2];
+        combinedRgba[j * 4 + 3] = solidAlpha[j];
+      }
+
+      // 5. Trim automático de bordas transparentes
+      const trimmedBuffer = await sharp(combinedRgba, {
+        raw: {
+          width: origMeta.width,
+          height: origMeta.height,
+          channels: 4
+        }
+      }).trim().toBuffer();
+
       const trimmedMeta = await sharp(trimmedBuffer).metadata();
 
-      // Checa se ficou cortado (orelhas, patas, etc)
+      // 6. Checa se ficou cortado (orelhas, patas, etc)
       const touch = await checkTouch(trimmedBuffer);
       console.log(`    Dimensões: ${trimmedMeta.width}x${trimmedMeta.height}px | Topo: ${touch.topTouchPercent.toFixed(1)}% | Esquerda: ${touch.leftTouchPercent.toFixed(1)}% | Direita: ${touch.rightTouchPercent.toFixed(1)}%`);
 
@@ -136,12 +240,11 @@ export async function processItem(searchQuery, itemSlug) {
       // Salva arquivo otimizado
       const finalWebpPath = path.resolve('public', 'items', `${itemSlug}.webp`);
       await sharp(trimmedBuffer)
-        .webp({ quality: 85 })
+        .webp({ quality: 90 })
         .toFile(finalWebpPath);
 
       console.log(`    ✅ SUCESSO! Salvo em public/items/${itemSlug}.webp (${trimmedMeta.width}x${trimmedMeta.height}px)`);
 
-      // Limpeza do arquivo temporário
       try { fs.unlinkSync(rawFile); } catch {}
 
       return {

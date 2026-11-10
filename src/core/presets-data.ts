@@ -4058,7 +4058,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     category: 'displays',
     type: 'display',
     svgRole: 'photo',
-    widthCm: 73,
+    widthCm: 72,
     heightCm: 70,
     previewUrl: '/items/display-safari-macaco.webp',
     isCustom: false,

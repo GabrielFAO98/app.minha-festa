@@ -4042,6 +4042,114 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     stockQuantity: 2,
     rentalPrice: 20
   },
+  // --- ACESSÓRIOS POOL PARTY ---
+  {
+    id: 'preset-acessorio-boia-flamingo-rosa',
+    name: 'Boia Inflável Flamingo Rosa para Chão',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 60,
+    heightCm: 60,
+    previewUrl: '/items/acessorio-boia-flamingo-rosa.webp',
+    isCustom: false,
+    stockQuantity: 2,
+    rentalPrice: 20
+  },
+  {
+    id: 'preset-acessorio-boia-donut',
+    name: 'Boia Inflável Donut Confeitado para Chão',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 60,
+    heightCm: 50,
+    previewUrl: '/items/acessorio-boia-donut.webp',
+    isCustom: false,
+    stockQuantity: 2,
+    rentalPrice: 20
+  },
+  // --- ACESSÓRIOS CEREJINHA ---
+  {
+    id: 'preset-acessorio-cesta-piquenique-cereja',
+    name: 'Cesta de Piquenique com Cerejinhas',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 35,
+    heightCm: 37,
+    previewUrl: '/items/acessorio-cesta-piquenique-cereja.webp',
+    isCustom: false,
+    stockQuantity: 2,
+    rentalPrice: 20
+  },
+  {
+    id: 'preset-acessorio-bolo-fake-cerejinha',
+    name: 'Bolo Fake Cenográfico Cerejinha',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 35,
+    heightCm: 48,
+    previewUrl: '/items/acessorio-bolo-fake-cerejinha.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 45
+  },
+  // --- ACESSÓRIOS 1 ANO ---
+  {
+    id: 'preset-acessorio-luminoso-numero-um',
+    name: 'Luminária LED Número 1 Estilo Camarim',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 22,
+    heightCm: 38,
+    previewUrl: '/items/acessorio-luminoso-numero-um.webp',
+    isCustom: false,
+    stockQuantity: 2,
+    rentalPrice: 25
+  },
+  {
+    id: 'preset-acessorio-bolo-fake-1ano',
+    name: 'Bolo Fake Cenográfico Meu 1º Aninho',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 35,
+    heightCm: 48,
+    previewUrl: '/items/acessorio-bolo-fake-1ano.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 45
+  },
+  // --- ACESSÓRIOS CHÁ REVELAÇÃO ---
+  {
+    id: 'preset-acessorio-bolo-fake-cha-revelacao',
+    name: 'Bolo Fake Cenográfico Chá Revelação',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 35,
+    heightCm: 48,
+    previewUrl: '/items/acessorio-bolo-fake-cha-revelacao.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 45
+  },
+  {
+    id: 'preset-acessorio-pelucia-ursinho-revelacao',
+    name: 'Pelúcia Ursinho Chá Revelação com Laço',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 35,
+    heightCm: 35,
+    previewUrl: '/items/acessorio-pelucia-ursinho-revelacao.webp',
+    isCustom: false,
+    stockQuantity: 2,
+    rentalPrice: 25
+  },
   {
     id: 'preset-display-chao',
     name: 'Display MDF Ursinho Teddy com Balão',
@@ -4194,6 +4302,114 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 32
+  },
+  // --- DISPLAYS POOL PARTY ---
+  {
+    id: 'preset-display-chao-pool-party-sol',
+    name: 'Display de Chão Pool Party - Solzinho de Verão',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 70,
+    heightCm: 70,
+    previewUrl: '/items/display-pool-party-sol.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 28
+  },
+  {
+    id: 'preset-display-chao-pool-party-flamingo',
+    name: 'Display de Chão Pool Party - Flamingo Tropical',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 68,
+    heightCm: 70,
+    previewUrl: '/items/display-pool-party-flamingo.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 28
+  },
+  {
+    id: 'preset-display-chao-pool-party-sorvete',
+    name: 'Display de Chão Pool Party - Sorvetinho Colorido',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 65,
+    heightCm: 65,
+    previewUrl: '/items/display-pool-party-sorvete.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 25
+  },
+  // --- DISPLAYS CEREJINHA ---
+  {
+    id: 'preset-display-chao-cerejinha-par',
+    name: 'Display de Chão Cerejinha Doce',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 46,
+    heightCm: 70,
+    previewUrl: '/items/display-cerejinha-par.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 28
+  },
+  // --- DISPLAYS 1 ANO ---
+  {
+    id: 'preset-display-chao-1ano-numero-um',
+    name: 'Display de Chão 1 Ano - Número Um Gigante',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 48,
+    heightCm: 80,
+    previewUrl: '/items/display-1ano-numero-um.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 30
+  },
+  {
+    id: 'preset-display-chao-1ano-ursinho',
+    name: 'Display de Chão 1 Ano - Ursinho Balão',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 63,
+    heightCm: 70,
+    previewUrl: '/items/display-1ano-ursinho.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 28
+  },
+  // --- DISPLAYS CHÁ REVELAÇÃO ---
+  {
+    id: 'preset-display-chao-cha-revelacao-interrogacao',
+    name: 'Display de Chão Chá Revelação - Ponto de Interrogação',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 44,
+    heightCm: 70,
+    previewUrl: '/items/display-cha-revelacao-interrogacao.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 28
+  },
+  {
+    id: 'preset-display-chao-cha-revelacao-ursinhos',
+    name: 'Display de Chão Chá Revelação - Ursinhos Gêmeos',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 80,
+    heightCm: 55,
+    previewUrl: '/items/display-cha-revelacao-ursinhos.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 28
   }
 ];
 
@@ -4366,5 +4582,125 @@ export const DEFAULT_THEME_COVERS: ThemeCover[] = [
     name: 'Patrick Estrela',
     targetType: 'all',
     imageUrl: '/covers/bob-esponja-patrick-estrela.webp'
+  },
+
+  // --- POOL PARTY ---
+  {
+    id: 'cover-pool-party-painel-piscina',
+    themeName: 'Pool Party',
+    name: 'Painel Redondo Pool Party Água Cristalina',
+    targetType: 'all',
+    imageUrl: '/covers/pool-party-painel-piscina.webp'
+  },
+  {
+    id: 'cover-pool-party-cilindro-ondas',
+    themeName: 'Pool Party',
+    name: 'Cilindro Pool Party Ondas da Piscina',
+    targetType: 'all',
+    imageUrl: '/covers/pool-party-cilindro-ondas.webp'
+  },
+  {
+    id: 'cover-pool-party-cilindro-flamingo',
+    themeName: 'Pool Party',
+    name: 'Cilindro Pool Party Flamingo Tropical',
+    targetType: 'all',
+    imageUrl: '/covers/pool-party-cilindro-flamingo.webp'
+  },
+  {
+    id: 'cover-pool-party-cilindro-frutas',
+    themeName: 'Pool Party',
+    name: 'Cilindro Pool Party Frutas de Verão',
+    targetType: 'all',
+    imageUrl: '/covers/pool-party-cilindro-frutas.webp'
+  },
+
+  // --- CEREJINHA ---
+  {
+    id: 'cover-cerejinha-painel-aquarela',
+    themeName: 'Cerejinha',
+    name: 'Painel Redondo Cerejinha Doce Aquarela',
+    targetType: 'all',
+    imageUrl: '/covers/cerejinha-painel-aquarela.webp'
+  },
+  {
+    id: 'cover-cerejinha-cilindro-vichy',
+    themeName: 'Cerejinha',
+    name: 'Cilindro Cerejinha Xadrez Vichy',
+    targetType: 'all',
+    imageUrl: '/covers/cerejinha-cilindro-vichy.webp'
+  },
+  {
+    id: 'cover-cerejinha-cilindro-poa',
+    themeName: 'Cerejinha',
+    name: 'Cilindro Cerejinha Poá Delicado',
+    targetType: 'all',
+    imageUrl: '/covers/cerejinha-cilindro-poa.webp'
+  },
+  {
+    id: 'cover-cerejinha-cilindro-cesta',
+    themeName: 'Cerejinha',
+    name: 'Cilindro Cerejinha Textura Palha Trançada',
+    targetType: 'all',
+    imageUrl: '/covers/cerejinha-cilindro-cesta.webp'
+  },
+
+  // --- 1 ANO ---
+  {
+    id: 'cover-1ano-painel-aquarela-baloes',
+    themeName: '1 Ano',
+    name: 'Painel Redondo Meu 1º Aninho Balões e Nuvens',
+    targetType: 'all',
+    imageUrl: '/covers/1ano-painel-aquarela-baloes.webp'
+  },
+  {
+    id: 'cover-1ano-cilindro-dourado',
+    themeName: '1 Ano',
+    name: 'Cilindro 1 Ano Dourado e Estrelas',
+    targetType: 'all',
+    imageUrl: '/covers/1ano-cilindro-dourado.webp'
+  },
+  {
+    id: 'cover-1ano-cilindro-listras-candy',
+    themeName: '1 Ano',
+    name: 'Cilindro 1 Ano Listras Candy Colors',
+    targetType: 'all',
+    imageUrl: '/covers/1ano-cilindro-listras-candy.webp'
+  },
+  {
+    id: 'cover-1ano-cilindro-nuvens',
+    themeName: '1 Ano',
+    name: 'Cilindro 1 Ano Céu com Nuvens e Estrelinhas',
+    targetType: 'all',
+    imageUrl: '/covers/1ano-cilindro-nuvens.webp'
+  },
+
+  // --- CHÁ REVELAÇÃO ---
+  {
+    id: 'cover-cha-revelacao-painel-nuvens',
+    themeName: 'Chá Revelação',
+    name: 'Painel Redondo Chá Revelação Nuvens de Algodão',
+    targetType: 'all',
+    imageUrl: '/covers/cha-revelacao-painel-nuvens.webp'
+  },
+  {
+    id: 'cover-cha-revelacao-cilindro-interrogacao',
+    themeName: 'Chá Revelação',
+    name: 'Cilindro Chá Revelação Ponto de Interrogação',
+    targetType: 'all',
+    imageUrl: '/covers/cha-revelacao-cilindro-interrogacao.webp'
+  },
+  {
+    id: 'cover-cha-revelacao-cilindro-menino',
+    themeName: 'Chá Revelação',
+    name: 'Cilindro Chá Revelação Menino Azul Bebê',
+    targetType: 'all',
+    imageUrl: '/covers/cha-revelacao-cilindro-menino.webp'
+  },
+  {
+    id: 'cover-cha-revelacao-cilindro-menina',
+    themeName: 'Chá Revelação',
+    name: 'Cilindro Chá Revelação Menina Rosa Bebê',
+    targetType: 'all',
+    imageUrl: '/covers/cha-revelacao-cilindro-menina.webp'
   }
 ];

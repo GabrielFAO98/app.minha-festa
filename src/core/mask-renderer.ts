@@ -196,15 +196,15 @@ export function createClipFunction(type: string, width: number, height: number) 
   }
 
   if (type === 'rug_rect_3d') {
-    const scaleX = width / 280;
-    const scaleY = height / 140;
+    const scaleX = width / 300;
+    const scaleY = height / 100;
 
     return (ctx: any) => {
       ctx.beginPath();
-      ctx.moveTo(34 * scaleX, 14 * scaleY);
-      ctx.lineTo(246 * scaleX, 14 * scaleY);
-      ctx.lineTo(271 * scaleX, 126 * scaleY);
-      ctx.lineTo(9 * scaleX, 126 * scaleY);
+      ctx.moveTo(45 * scaleX, 10 * scaleY);
+      ctx.lineTo(255 * scaleX, 10 * scaleY);
+      ctx.lineTo(292 * scaleX, 92 * scaleY);
+      ctx.lineTo(8 * scaleX, 92 * scaleY);
       ctx.closePath();
     };
   }
@@ -283,6 +283,20 @@ export function calculateCoverPlacement(
     targetY = nodeHeight * (18 / 235);
     targetW = nodeWidth * (130 / 160);
     targetH = nodeHeight * (207 / 235);
+  } else if (type === 'rug_rect_3d') {
+    targetX = nodeWidth * (8 / 300);
+    targetY = nodeHeight * (10 / 100);
+    targetW = nodeWidth * (284 / 300);
+    targetH = nodeHeight * (82 / 100);
+  } else if (type === 'rug_oval') {
+    const cx = nodeWidth * 0.5;
+    const cy = nodeHeight * 0.5;
+    const rx = nodeWidth * (133 / 280);
+    const ry = nodeHeight * (53 / 120);
+    targetX = cx - rx;
+    targetY = cy - ry;
+    targetW = rx * 2;
+    targetH = ry * 2;
   } else if (type.includes('table_skirt')) {
     if (type.includes('bottom')) {
       targetX = nodeWidth * (20 / 320);
@@ -461,6 +475,22 @@ export function createShadingOverlay(type: string, width: number, height: number
     ctx.fillStyle = floorGrad;
     ctx.beginPath();
     ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2, false);
+    ctx.fill();
+  } else if (type === 'rug_rect_3d') {
+    const scaleX = w / 300;
+    const scaleY = h / 100;
+    const floorGrad = ctx.createLinearGradient(0, 10 * scaleY, 0, 92 * scaleY);
+    floorGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.16)');
+    floorGrad.addColorStop(0.45, 'rgba(0, 0, 0, 0.0)');
+    floorGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.10)');
+
+    ctx.fillStyle = floorGrad;
+    ctx.beginPath();
+    ctx.moveTo(45 * scaleX, 10 * scaleY);
+    ctx.lineTo(255 * scaleX, 10 * scaleY);
+    ctx.lineTo(292 * scaleX, 92 * scaleY);
+    ctx.lineTo(8 * scaleX, 92 * scaleY);
+    ctx.closePath();
     ctx.fill();
   } else if (type === 'cube') {
     const scaleX = w / 160;
@@ -733,16 +763,16 @@ export function isPointInsideMask(type: string, x: number, y: number, width: num
   }
 
   if (type === 'rug_rect_3d') {
-    const scaleX = width / 280;
-    const scaleY = height / 140;
-    const yTop = 14 * scaleY;
-    const yBottom = 126 * scaleY;
+    const scaleX = width / 300;
+    const scaleY = height / 100;
+    const yTop = 10 * scaleY;
+    const yBottom = 92 * scaleY;
 
     if (y < yTop || y > yBottom) return false;
 
     const t = (y - yTop) / (yBottom - yTop);
-    const curLeft = (34 + (9 - 34) * t) * scaleX;
-    const curRight = (246 + (271 - 246) * t) * scaleX;
+    const curLeft = (45 + (8 - 45) * t) * scaleX;
+    const curRight = (255 + (292 - 255) * t) * scaleX;
     return x >= curLeft && x <= curRight;
   }
 

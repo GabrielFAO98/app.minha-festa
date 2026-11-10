@@ -3999,20 +3999,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     rentalPrice: 25
   },
   // --- DISPLAYS SAFARI BABY REAIS DE MERCADO (MODELO CLÁSSICO DECORADORAS) ---
-  // 5 Displays de Chão (Totens Grandes de MDF)
-  {
-    id: 'preset-display-chao-safari-leao',
-    name: 'Display de Chão Safari Baby - Leãozinho',
-    category: 'displays',
-    type: 'display',
-    svgRole: 'photo',
-    widthCm: 78,
-    heightCm: 70,
-    previewUrl: '/items/display-safari-leao.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 28
-  },
+  // Displays de Chão Safari Baby (Totens de MDF 6mm em Estilo Aquarela Frontal)
   {
     id: 'preset-display-chao-safari-girafa',
     name: 'Display de Chão Safari Baby - Girafinha',
@@ -4027,12 +4014,25 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     rentalPrice: 30
   },
   {
+    id: 'preset-display-chao-safari-leao',
+    name: 'Display de Chão Safari Baby - Leãozinho',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 68,
+    heightCm: 70,
+    previewUrl: '/items/display-safari-leao.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 28
+  },
+  {
     id: 'preset-display-chao-safari-elefante',
     name: 'Display de Chão Safari Baby - Elefantinho',
     category: 'displays',
     type: 'display',
     svgRole: 'photo',
-    widthCm: 46,
+    widthCm: 74,
     heightCm: 70,
     previewUrl: '/items/display-safari-elefante.webp',
     isCustom: false,
@@ -4045,7 +4045,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     category: 'displays',
     type: 'display',
     svgRole: 'photo',
-    widthCm: 40,
+    widthCm: 55,
     heightCm: 70,
     previewUrl: '/items/display-safari-zebra.webp',
     isCustom: false,
@@ -4058,78 +4058,38 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     category: 'displays',
     type: 'display',
     svgRole: 'photo',
-    widthCm: 70,
+    widthCm: 73,
     heightCm: 70,
     previewUrl: '/items/display-safari-macaco.webp',
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 28
   },
-  // 5 Displays de Mesa (Centros de Mesa / Apoio em MDF)
   {
-    id: 'preset-display-mesa-safari-leao',
-    name: 'Display de Mesa Safari Baby - Leãozinho',
+    id: 'preset-display-chao-safari-tigre',
+    name: 'Display de Chão Safari Baby - Tigrezinho',
     category: 'displays',
     type: 'display',
     svgRole: 'photo',
-    widthCm: 27,
-    heightCm: 24,
-    previewUrl: '/items/display-safari-leao.webp',
+    widthCm: 56,
+    heightCm: 70,
+    previewUrl: '/items/display-safari-tigre.webp',
     isCustom: false,
     stockQuantity: 1,
-    rentalPrice: 12
+    rentalPrice: 28
   },
   {
-    id: 'preset-display-mesa-safari-girafa',
-    name: 'Display de Mesa Safari Baby - Girafinha',
+    id: 'preset-display-chao-safari-jipe',
+    name: 'Display de Chão Safari Baby - Jipe com Turminha',
     category: 'displays',
     type: 'display',
     svgRole: 'photo',
-    widthCm: 19,
-    heightCm: 28,
-    previewUrl: '/items/display-safari-girafa.webp',
+    widthCm: 72,
+    heightCm: 75,
+    previewUrl: '/items/display-safari-jipe.webp',
     isCustom: false,
     stockQuantity: 1,
-    rentalPrice: 14
-  },
-  {
-    id: 'preset-display-mesa-safari-elefante',
-    name: 'Display de Mesa Safari Baby - Elefantinho',
-    category: 'displays',
-    type: 'display',
-    svgRole: 'photo',
-    widthCm: 16,
-    heightCm: 24,
-    previewUrl: '/items/display-safari-elefante.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 12
-  },
-  {
-    id: 'preset-display-mesa-safari-zebra',
-    name: 'Display de Mesa Safari Baby - Zebrinha',
-    category: 'displays',
-    type: 'display',
-    svgRole: 'photo',
-    widthCm: 14,
-    heightCm: 24,
-    previewUrl: '/items/display-safari-zebra.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 12
-  },
-  {
-    id: 'preset-display-mesa-safari-macaco',
-    name: 'Display de Mesa Safari Baby - Macaquinho',
-    category: 'displays',
-    type: 'display',
-    svgRole: 'photo',
-    widthCm: 24,
-    heightCm: 24,
-    previewUrl: '/items/display-safari-macaco.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 12
+    rentalPrice: 32
   }
 ];
 

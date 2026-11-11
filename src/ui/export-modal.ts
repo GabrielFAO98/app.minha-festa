@@ -1,10 +1,28 @@
 import { generateRomaneio, formatWhatsAppMessage, shareViaWhatsApp, downloadImage } from '../core/export-service';
+import { db } from '../core/db';
 import type { CanvasEngine } from '../core/canvas-engine';
+import type { SceneElement } from '../types';
+
+interface CachedRealismEntry {
+  hash: string;
+  dataUrl: string;
+  createdAt: number;
+}
+
+const AI_REALISM_CACHE_KEY = 'ai_realism_cache';
+const MAX_CACHED_REALISM_ENTRIES = 6;
 
 export class ExportModal {
   canvasEngine: CanvasEngine;
   modalEl: HTMLElement | null;
   previewImgEl: HTMLImageElement | null;
+  previewBadgeEl: HTMLElement | null;
+  aiLoadingEl: HTMLElement | null;
+  viewToggleEl: HTMLElement | null;
+  btnViewOriginal: HTMLButtonElement | null;
+  btnViewRealistic: HTMLButtonElement | null;
+  btnGenerateAi: HTMLButtonElement | null;
+  aiStatusEl: HTMLElement | null;
   checklistContainer: HTMLElement | null;
   totalItemsBadge: HTMLElement | null;
   btnShareImage: HTMLElement | null;
@@ -13,13 +31,26 @@ export class ExportModal {
   btnClose: HTMLElement | null;
   clientNameInput: HTMLInputElement | null;
   clientPhoneInput: HTMLInputElement | null;
-  currentDataUrl: string | null;
+
+  originalDataUrl: string | null;
+  realisticDataUrl: string | null;
+  activeMode: 'original' | 'realistic';
+  currentSceneHash: string;
+  isGeneratingAi: boolean;
+  private memoryCache: Map<string, string>;
   currentRomaneio: ReturnType<typeof generateRomaneio> | null;
 
   constructor(canvasEngine: CanvasEngine) {
     this.canvasEngine = canvasEngine;
     this.modalEl = document.getElementById('export-modal');
     this.previewImgEl = document.getElementById('export-preview-img') as HTMLImageElement | null;
+    this.previewBadgeEl = document.getElementById('export-preview-badge');
+    this.aiLoadingEl = document.getElementById('export-ai-loading');
+    this.viewToggleEl = document.getElementById('export-view-toggle');
+    this.btnViewOriginal = document.getElementById('btn-view-original') as HTMLButtonElement | null;
+    this.btnViewRealistic = document.getElementById('btn-view-realistic') as HTMLButtonElement | null;
+    this.btnGenerateAi = document.getElementById('btn-generate-ai-realism') as HTMLButtonElement | null;
+    this.aiStatusEl = document.getElementById('export-ai-status');
     this.checklistContainer = document.getElementById('export-checklist-items');
     this.totalItemsBadge = document.getElementById('export-total-badge');
     this.btnShareImage = document.getElementById('btn-share-image');
@@ -29,7 +60,12 @@ export class ExportModal {
     this.clientNameInput = document.getElementById('export-client-name') as HTMLInputElement | null;
     this.clientPhoneInput = document.getElementById('export-client-phone') as HTMLInputElement | null;
 
-    this.currentDataUrl = null;
+    this.originalDataUrl = null;
+    this.realisticDataUrl = null;
+    this.activeMode = 'original';
+    this.currentSceneHash = '';
+    this.isGeneratingAi = false;
+    this.memoryCache = new Map();
     this.currentRomaneio = null;
 
     this.setupEvents();
@@ -41,15 +77,31 @@ export class ExportModal {
       if (e.target === this.modalEl) this.close();
     });
 
+    this.btnGenerateAi?.addEventListener('click', async () => {
+      await this.handleGenerateRealism();
+    });
+
+    this.btnViewOriginal?.addEventListener('click', () => {
+      this.setViewMode('original');
+    });
+
+    this.btnViewRealistic?.addEventListener('click', () => {
+      if (this.realisticDataUrl) {
+        this.setViewMode('realistic');
+      }
+    });
+
     this.btnShareImage?.addEventListener('click', async () => {
       await this.handleShareImage();
     });
 
     this.btnDownload?.addEventListener('click', () => {
-      if (!this.currentDataUrl) return;
+      const exportData = this.getActiveExportData();
+      if (!exportData) return;
       const title = document.getElementById('project-title-display')?.textContent?.trim() || 'decoracao-festa';
-      const safeFilename = `${title.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'decoracao'}.png`;
-      downloadImage(this.currentDataUrl, safeFilename);
+      const baseSlug = title.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'decoracao';
+      const filename = `${baseSlug}${exportData.suffix}.${exportData.ext}`;
+      downloadImage(exportData.dataUrl, filename);
     });
 
     this.btnWhatsApp?.addEventListener('click', () => {
@@ -63,15 +115,238 @@ export class ExportModal {
     });
   }
 
-  async handleShareImage(): Promise<void> {
-    if (!this.currentDataUrl) return;
-    const title = document.getElementById('project-title-display')?.textContent?.trim() || 'Decoração Decoraly';
-    const safeFilename = `${title.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'decoracao'}.png`;
+  private getActiveExportData(): { dataUrl: string; mimeType: string; ext: string; suffix: string } | null {
+    const isRealistic = this.activeMode === 'realistic' && Boolean(this.realisticDataUrl);
+    const dataUrl = isRealistic ? this.realisticDataUrl : this.originalDataUrl;
+    if (!dataUrl) return null;
+
+    const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/);
+    const mimeType = match?.[1] || 'image/png';
+    const ext = mimeType === 'image/jpeg' ? 'jpg' : mimeType === 'image/webp' ? 'webp' : 'png';
+    const suffix = isRealistic ? '-realista' : '';
+
+    return { dataUrl, mimeType, ext, suffix };
+  }
+
+  private computeSceneHash(elements: SceneElement[]): string {
+    const fingerprint = JSON.stringify({
+      bg: this.canvasEngine.bgImageUrl || '',
+      wall: this.canvasEngine.wallTextureUrl || '',
+      floor: this.canvasEngine.floorTextureUrl || '',
+      items: elements.map((el) => ({
+        id: el.id,
+        type: el.type,
+        x: Math.round(el.x || 0),
+        y: Math.round(el.y || 0),
+        sx: Math.round((el.scaleX || 1) * 100),
+        sy: Math.round((el.scaleY || 1) * 100),
+        r: Math.round(el.rotation || 0),
+        z: el.zIndex || 0,
+        cc: el.customColor || '',
+        cu: el.customCoverUrl || '',
+        cx: Math.round(el.coverOffsetX || 0),
+        cy: Math.round(el.coverOffsetY || 0),
+        cs: Math.round((el.coverScale || 1) * 100),
+        tc: el.tabletopColor || '',
+        tu: el.tabletopCoverUrl || '',
+        mc: el.modularColors || null,
+        bc: el.balloonColors || null,
+        cur: el.currentColor || ''
+      }))
+    });
+
+    // Hash FNV-1a 32-bit compacto para indexação em cache local
+    let hash = 2166136261;
+    for (let i = 0; i < fingerprint.length; i++) {
+      hash ^= fingerprint.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return `sc_${(hash >>> 0).toString(36)}_${elements.length}`;
+  }
+
+  private async getCachedRealism(hash: string): Promise<string | null> {
+    const inMemory = this.memoryCache.get(hash);
+    if (inMemory) return inMemory;
 
     try {
-      const res = await fetch(this.currentDataUrl);
-      const blob = await res.blob();
-      const file = new File([blob], safeFilename, { type: 'image/png' });
+      const record = await db.settings.get(AI_REALISM_CACHE_KEY);
+      const entries: CachedRealismEntry[] = Array.isArray(record?.value) ? record.value : [];
+      const found = entries.find((e) => e.hash === hash);
+      if (found?.dataUrl) {
+        this.memoryCache.set(hash, found.dataUrl);
+        return found.dataUrl;
+      }
+    } catch {
+      // Cache persistente indisponível, segue apenas em memória
+    }
+    return null;
+  }
+
+  private async saveCachedRealism(hash: string, dataUrl: string): Promise<void> {
+    this.memoryCache.set(hash, dataUrl);
+    try {
+      const record = await db.settings.get(AI_REALISM_CACHE_KEY);
+      const entries: CachedRealismEntry[] = Array.isArray(record?.value) ? record.value : [];
+      const filtered = entries.filter((e) => e.hash !== hash);
+      filtered.unshift({ hash, dataUrl, createdAt: Date.now() });
+      await db.settings.put({
+        key: AI_REALISM_CACHE_KEY,
+        value: filtered.slice(0, MAX_CACHED_REALISM_ENTRIES)
+      });
+    } catch {
+      // Ignora erro de cota do IndexedDB sem impactar o usuário
+    }
+  }
+
+  private async renderDataUrlToCanvas(dataUrl: string, maxW = 1080, maxH = 1920): Promise<HTMLCanvasElement | null> {
+    return await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const w = img.naturalWidth || maxW;
+        const h = img.naturalHeight || maxH;
+        const scale = Math.min(1, maxW / w, maxH / h);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(w * scale));
+        canvas.height = Math.max(1, Math.round(h * scale));
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(null);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas);
+      };
+      img.onerror = () => reject(new Error('Falha ao preparar imagem.'));
+      img.src = dataUrl;
+    });
+  }
+
+  private async convertToUploadJpeg(dataUrl: string): Promise<string> {
+    const canvas = await this.renderDataUrlToCanvas(dataUrl, 1080, 1920);
+    return canvas ? canvas.toDataURL('image/jpeg', 0.88) : dataUrl;
+  }
+
+  private async dataUrlToPngBlob(dataUrl: string, fallbackBlob: Blob): Promise<Blob> {
+    if (fallbackBlob.type === 'image/png') return fallbackBlob;
+    const canvas = await this.renderDataUrlToCanvas(dataUrl, 2160, 3840);
+    if (!canvas) return fallbackBlob;
+    return await new Promise((resolve) => {
+      canvas.toBlob((png) => resolve(png || fallbackBlob), 'image/png');
+    });
+  }
+
+  private setViewMode(mode: 'original' | 'realistic'): void {
+    this.activeMode = mode === 'realistic' && this.realisticDataUrl ? 'realistic' : 'original';
+    const showRealistic = this.activeMode === 'realistic';
+
+    if (this.previewImgEl) {
+      this.previewImgEl.src = (showRealistic ? this.realisticDataUrl : this.originalDataUrl) || '';
+    }
+    if (this.previewBadgeEl) {
+      this.previewBadgeEl.textContent = showRealistic ? '9:16 • Realista IA' : '9:16 HD';
+    }
+    this.btnViewOriginal?.classList.toggle('active', !showRealistic);
+    this.btnViewRealistic?.classList.toggle('active', showRealistic);
+  }
+
+  private setAiStatus(message: string, variant: 'neutral' | 'success' | 'error' = 'neutral'): void {
+    if (!this.aiStatusEl) return;
+    if (!message) {
+      this.aiStatusEl.textContent = '';
+      this.aiStatusEl.style.display = 'none';
+      this.aiStatusEl.className = 'export-ai-status';
+      return;
+    }
+    this.aiStatusEl.textContent = message;
+    this.aiStatusEl.style.display = 'block';
+    this.aiStatusEl.className = `export-ai-status ${variant === 'neutral' ? '' : variant}`.trim();
+  }
+
+  private updateAiControls(): void {
+    const hasRealistic = Boolean(this.realisticDataUrl);
+
+    if (this.aiLoadingEl) {
+      this.aiLoadingEl.style.display = this.isGeneratingAi ? 'flex' : 'none';
+    }
+    if (this.viewToggleEl) {
+      this.viewToggleEl.style.display = hasRealistic ? 'grid' : 'none';
+    }
+    if (this.btnGenerateAi) {
+      this.btnGenerateAi.style.display = hasRealistic ? 'none' : 'inline-flex';
+      this.btnGenerateAi.disabled = this.isGeneratingAi;
+      const span = this.btnGenerateAi.querySelector('span');
+      if (span) {
+        span.textContent = this.isGeneratingAi
+          ? 'Gerando versão realista (~6s)...'
+          : 'Gerar Versão Realista (IA)';
+      }
+    }
+  }
+
+  async handleGenerateRealism(): Promise<void> {
+    if (this.isGeneratingAi || !this.originalDataUrl) return;
+    const targetHash = this.currentSceneHash;
+
+    // Verificação dupla para evitar consumo duplicado no mesmo cenário
+    const alreadyCached = await this.getCachedRealism(targetHash);
+    if (alreadyCached) {
+      this.realisticDataUrl = alreadyCached;
+      this.updateAiControls();
+      this.setViewMode('realistic');
+      this.setAiStatus('Versão realista recuperada do cache deste cenário.', 'success');
+      return;
+    }
+
+    this.isGeneratingAi = true;
+    this.setAiStatus('');
+    this.updateAiControls();
+
+    try {
+      const jpegDataUrl = await this.convertToUploadJpeg(this.originalDataUrl);
+      const response = await fetch('/api/enhance-realism', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: jpegDataUrl,
+          mimeType: 'image/jpeg'
+        })
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload?.realisticDataUrl) {
+        throw new Error(payload?.error || 'Não foi possível gerar a imagem realista.');
+      }
+
+      await this.saveCachedRealism(targetHash, payload.realisticDataUrl);
+
+      if (this.currentSceneHash === targetHash) {
+        this.realisticDataUrl = payload.realisticDataUrl;
+        this.isGeneratingAi = false;
+        this.updateAiControls();
+        this.setViewMode('realistic');
+        this.setAiStatus('Versão realista salva para este cenário.', 'success');
+      }
+    } catch (err: any) {
+      if (this.currentSceneHash === targetHash) {
+        this.isGeneratingAi = false;
+        this.updateAiControls();
+        this.setAiStatus(err?.message || 'Erro ao gerar versão realista. Tente novamente.', 'error');
+      }
+    }
+  }
+
+  async handleShareImage(): Promise<void> {
+    const exportData = this.getActiveExportData();
+    if (!exportData) return;
+
+    const title = document.getElementById('project-title-display')?.textContent?.trim() || 'Decoração Decoraly';
+    const baseSlug = title.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'decoracao';
+    const safeFilename = `${baseSlug}${exportData.suffix}.${exportData.ext}`;
+
+    const blob = await fetch(exportData.dataUrl).then((r) => r.blob());
+
+    try {
+      const file = new File([blob], safeFilename, { type: exportData.mimeType });
 
       // Web Share API nativo (WhatsApp, Stories, AirDrop, etc. no Celular)
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -86,19 +361,18 @@ export class ExportModal {
       if (err.name === 'AbortError') return;
     }
 
-    // Fallback Área de Transferência (Desktop colar direto no WhatsApp Web com Ctrl+V)
+    // Fallback Área de Transferência (Desktop colar direto no WhatsApp Web com Ctrl+V; ClipboardItem exige image/png)
     try {
-      const res = await fetch(this.currentDataUrl);
-      const blob = await res.blob();
       if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
-        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        const pngBlob = await this.dataUrlToPngBlob(exportData.dataUrl, blob);
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': pngBlob })]);
         alert('Foto copiada para a área de transferência! Você já pode colar (Ctrl+V) no WhatsApp ou redes sociais.');
         return;
       }
     } catch {}
 
     // Fallback Download direto
-    downloadImage(this.currentDataUrl, safeFilename);
+    downloadImage(exportData.dataUrl, safeFilename);
   }
 
   open(): void {
@@ -108,11 +382,26 @@ export class ExportModal {
       return;
     }
 
-    // 1. Gera imagem em alta resolução
-    this.currentDataUrl = this.canvasEngine.exportHDImage();
-    if (this.previewImgEl && this.currentDataUrl) {
-      this.previewImgEl.src = this.currentDataUrl;
-    }
+    // 1. Gera imagem 2D em alta resolução imediatamente
+    this.originalDataUrl = this.canvasEngine.exportHDImage();
+    this.realisticDataUrl = null;
+    this.isGeneratingAi = false;
+    this.currentSceneHash = this.computeSceneHash(elements);
+
+    this.setViewMode('original');
+    this.setAiStatus('');
+    this.updateAiControls();
+
+    // Verifica se este cenário exato já tem versão realista salva (custo zero)
+    const openingHash = this.currentSceneHash;
+    this.getCachedRealism(openingHash).then((cachedUrl) => {
+      if (cachedUrl && this.currentSceneHash === openingHash && !this.isGeneratingAi) {
+        this.realisticDataUrl = cachedUrl;
+        this.updateAiControls();
+        this.setViewMode('realistic');
+        this.setAiStatus('Versão realista salva para este cenário.', 'success');
+      }
+    });
 
     // 2. Gera romaneio dos itens utilizados
     this.currentRomaneio = generateRomaneio(elements);

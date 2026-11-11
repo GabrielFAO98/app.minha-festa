@@ -896,8 +896,26 @@
         <div class="export-preview-card">
           <div class="export-preview-frame">
             <img id="export-preview-img" class="export-preview-img" alt="Prévia da Decoração (9:16)" />
-            <div class="export-preview-badge">9:16 HD</div>
+            <div id="export-preview-badge" class="export-preview-badge">9:16 HD</div>
+            <div id="export-ai-loading" class="export-ai-loading" style="display: none;">
+              <div class="export-ai-spinner"></div>
+              <span>Aplicando realismo com IA...</span>
+            </div>
           </div>
+        </div>
+
+        <div class="export-ai-bar">
+          <div id="export-view-toggle" class="export-view-toggle" style="display: none;">
+            <button type="button" id="btn-view-original" class="export-view-btn active">Original 2D</button>
+            <button type="button" id="btn-view-realistic" class="export-view-btn">Realista IA</button>
+          </div>
+          <button type="button" id="btn-generate-ai-realism" class="btn-ai-realism">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+              <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z"/>
+            </svg>
+            <span>Gerar Versão Realista (IA)</span>
+          </button>
+          <p id="export-ai-status" class="export-ai-status" style="display: none;"></p>
         </div>
 
         <div class="export-actions-grid">

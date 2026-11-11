@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/enhance-realism.js": {
+      "maxDuration": 60
+    }
+  }
+}
+

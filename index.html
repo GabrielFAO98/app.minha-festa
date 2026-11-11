@@ -885,7 +885,7 @@
 
   <!-- MODAL: Exportar HD, Romaneio e WhatsApp -->
   <div id="export-modal" class="modal-backdrop">
-    <div class="modal-container">
+    <div class="modal-container export-modal-container">
       <div class="modal-header">
         <div class="modal-title">Exportar Cenário (9:16)</div>
         <button id="btn-close-export-modal" class="modal-close-btn" aria-label="Fechar">
@@ -893,75 +893,91 @@
         </button>
       </div>
       <div class="modal-body export-modal-body">
-        <div class="export-preview-card">
-          <div class="export-preview-frame">
-            <img id="export-preview-img" class="export-preview-img" alt="Prévia da Decoração (9:16)" />
-            <div id="export-preview-badge" class="export-preview-badge">9:16 HD</div>
-            <div id="export-ai-loading" class="export-ai-loading" style="display: none;">
-              <div class="export-ai-spinner"></div>
-              <span>Aplicando realismo com IA...</span>
+        <div class="export-visual-col">
+          <div class="export-preview-card">
+            <div class="export-preview-frame">
+              <img id="export-preview-img" class="export-preview-img" alt="Prévia da Decoração (9:16)" />
+              <div id="export-preview-badge" class="export-preview-badge">9:16 HD</div>
+              <div id="export-ai-loading" class="export-ai-loading" style="display: none;">
+                <div class="export-ai-spinner"></div>
+                <span>Aplicando realismo com IA...</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="export-ai-bar">
-          <div id="export-view-toggle" class="export-view-toggle" style="display: none;">
-            <button type="button" id="btn-view-original" class="export-view-btn active">Original 2D</button>
-            <button type="button" id="btn-view-realistic" class="export-view-btn">Realista IA</button>
-          </div>
-          <button type="button" id="btn-generate-ai-realism" class="btn-ai-realism">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
-              <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z"/>
-            </svg>
-            <span>Gerar Versão Realista (IA)</span>
-          </button>
-          <p id="export-ai-status" class="export-ai-status" style="display: none;"></p>
-        </div>
-
-        <div class="export-actions-grid">
-          <button type="button" id="btn-share-image" class="btn-export-share" title="Compartilhar ou Copiar Imagem">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
-              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-            </svg>
-            <span>Compartilhar</span>
-          </button>
-          <button type="button" id="btn-download-image" class="btn-export-download" title="Salvar Foto no Dispositivo (PNG HD)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            <span>Salvar Foto</span>
-          </button>
-        </div>
-
-        <div class="checklist-card">
-          <div class="checklist-title">
-            <div style="display: flex; align-items: center; gap: 6px;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+          <div class="export-ai-bar">
+            <div id="export-view-toggle" class="export-view-toggle" style="display: none;">
+              <button type="button" id="btn-view-original" class="export-view-btn active">Original 2D</button>
+              <button type="button" id="btn-view-realistic" class="export-view-btn">Realista IA</button>
+            </div>
+            <button type="button" id="btn-generate-ai-realism" class="btn-ai-realism">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z"/>
               </svg>
-              <span>Romaneio de Separação</span>
-            </div>
-            <span id="export-total-badge" class="checklist-item-qty">0 peças</span>
+              <span>Gerar Versão Realista (IA)</span>
+            </button>
+            <p id="export-ai-status" class="export-ai-status" style="display: none;"></p>
           </div>
-          <ul id="export-checklist-items" class="checklist-items"></ul>
+
+          <div class="export-actions-grid">
+            <button type="button" id="btn-share-image" class="btn-export-share" title="Compartilhar ou Copiar Imagem">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+              <span>Compartilhar</span>
+            </button>
+            <button type="button" id="btn-download-image" class="btn-export-download" title="Salvar Foto no Dispositivo (PNG HD)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span>Salvar Foto</span>
+            </button>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="export-client-name">Nome do Cliente (opcional)</label>
-          <input type="text" id="export-client-name" class="form-input" placeholder="Ex: Juliana Silva" />
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="export-client-phone">WhatsApp do Cliente (DDD + Número)</label>
-          <input type="tel" id="export-client-phone" class="form-input" placeholder="Ex: 16999998888" />
-        </div>
+        <div class="export-details-col">
+          <div class="checklist-card">
+            <div class="checklist-title">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                </svg>
+                <span>Romaneio de Separação</span>
+              </div>
+              <span id="export-total-badge" class="checklist-item-qty">0 peças</span>
+            </div>
+            <div id="export-category-summary" class="checklist-summary-pills"></div>
+            <ul id="export-checklist-items" class="checklist-items"></ul>
+            <button type="button" id="btn-toggle-checklist" class="checklist-toggle-btn" style="display: none;"></button>
+          </div>
 
-        <button type="button" id="btn-share-whatsapp" class="btn-whatsapp btn-whatsapp-export">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink: 0;">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-          </svg>
-          <span>Enviar Romaneio no WhatsApp</span>
-        </button>
+          <div class="export-client-row">
+            <div class="form-group">
+              <label class="form-label" for="export-client-name">Nome do Cliente (opcional)</label>
+              <input type="text" id="export-client-name" class="form-input" placeholder="Ex: Juliana Silva" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="export-client-phone">WhatsApp do Cliente</label>
+              <input type="tel" id="export-client-phone" class="form-input" placeholder="Ex: 16999998888" />
+            </div>
+          </div>
+
+          <div class="whatsapp-mode-row">
+            <span class="whatsapp-mode-label">Mensagem WhatsApp:</span>
+            <div class="whatsapp-mode-toggle" role="group" aria-label="Formato da mensagem de WhatsApp">
+              <button type="button" id="btn-wa-mode-summary" class="whatsapp-mode-btn active">Resumida</button>
+              <button type="button" id="btn-wa-mode-detailed" class="whatsapp-mode-btn">Detalhada</button>
+            </div>
+          </div>
+
+          <button type="button" id="btn-share-whatsapp" class="btn-whatsapp btn-whatsapp-export">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink: 0;">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+            </svg>
+            <span>Enviar Romaneio no WhatsApp</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>

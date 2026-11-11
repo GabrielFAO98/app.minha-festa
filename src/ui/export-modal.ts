@@ -1,4 +1,10 @@
-import { generateRomaneio, formatWhatsAppMessage, shareViaWhatsApp, downloadImage } from '../core/export-service';
+import {
+  generateRomaneio,
+  formatWhatsAppMessage,
+  shareViaWhatsApp,
+  downloadImage,
+  type WhatsAppMessageMode
+} from '../core/export-service';
 import { db } from '../core/db';
 import type { CanvasEngine } from '../core/canvas-engine';
 import type { SceneElement } from '../types';
@@ -11,6 +17,7 @@ interface CachedRealismEntry {
 
 const AI_REALISM_CACHE_KEY = 'ai_realism_cache_v3';
 const MAX_CACHED_REALISM_ENTRIES = 6;
+const COLLAPSED_CHECKLIST_LIMIT = 5;
 
 export class ExportModal {
   canvasEngine: CanvasEngine;
@@ -23,8 +30,12 @@ export class ExportModal {
   btnViewRealistic: HTMLButtonElement | null;
   btnGenerateAi: HTMLButtonElement | null;
   aiStatusEl: HTMLElement | null;
+  categorySummaryEl: HTMLElement | null;
   checklistContainer: HTMLElement | null;
+  btnToggleChecklist: HTMLButtonElement | null;
   totalItemsBadge: HTMLElement | null;
+  btnWaModeSummary: HTMLButtonElement | null;
+  btnWaModeDetailed: HTMLButtonElement | null;
   btnShareImage: HTMLElement | null;
   btnDownload: HTMLElement | null;
   btnWhatsApp: HTMLElement | null;
@@ -37,6 +48,8 @@ export class ExportModal {
   activeMode: 'original' | 'realistic';
   currentSceneHash: string;
   isGeneratingAi: boolean;
+  isChecklistExpanded: boolean;
+  whatsappMode: WhatsAppMessageMode;
   private memoryCache: Map<string, string>;
   currentRomaneio: ReturnType<typeof generateRomaneio> | null;
 
@@ -51,8 +64,12 @@ export class ExportModal {
     this.btnViewRealistic = document.getElementById('btn-view-realistic') as HTMLButtonElement | null;
     this.btnGenerateAi = document.getElementById('btn-generate-ai-realism') as HTMLButtonElement | null;
     this.aiStatusEl = document.getElementById('export-ai-status');
+    this.categorySummaryEl = document.getElementById('export-category-summary');
     this.checklistContainer = document.getElementById('export-checklist-items');
+    this.btnToggleChecklist = document.getElementById('btn-toggle-checklist') as HTMLButtonElement | null;
     this.totalItemsBadge = document.getElementById('export-total-badge');
+    this.btnWaModeSummary = document.getElementById('btn-wa-mode-summary') as HTMLButtonElement | null;
+    this.btnWaModeDetailed = document.getElementById('btn-wa-mode-detailed') as HTMLButtonElement | null;
     this.btnShareImage = document.getElementById('btn-share-image');
     this.btnDownload = document.getElementById('btn-download-image');
     this.btnWhatsApp = document.getElementById('btn-share-whatsapp');
@@ -65,6 +82,8 @@ export class ExportModal {
     this.activeMode = 'original';
     this.currentSceneHash = '';
     this.isGeneratingAi = false;
+    this.isChecklistExpanded = false;
+    this.whatsappMode = 'summary';
     this.memoryCache = new Map();
     this.currentRomaneio = null;
 
@@ -91,6 +110,19 @@ export class ExportModal {
       }
     });
 
+    this.btnToggleChecklist?.addEventListener('click', () => {
+      this.isChecklistExpanded = !this.isChecklistExpanded;
+      this.renderRomaneioChecklist();
+    });
+
+    this.btnWaModeSummary?.addEventListener('click', () => {
+      this.setWhatsAppMode('summary');
+    });
+
+    this.btnWaModeDetailed?.addEventListener('click', () => {
+      this.setWhatsAppMode('detailed');
+    });
+
     this.btnShareImage?.addEventListener('click', async () => {
       await this.handleShareImage();
     });
@@ -110,7 +142,7 @@ export class ExportModal {
       const clientName = this.clientNameInput?.value.trim() || '';
       const clientPhone = this.clientPhoneInput?.value.trim() || '';
 
-      const message = formatWhatsAppMessage(title, this.currentRomaneio, clientName);
+      const message = formatWhatsAppMessage(title, this.currentRomaneio, clientName, this.whatsappMode);
       shareViaWhatsApp(clientPhone, message);
     });
   }
@@ -403,27 +435,88 @@ export class ExportModal {
       }
     });
 
-    // 2. Gera romaneio dos itens utilizados
+    // 2. Gera romaneio agrupado e resumido dos itens utilizados
     this.currentRomaneio = generateRomaneio(elements);
+    this.isChecklistExpanded = false;
+    this.setWhatsAppMode(this.whatsappMode);
+    this.renderRomaneioChecklist();
+
+    this.modalEl?.classList.add('open');
+  }
+
+  private setWhatsAppMode(mode: WhatsAppMessageMode): void {
+    this.whatsappMode = mode;
+    this.btnWaModeSummary?.classList.toggle('active', mode === 'summary');
+    this.btnWaModeDetailed?.classList.toggle('active', mode === 'detailed');
+  }
+
+  private renderRomaneioChecklist(): void {
+    if (!this.currentRomaneio) return;
+    const { totalItems, categories, checklist } = this.currentRomaneio;
 
     if (this.totalItemsBadge) {
-      this.totalItemsBadge.textContent = `${this.currentRomaneio.totalItems} peças`;
+      this.totalItemsBadge.textContent = `${totalItems} ${totalItems === 1 ? 'peça' : 'peças'}`;
     }
+
+    if (this.categorySummaryEl) {
+      this.categorySummaryEl.innerHTML = '';
+      categories.forEach((cat) => {
+        const pill = document.createElement('span');
+        pill.className = 'checklist-summary-pill';
+        const label = cat.totalQty === 1 ? cat.singular : cat.plural;
+        pill.textContent = `${cat.totalQty} ${label}`;
+        this.categorySummaryEl?.appendChild(pill);
+      });
+      this.categorySummaryEl.style.display = categories.length > 0 ? 'flex' : 'none';
+    }
+
+    const canCollapse = checklist.length > COLLAPSED_CHECKLIST_LIMIT + 1;
+    const visibleItems = canCollapse && !this.isChecklistExpanded
+      ? checklist.slice(0, COLLAPSED_CHECKLIST_LIMIT)
+      : checklist;
 
     if (this.checklistContainer) {
       this.checklistContainer.innerHTML = '';
-      this.currentRomaneio.checklist.forEach((item) => {
+      this.checklistContainer.classList.toggle('expanded', canCollapse && this.isChecklistExpanded);
+
+      visibleItems.forEach((item) => {
         const li = document.createElement('li');
         li.className = 'checklist-item';
-        li.innerHTML = `
-          <span>${item.name} (${item.widthCm}x${item.heightCm}cm)</span>
-          <span class="checklist-item-qty">${item.quantity}x</span>
-        `;
+
+        const info = document.createElement('div');
+        info.className = 'checklist-item-info';
+
+        const nameEl = document.createElement('span');
+        nameEl.className = 'checklist-item-name';
+        nameEl.textContent = item.name;
+
+        const metaEl = document.createElement('span');
+        metaEl.className = 'checklist-item-meta';
+        const sizeLabel = item.widthCm > 0 && item.heightCm > 0 ? ` · ${item.widthCm}x${item.heightCm}cm` : '';
+        metaEl.textContent = `${item.categoryLabel}${sizeLabel}`;
+
+        info.append(nameEl, metaEl);
+
+        const qtyBadge = document.createElement('span');
+        qtyBadge.className = 'checklist-item-qty';
+        qtyBadge.textContent = `${item.quantity}x`;
+
+        li.append(info, qtyBadge);
         this.checklistContainer?.appendChild(li);
       });
     }
 
-    this.modalEl?.classList.add('open');
+    if (this.btnToggleChecklist) {
+      if (!canCollapse) {
+        this.btnToggleChecklist.style.display = 'none';
+      } else {
+        this.btnToggleChecklist.style.display = 'block';
+        const hiddenCount = checklist.length - COLLAPSED_CHECKLIST_LIMIT;
+        this.btnToggleChecklist.textContent = this.isChecklistExpanded
+          ? 'Recolher lista (ver resumo)'
+          : `Ver lista completa (${checklist.length} tipos · +${hiddenCount} itens)`;
+      }
+    }
   }
 
   close(): void {

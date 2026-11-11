@@ -252,12 +252,24 @@
 }
 
 /* Card de Prévia de Exportação 9:16 */
+.export-modal-container {
+  max-height: 92dvh;
+}
+
+.export-visual-col,
+.export-details-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
 .export-preview-card {
   width: 100%;
   background: var(--bg-surface-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 14px 10px;
+  padding: 10px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -266,16 +278,40 @@
 
 .export-preview-frame {
   position: relative;
-  max-height: 250px;
-  height: 250px;
+  height: clamp(310px, 50dvh, 430px);
+  width: auto;
+  max-width: 100%;
   aspect-ratio: 9 / 16;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.16);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.16);
   background: #0b0f17;
+}
+
+@media (min-width: 768px) {
+  .export-modal-container {
+    max-width: 860px;
+  }
+
+  .export-modal-body {
+    display: grid;
+    grid-template-columns: minmax(270px, 320px) minmax(0, 1fr);
+    gap: 22px;
+    align-items: start;
+    padding: 20px 24px 24px;
+  }
+
+  .export-visual-col {
+    position: sticky;
+    top: 0;
+  }
+
+  .export-preview-frame {
+    height: clamp(340px, 54dvh, 500px);
+  }
 }
 
 .export-preview-img {
@@ -513,7 +549,67 @@
 }
 
 .export-modal-body {
-  padding-bottom: 30px;
+  padding: 16px 18px 28px;
+  gap: 14px;
+}
+
+.export-client-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 520px) {
+  .export-client-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.whatsapp-mode-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.whatsapp-mode-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.whatsapp-mode-toggle {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+}
+
+.whatsapp-mode-btn {
+  height: 30px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.whatsapp-mode-btn.active {
+  background: var(--bg-surface);
+  color: var(--primary-hover);
+  font-weight: 700;
+  border: 1px solid var(--primary);
+  box-shadow: 0 1px 4px rgba(181, 137, 56, 0.16);
 }
 
 .btn-whatsapp-export {
@@ -521,8 +617,8 @@
   min-height: 50px;
   flex-shrink: 0;
   width: 100%;
-  margin-top: 10px;
-  margin-bottom: 6px;
+  margin-top: 2px;
+  margin-bottom: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -562,27 +658,100 @@
   margin-bottom: 10px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.checklist-summary-pills {
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
+  margin-bottom: 10px;
+}
+
+.checklist-summary-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  white-space: nowrap;
 }
 
 .checklist-items {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
+}
+
+.checklist-items.expanded {
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .checklist-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   font-size: 0.82rem;
   color: var(--text-muted);
   padding-bottom: 6px;
   border-bottom: 1px dashed var(--border-subtle);
 }
 
+.checklist-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.checklist-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.checklist-item-name {
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 0.81rem;
+  line-height: 1.25;
+}
+
+.checklist-item-meta {
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.checklist-toggle-btn {
+  margin-top: 10px;
+  width: 100%;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--primary-hover);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.checklist-toggle-btn:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
+
 .checklist-item-qty {
+  flex-shrink: 0;
   font-weight: 700;
   color: var(--primary);
   background-color: var(--primary-light);

@@ -1,7 +1,7 @@
 const GEMINI_MODEL = 'gemini-3.1-flash-image';
 
 const MASTER_REALISM_PROMPT =
-  'Transforme em uma imagem realista, sem alterar os elementos, mantendo as cores, formatos, posições e proporções originais.';
+  'Transforme em uma fotografia real de decoração de festa, preservando as cores originais de cada item, as estampas, os formatos e as posições exatamente no mesmo lugar. Mantenha os painéis do fundo rígidos, planos, foscos e firmes até o chão, sem efeito de tecido solto, dobras ou hastes aparentes. Ilumine toda a cena como uma foto natural de salão de festas, com profundidade tridimensional realista, texturas naturais e sombras suaves no piso para móveis, mesas, balões e enfeites.';
 
 const MAX_BODY_BYTES = 6 * 1024 * 1024;
 

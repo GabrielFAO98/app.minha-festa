@@ -15,7 +15,7 @@ interface CachedRealismEntry {
   createdAt: number;
 }
 
-const AI_REALISM_CACHE_KEY = 'ai_realism_cache_v3';
+const AI_REALISM_CACHE_KEY = 'ai_realism_cache_v4';
 const MAX_CACHED_REALISM_ENTRIES = 6;
 const COLLAPSED_CHECKLIST_LIMIT = 5;
 

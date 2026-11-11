@@ -612,13 +612,20 @@
   box-shadow: 0 1px 4px rgba(181, 137, 56, 0.16);
 }
 
+.whatsapp-actions-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: stretch;
+  margin-top: 2px;
+  margin-bottom: 4px;
+}
+
 .btn-whatsapp-export {
   height: 50px;
   min-height: 50px;
   flex-shrink: 0;
   width: 100%;
-  margin-top: 2px;
-  margin-bottom: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -632,6 +639,40 @@
   box-shadow: 0 4px 16px rgba(37, 211, 102, 0.35);
   cursor: pointer;
   transition: all var(--transition-fast);
+}
+
+.btn-whatsapp-copy {
+  height: 50px;
+  min-height: 50px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 0.84rem;
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-whatsapp-copy:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary-hover);
+}
+
+.btn-whatsapp-copy.copied {
+  background: #ecfdf5;
+  border-color: #25D366;
+  color: #128C7E;
 }
 
 .btn-whatsapp-export:hover {

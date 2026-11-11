@@ -16,7 +16,6 @@ export interface RomaneioCategorySummary {
   label: string;
   singular: string;
   plural: string;
-  emoji: string;
   totalQty: number;
   uniqueCount: number;
   items: RomaneioChecklistItem[];
@@ -39,25 +38,23 @@ interface CategoryMeta {
   label: string;
   singular: string;
   plural: string;
-  emoji: string;
 }
 
 const CATEGORY_ORDER: CategoryMeta[] = [
-  { key: 'paineis', label: 'Painéis e Fundos', singular: 'painel', plural: 'painéis', emoji: '🖼️' },
-  { key: 'cilindros', label: 'Cilindros e Cubos', singular: 'cilindro', plural: 'cilindros', emoji: '🏛️' },
-  { key: 'mesas', label: 'Mesas e Móveis', singular: 'mesa', plural: 'mesas', emoji: '🪑' },
-  { key: 'tapetes', label: 'Tapetes e Pisos', singular: 'tapete', plural: 'tapetes', emoji: '⭕' },
-  { key: 'baloes', label: 'Balões e Arcos', singular: 'balão', plural: 'balões', emoji: '🎈' },
-  { key: 'displays', label: 'Displays', singular: 'display', plural: 'displays', emoji: '🪧' },
-  { key: 'acessorios', label: 'Acessórios e Enfeites', singular: 'acessório', plural: 'acessórios', emoji: '✨' }
+  { key: 'paineis', label: 'Painéis e Fundos', singular: 'painel', plural: 'painéis' },
+  { key: 'cilindros', label: 'Cilindros e Cubos', singular: 'cilindro', plural: 'cilindros' },
+  { key: 'mesas', label: 'Mesas e Móveis', singular: 'mesa', plural: 'mesas' },
+  { key: 'tapetes', label: 'Tapetes e Pisos', singular: 'tapete', plural: 'tapetes' },
+  { key: 'baloes', label: 'Balões e Arcos', singular: 'balão', plural: 'balões' },
+  { key: 'displays', label: 'Displays', singular: 'display', plural: 'displays' },
+  { key: 'acessorios', label: 'Acessórios e Enfeites', singular: 'acessório', plural: 'acessórios' }
 ];
 
 const FALLBACK_CATEGORY: CategoryMeta = {
   key: 'outros',
   label: 'Outros Itens',
   singular: 'item',
-  plural: 'itens',
-  emoji: '📦'
+  plural: 'itens'
 };
 
 const MAX_INLINE_SUMMARY_ITEMS = 3;
@@ -127,7 +124,6 @@ export function generateRomaneio(elements: SceneElement[]): RomaneioData {
       label: meta.label,
       singular: meta.singular,
       plural: meta.plural,
-      emoji: meta.emoji,
       totalQty,
       uniqueCount: items.length,
       items
@@ -174,56 +170,69 @@ export function formatWhatsAppMessage(
 ): string {
   const cleanTitle = (projectTitle || 'Minha Decoração').trim();
   const cleanClient = clientName.trim();
+  const totalLabel = `${romaneio.totalItems} ${pluralize(romaneio.totalItems, 'peça', 'peças')}`;
 
-  let text = cleanClient
-    ? `Olá, *${cleanClient}*! ✨ Tudo bem?\nPreparei a simulação do projeto *${cleanTitle}* para você conferir! 🥳🎈\n\n`
-    : `✨ *PROJETO DE DECORAÇÃO — ${cleanTitle}* 🥳🎈\n\n`;
+  const lines: string[] = [];
 
-  text += `📦 *Resumo do cenário:* *${romaneio.totalItems} ${pluralize(romaneio.totalItems, 'peça', 'peças')}*`;
-  if (romaneio.uniqueItems > 0 && romaneio.uniqueItems !== romaneio.totalItems) {
-    text += ` (${romaneio.uniqueItems} ${pluralize(romaneio.uniqueItems, 'modelo', 'modelos')})`;
-  }
-  text += '\n';
-
-  if (romaneio.summaryText) {
-    text += `📊 _${romaneio.summaryText}_\n`;
+  if (cleanClient) {
+    lines.push(`Olá, *${cleanClient}*! Tudo bem? ✨`);
+    lines.push(`Preparei o projeto *${cleanTitle}* para você conferir:`);
+  } else {
+    lines.push(`*Projeto de Decoração — ${cleanTitle}* ✨`);
   }
 
-  if (romaneio.categories.length > 0) {
-    if (mode === 'summary') {
-      text += '\n📋 *Itens por categoria:*\n';
-      romaneio.categories.forEach((cat) => {
-        text += `• ${cat.emoji} *${cat.label} (${cat.totalQty}):* ${formatInlineCategorySummary(cat)}\n`;
+  lines.push('');
+
+  if (mode === 'summary') {
+    lines.push(`*Resumo do cenário (${totalLabel}):*`);
+    romaneio.categories.forEach((cat) => {
+      lines.push(`• *${cat.label} (${cat.totalQty}):* ${formatInlineCategorySummary(cat)}`);
+    });
+    if (romaneio.coversCount > 0) {
+      lines.push(
+        `• *Capas personalizadas:* ${romaneio.coversCount} ${pluralize(romaneio.coversCount, 'peça', 'peças')}`
+      );
+    }
+  } else {
+    const modelsPart =
+      romaneio.uniqueItems > 0 && romaneio.uniqueItems !== romaneio.totalItems
+        ? ` • ${romaneio.uniqueItems} ${pluralize(romaneio.uniqueItems, 'modelo', 'modelos')}`
+        : '';
+    lines.push(`*Romaneio completo (${totalLabel}${modelsPart}):*`);
+
+    romaneio.categories.forEach((cat) => {
+      lines.push('');
+      lines.push(`*${cat.label} (${cat.totalQty})*`);
+      cat.items.forEach((item) => {
+        const sizePart = item.widthCm > 0 && item.heightCm > 0 ? ` (${item.widthCm}x${item.heightCm}cm)` : '';
+        lines.push(`• *${item.quantity}x* ${item.name}${sizePart}`);
       });
-    } else {
-      text += '\n📋 *Lista completa (Romaneio):*\n';
-      romaneio.categories.forEach((cat) => {
-        text += `\n${cat.emoji} *${cat.label} (${cat.totalQty})*\n`;
-        cat.items.forEach((item) => {
-          const sizePart = item.widthCm > 0 && item.heightCm > 0 ? ` (${item.widthCm}x${item.heightCm}cm)` : '';
-          text += `• *${item.quantity}x* ${item.name}${sizePart}\n`;
-        });
-      });
+    });
+
+    if (romaneio.coversCount > 0) {
+      lines.push('');
+      lines.push(
+        `*Capas personalizadas:* ${romaneio.coversCount} ${pluralize(romaneio.coversCount, 'peça', 'peças')}`
+      );
     }
   }
 
-  if (romaneio.coversCount > 0) {
-    text += `\n🎨 *Capas / Artes Personalizadas:* ${romaneio.coversCount} ${pluralize(romaneio.coversCount, 'peça personalizada', 'peças personalizadas')}\n`;
-  }
+  lines.push('');
+  lines.push('Se quiser ajustar cores, peças ou medidas, é só me responder por aqui! 🎈');
 
-  text += '\n💬 _Se quiser ajustar cores, peças ou medidas, é só me responder por aqui!_ ✨';
-  return text;
+  return lines.join('\n');
 }
 
 /**
- * Abre o WhatsApp com a mensagem pré-formatada
+ * Abre o WhatsApp com a mensagem pré-formatada via api.whatsapp.com/send (preserva emojis UTF-8).
  */
 export function shareViaWhatsApp(phone: string, text: string): void {
   const cleanPhone = (phone || '').replace(/\D/g, '');
   const encodedText = encodeURIComponent(text);
+  // api.whatsapp.com/send evita o redirecionamento 302 do wa.me que corrompe emojis para U+FFFD em UTF-8
   const url = cleanPhone
-    ? `https://wa.me/${cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`}?text=${encodedText}`
-    : `https://wa.me/?text=${encodedText}`;
+    ? `https://api.whatsapp.com/send?phone=${cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`}&text=${encodedText}`
+    : `https://api.whatsapp.com/send?text=${encodedText}`;
   window.open(url, '_blank');
 }
 

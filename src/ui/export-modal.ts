@@ -39,6 +39,7 @@ export class ExportModal {
   btnShareImage: HTMLElement | null;
   btnDownload: HTMLElement | null;
   btnWhatsApp: HTMLElement | null;
+  btnCopyWhatsApp: HTMLButtonElement | null;
   btnClose: HTMLElement | null;
   clientNameInput: HTMLInputElement | null;
   clientPhoneInput: HTMLInputElement | null;
@@ -50,6 +51,7 @@ export class ExportModal {
   isGeneratingAi: boolean;
   isChecklistExpanded: boolean;
   whatsappMode: WhatsAppMessageMode;
+  private copyResetTimer: number | null;
   private memoryCache: Map<string, string>;
   currentRomaneio: ReturnType<typeof generateRomaneio> | null;
 
@@ -73,6 +75,7 @@ export class ExportModal {
     this.btnShareImage = document.getElementById('btn-share-image');
     this.btnDownload = document.getElementById('btn-download-image');
     this.btnWhatsApp = document.getElementById('btn-share-whatsapp');
+    this.btnCopyWhatsApp = document.getElementById('btn-copy-whatsapp') as HTMLButtonElement | null;
     this.btnClose = document.getElementById('btn-close-export-modal');
     this.clientNameInput = document.getElementById('export-client-name') as HTMLInputElement | null;
     this.clientPhoneInput = document.getElementById('export-client-phone') as HTMLInputElement | null;
@@ -84,6 +87,7 @@ export class ExportModal {
     this.isGeneratingAi = false;
     this.isChecklistExpanded = false;
     this.whatsappMode = 'summary';
+    this.copyResetTimer = null;
     this.memoryCache = new Map();
     this.currentRomaneio = null;
 
@@ -137,14 +141,60 @@ export class ExportModal {
     });
 
     this.btnWhatsApp?.addEventListener('click', () => {
-      if (!this.currentRomaneio) return;
-      const title = document.getElementById('project-title-display')?.textContent?.trim() || 'Minha Decoração';
-      const clientName = this.clientNameInput?.value.trim() || '';
+      const message = this.buildCurrentWhatsAppMessage();
+      if (!message) return;
       const clientPhone = this.clientPhoneInput?.value.trim() || '';
-
-      const message = formatWhatsAppMessage(title, this.currentRomaneio, clientName, this.whatsappMode);
       shareViaWhatsApp(clientPhone, message);
     });
+
+    this.btnCopyWhatsApp?.addEventListener('click', async () => {
+      await this.handleCopyWhatsApp();
+    });
+  }
+
+  private buildCurrentWhatsAppMessage(): string | null {
+    if (!this.currentRomaneio) return null;
+    const title = document.getElementById('project-title-display')?.textContent?.trim() || 'Minha Decoração';
+    const clientName = this.clientNameInput?.value.trim() || '';
+    return formatWhatsAppMessage(title, this.currentRomaneio, clientName, this.whatsappMode);
+  }
+
+  private async handleCopyWhatsApp(): Promise<void> {
+    const message = this.buildCurrentWhatsAppMessage();
+    if (!message) return;
+
+    let copied = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(message);
+        copied = true;
+      }
+    } catch {}
+
+    if (!copied) {
+      const textarea = document.createElement('textarea');
+      textarea.value = message;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      copied = document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+
+    if (copied && this.btnCopyWhatsApp) {
+      const span = this.btnCopyWhatsApp.querySelector('span');
+      if (span) span.textContent = 'Copiado!';
+      this.btnCopyWhatsApp.classList.add('copied');
+      if (this.copyResetTimer !== null) window.clearTimeout(this.copyResetTimer);
+      this.copyResetTimer = window.setTimeout(() => {
+        const label = this.btnCopyWhatsApp?.querySelector('span');
+        if (label) label.textContent = 'Copiar';
+        this.btnCopyWhatsApp?.classList.remove('copied');
+        this.copyResetTimer = null;
+      }, 2200);
+    }
   }
 
   private getActiveExportData(): { dataUrl: string; mimeType: string; ext: string; suffix: string } | null {

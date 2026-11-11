@@ -9,7 +9,7 @@ interface CachedRealismEntry {
   createdAt: number;
 }
 
-const AI_REALISM_CACHE_KEY = 'ai_realism_cache';
+const AI_REALISM_CACHE_KEY = 'ai_realism_cache_v3';
 const MAX_CACHED_REALISM_ENTRIES = 6;
 
 export class ExportModal {
@@ -277,7 +277,7 @@ export class ExportModal {
       const span = this.btnGenerateAi.querySelector('span');
       if (span) {
         span.textContent = this.isGeneratingAi
-          ? 'Gerando versão realista (~6s)...'
+          ? 'Gerando versão realista (~10s)...'
           : 'Gerar Versão Realista (IA)';
       }
     }

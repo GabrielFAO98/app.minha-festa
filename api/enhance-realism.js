@@ -1,13 +1,7 @@
-const GEMINI_MODEL = 'gemini-2.5-flash-image';
+const GEMINI_MODEL = 'gemini-3.1-flash-image';
 
 const MASTER_REALISM_PROMPT =
-  'Transforme esta montagem de decoração de festa em uma fotografia realista de um evento real, ' +
-  'sem alterar, adicionar ou remover nenhum elemento. Mantenha exatamente as mesmas posições, ' +
-  'proporções, cores, estampas e artes impressas dos painéis, displays, mesas, tapetes, pelúcias, bolos e balões. ' +
-  'Aplique apenas iluminação fotográfica natural e realista do ambiente, sombras de contato reais no piso ' +
-  'e atrás das peças, e texturas físicas reais nos materiais (tecido com caimento natural na mesa e tapete, ' +
-  'látex e brilho realista nos balões, recorte físico nos displays e pelúcia tridimensional), ' +
-  'preservando o mesmo enquadramento vertical 9:16.';
+  'Transforme em uma imagem realista, sem alterar os elementos, mantendo as cores, formatos, posições e proporções originais.';
 
 const MAX_BODY_BYTES = 6 * 1024 * 1024;
 
@@ -135,7 +129,8 @@ export default async function handler(req, res) {
         generationConfig: {
           responseModalities: ['IMAGE'],
           imageConfig: {
-            aspectRatio: '9:16'
+            aspectRatio: '9:16',
+            imageSize: '1K'
           }
         }
       })
@@ -146,12 +141,16 @@ export default async function handler(req, res) {
     if (!geminiResponse.ok) {
       const apiMsg = data?.error?.message || `Erro HTTP ${geminiResponse.status}`;
       const statusOut = geminiResponse.status === 429 ? 429 : 502;
-      sendJson(res, statusOut, {
-        error:
-          statusOut === 429
-            ? 'Limite temporário de gerações na API atingido. Tente novamente em instantes.'
-            : `Não foi possível processar o realismo com a IA (${apiMsg}).`
-      });
+      let userError = `Não foi possível processar o realismo com a IA (${apiMsg}).`;
+
+      if (statusOut === 429) {
+        const needsBilling = /limit:\s*0|billing|free_tier/i.test(apiMsg);
+        userError = needsBilling
+          ? 'Geração de imagem bloqueada no plano gratuito do Google (cota 0). Ative o faturamento (Pay-as-you-go) no Google AI Studio.'
+          : 'Limite temporário de requisições na API atingido. Aguarde alguns segundos e tente novamente.';
+      }
+
+      sendJson(res, statusOut, { error: userError });
       return;
     }
 

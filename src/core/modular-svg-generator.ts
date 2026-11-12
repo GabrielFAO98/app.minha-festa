@@ -121,6 +121,7 @@ export function getItemCustomizationMode(item: PresetItem | null | undefined): S
     type === 'panel_round' ||
     type === 'panel_arch' ||
     type === 'panel_rect' ||
+    type === 'panel_horizontal' ||
     type === 'panel_half_moon' ||
     type === 'cylinder' ||
     type === 'cube' ||

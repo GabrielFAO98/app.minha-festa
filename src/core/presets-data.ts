@@ -1852,6 +1852,25 @@ export const SVG_PANEL_RECT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="
   <rect x="18" y="18" width="164" height="350" rx="4" fill="url(#rectFabricStudio)" stroke="none" filter="url(#rectDropShadow)"/>
 </svg>`;
 
+// 17B. Painel Horizontal 2,00m x 1,30m (Sem Pés)
+export const SVG_PANEL_HORIZONTAL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260" width="400" height="260">
+  <defs>
+    <linearGradient id="horizPanelFabricStudio" x1="15%" y1="10%" x2="85%" y2="95%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="55%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <filter id="horizPanelDropShadow" x="-10%" y="-10%" width="120%" height="126%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3.5" flood-color="#0f172a" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <!-- Sem pés e sem sombra no piso -->
+
+  <!-- Face Frontal do Painel Horizontal 2m Sem Bordas (x=16, y=10, w=368, h=234) -->
+  <rect x="16" y="10" width="368" height="234" rx="4" fill="url(#horizPanelFabricStudio)" stroke="none" filter="url(#horizPanelDropShadow)"/>
+</svg>`;
+
 // 18. Painel Ripado 1,00m x 2,20m
 export const SVG_PANEL_SLAT_100x220 = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 380" width="180" height="380">
   <defs>
@@ -3433,6 +3452,18 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 55
+  },
+  {
+    id: 'preset-painel-horizontal-2m',
+    name: 'Painel Horizontal 2m',
+    category: 'paineis',
+    type: 'panel_horizontal',
+    widthCm: 200,
+    heightCm: 130,
+    previewUrl: svgToDataUrl(SVG_PANEL_HORIZONTAL),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 65
   },
   {
     id: 'preset-painel-arco-ripado',

@@ -2095,7 +2095,7 @@ export class CanvasEngine {
       return localPt.x >= 0 && localPt.x <= w && localPt.y >= 0 && localPt.y <= h;
     }
 
-    const geometricTypes = ['panel_round', 'panel_arch', 'cylinder', 'cylinder_fluted', 'rug_oval', 'rug_round', 'rug_rect_3d'];
+    const geometricTypes = ['panel_round', 'panel_arch', 'panel_rect', 'panel_horizontal', 'panel_half_moon', 'cylinder', 'cylinder_fluted', 'rug_oval', 'rug_round', 'rug_rect_3d'];
     if (meta.type && (geometricTypes.includes(meta.type) || meta.type.startsWith('rug'))) {
       return isPointInsideMask(meta.type, localPt.x, localPt.y, w, h);
     }
@@ -2283,8 +2283,13 @@ export class CanvasEngine {
       posX = targetX;
       posY = targetY;
     } else {
-      // Visão geral padrão (sem zoom): insere centralizado na linha de contato do piso/parede
-      const defaultPosY = isRug ? (this.WALL_HEIGHT + 20) : (this.WALL_HEIGHT + 80 - heightPx + (Math.random() * 30 - 15));
+      // Visão geral padrão (sem zoom): insere centralizado na parede (painéis horizontais) ou na linha de contato do piso/parede
+      const isWallPanel = itemData.type === 'panel_horizontal';
+      const defaultPosY = isRug
+        ? (this.WALL_HEIGHT + 20)
+        : isWallPanel
+          ? (this.WALL_HEIGHT - 110 - heightPx + (Math.random() * 20 - 10))
+          : (this.WALL_HEIGHT + 80 - heightPx + (Math.random() * 30 - 15));
       posX = this.VIRTUAL_WIDTH / 2 - widthPx / 2 + (isRug ? 0 : (Math.random() * 40 - 20));
       posY = defaultPosY;
     }

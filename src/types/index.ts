@@ -15,6 +15,7 @@ export type ItemType =
   | 'panel_round'
   | 'panel_arch'
   | 'panel_rect'
+  | 'panel_horizontal'
   | 'panel_slat'
   | 'panel_half_moon'
   | 'shimmer_wall'

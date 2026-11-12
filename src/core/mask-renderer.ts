@@ -6,6 +6,33 @@ import { adjustColorBrightness } from './modular-svg-generator';
 const imageBitmapCache = new Map<string, HTMLImageElement | HTMLCanvasElement>();
 
 /**
+ * Retorna a caixa útil interna dos painéis retangulares (vertical 1x2m e horizontal 2m)
+ * descontando apenas a margem externa reservada para sombra projetada no SVG.
+ */
+function getRectPanelBounds(type: string, width: number, height: number) {
+  if (type === 'panel_horizontal') {
+    const scaleX = width / 400;
+    const scaleY = height / 260;
+    return {
+      x: 16 * scaleX,
+      y: 10 * scaleY,
+      w: 368 * scaleX,
+      h: 234 * scaleY,
+      bottomTolerance: 4 * scaleY
+    };
+  }
+  const scaleX = width / 200;
+  const scaleY = height / 380;
+  return {
+    x: 18 * scaleX,
+    y: 18 * scaleY,
+    w: 164 * scaleX,
+    h: 350 * scaleY,
+    bottomTolerance: 5 * scaleY
+  };
+}
+
+/**
  * Gera a função de recorte (clipFunc) do Konva baseada no formato geométrico da peça.
  * As coordenadas são proporcionais à largura (width) e altura (height) do nó no palco.
  */
@@ -225,13 +252,12 @@ export function createClipFunction(type: string, width: number, height: number) 
     };
   }
 
-  if (type === 'panel_rect') {
-    const scaleX = width / 200;
-    const scaleY = height / 380;
+  if (type === 'panel_rect' || type === 'panel_horizontal') {
+    const b = getRectPanelBounds(type, width, height);
 
     return (ctx: any) => {
       ctx.beginPath();
-      ctx.rect(18 * scaleX, 18 * scaleY, 164 * scaleX, 350 * scaleY);
+      ctx.rect(b.x, b.y, b.w, b.h);
       ctx.closePath();
     };
   }
@@ -268,11 +294,17 @@ export function calculateCoverPlacement(
     targetH = diameter;
     targetX = (nodeWidth - diameter) / 2;
     targetY = nodeHeight * (150 / 380) - diameter / 2;
-  } else if (type === 'panel_arch' || type === 'panel_rect' || type === 'panel_half_moon') {
+  } else if (type === 'panel_arch' || type === 'panel_half_moon') {
     targetX = nodeWidth * (18 / 200);
     targetY = nodeHeight * (18 / 380);
     targetW = nodeWidth * (164 / 200);
     targetH = nodeHeight * (350 / 380);
+  } else if (type === 'panel_rect' || type === 'panel_horizontal') {
+    const b = getRectPanelBounds(type, nodeWidth, nodeHeight);
+    targetX = b.x;
+    targetY = b.y;
+    targetW = b.w;
+    targetH = b.h;
   } else if (type === 'cylinder' || type === 'cylinder_fluted') {
     targetX = nodeWidth * (14.5 / 160);
     targetY = nodeHeight * (22.5 / 220);
@@ -487,13 +519,8 @@ export function createShadingOverlay(type: string, width: number, height: number
     ctx.closePath();
     ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
     ctx.fill();
-  } else if (type === 'panel_rect') {
-    const scaleX = w / 200;
-    const scaleY = h / 380;
-    const x = 18 * scaleX;
-    const y = 18 * scaleY;
-    const rectW = 164 * scaleX;
-    const rectH = 350 * scaleY;
+  } else if (type === 'panel_rect' || type === 'panel_horizontal') {
+    const { x, y, w: rectW, h: rectH } = getRectPanelBounds(type, w, h);
 
     const vertGrad = ctx.createLinearGradient(0, y, 0, y + rectH);
     vertGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.08)');
@@ -665,10 +692,9 @@ export function isPointInsideMask(type: string, x: number, y: number, width: num
     return x >= 18 * scaleX && x <= 182 * scaleX && y >= 18 * scaleY && y <= 373 * scaleY;
   }
 
-  if (type === 'panel_rect') {
-    const scaleX = width / 200;
-    const scaleY = height / 380;
-    return x >= 18 * scaleX && x <= 182 * scaleX && y >= 18 * scaleY && y <= 373 * scaleY;
+  if (type === 'panel_rect' || type === 'panel_horizontal') {
+    const b = getRectPanelBounds(type, width, height);
+    return x >= b.x && x <= (b.x + b.w) && y >= b.y && y <= (b.y + b.h + b.bottomTolerance);
   }
 
   if (type === 'cylinder' || type === 'cylinder_fluted') {

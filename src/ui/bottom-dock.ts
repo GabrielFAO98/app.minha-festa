@@ -1,6 +1,6 @@
 import { getAllItems, getAllCovers } from '../core/db';
 import { getItemCustomizationMode } from '../core/modular-svg-generator';
-import { REALISTIC_ENVIRONMENTS, WALL_OPTIONS, FLOOR_OPTIONS } from '../core/textures-data';
+import { REALISTIC_ENVIRONMENTS } from '../core/textures-data';
 import { DEFAULT_PRESET_ITEMS } from '../core/presets-data';
 import { createSearchBar, normalizeSearch } from './search-bar';
 import type { CanvasEngine } from '../core/canvas-engine';
@@ -40,6 +40,15 @@ export class BottomDock {
   private presetsSearchTerm = '';
   private myItemsSearchTerm = '';
   private coversSearchTerm = '';
+  private tabScrollPositions: Record<string, number> = {
+    presets: 0,
+    'my-items': 0,
+    covers: 0,
+    environment: 0,
+    layers: 0
+  };
+  private isRestoringScroll = false;
+  private scrollRestoreRafId: number | null = null;
 
   constructor(
     canvasEngine: CanvasEngine,
@@ -84,6 +93,14 @@ export class BottomDock {
         this.closeSheet();
       }
     });
+
+    this.sheetBody?.addEventListener(
+      'scroll',
+      () => {
+        this.saveCurrentTabScroll();
+      },
+      { passive: true }
+    );
 
     // Pré-monta os painéis e pré-renderiza abas em segundo plano
     // para que qualquer toque do usuário no celular abra em 0ms
@@ -151,17 +168,57 @@ export class BottomDock {
     this.myItemsRendered = false;
   }
 
-  private resetSheetScroll(): void {
+  private saveCurrentTabScroll(): void {
+    if (this.isRestoringScroll || !this.activeTab || !this.sheetBody || !this.sheetEl?.classList.contains('open')) {
+      return;
+    }
+    this.tabScrollPositions[this.activeTab] = this.sheetBody.scrollTop;
+  }
+
+  private restoreSheetScroll(tabName: string): void {
     if (!this.sheetBody) return;
+    if (this.scrollRestoreRafId !== null) {
+      cancelAnimationFrame(this.scrollRestoreRafId);
+      this.scrollRestoreRafId = null;
+    }
+    const saved = this.tabScrollPositions[tabName] || 0;
+    this.isRestoringScroll = true;
+    this.sheetBody.scrollTop = saved;
+    this.scrollRestoreRafId = requestAnimationFrame(() => {
+      if (this.sheetBody && this.activeTab === tabName) {
+        this.sheetBody.scrollTop = saved;
+      }
+      this.isRestoringScroll = false;
+      this.scrollRestoreRafId = null;
+    });
+  }
+
+  private resetSheetScroll(tabName?: string): void {
+    const targetTab = tabName || this.activeTab;
+    if (targetTab) {
+      this.tabScrollPositions[targetTab] = 0;
+    }
+    if (!this.sheetBody) return;
+    if (this.scrollRestoreRafId !== null) {
+      cancelAnimationFrame(this.scrollRestoreRafId);
+      this.scrollRestoreRafId = null;
+    }
+    this.isRestoringScroll = true;
     this.sheetBody.scrollTop = 0;
-    requestAnimationFrame(() => {
+    this.scrollRestoreRafId = requestAnimationFrame(() => {
       if (this.sheetBody) {
         this.sheetBody.scrollTop = 0;
       }
+      this.isRestoringScroll = false;
+      this.scrollRestoreRafId = null;
     });
   }
 
   async openTab(tabName: string): Promise<void> {
+    if (this.activeTab && this.activeTab !== tabName && this.sheetEl?.classList.contains('open')) {
+      this.saveCurrentTabScroll();
+    }
+
     this.activeTab = tabName;
 
     this.tabButtons.forEach((btn) => {
@@ -183,25 +240,35 @@ export class BottomDock {
       this.categoriesBar.style.display = showCategories ? 'grid' : 'none';
     }
 
-    // 2. Alterna para o painel em memória (0ms)
+    // 2. Alterna para o painel em memória (0ms) e restaura a posição salva
     this.showPane(tabName);
-    this.resetSheetScroll();
+    this.restoreSheetScroll(tabName);
 
-    // 3. Popula / sincroniza dados do painel ativo
+    // 3. Popula / sincroniza dados do painel ativo e garante posição restaurada
     if (tabName === 'presets') {
       this.renderPresetsTab();
+      this.restoreSheetScroll('presets');
     } else if (tabName === 'my-items') {
       await this.renderMyItemsTab();
+      if (this.activeTab === 'my-items') {
+        this.restoreSheetScroll('my-items');
+      }
     } else if (tabName === 'covers') {
       await this.renderCoversTab();
+      if (this.activeTab === 'covers') {
+        this.restoreSheetScroll('covers');
+      }
     } else if (tabName === 'environment') {
       this.renderEnvironmentTab();
+      this.restoreSheetScroll('environment');
     } else if (tabName === 'layers') {
       this.renderLayersTab();
+      this.restoreSheetScroll('layers');
     }
   }
 
   closeSheet(): void {
+    this.saveCurrentTabScroll();
     this.sheetEl?.classList.remove('open');
     this.tabButtons.forEach((btn) => btn.classList.remove('active'));
     this.activeTab = null;
@@ -297,7 +364,7 @@ export class BottomDock {
     }
 
     if (resetScroll) {
-      this.resetSheetScroll();
+      this.resetSheetScroll('presets');
     }
   }
 
@@ -365,10 +432,10 @@ export class BottomDock {
       btn.className = `pill-btn ${currentSelected === cat.id ? 'active' : ''}`;
       btn.dataset.catId = cat.id;
       btn.innerHTML = `<span class="pill-icon" aria-hidden="true">${cat.iconSvg}</span><span class="pill-label">${cat.label}</span>`;
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         if (tab === 'presets') {
           if (this.currentCategory === cat.id) {
-            this.resetSheetScroll();
+            this.resetSheetScroll('presets');
             return;
           }
           this.currentCategory = cat.id;
@@ -376,13 +443,13 @@ export class BottomDock {
           this.filterPresetsGrid(true);
         } else {
           if (this.myItemsCategory === cat.id) {
-            this.resetSheetScroll();
+            this.resetSheetScroll('my-items');
             return;
           }
           this.myItemsCategory = cat.id;
           this.renderCategoryPills('my-items');
-          this.renderMyItemsTab();
-          this.resetSheetScroll();
+          await this.renderMyItemsTab();
+          this.resetSheetScroll('my-items');
         }
       });
       fragment.appendChild(btn);
@@ -432,10 +499,15 @@ export class BottomDock {
     const searchBar = createSearchBar({
       placeholder: 'Buscar no meu acervo...',
       initialValue: this.myItemsSearchTerm,
-      onSearch: (term) => {
+      onSearch: async (term) => {
         this.myItemsSearchTerm = normalizeSearch(term);
-        this.renderMyItemsTab(true);
-        this.resetSheetScroll();
+        await this.renderMyItemsTab(true);
+        this.resetSheetScroll('my-items');
+        const newInput = this.paneMyItems?.querySelector<HTMLInputElement>('.catalog-search-input');
+        if (newInput) {
+          newInput.focus();
+          newInput.setSelectionRange(newInput.value.length, newInput.value.length);
+        }
       }
     });
     wrapper.appendChild(searchBar);
@@ -559,6 +631,7 @@ export class BottomDock {
       onSearch: (term) => {
         this.coversSearchTerm = normalizeSearch(term);
         this.filterCoversInDock();
+        this.resetSheetScroll('covers');
       }
     });
     wrapper.appendChild(searchBar);
@@ -708,30 +781,6 @@ export class BottomDock {
             `).join('')}
           </div>
         </div>
-
-        <div>
-          <div class="form-label" style="margin-bottom: 8px;">Trocar Parede de Fundo (Toque na Imagem)</div>
-          <div class="scene-visual-grid">
-            ${WALL_OPTIONS.map(w => `
-              <div class="scene-visual-card btn-custom-wall" data-wall="${w.texture}">
-                <img src="${w.texture}" alt="${w.name}" loading="lazy" decoding="async"/>
-                <div class="scene-visual-overlay">${w.name}</div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <div>
-          <div class="form-label" style="margin-bottom: 8px;">Trocar Piso (Toque na Imagem)</div>
-          <div class="scene-visual-grid">
-            ${FLOOR_OPTIONS.map(f => `
-              <div class="scene-visual-card btn-custom-floor" data-floor="${f.texture}">
-                <img src="${f.texture}" alt="${f.name}" loading="lazy" decoding="async"/>
-                <div class="scene-visual-overlay">${f.name}</div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
       </div>
     `;
 
@@ -747,20 +796,6 @@ export class BottomDock {
           const floor = (card as HTMLElement).dataset.floor || null;
           await this.canvasEngine.setEnvironmentTextures(wall, floor);
         }
-      });
-    });
-
-    this.paneEnvironment.querySelectorAll('.btn-custom-wall').forEach((card) => {
-      card.addEventListener('click', async () => {
-        const wall = (card as HTMLElement).dataset.wall || null;
-        await this.canvasEngine.setEnvironmentTextures(wall, null);
-      });
-    });
-
-    this.paneEnvironment.querySelectorAll('.btn-custom-floor').forEach((card) => {
-      card.addEventListener('click', async () => {
-        const floor = (card as HTMLElement).dataset.floor || null;
-        await this.canvasEngine.setEnvironmentTextures(null, floor);
       });
     });
   }

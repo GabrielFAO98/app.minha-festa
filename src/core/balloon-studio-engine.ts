@@ -782,7 +782,7 @@ export function renderArrangementSvg(
     <defs>${defs}</defs>
   `;
 
-  if (options.hasFloorShadow !== false) {
+  if (options.hasFloorShadow === true) {
     const floorY = maxY + 6;
     svg += `<ellipse cx="${(minX + maxX) / 2}" cy="${floorY}" rx="${(maxX - minX) * 0.40}" ry="12" fill="url(#${idPrefix}floorShadowGrad)"/>`;
   }

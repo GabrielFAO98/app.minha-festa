@@ -263,21 +263,14 @@ export const SVG_PANEL_ROUND = `<svg xmlns="http://www.w3.org/2000/svg" viewBox=
     <filter id="panelRoundShadow" x="-15%" y="-15%" width="130%" height="130%">
       <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.18"/>
     </filter>
-    <filter id="floorContactBlur" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="3.5"/>
-    </filter>
   </defs>
 
-  <!-- Sombras Discretas no Piso -->
-  <ellipse cx="96" cy="370" rx="22" ry="3.5" fill="#0f172a" opacity="0.20" filter="url(#floorContactBlur)"/>
-  <ellipse cx="204" cy="370" rx="22" ry="3.5" fill="#0f172a" opacity="0.20" filter="url(#floorContactBlur)"/>
+  <!-- Pés Dourados Finos e Discretos (sem sombra na base) -->
+  <rect x="95" y="275" width="2.5" height="93.5" rx="1.25" fill="url(#goldFootDiscreet)"/>
+  <path d="M 88 368.5 L 96.25 367 L 104.5 368.5 L 103.5 370 L 89 370 Z" fill="url(#goldFootDiscreet)"/>
 
-  <!-- Pés Dourados Discretos e Elegantes -->
-  <rect x="94" y="275" width="4.5" height="93" rx="2" fill="url(#goldFootDiscreet)"/>
-  <path d="M 80 368 L 96.2 365 L 112 368 L 110 370.5 L 82 370.5 Z" fill="url(#goldFootDiscreet)"/>
-
-  <rect x="201.5" y="275" width="4.5" height="93" rx="2" fill="url(#goldFootDiscreet)"/>
-  <path d="M 188 368 L 203.8 365 L 220 368 L 218 370.5 L 190 370.5 Z" fill="url(#goldFootDiscreet)"/>
+  <rect x="202.5" y="275" width="2.5" height="93.5" rx="1.25" fill="url(#goldFootDiscreet)"/>
+  <path d="M 195.5 368.5 L 203.75 367 L 212 368.5 L 211 370 L 196.5 370 Z" fill="url(#goldFootDiscreet)"/>
 
   <!-- Estrutura Circular Sem Bordas (Cobertura Total) -->
   <circle cx="150" cy="150" r="142" fill="url(#roundFabricStudio)" stroke="none" filter="url(#panelRoundShadow)"/>
@@ -412,130 +405,109 @@ export const SVG_PANEL_SLAT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="
 // // 4. Cilindro G (Grande 50x80cm)
 export const SVG_CYLINDER_G = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 220" width="160" height="220">
   <defs>
-    <!-- Sombreamento Cilíndrico de Estúdio 7-Stops com Rim Light -->
+    <!-- Acabamento Fosco Cilíndrico Suave (Sem Brilho Especular) -->
     <linearGradient id="cylBody_G" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#cbd5e1"/>
-      <stop offset="8%" stop-color="#f8fafc"/>
-      <stop offset="26%" stop-color="#ffffff"/>
-      <stop offset="52%" stop-color="#f1f5f9"/>
-      <stop offset="78%" stop-color="#cbd5e1"/>
-      <stop offset="92%" stop-color="#94a3b8"/>
-      <stop offset="100%" stop-color="#cbd5e1"/>
+      <stop offset="0%" stop-color="#e2e8f0"/>
+      <stop offset="28%" stop-color="#f1f5f9"/>
+      <stop offset="55%" stop-color="#f8fafc"/>
+      <stop offset="85%" stop-color="#e8edf3"/>
+      <stop offset="100%" stop-color="#dbe2ea"/>
     </linearGradient>
-    <radialGradient id="cylTop_G" cx="40%" cy="35%" r="65%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="65%" stop-color="#f8fafc"/>
-      <stop offset="100%" stop-color="#cbd5e1"/>
-    </radialGradient>
+    <linearGradient id="cylTop_G" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#eef2f6"/>
+    </linearGradient>
     <filter id="cylShadow_G" x="-20%" y="-15%" width="140%" height="135%">
-      <feDropShadow dx="0" dy="6" stdDeviation="5.5" flood-color="#0f172a" flood-opacity="0.22"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#0f172a" flood-opacity="0.06"/>
     </filter>
     <filter id="cylFloorBlur_G" x="-25%" y="-25%" width="150%" height="150%">
       <feGaussianBlur stdDeviation="4"/>
     </filter>
   </defs>
 
-  <!-- Sombra Difusa de Contato no Piso -->
-  <ellipse cx="80" cy="199" rx="68" ry="13" fill="#0f172a" opacity="0.24" filter="url(#cylFloorBlur_G)"/>
+  <!-- Sombra Bastante Sutil no Piso -->
+  <ellipse cx="80" cy="199" rx="66" ry="11" fill="#0f172a" opacity="0.06" filter="url(#cylFloorBlur_G)"/>
 
   <!-- Corpo Cilíndrico Tangente C1 (xLeft=14.5, xRight=145.5, yTop=35, yBottom=195, rx=65.5, ry=12.5) -->
   <path d="M 14.5 35 L 14.5 195 A 65.5 12.5 0 0 0 145.5 195 L 145.5 35 Z" fill="url(#cylBody_G)" stroke="none" filter="url(#cylShadow_G)"/>
 
-  <!-- Sombra Sob o Tampo de MDF (Oclusão da Borda Superior) -->
-  <path d="M 14.5 36.5 A 65.5 12.5 0 0 0 145.5 36.5 L 145.5 40 A 65.5 12.5 0 0 1 14.5 40 Z" fill="#475569" opacity="0.18"/>
+  <!-- Sombra Discreta Sob o Tampo -->
+  <path d="M 14.5 36.5 A 65.5 12.5 0 0 0 145.5 36.5 L 145.5 39.5 A 65.5 12.5 0 0 1 14.5 39.5 Z" fill="#64748b" opacity="0.08"/>
 
-  <!-- Tampo Superior Elíptico com Bisotê Iluminado -->
-  <ellipse cx="80" cy="35" rx="65.5" ry="12.5" fill="url(#cylTop_G)" stroke="none"/>
-  <ellipse cx="80" cy="35" rx="63.5" ry="11" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.95"/>
-
-  <!-- Costura de Acabamento na Base -->
-  <path d="M 15.5 193 A 64.5 12 0 0 0 144.5 193" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="0.9"/>
+  <!-- Tampo Superior Elíptico Fosco -->
+  <ellipse cx="80" cy="35" rx="65.5" ry="12.5" fill="url(#cylTop_G)" stroke="#cbd5e1" stroke-width="0.7"/>
 </svg>`;
 
 // 5. Cilindro M (Médio 44x58cm)
 export const SVG_CYLINDER_M = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 220" width="160" height="220">
   <defs>
-    <!-- Sombreamento Cilíndrico de Estúdio 7-Stops com Rim Light -->
+    <!-- Acabamento Fosco Cilíndrico Suave (Sem Brilho Especular) -->
     <linearGradient id="cylBody_M" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#cbd5e1"/>
-      <stop offset="8%" stop-color="#f8fafc"/>
-      <stop offset="26%" stop-color="#ffffff"/>
-      <stop offset="52%" stop-color="#f1f5f9"/>
-      <stop offset="78%" stop-color="#cbd5e1"/>
-      <stop offset="92%" stop-color="#94a3b8"/>
-      <stop offset="100%" stop-color="#cbd5e1"/>
+      <stop offset="0%" stop-color="#e2e8f0"/>
+      <stop offset="28%" stop-color="#f1f5f9"/>
+      <stop offset="55%" stop-color="#f8fafc"/>
+      <stop offset="85%" stop-color="#e8edf3"/>
+      <stop offset="100%" stop-color="#dbe2ea"/>
     </linearGradient>
-    <radialGradient id="cylTop_M" cx="40%" cy="35%" r="65%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="65%" stop-color="#f8fafc"/>
-      <stop offset="100%" stop-color="#cbd5e1"/>
-    </radialGradient>
+    <linearGradient id="cylTop_M" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#eef2f6"/>
+    </linearGradient>
     <filter id="cylShadow_M" x="-20%" y="-15%" width="140%" height="135%">
-      <feDropShadow dx="0" dy="6" stdDeviation="5.5" flood-color="#0f172a" flood-opacity="0.22"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#0f172a" flood-opacity="0.06"/>
     </filter>
     <filter id="cylFloorBlur_M" x="-25%" y="-25%" width="150%" height="150%">
       <feGaussianBlur stdDeviation="4"/>
     </filter>
   </defs>
 
-  <!-- Sombra Difusa de Contato no Piso -->
-  <ellipse cx="80" cy="199" rx="68" ry="13" fill="#0f172a" opacity="0.24" filter="url(#cylFloorBlur_M)"/>
+  <!-- Sombra Bastante Sutil no Piso -->
+  <ellipse cx="80" cy="199" rx="66" ry="11" fill="#0f172a" opacity="0.06" filter="url(#cylFloorBlur_M)"/>
 
   <!-- Corpo Cilíndrico Tangente C1 (xLeft=14.5, xRight=145.5, yTop=35, yBottom=195, rx=65.5, ry=12.5) -->
   <path d="M 14.5 35 L 14.5 195 A 65.5 12.5 0 0 0 145.5 195 L 145.5 35 Z" fill="url(#cylBody_M)" stroke="none" filter="url(#cylShadow_M)"/>
 
-  <!-- Sombra Sob o Tampo de MDF (Oclusão da Borda Superior) -->
-  <path d="M 14.5 36.5 A 65.5 12.5 0 0 0 145.5 36.5 L 145.5 40 A 65.5 12.5 0 0 1 14.5 40 Z" fill="#475569" opacity="0.18"/>
+  <!-- Sombra Discreta Sob o Tampo -->
+  <path d="M 14.5 36.5 A 65.5 12.5 0 0 0 145.5 36.5 L 145.5 39.5 A 65.5 12.5 0 0 1 14.5 39.5 Z" fill="#64748b" opacity="0.08"/>
 
-  <!-- Tampo Superior Elíptico com Bisotê Iluminado -->
-  <ellipse cx="80" cy="35" rx="65.5" ry="12.5" fill="url(#cylTop_M)" stroke="none"/>
-  <ellipse cx="80" cy="35" rx="63.5" ry="11" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.95"/>
-
-  <!-- Costura de Acabamento na Base -->
-  <path d="M 15.5 193 A 64.5 12 0 0 0 144.5 193" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="0.9"/>
+  <!-- Tampo Superior Elíptico Fosco -->
+  <ellipse cx="80" cy="35" rx="65.5" ry="12.5" fill="url(#cylTop_M)" stroke="#cbd5e1" stroke-width="0.7"/>
 </svg>`;
 
 // 6. Cilindro P (Pequeno 38x45cm)
 export const SVG_CYLINDER_P = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 220" width="160" height="220">
   <defs>
-    <!-- Sombreamento Cilíndrico de Estúdio 7-Stops com Rim Light -->
+    <!-- Acabamento Fosco Cilíndrico Suave (Sem Brilho Especular) -->
     <linearGradient id="cylBody_P" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#cbd5e1"/>
-      <stop offset="8%" stop-color="#f8fafc"/>
-      <stop offset="26%" stop-color="#ffffff"/>
-      <stop offset="52%" stop-color="#f1f5f9"/>
-      <stop offset="78%" stop-color="#cbd5e1"/>
-      <stop offset="92%" stop-color="#94a3b8"/>
-      <stop offset="100%" stop-color="#cbd5e1"/>
+      <stop offset="0%" stop-color="#e2e8f0"/>
+      <stop offset="28%" stop-color="#f1f5f9"/>
+      <stop offset="55%" stop-color="#f8fafc"/>
+      <stop offset="85%" stop-color="#e8edf3"/>
+      <stop offset="100%" stop-color="#dbe2ea"/>
     </linearGradient>
-    <radialGradient id="cylTop_P" cx="40%" cy="35%" r="65%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="65%" stop-color="#f8fafc"/>
-      <stop offset="100%" stop-color="#cbd5e1"/>
-    </radialGradient>
+    <linearGradient id="cylTop_P" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#eef2f6"/>
+    </linearGradient>
     <filter id="cylShadow_P" x="-20%" y="-15%" width="140%" height="135%">
-      <feDropShadow dx="0" dy="6" stdDeviation="5.5" flood-color="#0f172a" flood-opacity="0.22"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#0f172a" flood-opacity="0.06"/>
     </filter>
     <filter id="cylFloorBlur_P" x="-25%" y="-25%" width="150%" height="150%">
       <feGaussianBlur stdDeviation="4"/>
     </filter>
   </defs>
 
-  <!-- Sombra Difusa de Contato no Piso -->
-  <ellipse cx="80" cy="199" rx="68" ry="13" fill="#0f172a" opacity="0.24" filter="url(#cylFloorBlur_P)"/>
+  <!-- Sombra Bastante Sutil no Piso -->
+  <ellipse cx="80" cy="199" rx="66" ry="11" fill="#0f172a" opacity="0.06" filter="url(#cylFloorBlur_P)"/>
 
   <!-- Corpo Cilíndrico Tangente C1 (xLeft=14.5, xRight=145.5, yTop=35, yBottom=195, rx=65.5, ry=12.5) -->
   <path d="M 14.5 35 L 14.5 195 A 65.5 12.5 0 0 0 145.5 195 L 145.5 35 Z" fill="url(#cylBody_P)" stroke="none" filter="url(#cylShadow_P)"/>
 
-  <!-- Sombra Sob o Tampo de MDF (Oclusão da Borda Superior) -->
-  <path d="M 14.5 36.5 A 65.5 12.5 0 0 0 145.5 36.5 L 145.5 40 A 65.5 12.5 0 0 1 14.5 40 Z" fill="#475569" opacity="0.18"/>
+  <!-- Sombra Discreta Sob o Tampo -->
+  <path d="M 14.5 36.5 A 65.5 12.5 0 0 0 145.5 36.5 L 145.5 39.5 A 65.5 12.5 0 0 1 14.5 39.5 Z" fill="#64748b" opacity="0.08"/>
 
-  <!-- Tampo Superior Elíptico com Bisotê Iluminado -->
-  <ellipse cx="80" cy="35" rx="65.5" ry="12.5" fill="url(#cylTop_P)" stroke="none"/>
-  <ellipse cx="80" cy="35" rx="63.5" ry="11" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.95"/>
-
-  <!-- Costura de Acabamento na Base -->
-  <path d="M 15.5 193 A 64.5 12 0 0 0 144.5 193" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="0.9"/>
+  <!-- Tampo Superior Elíptico Fosco -->
+  <ellipse cx="80" cy="35" rx="65.5" ry="12.5" fill="url(#cylTop_P)" stroke="#cbd5e1" stroke-width="0.7"/>
 </svg>`;
 
 // 7. Cilindro Canelado / Ripado Dourado Luxo (NOVO)
@@ -2425,11 +2397,10 @@ export const SVG_CUBE_G = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 
 // 22. Mesa Orgânica Feijão / Rim (1,50m x 80cm)
 export const SVG_TABLE_ORGANIC = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200">
   <defs>
-    <radialGradient id="orgTopLaca" cx="42%" cy="38%" r="60%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="65%" stop-color="#f8fafc"/>
-      <stop offset="100%" stop-color="#e2e8f0"/>
-    </radialGradient>
+    <linearGradient id="orgTopLaca" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#eef2f6"/>
+    </linearGradient>
     <linearGradient id="orgEdgeWood" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#b45309"/>
       <stop offset="30%" stop-color="#f59e0b"/>
@@ -2449,16 +2420,16 @@ export const SVG_TABLE_ORGANIC = `<svg xmlns="http://www.w3.org/2000/svg" viewBo
       <stop offset="100%" stop-color="#713f12"/>
     </linearGradient>
     <filter id="orgTableShadow" x="-15%" y="-15%" width="130%" height="135%">
-      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.2"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#0f172a" flood-opacity="0.06"/>
     </filter>
   </defs>
 
-  <!-- Sombras de Contato dos 4 Pés no Piso -->
-  <ellipse cx="48" cy="191" rx="14" ry="4" fill="#0f172a" opacity="0.26"/>
-  <ellipse cx="115" cy="178" rx="12" ry="3.5" fill="#0f172a" opacity="0.2"/>
-  <ellipse cx="205" cy="178" rx="12" ry="3.5" fill="#0f172a" opacity="0.2"/>
-  <ellipse cx="272" cy="191" rx="14" ry="4" fill="#0f172a" opacity="0.26"/>
-  <ellipse cx="160" cy="186" rx="120" ry="9" fill="#0f172a" opacity="0.1"/>
+  <!-- Sombras Sutis de Contato dos 4 Pés no Piso -->
+  <ellipse cx="48" cy="191" rx="13" ry="3.5" fill="#0f172a" opacity="0.07"/>
+  <ellipse cx="115" cy="178" rx="11" ry="3" fill="#0f172a" opacity="0.05"/>
+  <ellipse cx="205" cy="178" rx="11" ry="3" fill="#0f172a" opacity="0.05"/>
+  <ellipse cx="272" cy="191" rx="13" ry="3.5" fill="#0f172a" opacity="0.07"/>
+  <ellipse cx="160" cy="186" rx="116" ry="8" fill="#0f172a" opacity="0.03"/>
 
   <!-- Pé Traseiro Esquerdo (Em perspectiva) -->
   <polygon points="112,72 124,72 119,162 111,162" fill="url(#taperedWoodLeg)"/>
@@ -2471,22 +2442,19 @@ export const SVG_TABLE_ORGANIC = `<svg xmlns="http://www.w3.org/2000/svg" viewBo
   <!-- Pé Frontal Esquerdo (Cônico Afilado Escandinavo Levemente Inclinado) -->
   <polygon points="56,74 72,74 54,170 44,170" fill="url(#taperedWoodLeg)" stroke="#451a03" stroke-width="0.5"/>
   <polygon points="44,170 54,170 52,190 44,190" fill="url(#brassFootCap)" stroke="#713f12" stroke-width="0.5"/>
-  <!-- Sombra de Oclusão Sob o Tampo no Pé -->
-  <polygon points="56,74 72,74 70,88 54,88" fill="#0f172a" opacity="0.28"/>
+  <polygon points="56,74 72,74 70,88 54,88" fill="#0f172a" opacity="0.12"/>
 
   <!-- Pé Frontal Direito (Cônico Afilado Escandinavo Levemente Inclinado) -->
   <polygon points="248,74 264,74 276,170 266,170" fill="url(#taperedWoodLeg)" stroke="#451a03" stroke-width="0.5"/>
   <polygon points="266,170 276,170 276,190 268,190" fill="url(#brassFootCap)" stroke="#713f12" stroke-width="0.5"/>
-  <polygon points="248,74 264,74 266,88 250,88" fill="#0f172a" opacity="0.28"/>
+  <polygon points="248,74 264,74 266,88 250,88" fill="#0f172a" opacity="0.12"/>
 
-  <!-- Tampo Orgânico Curvilíneo Feijão 2.5D (Compatível com elipse central 160,55 rx=135 ry=32) -->
+  <!-- Tampo Orgânico Curvilíneo Feijão 2.5D Fosco -->
   <g filter="url(#orgTableShadow)">
-    <!-- Borda Lateral Chanfrada em Madeira Freijó / MDF Usinado (Espessura 9px) -->
+    <!-- Borda Lateral Chanfrada em Madeira Freijó / MDF Usinado -->
     <path d="M 25 56 C 25 32, 95 20, 165 24 C 235 28, 295 36, 295 58 L 295 66 C 295 88, 235 96, 175 88 C 145 84, 125 84, 95 88 C 45 94, 25 78, 25 65 Z" fill="url(#orgEdgeWood)" stroke="#78350f" stroke-width="0.8"/>
-    <!-- Superfície Superior Laqueada Off-White -->
-    <path d="M 25 55 C 25 30, 95 18, 165 22 C 235 26, 295 34, 295 56 C 295 78, 235 86, 175 78 C 145 74, 125 74, 95 78 C 45 84, 25 68, 25 55 Z" fill="url(#orgTopLaca)" stroke="#cbd5e1" stroke-width="1.5"/>
-    <!-- Bisotê de Brilho Superior -->
-    <path d="M 29 55 C 29 33, 96 21, 165 25 C 232 29, 291 36, 291 56 C 291 75, 233 83, 175 75 C 145 71, 125 71, 95 75 C 48 81, 29 66, 29 55 Z" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.95"/>
+    <!-- Superfície Superior Fosca Off-White -->
+    <path d="M 25 55 C 25 30, 95 18, 165 22 C 235 26, 295 34, 295 56 C 295 78, 235 86, 175 78 C 145 74, 125 74, 95 78 C 45 84, 25 68, 25 55 Z" fill="url(#orgTopLaca)" stroke="#cbd5e1" stroke-width="1"/>
   </g>
 </svg>`;
 
@@ -2496,14 +2464,12 @@ export function generateOrganicBeanTableSVG(
   cylinderColor?: string,
   type: string = 'table_organic_bean'
 ): string {
-  const topLight = adjustColorBrightness(tabletopColor, 0.15);
-  const topDark = adjustColorBrightness(tabletopColor, -0.15);
-  const topRimDark = adjustColorBrightness(tabletopColor, -0.28);
+  const topDark = adjustColorBrightness(tabletopColor, -0.08);
+  const topRimDark = adjustColorBrightness(tabletopColor, -0.18);
 
   const cylC = cylinderColor || '#FFFFFF';
-  const cylLight = adjustColorBrightness(cylC, 0.15);
-  const cylMid = adjustColorBrightness(cylC, -0.08);
-  const cylDark = adjustColorBrightness(cylC, -0.24);
+  const cylSide = adjustColorBrightness(cylC, -0.10);
+  const cylRight = adjustColorBrightness(cylC, -0.12);
 
   const vHeight = type === 'table_organic_bean_g' ? 300 : (type === 'table_organic_bean_m' ? 250 : 200);
   const cylBottom = vHeight - 12;
@@ -2511,21 +2477,20 @@ export function generateOrganicBeanTableSVG(
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 ${vHeight}" width="320" height="${vHeight}">
   <defs>
-    <!-- Gradiente do Cilindro Base -->
+    <!-- Gradiente Fosco do Cilindro Base (Sem Brilho Especular) -->
     <linearGradient id="beanCylGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="${cylDark}"/>
-      <stop offset="12%" stop-color="${cylLight}"/>
-      <stop offset="42%" stop-color="${cylC}"/>
-      <stop offset="76%" stop-color="${cylMid}"/>
-      <stop offset="100%" stop-color="${cylDark}"/>
+      <stop offset="0%" stop-color="${cylSide}"/>
+      <stop offset="28%" stop-color="${cylC}"/>
+      <stop offset="68%" stop-color="${cylC}"/>
+      <stop offset="100%" stop-color="${cylRight}"/>
     </linearGradient>
 
-    <!-- Gradiente da Face Superior do Tampo Feijão -->
-    <radialGradient id="beanTopSurfaceGrad" cx="42%" cy="38%" r="60%">
-      <stop offset="0%" stop-color="${topLight}"/>
-      <stop offset="65%" stop-color="${tabletopColor}"/>
+    <!-- Gradiente Fosco da Face Superior do Tampo Feijão -->
+    <linearGradient id="beanTopSurfaceGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="${tabletopColor}"/>
+      <stop offset="78%" stop-color="${tabletopColor}"/>
       <stop offset="100%" stop-color="${topDark}"/>
-    </radialGradient>
+    </linearGradient>
 
     <!-- Gradiente da Borda Chanfrada do Tampo Feijão -->
     <linearGradient id="beanRimGrad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -2533,10 +2498,10 @@ export function generateOrganicBeanTableSVG(
       <stop offset="100%" stop-color="${topRimDark}"/>
     </linearGradient>
 
-    <!-- Sombra sob o Tampo no Cilindro -->
+    <!-- Sombra Bastante Sutil sob o Tampo no Cilindro -->
     <linearGradient id="beanTopUnderShadow" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="rgba(15, 23, 42, 0.38)"/>
-      <stop offset="65%" stop-color="rgba(15, 23, 42, 0.12)"/>
+      <stop offset="0%" stop-color="rgba(15, 23, 42, 0.11)"/>
+      <stop offset="65%" stop-color="rgba(15, 23, 42, 0.03)"/>
       <stop offset="100%" stop-color="rgba(15, 23, 42, 0)"/>
     </linearGradient>
 
@@ -2544,29 +2509,27 @@ export function generateOrganicBeanTableSVG(
       <feGaussianBlur stdDeviation="4"/>
     </filter>
     <filter id="beanTableDropShadow" x="-15%" y="-15%" width="130%" height="135%">
-      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.20"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#0f172a" flood-opacity="0.06"/>
     </filter>
   </defs>
 
-  <!-- 1. Sombra Difusa de Contato no Piso -->
-  <ellipse cx="160" cy="${shadowY}" rx="68" ry="10" fill="#0f172a" opacity="0.25" filter="url(#beanFloorBlur)"/>
+  <!-- 1. Sombra Bastante Sutil no Piso -->
+  <ellipse cx="160" cy="${shadowY}" rx="64" ry="9" fill="#0f172a" opacity="0.06" filter="url(#beanFloorBlur)"/>
 
-  <!-- 2. Cilindro Base (Coluna Cilíndrica: x=105 a 215, y=55 a ${cylBottom}) -->
+  <!-- 2. Cilindro Base Fosco (Coluna Cilíndrica: x=105 a 215, y=55 a ${cylBottom}) -->
   <g id="bean-cylinder-base">
     <path d="M 105 55 L 105 ${cylBottom} A 55 12 0 0 0 215 ${cylBottom} L 215 55 Z" fill="url(#beanCylGrad)"/>
     <ellipse cx="160" cy="${cylBottom}" rx="55" ry="12" fill="url(#beanCylGrad)"/>
-    <!-- Sombra de Oclusão sob o Tampo Feijão -->
-    <rect x="105" y="55" width="110" height="26" fill="url(#beanTopUnderShadow)"/>
+    <!-- Sombra Discreta de Oclusão sob o Tampo Feijão -->
+    <rect x="105" y="55" width="110" height="22" fill="url(#beanTopUnderShadow)"/>
   </g>
 
-  <!-- 3. Tampo Orgânico Curvilíneo Feijão (Largura ajustada e harmoniosa com a base) -->
+  <!-- 3. Tampo Orgânico Curvilíneo Feijão Fosco -->
   <g id="bean-tabletop" filter="url(#beanTableDropShadow)">
     <!-- Borda Lateral Chanfrada (Espessura 11px) -->
-    <path d="M 45 56 C 45 34, 105 22, 160 25 C 215 28, 275 36, 275 57 L 275 67 C 275 87, 225 94, 175 87 C 150 83, 125 83, 105 86 C 60 91, 45 78, 45 66 Z" fill="url(#beanRimGrad)" stroke="${topRimDark}" stroke-width="0.8"/>
-    <!-- Superfície Superior Laqueada -->
-    <path d="M 45 55 C 45 33, 105 21, 160 24 C 215 27, 275 35, 275 56 C 275 76, 225 83, 175 76 C 150 72, 125 72, 105 75 C 60 80, 45 67, 45 55 Z" fill="url(#beanTopSurfaceGrad)" stroke="${topDark}" stroke-width="1.2"/>
-    <!-- Bisotê / Filete Iluminado na Borda Frontal -->
-    <path d="M 48 55 C 48 35, 106 23, 160 26 C 213 29, 272 37, 272 56 C 272 73, 223 80, 175 73 C 150 70, 125 70, 105 73 C 62 77, 48 65, 48 55 Z" fill="none" stroke="rgba(255, 255, 255, 0.75)" stroke-width="1.2"/>
+    <path d="M 45 56 C 45 34, 105 22, 160 25 C 215 28, 275 36, 275 57 L 275 67 C 275 87, 225 94, 175 87 C 150 83, 125 83, 105 86 C 60 91, 45 78, 45 66 Z" fill="url(#beanRimGrad)" stroke="${topRimDark}" stroke-width="0.7"/>
+    <!-- Superfície Superior Fosca -->
+    <path d="M 45 55 C 45 33, 105 21, 160 24 C 215 27, 275 35, 275 56 C 275 76, 225 83, 175 76 C 150 72, 125 72, 105 75 C 60 80, 45 67, 45 55 Z" fill="url(#beanTopSurfaceGrad)" stroke="${topDark}" stroke-width="0.9"/>
   </g>
 </svg>`;
 }
@@ -2575,19 +2538,18 @@ export function generateOrganicBeanTabletopOnlySVG(
   tabletopColor: string = '#FAF8F5',
   type: string = 'table_organic_bean'
 ): string {
-  const topLight = adjustColorBrightness(tabletopColor, 0.15);
-  const topDark = adjustColorBrightness(tabletopColor, -0.15);
-  const topRimDark = adjustColorBrightness(tabletopColor, -0.28);
+  const topDark = adjustColorBrightness(tabletopColor, -0.08);
+  const topRimDark = adjustColorBrightness(tabletopColor, -0.18);
 
   const vHeight = type === 'table_organic_bean_g' ? 300 : (type === 'table_organic_bean_m' ? 250 : 200);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 ${vHeight}" width="320" height="${vHeight}">
   <defs>
-    <radialGradient id="beanTopOnlySurfaceGrad" cx="42%" cy="38%" r="60%">
-      <stop offset="0%" stop-color="${topLight}"/>
-      <stop offset="65%" stop-color="${tabletopColor}"/>
+    <linearGradient id="beanTopOnlySurfaceGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="${tabletopColor}"/>
+      <stop offset="78%" stop-color="${tabletopColor}"/>
       <stop offset="100%" stop-color="${topDark}"/>
-    </radialGradient>
+    </linearGradient>
 
     <linearGradient id="beanTopOnlyRimGrad" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="${topDark}"/>
@@ -2595,14 +2557,13 @@ export function generateOrganicBeanTabletopOnlySVG(
     </linearGradient>
 
     <filter id="beanTopOnlyDropShadow" x="-15%" y="-15%" width="130%" height="135%">
-      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.22"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#0f172a" flood-opacity="0.06"/>
     </filter>
   </defs>
 
   <g id="bean-tabletop-only" filter="url(#beanTopOnlyDropShadow)">
-    <path d="M 45 56 C 45 34, 105 22, 160 25 C 215 28, 275 36, 275 57 L 275 67 C 275 87, 225 94, 175 87 C 150 83, 125 83, 105 86 C 60 91, 45 78, 45 66 Z" fill="url(#beanTopOnlyRimGrad)" stroke="${topRimDark}" stroke-width="0.8"/>
-    <path d="M 45 55 C 45 33, 105 21, 160 24 C 215 27, 275 35, 275 56 C 275 76, 225 83, 175 76 C 150 72, 125 72, 105 75 C 60 80, 45 67, 45 55 Z" fill="url(#beanTopOnlySurfaceGrad)" stroke="${topDark}" stroke-width="1.2"/>
-    <path d="M 48 55 C 48 35, 106 23, 160 26 C 213 29, 272 37, 272 56 C 272 73, 223 80, 175 73 C 150 70, 125 70, 105 73 C 62 77, 48 65, 48 55 Z" fill="none" stroke="rgba(255, 255, 255, 0.75)" stroke-width="1.2"/>
+    <path d="M 45 56 C 45 34, 105 22, 160 25 C 215 28, 275 36, 275 57 L 275 67 C 275 87, 225 94, 175 87 C 150 83, 125 83, 105 86 C 60 91, 45 78, 45 66 Z" fill="url(#beanTopOnlyRimGrad)" stroke="${topRimDark}" stroke-width="0.7"/>
+    <path d="M 45 55 C 45 33, 105 21, 160 24 C 215 27, 275 35, 275 56 C 275 76, 225 83, 175 76 C 150 72, 125 72, 105 75 C 60 80, 45 67, 45 55 Z" fill="url(#beanTopOnlySurfaceGrad)" stroke="${topDark}" stroke-width="0.9"/>
   </g>
 </svg>`;
 }
@@ -2704,10 +2665,7 @@ export function generateSkirtTableSVG(
     </linearGradient>
   </defs>
 
-  <!-- Sombra no piso -->
-  <ellipse cx="160" cy="186" rx="142" ry="7.5" fill="#0f172a" opacity="0.22"/>
-
-  <!-- SAIA PLISSADA INFERIOR -->
+  <!-- SAIA PLISSADA INFERIOR (sem sombra na base) -->
   <g filter="url(#scallopDropShadow)">
     <rect x="22" y="56" width="276" height="126" fill="${bottomFill}"/>
     <path d="${skirtPath}" fill="${bottomFill}"/>
@@ -2765,10 +2723,7 @@ export function generateSkirtTableSVG(
     </linearGradient>
   </defs>
 
-  <!-- Sombra no piso -->
-  <ellipse cx="160" cy="186" rx="142" ry="7.5" fill="#0f172a" opacity="0.22"/>
-
-  <!-- SAIA PLISSADA LONGA INFERIOR -->
+  <!-- SAIA PLISSADA LONGA INFERIOR (sem sombra na base) -->
   <g filter="url(#straightDropShadow)">
     <rect x="22" y="68" width="276" height="114" fill="${bottomFill}"/>
     <path d="${skirtPath}" fill="${bottomFill}"/>
@@ -2910,7 +2865,6 @@ export function generateSkirtTablePartSVG(
       <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
     </linearGradient>
   </defs>
-  <ellipse cx="160" cy="186" rx="142" ry="7.5" fill="#0f172a" opacity="0.22"/>
   <g filter="url(#partBottomDropShadow)">
     <rect x="22" y="${yTop}" width="276" height="${182 - yTop}" fill="${fill}"/>
     <path d="${skirtPath}" fill="${fill}"/>
@@ -2935,11 +2889,10 @@ export {
 
 export const SVG_TABLE_ORGANIC_DROP = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" width="200" height="180">
   <defs>
-    <radialGradient id="dropTopLaca" cx="45%" cy="38%" r="60%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="65%" stop-color="#f8fafc"/>
-      <stop offset="100%" stop-color="#e2e8f0"/>
-    </radialGradient>
+    <linearGradient id="dropTopLaca" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#eef2f6"/>
+    </linearGradient>
     <linearGradient id="dropEdgeWood" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#b45309"/>
       <stop offset="45%" stop-color="#f59e0b"/>
@@ -2957,14 +2910,14 @@ export const SVG_TABLE_ORGANIC_DROP = `<svg xmlns="http://www.w3.org/2000/svg" v
       <stop offset="100%" stop-color="#713f12"/>
     </linearGradient>
     <filter id="dropShadow" x="-15%" y="-15%" width="130%" height="135%">
-      <feDropShadow dx="0" dy="5" stdDeviation="4.5" flood-color="#0f172a" flood-opacity="0.2"/>
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#0f172a" flood-opacity="0.06"/>
     </filter>
   </defs>
 
-  <!-- Sombras de Contato dos 3 Pés Tripé no Piso -->
-  <ellipse cx="44" cy="170" rx="12" ry="3.5" fill="#0f172a" opacity="0.26"/>
-  <ellipse cx="104" cy="158" rx="10" ry="3" fill="#0f172a" opacity="0.2"/>
-  <ellipse cx="156" cy="170" rx="12" ry="3.5" fill="#0f172a" opacity="0.26"/>
+  <!-- Sombras Sutis de Contato dos 3 Pés Tripé no Piso -->
+  <ellipse cx="44" cy="170" rx="11" ry="3" fill="#0f172a" opacity="0.07"/>
+  <ellipse cx="104" cy="158" rx="9" ry="2.5" fill="#0f172a" opacity="0.05"/>
+  <ellipse cx="156" cy="170" rx="11" ry="3" fill="#0f172a" opacity="0.07"/>
 
   <!-- Pé Central Traseiro -->
   <polygon points="99,65 109,65 107,144 101,144" fill="url(#dropLegWood)"/>
@@ -2973,18 +2926,17 @@ export const SVG_TABLE_ORGANIC_DROP = `<svg xmlns="http://www.w3.org/2000/svg" v
   <!-- Pé Frontal Esquerdo Cônico Afilado -->
   <polygon points="52,66 66,66 50,152 41,152" fill="url(#dropLegWood)" stroke="#451a03" stroke-width="0.5"/>
   <polygon points="41,152 50,152 48,169 41,169" fill="url(#dropBrass)"/>
-  <polygon points="52,66 66,66 64,78 50,78" fill="#0f172a" opacity="0.25"/>
+  <polygon points="52,66 66,66 64,78 50,78" fill="#0f172a" opacity="0.12"/>
 
   <!-- Pé Frontal Direito Cônico Afilado -->
   <polygon points="134,66 148,66 159,152 150,152" fill="url(#dropLegWood)" stroke="#451a03" stroke-width="0.5"/>
   <polygon points="150,152 159,152 159,169 152,169" fill="url(#dropBrass)"/>
-  <polygon points="134,66 148,66 150,78 136,78" fill="#0f172a" opacity="0.25"/>
+  <polygon points="134,66 148,66 150,78 136,78" fill="#0f172a" opacity="0.12"/>
 
-  <!-- Tampo Gota 2.5D -->
+  <!-- Tampo Gota 2.5D Fosco -->
   <g filter="url(#dropShadow)">
     <path d="M 24 54 C 24 28, 85 18, 135 24 C 175 29, 184 48, 176 64 C 166 82, 115 88, 65 82 C 35 78, 24 66, 24 54 Z" transform="translate(0, 7)" fill="url(#dropEdgeWood)" stroke="#78350f" stroke-width="0.8"/>
-    <path d="M 24 54 C 24 28, 85 18, 135 24 C 175 29, 184 48, 176 64 C 166 82, 115 88, 65 82 C 35 78, 24 66, 24 54 Z" fill="url(#dropTopLaca)" stroke="#cbd5e1" stroke-width="1.5"/>
-    <path d="M 28 54 C 28 31, 86 21, 134 27 C 171 31, 180 48, 172 62 C 163 79, 114 84, 66 79 C 38 75, 28 64, 28 54 Z" fill="none" stroke="#ffffff" stroke-width="1.4" opacity="0.95"/>
+    <path d="M 24 54 C 24 28, 85 18, 135 24 C 175 29, 184 48, 176 64 C 166 82, 115 88, 65 82 C 35 78, 24 66, 24 54 Z" fill="url(#dropTopLaca)" stroke="#cbd5e1" stroke-width="1"/>
   </g>
 </svg>`;
 
@@ -3588,19 +3540,6 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     rentalPrice: 20
   },
   {
-    id: 'preset-cilindro-canelado',
-    name: 'Cilindro Canelado Dourado Luxo',
-    category: 'cilindros',
-    type: 'cylinder_fluted',
-    svgRole: 'modular',
-    widthCm: 50,
-    heightCm: 80,
-    previewUrl: svgToDataUrl(SVG_CYLINDER_FLUTED),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 40
-  },
-  {
     id: 'preset-cubo-p',
     name: 'Cubo P',
     category: 'cilindros',
@@ -3699,42 +3638,6 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     rentalPrice: 80
   },
   {
-    id: 'preset-mesa-cavalete',
-    name: 'Mesa Tradicional / Cavalete',
-    category: 'mesas',
-    type: 'table',
-    widthCm: 150,
-    heightCm: 80,
-    previewUrl: svgToDataUrl(SVG_TABLE_EASEL),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 45
-  },
-  {
-    id: 'preset-mesa-apoio-lateral',
-    name: 'Mesa de Apoio Lateral',
-    category: 'mesas',
-    type: 'table_side',
-    widthCm: 60,
-    heightCm: 60,
-    previewUrl: svgToDataUrl(SVG_TABLE_SIDE),
-    isCustom: false,
-    stockQuantity: 2,
-    rentalPrice: 25
-  },
-  {
-    id: 'preset-comoda-bombe',
-    name: 'Cômoda Bombê Branca',
-    category: 'mesas',
-    type: 'table',
-    widthCm: 90,
-    heightCm: 80,
-    previewUrl: svgToDataUrl(SVG_DRESSER_BOMBE),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 50
-  },
-  {
     id: 'preset-escada-mesa-pinus',
     name: 'Estante Escada Pinus',
     category: 'mesas',
@@ -3822,7 +3725,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
 
   // 4. BALÕES E ARCOS ORGÂNICOS DESCONSTRUÍDOS (10 MODELOS REALISTAS DO ESTÚDIO)
   ...BALLOON_STUDIO_TEMPLATES.map((tmpl) => {
-    const rendered = renderArrangementSvg(tmpl.pieces, tmpl.palette, { hasFloorShadow: true });
+    const rendered = renderArrangementSvg(tmpl.pieces, tmpl.palette, { hasFloorShadow: false });
     return {
       id: `preset-${tmpl.id}`,
       name: tmpl.name,
@@ -3867,30 +3770,6 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
 
   // 5. BANCADA E DISPLAYS
   {
-    id: 'preset-boleira',
-    name: 'Boleira Cerâmica',
-    category: 'acessorios',
-    type: 'generic',
-    widthCm: 30,
-    heightCm: 20,
-    previewUrl: svgToDataUrl(SVG_CAKE_STAND),
-    isCustom: false,
-    stockQuantity: 2,
-    rentalPrice: 15
-  },
-  {
-    id: 'preset-bandeja-baixa',
-    name: 'Bandeja de Doces Baixa',
-    category: 'acessorios',
-    type: 'generic',
-    widthCm: 20,
-    heightCm: 5,
-    previewUrl: svgToDataUrl(SVG_TRAY_LOW),
-    isCustom: false,
-    stockQuantity: 4,
-    rentalPrice: 10
-  },
-  {
     id: 'preset-vaso-garrafinha-1',
     name: 'Vaso Garrafinha Branca - Arranjo Redondo',
     category: 'acessorios',
@@ -3925,18 +3804,6 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     isCustom: false,
     stockQuantity: 4,
     rentalPrice: 15
-  },
-  {
-    id: 'preset-bolo-fake',
-    name: 'Bolo Fake Cenográfico 3 Andares',
-    category: 'acessorios',
-    type: 'generic',
-    widthCm: 40,
-    heightCm: 50,
-    previewUrl: svgToDataUrl(SVG_CAKE_FAKE),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 45
   },
   {
     id: 'preset-acessorio-vaso-tropical-anturio',
@@ -4122,30 +3989,6 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     stockQuantity: 1,
     rentalPrice: 35
   },
-  {
-    id: 'preset-luminoso-led',
-    name: 'Luminoso LED Neon Número 1 Dourado',
-    category: 'displays',
-    type: 'display',
-    widthCm: 35,
-    heightCm: 60,
-    previewUrl: svgToDataUrl(SVG_LED_NEON_1),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 30
-  },
-  {
-    id: 'preset-display-astronauta',
-    name: 'Display MDF Astronauta nas Estrelas',
-    category: 'displays',
-    type: 'display',
-    widthCm: 50,
-    heightCm: 70,
-    previewUrl: svgToDataUrl(SVG_DISPLAY_ASTRONAUT_BABY),
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 25
-  },
   // --- DISPLAYS SAFARI BABY REAIS DE MERCADO (MODELO CLÁSSICO DECORADORAS) ---
   // Displays de Chão Safari Baby (Totens de MDF 6mm em Estilo Aquarela Frontal)
   {
@@ -4250,21 +4093,6 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     widthCm: 46,
     heightCm: 70,
     previewUrl: '/items/display-cerejinha-par.webp',
-    isCustom: false,
-    stockQuantity: 1,
-    rentalPrice: 28
-  },
-
-  // --- DISPLAYS CHÁ REVELAÇÃO ---
-  {
-    id: 'preset-display-chao-cha-revelacao-interrogacao',
-    name: 'Display de Chão Chá Revelação - Ponto de Interrogação',
-    category: 'displays',
-    type: 'display',
-    svgRole: 'photo',
-    widthCm: 44,
-    heightCm: 70,
-    previewUrl: '/items/display-cha-revelacao-interrogacao.webp',
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 28

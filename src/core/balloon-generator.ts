@@ -172,7 +172,6 @@ export function getArchLSvg(colors: string[]): string {
   const defs = generateLatexDefs(colors);
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 460" width="340" height="460">
     <defs>${defs}</defs>
-    <ellipse cx="85" cy="448" rx="72" ry="11" fill="#0f172a" opacity="0.22" filter="url(#floorShadowBlur)"/>
   `;
 
   // CAMADA 1: FUNDO / PROFUNDIDADE
@@ -326,7 +325,6 @@ export function getArchCascadeSvg(colors: string[]): string {
   const defs = generateLatexDefs(colors);
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 460" width="360" height="460">
     <defs>${defs}</defs>
-    <ellipse cx="190" cy="448" rx="140" ry="12" fill="#0f172a" opacity="0.22" filter="url(#floorShadowBlur)"/>
   `;
 
   // CAMADA 1: FUNDO
@@ -416,7 +414,6 @@ export function getClusterFloorSvg(colors: string[]): string {
   const defs = generateLatexDefs(colors);
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
     <defs>${defs}</defs>
-    <ellipse cx="120" cy="222" rx="85" ry="12" fill="#0f172a" opacity="0.22" filter="url(#floorShadowBlur)"/>
   `;
 
   // CAMADA 1: FUNDO
@@ -453,7 +450,6 @@ export function getClusterTotemSvg(colors: string[]): string {
   const defs = generateLatexDefs(colors);
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 480" width="200" height="480">
     <defs>${defs}</defs>
-    <ellipse cx="100" cy="466" rx="75" ry="11" fill="#0f172a" opacity="0.22" filter="url(#floorShadowBlur)"/>
   `;
 
   // CAMADA 1: FUNDO
@@ -519,7 +515,7 @@ export function generateBalloonSVG(type: string, colors: string[] = ['#c97a8e', 
       C: colors[2] || studioTmpl.palette.C,
       D: colors[3] || studioTmpl.palette.D
     };
-    return renderArrangementSvg(studioTmpl.pieces, pal, { hasFloorShadow: true }).svg;
+    return renderArrangementSvg(studioTmpl.pieces, pal, { hasFloorShadow: false }).svg;
   }
 
   if (norm.includes('demi') || norm.includes('curvo') || norm.includes('guirlanda')) {

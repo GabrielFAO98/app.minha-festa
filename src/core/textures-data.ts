@@ -270,46 +270,6 @@ export const REALISTIC_ENVIRONMENTS: RealisticEnvironment[] = [
     category: 'Realista',
     bgImageUrl: '/cenarios/cenario-cimento-loft.jpg',
     previewThumb: '/cenarios/cenario-cimento-loft.jpg'
-  },
-  {
-    id: 'greenery-grass',
-    name: 'Muro Inglês e Gramado',
-    category: 'Ilustrado',
-    wallTexture: TEXTURE_WALL_GREENERY,
-    floorTexture: TEXTURE_FLOOR_GRASS,
-    previewThumb: TEXTURE_WALL_GREENERY
-  },
-  {
-    id: 'brick-marble',
-    name: 'Tijolinho e Mármore',
-    category: 'Ilustrado',
-    wallTexture: TEXTURE_WALL_BRICK,
-    floorTexture: TEXTURE_FLOOR_MARBLE,
-    previewThumb: TEXTURE_WALL_BRICK
-  },
-  {
-    id: 'slats-grass',
-    name: 'Ripado e Gramado',
-    category: 'Ilustrado',
-    wallTexture: TEXTURE_WALL_WOOD_SLATS,
-    floorTexture: TEXTURE_FLOOR_GRASS,
-    previewThumb: TEXTURE_WALL_WOOD_SLATS
-  },
-  {
-    id: 'clean-marble',
-    name: 'Estúdio Clean',
-    category: 'Ilustrado',
-    wallTexture: TEXTURE_WALL_CLEAN,
-    floorTexture: TEXTURE_FLOOR_MARBLE,
-    previewThumb: TEXTURE_WALL_CLEAN
-  },
-  {
-    id: 'concrete-loft',
-    name: 'Cimento Queimado',
-    category: 'Ilustrado',
-    wallTexture: TEXTURE_WALL_CONCRETE,
-    floorTexture: TEXTURE_FLOOR_CONCRETE,
-    previewThumb: TEXTURE_WALL_CONCRETE
   }
 ];
 

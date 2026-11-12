@@ -102,6 +102,7 @@
   border-top: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   z-index: 70;
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.08);
   pointer-events: none;
@@ -121,6 +122,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-shrink: 0;
   cursor: pointer;
 }
 
@@ -136,6 +138,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -162,7 +165,7 @@
   color: var(--text-main);
 }
 
-/* Container de Categorias (Grid 4x2 sem espaçamento, ocupando 100% da div) */
+/* Container de Categorias Fixo no Topo (Grid 4x2 sem espaçamento, ocupando 100% da div) */
 .category-pills {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -170,6 +173,7 @@
   padding: 0;
   margin: 0;
   width: 100%;
+  flex-shrink: 0;
   background-color: #ffffff;
   border-bottom: 1px solid var(--border-subtle);
   box-sizing: border-box;
@@ -279,18 +283,24 @@
 
 .sheet-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
   padding: 10px 10px 24px 10px;
   -webkit-overflow-scrolling: touch;
 }
 
-/* Grid de Itens em 2 Colunas no Mobile */
+/* Grid de Itens em 3 Colunas no Mobile */
 .items-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
   width: 100%;
+}
+
+.bottom-sheet .covers-grid {
+  gap: 6px;
 }
 
 /* Card Elemento (Menu Elementos: Retângulo Único com Imagem e Legenda Sobreposta) */
@@ -305,7 +315,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 8px 24px 8px;
+  padding: 6px 6px 22px 6px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
   transition: transform 0.15s ease, border-color 0.15s ease;
   width: 100%;
@@ -333,13 +343,13 @@
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 10px 6px 5px 6px;
+  padding: 8px 4px 4px 4px;
   background: linear-gradient(0deg, rgba(20, 20, 22, 0.88) 0%, rgba(20, 20, 22, 0.55) 75%, transparent 100%);
-  font-size: 0.66rem;
+  font-size: 0.62rem;
   font-weight: 600;
   color: #ffffff;
   text-align: center;
-  line-height: 1.2;
+  line-height: 1.18;
   white-space: normal;
   word-break: break-word;
   display: -webkit-box;
@@ -353,7 +363,7 @@
   background-color: var(--bg-surface);
   border: 1.5px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 8px 8px 10px 8px;
+  padding: 6px 5px 8px 5px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -375,11 +385,11 @@
 
 .my-item-card-preview {
   width: 100%;
-  height: 72px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
   background-color: #EAE6DF;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -388,19 +398,19 @@
 }
 
 .my-item-card-preview img {
-  max-height: 64px;
+  max-height: 52px;
   max-width: 90%;
   object-fit: contain;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.12));
 }
 
 .my-item-card-title {
-  font-size: 0.72rem;
+  font-size: 0.65rem;
   font-weight: 700;
   color: var(--text-main);
   width: 100%;
   white-space: normal;
-  line-height: 1.25;
+  line-height: 1.2;
   margin-bottom: 2px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -412,33 +422,36 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  font-size: 0.62rem;
+  gap: 3px;
+  font-size: 0.56rem;
   color: var(--text-muted);
   width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   margin-bottom: 3px;
 }
 
 .my-item-card-price {
-  font-size: 0.70rem;
+  font-size: 0.65rem;
   font-weight: 700;
   color: var(--primary);
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .btn-card-edit {
   width: 100%;
-  height: 28px;
+  height: 26px;
   border-radius: var(--radius-sm);
   background-color: var(--bg-surface-elevated);
   border: 1px solid var(--border-subtle);
   color: var(--text-main);
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
@@ -535,8 +548,8 @@
 /* SELEÇÃO DE CENÁRIOS POR IMAGEM */
 .scene-visual-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
   width: 100%;
 }
 
@@ -573,9 +586,9 @@
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 6px;
+  padding: 5px 4px;
   background: linear-gradient(0deg, rgba(24, 24, 27, 0.85) 0%, transparent 100%);
-  font-size: 0.68rem;
+  font-size: 0.6rem;
   font-weight: 700;
   color: #fff;
   white-space: nowrap;

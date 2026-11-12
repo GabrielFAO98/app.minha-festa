@@ -8,12 +8,10 @@ import {
   createCylinderFloorShadow,
   createPanelSupportBase,
   createOrganicBeanTabletopNodeAsync,
-  createTableFloorShadow,
   createPleatedShadingOverlay,
   createTopShadingOverlay
 } from './mask-renderer';
 import { generateOrganicBeanTableSVG, generateOrganicBeanTabletopOnlySVG, generateSkirtTableSVG, generateSkirtTablePartSVG, svgToDataUrl } from './presets-data';
-import { TEXTURE_FLOOR_WOOD } from './textures-data';
 export const DEFAULT_SCENARIO_BG = '/cenarios/cenario-boiserie-madeira.jpg';
 import { generateBalloonArchDataUrl } from './balloon-generator';
 import { getItemCustomizationMode, generateModularSvgDataUrl } from './modular-svg-generator';
@@ -2345,9 +2343,6 @@ export class CanvasEngine {
 
     if (itemData.type === 'cylinder' || itemData.type === 'cylinder_fluted') {
       const floorShadow = createCylinderFloorShadow(widthPx, heightPx);
-      group.add(floorShadow);
-    } else if (itemData.type === 'table_skirt_scallop' || itemData.type === 'table_skirt_straight') {
-      const floorShadow = createTableFloorShadow(widthPx, heightPx);
       group.add(floorShadow);
     } else if (itemData.type === 'panel_round') {
       const supportBase = createPanelSupportBase(itemData.type, widthPx, heightPx);

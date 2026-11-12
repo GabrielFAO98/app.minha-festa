@@ -349,20 +349,17 @@ export function createShadingOverlay(type: string, width: number, height: number
     const xRight = cx + rx;
 
     const bodyGrad = ctx.createLinearGradient(xLeft, 0, xRight, 0);
-    bodyGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.24)');
-    bodyGrad.addColorStop(0.14, 'rgba(0, 0, 0, 0.06)');
-    bodyGrad.addColorStop(0.34, 'rgba(255, 255, 255, 0.14)');
-    bodyGrad.addColorStop(0.55, 'rgba(255, 255, 255, 0.0)');
-    bodyGrad.addColorStop(0.84, 'rgba(0, 0, 0, 0.14)');
-    bodyGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.32)');
+    bodyGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.08)');
+    bodyGrad.addColorStop(0.25, 'rgba(0, 0, 0, 0.0)');
+    bodyGrad.addColorStop(0.75, 'rgba(0, 0, 0, 0.0)');
+    bodyGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.10)');
 
     ctx.fillStyle = bodyGrad;
     ctx.fillRect(xLeft, yTop - ry, rx * 2, (yBottom - yTop) + ry * 2);
 
     const topGrad = ctx.createLinearGradient(cx, yTop - ry, cx, yTop + ry);
-    topGrad.addColorStop(0.0, 'rgba(255, 255, 255, 0.25)');
-    topGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.08)');
-    topGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.12)');
+    topGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.02)');
+    topGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.05)');
 
     ctx.fillStyle = topGrad;
     ctx.beginPath();
@@ -432,21 +429,19 @@ export function createShadingOverlay(type: string, width: number, height: number
     const xRight = cx + rx;
 
     const bodyGrad = ctx.createLinearGradient(xLeft, 0, xRight, 0);
-    bodyGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.24)');
-    bodyGrad.addColorStop(0.14, 'rgba(0, 0, 0, 0.06)');
-    bodyGrad.addColorStop(0.34, 'rgba(255, 255, 255, 0.14)');
-    bodyGrad.addColorStop(0.55, 'rgba(255, 255, 255, 0.0)');
-    bodyGrad.addColorStop(0.84, 'rgba(0, 0, 0, 0.14)');
-    bodyGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.32)');
+    bodyGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.08)');
+    bodyGrad.addColorStop(0.25, 'rgba(0, 0, 0, 0.0)');
+    bodyGrad.addColorStop(0.75, 'rgba(0, 0, 0, 0.0)');
+    bodyGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.10)');
 
     ctx.fillStyle = bodyGrad;
     ctx.fillRect(xLeft, yTop - ry, rx * 2, (yBottom - yTop) + ry * 2);
 
-    const dropShadowGrad = ctx.createLinearGradient(0, yTop, 0, yTop + 30 * scaleY);
-    dropShadowGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.35)');
+    const dropShadowGrad = ctx.createLinearGradient(0, yTop, 0, yTop + 22 * scaleY);
+    dropShadowGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.11)');
     dropShadowGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
     ctx.fillStyle = dropShadowGrad;
-    ctx.fillRect(xLeft, yTop, rx * 2, 30 * scaleY);
+    ctx.fillRect(xLeft, yTop, rx * 2, 22 * scaleY);
   } else if (type === 'rug_oval') {
     const cx = w * 0.5;
     const cy = h * 0.5;
@@ -547,10 +542,10 @@ export function createCylinderFloorShadow(width: number, height: number) {
     ctx.translate(cx, cyShadow);
     ctx.scale(1.0, ryShadow / rxShadow);
     const radGrad = ctx.createRadialGradient(0, 0, rxShadow * 0.2, 0, 0, rxShadow);
-    radGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.40)');
-    radGrad.addColorStop(0.40, 'rgba(0, 0, 0, 0.22)');
-    radGrad.addColorStop(0.75, 'rgba(0, 0, 0, 0.07)');
-    radGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+    radGrad.addColorStop(0.0, 'rgba(15, 23, 42, 0.08)');
+    radGrad.addColorStop(0.45, 'rgba(15, 23, 42, 0.04)');
+    radGrad.addColorStop(0.8, 'rgba(15, 23, 42, 0.01)');
+    radGrad.addColorStop(1.0, 'rgba(15, 23, 42, 0)');
     ctx.fillStyle = radGrad;
     ctx.beginPath();
     ctx.arc(0, 0, rxShadow, 0, Math.PI * 2, false);
@@ -592,33 +587,25 @@ export function createPanelSupportBase(type: string, width: number, height: numb
       const sx = w / 300;
       const sy = h / 380;
 
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
+      ctx.fillStyle = drawFootGrad(88 * sx, 104.5 * sx);
+      ctx.fillRect(95 * sx, 275 * sy, 2.5 * sx, 93.5 * sy);
       ctx.beginPath();
-      ctx.ellipse(96 * sx, 370 * sy, 22 * sx, 3.5 * sy, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.ellipse(204 * sx, 370 * sy, 22 * sx, 3.5 * sy, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = drawFootGrad(80 * sx, 112 * sx);
-      ctx.fillRect(94 * sx, 275 * sy, 4.5 * sx, 93 * sy);
-      ctx.beginPath();
-      ctx.moveTo(80 * sx, 368 * sy);
-      ctx.lineTo(96.2 * sx, 365 * sy);
-      ctx.lineTo(112 * sx, 368 * sy);
-      ctx.lineTo(110 * sx, 370.5 * sy);
-      ctx.lineTo(82 * sx, 370.5 * sy);
+      ctx.moveTo(88 * sx, 368.5 * sy);
+      ctx.lineTo(96.25 * sx, 367 * sy);
+      ctx.lineTo(104.5 * sx, 368.5 * sy);
+      ctx.lineTo(103.5 * sx, 370 * sy);
+      ctx.lineTo(89 * sx, 370 * sy);
       ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle = drawFootGrad(188 * sx, 220 * sx);
-      ctx.fillRect(201.5 * sx, 275 * sy, 4.5 * sx, 93 * sy);
+      ctx.fillStyle = drawFootGrad(195.5 * sx, 212 * sx);
+      ctx.fillRect(202.5 * sx, 275 * sy, 2.5 * sx, 93.5 * sy);
       ctx.beginPath();
-      ctx.moveTo(188 * sx, 368 * sy);
-      ctx.lineTo(203.8 * sx, 365 * sy);
-      ctx.lineTo(220 * sx, 368 * sy);
-      ctx.lineTo(218 * sx, 370.5 * sy);
-      ctx.lineTo(190 * sx, 370.5 * sy);
+      ctx.moveTo(195.5 * sx, 368.5 * sy);
+      ctx.lineTo(203.75 * sx, 367 * sy);
+      ctx.lineTo(212 * sx, 368.5 * sy);
+      ctx.lineTo(211 * sx, 370 * sy);
+      ctx.lineTo(196.5 * sx, 370 * sy);
       ctx.closePath();
       ctx.fill();
     }

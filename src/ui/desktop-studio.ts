@@ -16,9 +16,22 @@ export class DesktopStudio {
 
   activeCatalogTab: string;
   currentPresetCategory: string;
+  myItemsCategory: string;
   presetsSearchTerm = '';
   myItemsSearchTerm = '';
   coversSearchTerm = '';
+
+  private categoriesBarEl: HTMLElement | null = null;
+  private catalogContainerEl: HTMLElement | null = null;
+  private renderedDesktopPillsTab: 'presets' | 'my-items' | null = null;
+  private tabScrollPositions: Record<string, number> = {
+    presets: 0,
+    'my-items': 0,
+    covers: 0,
+    environment: 0
+  };
+  private isRestoringScroll = false;
+  private scrollRestoreRafId: number | null = null;
 
   constructor(
     canvasEngine: CanvasEngine,
@@ -33,12 +46,23 @@ export class DesktopStudio {
 
     this.activeCatalogTab = 'presets';
     this.currentPresetCategory = 'todos';
+    this.myItemsCategory = 'todos';
+
+    this.categoriesBarEl = document.getElementById('desktop-categories-bar');
+    this.catalogContainerEl = document.getElementById('desktop-catalog-content');
 
     this.setupUI();
   }
 
   setupUI(): void {
     this.initCatalogTabs();
+    this.catalogContainerEl?.addEventListener(
+      'scroll',
+      () => {
+        this.saveCurrentTabScroll();
+      },
+      { passive: true }
+    );
     this.renderCatalogContent();
     this.initInspectorListeners();
     this.updateInspector(null, null);
@@ -49,12 +73,57 @@ export class DesktopStudio {
     };
   }
 
+  private saveCurrentTabScroll(): void {
+    if (this.isRestoringScroll || !this.catalogContainerEl) return;
+    this.tabScrollPositions[this.activeCatalogTab] = this.catalogContainerEl.scrollTop;
+  }
+
+  private restoreCatalogScroll(tabName: string): void {
+    if (!this.catalogContainerEl) return;
+    if (this.scrollRestoreRafId !== null) {
+      cancelAnimationFrame(this.scrollRestoreRafId);
+      this.scrollRestoreRafId = null;
+    }
+    const saved = this.tabScrollPositions[tabName] || 0;
+    this.isRestoringScroll = true;
+    this.catalogContainerEl.scrollTop = saved;
+    this.scrollRestoreRafId = requestAnimationFrame(() => {
+      if (this.catalogContainerEl && this.activeCatalogTab === tabName) {
+        this.catalogContainerEl.scrollTop = saved;
+      }
+      this.isRestoringScroll = false;
+      this.scrollRestoreRafId = null;
+    });
+  }
+
+  private resetCatalogScroll(tabName?: string): void {
+    const targetTab = tabName || this.activeCatalogTab;
+    this.tabScrollPositions[targetTab] = 0;
+    if (!this.catalogContainerEl) return;
+    if (this.scrollRestoreRafId !== null) {
+      cancelAnimationFrame(this.scrollRestoreRafId);
+      this.scrollRestoreRafId = null;
+    }
+    this.isRestoringScroll = true;
+    this.catalogContainerEl.scrollTop = 0;
+    this.scrollRestoreRafId = requestAnimationFrame(() => {
+      if (this.catalogContainerEl) {
+        this.catalogContainerEl.scrollTop = 0;
+      }
+      this.isRestoringScroll = false;
+      this.scrollRestoreRafId = null;
+    });
+  }
+
   initCatalogTabs(): void {
     const tabButtons = document.querySelectorAll('.desktop-tab-btn');
     tabButtons.forEach((btnNode) => {
       const btn = btnNode as HTMLElement;
       btn.addEventListener('click', () => {
         const tab = btn.dataset.tab || 'presets';
+        if (this.activeCatalogTab !== tab) {
+          this.saveCurrentTabScroll();
+        }
         this.activeCatalogTab = tab;
         tabButtons.forEach((b) => (b as HTMLElement).classList.toggle('active', (b as HTMLElement).dataset.tab === tab));
         this.renderCatalogContent();
@@ -62,38 +131,28 @@ export class DesktopStudio {
     });
   }
 
-  async renderCatalogContent(): Promise<void> {
-    const container = document.getElementById('desktop-catalog-content');
-    if (!container) return;
+  private renderDesktopCategoryBar(): void {
+    const bar = this.categoriesBarEl || document.getElementById('desktop-categories-bar');
+    if (!bar) return;
+    this.categoriesBarEl = bar;
 
-    container.innerHTML = '';
-
-    if (this.activeCatalogTab === 'presets') {
-      await this.renderPresets(container);
-    } else if (this.activeCatalogTab === 'my-items') {
-      await this.renderMyItems(container);
-    } else if (this.activeCatalogTab === 'covers') {
-      await this.renderCovers(container);
-    } else if (this.activeCatalogTab === 'environment') {
-      await this.renderEnvironments(container);
+    if (this.activeCatalogTab !== 'presets' && this.activeCatalogTab !== 'my-items') {
+      bar.style.display = 'none';
+      return;
     }
-  }
 
-  // ABA 1: Presets Base
-  async renderPresets(container: HTMLElement): Promise<void> {
-    const searchBar = createSearchBar({
-      placeholder: 'Buscar elementos...',
-      initialValue: this.presetsSearchTerm,
-      onSearch: (term) => {
-        this.presetsSearchTerm = normalizeSearch(term);
-        this.renderCatalogContent();
-      }
-    });
-    container.appendChild(searchBar);
+    bar.style.display = 'grid';
+    const tab = this.activeCatalogTab;
+    const currentSelected = tab === 'presets' ? this.currentPresetCategory : this.myItemsCategory;
 
-    const catBar = document.createElement('div');
-    catBar.className = 'desktop-category-pills';
+    if (this.renderedDesktopPillsTab === tab && bar.children.length > 0) {
+      bar.querySelectorAll<HTMLButtonElement>('.pill-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.catId === currentSelected);
+      });
+      return;
+    }
 
+    this.renderedDesktopPillsTab = tab;
     const categories = [
       { id: 'todos', label: 'Todos' },
       { id: 'paineis', label: 'Painéis' },
@@ -105,18 +164,83 @@ export class DesktopStudio {
       { id: 'acessorios', label: 'Acessórios' }
     ];
 
+    const frag = document.createDocumentFragment();
     categories.forEach((cat) => {
       const btn = document.createElement('button');
-      btn.className = `pill-btn ${this.currentPresetCategory === cat.id ? 'active' : ''}`;
+      btn.type = 'button';
+      btn.className = `pill-btn ${currentSelected === cat.id ? 'active' : ''}`;
+      btn.dataset.catId = cat.id;
       btn.textContent = cat.label;
       btn.addEventListener('click', () => {
-        this.currentPresetCategory = cat.id;
-        this.renderCatalogContent();
+        if (tab === 'presets') {
+          if (this.currentPresetCategory === cat.id) {
+            this.resetCatalogScroll('presets');
+            return;
+          }
+          this.currentPresetCategory = cat.id;
+        } else {
+          if (this.myItemsCategory === cat.id) {
+            this.resetCatalogScroll('my-items');
+            return;
+          }
+          this.myItemsCategory = cat.id;
+        }
+        this.renderDesktopCategoryBar();
+        this.renderCatalogContent({ resetScroll: true });
       });
-      catBar.appendChild(btn);
+      frag.appendChild(btn);
     });
 
-    container.appendChild(catBar);
+    bar.replaceChildren(frag);
+  }
+
+  async renderCatalogContent(options?: { resetScroll?: boolean; restoreSearchFocus?: boolean }): Promise<void> {
+    const container = this.catalogContainerEl || document.getElementById('desktop-catalog-content');
+    if (!container) return;
+    this.catalogContainerEl = container;
+
+    const targetTab = this.activeCatalogTab;
+    this.renderDesktopCategoryBar();
+    container.innerHTML = '';
+
+    if (targetTab === 'presets') {
+      await this.renderPresets(container);
+    } else if (targetTab === 'my-items') {
+      await this.renderMyItems(container);
+    } else if (targetTab === 'covers') {
+      await this.renderCovers(container);
+    } else if (targetTab === 'environment') {
+      await this.renderEnvironments(container);
+    }
+
+    if (this.activeCatalogTab !== targetTab) return;
+
+    if (options?.resetScroll) {
+      this.resetCatalogScroll(targetTab);
+    } else {
+      this.restoreCatalogScroll(targetTab);
+    }
+
+    if (options?.restoreSearchFocus) {
+      const input = container.querySelector<HTMLInputElement>('.catalog-search-input');
+      if (input) {
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+      }
+    }
+  }
+
+  // ABA 1: Presets Base
+  async renderPresets(container: HTMLElement): Promise<void> {
+    const searchBar = createSearchBar({
+      placeholder: 'Buscar elementos...',
+      initialValue: this.presetsSearchTerm,
+      onSearch: (term) => {
+        this.presetsSearchTerm = normalizeSearch(term);
+        this.renderCatalogContent({ resetScroll: true, restoreSearchFocus: true });
+      }
+    });
+    container.appendChild(searchBar);
 
     let presetItems = DEFAULT_PRESET_ITEMS;
     if (this.currentPresetCategory !== 'todos') {
@@ -182,13 +306,16 @@ export class DesktopStudio {
       initialValue: this.myItemsSearchTerm,
       onSearch: (term) => {
         this.myItemsSearchTerm = normalizeSearch(term);
-        this.renderCatalogContent();
+        this.renderCatalogContent({ resetScroll: true, restoreSearchFocus: true });
       }
     });
     container.appendChild(searchBar);
 
     const allItems = await getAllItems();
     let customItems = allItems.filter((i) => i.isCustom);
+    if (this.myItemsCategory !== 'todos') {
+      customItems = customItems.filter((i) => i.category === this.myItemsCategory);
+    }
     if (this.myItemsSearchTerm) {
       customItems = customItems.filter((i) => normalizeSearch(i.name).includes(this.myItemsSearchTerm));
     }
@@ -205,12 +332,14 @@ export class DesktopStudio {
           </svg>
         </div>
         <div class="empty-state-title">
-          ${this.myItemsSearchTerm ? 'Nenhuma peça encontrada' : 'Seu acervo ainda está vazio'}
+          ${this.myItemsSearchTerm ? 'Nenhuma peça encontrada' : (this.myItemsCategory === 'todos' ? 'Seu acervo ainda está vazio' : 'Nenhuma peça nesta categoria')}
         </div>
         <div class="empty-state-text">
           ${this.myItemsSearchTerm
             ? 'Nenhuma peça corresponde à sua busca. Tente outro termo.'
-            : 'Fotografe suas peças reais de decoração para compor cenários exclusivos e orçamentos automáticos!'}
+            : (this.myItemsCategory === 'todos'
+              ? 'Fotografe suas peças reais de decoração para compor cenários exclusivos e orçamentos automáticos!'
+              : 'Nenhuma peça cadastrada nesta categoria. Clique acima para adicionar!')}
         </div>
       `;
       container.appendChild(empty);
@@ -251,7 +380,7 @@ export class DesktopStudio {
       initialValue: this.coversSearchTerm,
       onSearch: (term) => {
         this.coversSearchTerm = normalizeSearch(term);
-        this.renderCatalogContent();
+        this.renderCatalogContent({ resetScroll: true, restoreSearchFocus: true });
       }
     });
     container.appendChild(searchBar);
@@ -313,7 +442,7 @@ export class DesktopStudio {
   // ABA 4: Cenários
   async renderEnvironments(container: HTMLElement): Promise<void> {
     const grid = document.createElement('div');
-    grid.className = 'desktop-catalog-grid';
+    grid.className = 'desktop-catalog-grid desktop-env-grid';
 
     REALISTIC_ENVIRONMENTS.forEach((env) => {
       const card = document.createElement('div');

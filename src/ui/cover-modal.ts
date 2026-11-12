@@ -67,12 +67,15 @@ export class CoverModal {
   activeSubtab: 'colors' | 'covers' = 'colors';
   private curatedPalettesRendered = false;
   private factoryCoversRendered = false;
+  private modalBodyEl: HTMLElement | null = null;
+  private coversScrollTop = 0;
 
   constructor(canvasEngine: CanvasEngine) {
     this.canvasEngine = canvasEngine;
     this.targetMeta = null;
 
     this.modalEl = document.getElementById('cover-modal');
+    this.modalBodyEl = this.modalEl?.querySelector<HTMLElement>('.modal-body') || null;
     this.btnClose = document.getElementById('btn-close-cover-modal');
 
     // Seletor de Parte
@@ -128,6 +131,15 @@ export class CoverModal {
     this.modalEl?.addEventListener('click', (e) => {
       if (e.target === this.modalEl) this.close();
     });
+    this.modalBodyEl?.addEventListener(
+      'scroll',
+      () => {
+        if (this.activeSubtab === 'covers' && this.modalEl?.classList.contains('open') && this.modalBodyEl) {
+          this.coversScrollTop = this.modalBodyEl.scrollTop;
+        }
+      },
+      { passive: true }
+    );
 
     // Troca de Abas (Cores vs Estampas)
     this.subtabBtnColors?.addEventListener('click', () => this.switchSubtab('colors'));
@@ -324,18 +336,34 @@ export class CoverModal {
     this.renderCuratedPalettes();
   }
 
+  private restoreCoversScroll(): void {
+    if (!this.modalBodyEl || this.activeSubtab !== 'covers') return;
+    const saved = this.coversScrollTop;
+    this.modalBodyEl.scrollTop = saved;
+    requestAnimationFrame(() => {
+      if (this.modalBodyEl && this.activeSubtab === 'covers' && this.modalEl?.classList.contains('open')) {
+        this.modalBodyEl.scrollTop = saved;
+      }
+    });
+  }
+
   switchSubtab(tab: 'colors' | 'covers'): void {
+    if (this.activeSubtab === 'covers' && tab !== 'covers' && this.modalBodyEl && this.modalEl?.classList.contains('open')) {
+      this.coversScrollTop = this.modalBodyEl.scrollTop;
+    }
     this.activeSubtab = tab;
     if (tab === 'colors') {
       this.subtabBtnColors?.classList.add('active');
       this.subtabBtnCovers?.classList.remove('active');
       this.tabPaneColors?.classList.add('active');
       this.tabPaneCovers?.classList.remove('active');
+      if (this.modalBodyEl) this.modalBodyEl.scrollTop = 0;
     } else {
       this.subtabBtnColors?.classList.remove('active');
       this.subtabBtnCovers?.classList.add('active');
       this.tabPaneColors?.classList.remove('active');
       this.tabPaneCovers?.classList.add('active');
+      this.restoreCoversScroll();
       this.loadCovers();
     }
   }
@@ -402,6 +430,9 @@ export class CoverModal {
   }
 
   close(): void {
+    if (this.activeSubtab === 'covers' && this.modalBodyEl && this.modalEl?.classList.contains('open')) {
+      this.coversScrollTop = this.modalBodyEl.scrollTop;
+    }
     this.modalEl?.classList.remove('open');
   }
 
@@ -1048,11 +1079,19 @@ export class CoverModal {
         this.factoryCoversGrid.appendChild(frag);
       }
     }
+
+    if (this.activeSubtab === 'covers' && this.modalEl?.classList.contains('open')) {
+      this.restoreCoversScroll();
+    }
   }
 
 
   filterCoversInModal(): void {
     const term = normalizeSearch(this.coverSearchInput?.value || '');
+    this.coversScrollTop = 0;
+    if (this.modalBodyEl && this.activeSubtab === 'covers') {
+      this.modalBodyEl.scrollTop = 0;
+    }
     const myCards = this.myCoversGrid?.querySelectorAll<HTMLElement>('.my-cover-card') || [];
     let myVisible = 0;
     myCards.forEach((c) => {

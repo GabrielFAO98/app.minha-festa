@@ -12,8 +12,10 @@
     "fetch-items": "node scripts/fetch-theme-items.mjs"
   },
   "dependencies": {
+    "@imgly/background-removal": "^1.7.0",
     "dexie": "^4.0.11",
-    "konva": "^9.3.18"
+    "konva": "^9.3.18",
+    "onnxruntime-web": "^1.21.0"
   },
   "devDependencies": {
     "@imgly/background-removal-node": "^1.4.5",

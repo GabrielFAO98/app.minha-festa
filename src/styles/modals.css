@@ -146,8 +146,8 @@
 /* Upload de Imagem de Peça */
 .image-upload-box {
   width: 100%;
-  height: 140px;
-  border: 2px dashed rgba(255, 255, 255, 0.15);
+  height: 156px;
+  border: 2px dashed rgba(181, 137, 56, 0.35);
   border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
@@ -159,6 +159,19 @@
   transition: all var(--transition-fast);
   position: relative;
   overflow: hidden;
+}
+
+.image-upload-box.has-preview {
+  border-style: solid;
+  border-color: var(--border-subtle);
+  background-color: #f3f4f6;
+  background-image:
+    linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
+    linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
 }
 
 .image-upload-box:active {
@@ -182,6 +195,146 @@
   height: 100%;
   object-fit: contain;
   padding: 8px;
+}
+
+.upload-change-pill {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: rgba(28, 25, 23, 0.72);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+/* Painel de Remoção de Fundo Zero-Custo */
+.bg-removal-panel {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface-elevated);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bg-removal-status {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.bg-removal-status.is-success {
+  color: var(--status-success);
+}
+
+.bg-removal-status.is-error {
+  color: var(--status-danger);
+}
+
+.bg-removal-progress-wrap {
+  width: 100%;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background-color: var(--border-subtle);
+  overflow: hidden;
+}
+
+.bg-removal-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--primary), #d4af37);
+  border-radius: var(--radius-full);
+  transition: width 0.2s ease;
+}
+
+.bg-removal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.btn-bg-ai,
+.btn-bg-fast,
+.btn-bg-restore {
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-bg-ai {
+  flex: 1 1 155px;
+  background-color: var(--primary-light);
+  border: 1px solid var(--primary);
+  color: var(--primary-hover);
+}
+
+.btn-bg-ai:hover:not(:disabled) {
+  background-color: var(--primary);
+  color: #fff;
+}
+
+.btn-bg-fast {
+  flex: 1 1 130px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+}
+
+.btn-bg-fast:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary-hover);
+}
+
+.btn-bg-restore {
+  flex: 0 0 auto;
+  background-color: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+}
+
+.btn-bg-restore:hover:not(:disabled) {
+  border-color: var(--text-muted);
+  color: var(--text-main);
+}
+
+.btn-bg-ai:disabled,
+.btn-bg-fast:disabled,
+.btn-bg-restore:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.bg-fast-tolerance-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.bg-fast-tolerance-row label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.bg-fast-tolerance-row input[type="range"] {
+  width: 100%;
+  accent-color: var(--primary);
+  cursor: pointer;
 }
 
 /* Botões do Modal */

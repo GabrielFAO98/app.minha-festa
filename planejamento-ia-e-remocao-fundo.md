@@ -21,53 +21,23 @@ Para que essas duas funções tenham sucesso comercial no **Minha Festa**, preci
 
 ---
 
-## 2. Funcionalidade 1: Removedor de Fundo da Imagem do Cliente
+## 2. Funcionalidade 1: Removedor de Fundo da Imagem do Cliente (Zero API / R$ 0,00)
 
-Quando a decoradora abre o modal de cadastro de peças ([`InventoryModal`](file:///c:/Users/Usuario/dev/app.minha-festa/src/ui/inventory-modal.ts#L5-L192)) e envia uma foto tirada na garagem ou no depósito, o sistema deve recortar apenas o objeto (vaso, mesa, display, personagem, bolo) com fundo 100% transparente.
+Quando a decoradora abre o modal de cadastro de peças ([`InventoryModal`](file:///c:/Users/Gabriel/dev/app.minha-festa/src/ui/inventory-modal.ts)) e envia uma foto tirada na garagem ou baixada de fornecedor, o sistema recorta o objeto localmente no navegador com custo zero de servidor ou API.
 
-### 2.1. Comparativo de Opções Técnicas
+### 2.1. Arquitetura Híbrida Local (Sem Servidor / Sem Chaves Pagas)
 
-| Opção | Tecnologia / Provedor | Peso no Celular | Qualidade em Vazados (Ripas/Pés) | Tempo Médio | Custo por 1.000 Fotos |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **A. IA no Navegador (Local)** | `@imgly/background-removal` (WASM) | **Alto (Risco de travar)** | Média | 8s a 25s | R$ 0,00 |
-| **B. APIs SaaS Tradicionais** | Remove.bg / Photoroom API | Zero | Excelente | 1,5s | R$ 500,00 a R$ 1.100,00 |
-| **C. Serverless GPU (Recomendada)** | **BiRefNet / BRIA RMBG-2.0 via fal.ai ou Replicate** | **Zero** | **Excelente (Estado da Arte)** | **0,8s a 1,5s** | **R$ 5,50 a R$ 12,00** |
-| **D. Híbrida (Local Leve + Cloud)** | Flood-Fill em fundo branco + BiRefNet na nuvem | Mínimo | Excelente | 0,1s a 1,2s | **R$ 3,00 a R$ 8,00** |
+| Motor | Quando usar | Peso / Tempo | Custo |
+| :--- | :--- | :---: | :---: |
+| **A. Detecção Automática de Transparência + Auto-Trim** | Imagens PNG/WebP já recortadas | 0 MB (~10ms) | **R$ 0,00** |
+| **B. Fundo Claro Rápido (Flood-Fill de Bordas)** | Fotos de catálogo ou parede clara uniforme | 0 MB (~20ms) | **R$ 0,00** |
+| **C. IA Local (`@imgly/background-removal` / `isnet_quint8`)** | Fotos com fundo bagunçado (salão, depósito, quintal) | ~30–40 MB (1ª vez em cache) / ~1–8s | **R$ 0,00** |
 
-### 2.2. A Escolha Recomendada: Opção C/D (BRIA RMBG-2.0 ou BiRefNet via Serverless GPU)
-
-Hoje, os modelos **BRIA RMBG-2.0** e **BiRefNet (Bilateral Reference Network)** superaram o antigo `rembg` (U2Net). Eles conseguem recortar automaticamente:
-- Vãos internos entre os pés de mesas bistrô, mesas cone ripadas e escadas;
-- Contornos finos de arranjos florais e folhas;
-- Displays de chão sem deixar aquela "borda branca" ao redor.
-
-Em vez de pagar R$ 0,50 por foto no Remove.bg, você consome o modelo diretamente em provedores de **GPU Serverless por segundo** (como **fal.ai** ou **Replicate**), onde cada recorte custa entre **US$ 0.001 e US$ 0.002** (cerca de **R$ 0,006 a R$ 0,01 por foto** — ou seja, **1 centavo por peça cadastrada**).
-
-### 2.3. Fluxo de Funcionamento Passo a Passo
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Decoradora
-    participant UI as InventoryModal (Frontend)
-    participant Opt as image-optimizer.ts (Local)
-    participant API as Backend Proxy (Vercel / Cloudflare)
-    participant GPU as fal.ai / Replicate (RMBG-2.0 / BiRefNet)
-
-    User->>UI: Seleciona foto da peça na galeria/câmera
-    UI->>Opt: Redimensiona para máx 1024px (~120KB) em 50ms
-    Opt-->>UI: Retorna imagem leve otimizada
-    User->>UI: Clica em "Remover Fundo com IA ✨"
-    UI->>API: POST /api/remove-bg (envia imagem 120KB)
-    API->>GPU: Executa inferência BRIA RMBG-2.0
-    GPU-->>API: Retorna PNG com transparência (Alpha Mask) em ~1s
-    API-->>UI: Devolve PNG recortado + Auto-Trim (corte de margens vazias)
-    UI->>User: Exibe preview transparente pronto para salvar no acervo
-```
-
-### 2.4. Detalhe Crucial: O "Auto-Trim" (Recorte de Margens Vazias)
-No [`CanvasEngine`](file:///c:/Users/Usuario/dev/app.minha-festa/src/core/canvas-engine.ts), as medidas em centímetros (`widthCm` x `heightCm`) são aplicadas à caixa delimitadora da imagem. Se a IA remover o fundo mas sobrar espaço transparente vazio ao redor do vaso, a peça ficará menor do que deveria no palco.
-- **Solução:** Assim que o PNG transparente voltar da API de IA, uma função leve no próprio navegador (5 linhas de Canvas 2D, execução em 10ms) detecta o primeiro e o último pixel não-transparente (`alpha > 15`) e **corta as bordas vazias automaticamente** (exatamente como fizemos nas mesas pedestal e na escada).
+### 2.2. Boas Práticas Aplicadas no Cliente
+- **Carregamento sob demanda (`dynamic import()`):** o pacote `@imgly/background-removal` não pesa na abertura inicial do app; só é baixado se a usuária clicar em **"Remover Fundo (IA)"**.
+- **Downscale seguro para inferência (`<= 800px`):** protege celulares Android/iPhone com pouca RAM livre.
+- **Auto-Trim + Sugestão Proporcional + WebP Alpha:** remove bordas transparentes vazias ao redor da peça (`alpha > 15`), ajusta altura proporcional quando as medidas ainda não foram editadas manualmente e grava em `image/webp` com canal alpha (~80–150 KB) para economizar IndexedDB.
+- **Hitbox Real por Alpha:** peças próprias salvas no `Meu Acervo` usam `type: 'generic'` com `svgRole: 'photo'`, evitando colisões com máscaras geométricas SVG dos itens padrão.
 
 ---
 

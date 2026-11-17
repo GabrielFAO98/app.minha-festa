@@ -880,6 +880,58 @@ export const SVG_RUG_OVAL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 
   <!-- Costura Overlock de Borda -->
   <ellipse cx="140" cy="60" rx="129.5" ry="50" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-dasharray="4,2" opacity="0.9"/>
 </svg>`;
+export const SVG_TAPETE_PELUCIA_BRANCO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" width="600" height="200">
+  <defs>
+    <radialGradient id="plushGrad" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="65%" stop-color="#f8fafc"/>
+      <stop offset="88%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </radialGradient>
+    <filter id="furEdge" x="-10%" y="-15%" width="120%" height="130%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.14 0.25" numOctaves="3" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="9" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="rugShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+  <g filter="url(#rugShadow)">
+    <ellipse cx="300" cy="100" rx="276" ry="76" fill="url(#plushGrad)" stroke="#e2e8f0" stroke-width="2" filter="url(#furEdge)"/>
+    <ellipse cx="300" cy="96" rx="255" ry="64" fill="none" stroke="#ffffff" stroke-width="3" stroke-opacity="0.7" filter="url(#furEdge)"/>
+  </g>
+</svg>`;
+export const SVG_VASO_CILINDRICO_VIDRO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 300" width="180" height="300">
+  <defs>
+    <linearGradient id="glassBody" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#94a3b8" stop-opacity="0.45"/>
+      <stop offset="12%" stop-color="#ffffff" stop-opacity="0.65"/>
+      <stop offset="28%" stop-color="#e2e8f0" stop-opacity="0.18"/>
+      <stop offset="55%" stop-color="#f8fafc" stop-opacity="0.10"/>
+      <stop offset="78%" stop-color="#cbd5e1" stop-opacity="0.22"/>
+      <stop offset="90%" stop-color="#ffffff" stop-opacity="0.60"/>
+      <stop offset="100%" stop-color="#64748b" stop-opacity="0.42"/>
+    </linearGradient>
+    <linearGradient id="glassSpecular" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="45%" stop-color="#ffffff" stop-opacity="0.72"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="glassBase" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#64748b" stop-opacity="0.55"/>
+      <stop offset="30%" stop-color="#e2e8f0" stop-opacity="0.50"/>
+      <stop offset="70%" stop-color="#cbd5e1" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#475569" stop-opacity="0.55"/>
+    </linearGradient>
+  </defs>
+  <path d="M 30 30 L 30 264 A 60 15 0 0 0 150 264 L 150 30 Z" fill="url(#glassBody)" stroke="#94a3b8" stroke-width="1.2" stroke-opacity="0.65"/>
+  <rect x="42" y="34" width="14" height="226" rx="4" fill="url(#glassSpecular)"/>
+  <rect x="132" y="36" width="5" height="222" rx="2.5" fill="#ffffff" fill-opacity="0.55"/>
+  <path d="M 30 248 A 60 15 0 0 0 150 248 L 150 264 A 60 15 0 0 1 30 264 Z" fill="url(#glassBase)"/>
+  <ellipse cx="90" cy="248" rx="57" ry="13" fill="#ffffff" fill-opacity="0.22" stroke="#cbd5e1" stroke-width="0.9" stroke-opacity="0.65"/>
+  <ellipse cx="90" cy="30" rx="60" ry="14" fill="#f1f5f9" fill-opacity="0.22" stroke="#94a3b8" stroke-width="1.8" stroke-opacity="0.75"/>
+  <ellipse cx="90" cy="30" rx="57" ry="12" fill="none" stroke="#ffffff" stroke-width="1.4" stroke-opacity="0.85"/>
+</svg>`;
 export const SVG_RUG_ROUND = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 260" width="260" height="260">
   <defs>
     <radialGradient id="rugRoundVelvet" cx="45%" cy="40%" r="58%">
@@ -3798,6 +3850,31 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     stockQuantity: 1,
     rentalPrice: 35
   },
+  {
+    id: 'preset-tapete-redondo-pelucia',
+    name: 'Tapete Redondo Pelúcia Branco',
+    category: 'tapetes',
+    type: 'rug_oval',
+    widthCm: 150,
+    heightCm: 50,
+    previewUrl: svgToDataUrl(SVG_TAPETE_PELUCIA_BRANCO),
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 40
+  },
+  {
+    id: 'preset-tapete-redondo-juta',
+    name: 'Tapete Redondo Juta / Sisal',
+    category: 'tapetes',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 150,
+    heightCm: 47,
+    previewUrl: '/items/tapete-redondo-juta-sisal.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 45
+  },
 
   // 5. BANCADA E DISPLAYS
   {
@@ -3838,6 +3915,83 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
   },
 
   // --- ACESSÓRIOS DE MESA REALISTAS (VISTA FRONTAL) ---
+  {
+    id: 'preset-acessorio-neon-parabens',
+    name: 'Letreiro Neon LED "Parabéns"',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 75,
+    heightCm: 20,
+    previewUrl: '/items/acessorio-neon-parabens.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 40
+  },
+  {
+    id: 'preset-acessorio-neon-feliz-aniversario',
+    name: 'Letreiro Neon LED "Feliz Aniversário"',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 80,
+    heightCm: 32,
+    previewUrl: '/items/acessorio-neon-feliz-aniversario.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 45
+  },
+  {
+    id: 'preset-acessorio-bandeja-espelhada-retangular',
+    name: 'Bandeja Retangular Espelhada Prata',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 35,
+    heightCm: 5,
+    previewUrl: '/items/acessorio-bandeja-espelhada-retangular.webp',
+    isCustom: false,
+    stockQuantity: 3,
+    rentalPrice: 20
+  },
+  {
+    id: 'preset-acessorio-vaso-grego-branco',
+    name: 'Vaso Grego / Ânfora Branca de Mesa',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 18,
+    heightCm: 30,
+    previewUrl: '/items/acessorio-vaso-grego-branco.webp',
+    isCustom: false,
+    stockQuantity: 2,
+    rentalPrice: 20
+  },
+  {
+    id: 'preset-acessorio-vaso-cilindrico-vidro',
+    name: 'Vaso Cilíndrico de Vidro Transparente',
+    category: 'acessorios',
+    type: 'generic',
+    widthCm: 15,
+    heightCm: 25,
+    previewUrl: svgToDataUrl(SVG_VASO_CILINDRICO_VIDRO),
+    isCustom: false,
+    stockQuantity: 2,
+    rentalPrice: 15
+  },
+  {
+    id: 'preset-acessorio-arranjo-floral-classico',
+    name: 'Arranjo Floral Clássico (Topo de Vaso)',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 35,
+    heightCm: 30,
+    previewUrl: '/items/acessorio-arranjo-floral-classico.webp',
+    isCustom: false,
+    stockQuantity: 2,
+    rentalPrice: 25
+  },
   {
     id: 'preset-acessorio-boleira-ceramica-branca',
     name: 'Boleira Cerâmica Branca Clássica com Pedestal',

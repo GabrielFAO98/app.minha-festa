@@ -78,6 +78,11 @@ export class CanvasEngine {
   private pinchZoomAnchorDist: number = 1;
   private wheel100Armed: boolean = true;
   private lastWheelZoomOutTime: number = 0;
+  private wheelBelow100Ticks: number = 0;
+  private hasTouchInteractionSnapshot: boolean = false;
+  private touchStartSnapshotSelection: Konva.Group[] = [];
+  private touchStartIsolatedGroupId: string | null = null;
+  private awaitingPinchLift: boolean = false;
 
   // Modo Enquadrar Capa (Pinça + Arraste Direto)
   isRepositioningCover: boolean;
@@ -296,9 +301,11 @@ export class CanvasEngine {
     const stageScaledW = this.VIRTUAL_WIDTH * finalScale;
     const stageScaledH = this.VIRTUAL_HEIGHT * finalScale;
 
-    // Margem ampla e generosa para permitir visualizar e acessar bordas/alças de itens grandes fora do cenário
-    const bleedX = Math.max(containerW * 0.95, 1400 * finalScale);
-    const bleedY = Math.max(containerH * 0.95, 1400 * finalScale);
+    // Em zoom >= 100%, mantém o cenário 100% enquadrado sem exibir margens brancas externas.
+    // Só libera a margem de respiro (bleed) após o usuário forçar o zoom para menos de 100%.
+    const allowOuterBleed = this.zoomLevel < 0.995;
+    const bleedX = allowOuterBleed ? Math.max(containerW * 0.95, 1400 * finalScale) : 0;
+    const bleedY = allowOuterBleed ? Math.max(containerH * 0.95, 1400 * finalScale) : 0;
 
     // Limites de Pan X (impede que o palco saia fora da tela além do limite de respiro)
     let minPanX: number;
@@ -413,6 +420,7 @@ export class CanvasEngine {
     this.panY = 0;
     this.wheel100Armed = true;
     this.lastWheelZoomOutTime = 0;
+    this.wheelBelow100Ticks = 0;
     this.applyViewTransform();
   }
 
@@ -1182,39 +1190,63 @@ export class CanvasEngine {
       this.pendingDragPos = null;
     };
 
-    const abortActiveNodeDrag = (deselectIfNew: boolean) => {
+    const abortTouchItemInteraction = (restorePreTouchSelection: boolean) => {
       this.pendingMultiDeselectNodes = null;
       this.pendingNarrowSelectNode = null;
-      if (!this.draggingNode) return;
 
-      if (this.hasMovedDuringDrag) {
-        if (this.dragStartNodesPositions.size > 0) {
-          this.dragStartNodesPositions.forEach((pos, node) => {
-            node.position({ x: pos.x, y: pos.y });
-          });
-        } else {
-          this.draggingNode.position({ x: this.dragStartNodeX, y: this.dragStartNodeY });
-        }
-        if (this.transformer) {
-          this.transformer.visible(true);
-          (this.transformer as any)._resetTransformCache();
-          this.transformer.update();
-        }
-        if (this.uiLayer) {
-          this.uiLayer.listening(true);
-        }
+      if (this.isRotatingNode && this.selectedNode) {
+        this.selectedNode.rotation(this.rotateNodeStartRotation);
+        this.isRotatingNode = false;
         this.updateCornerActionButtons();
         this.decorLayer?.batchDraw();
         this.uiLayer?.draw();
+      } else {
+        this.isRotatingNode = false;
       }
 
-      this.draggingNode = null;
-      this.pendingDragPos = null;
-      this.hasMovedDuringDrag = false;
-
-      if (deselectIfNew && !this.wasAlreadySelectedOnDown && !this.isRepositioningCover && this.selectedNodes.length <= 1) {
-        this.deselect();
+      if (this.transformer && (this.transformer as any).isTransforming && (this.transformer as any).isTransforming()) {
+        (this.transformer as any).stopTransform();
       }
+
+      if (this.draggingNode) {
+        if (this.hasMovedDuringDrag) {
+          if (this.dragStartNodesPositions.size > 0) {
+            this.dragStartNodesPositions.forEach((pos, node) => {
+              node.position({ x: pos.x, y: pos.y });
+            });
+          } else {
+            this.draggingNode.position({ x: this.dragStartNodeX, y: this.dragStartNodeY });
+          }
+          if (this.transformer) {
+            this.transformer.visible(true);
+            (this.transformer as any)._resetTransformCache();
+            this.transformer.update();
+          }
+          if (this.uiLayer) {
+            this.uiLayer.listening(true);
+          }
+          this.updateCornerActionButtons();
+          this.decorLayer?.batchDraw();
+          this.uiLayer?.draw();
+        }
+        this.draggingNode = null;
+        this.pendingDragPos = null;
+        this.hasMovedDuringDrag = false;
+      }
+
+      if (restorePreTouchSelection && this.hasTouchInteractionSnapshot) {
+        const snapshot = this.touchStartSnapshotSelection.filter((n) => Boolean(n.getLayer()));
+        const changed =
+          snapshot.length !== this.selectedNodes.length ||
+          snapshot.some((n, i) => this.selectedNodes[i] !== n) ||
+          this.isolatedGroupId !== this.touchStartIsolatedGroupId;
+        this.isolatedGroupId = this.touchStartIsolatedGroupId;
+        if (changed) {
+          this.selectNodes(snapshot);
+        }
+      }
+      this.hasTouchInteractionSnapshot = false;
+      this.touchStartSnapshotSelection = [];
     };
 
     const handleDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
@@ -1234,12 +1266,13 @@ export class CanvasEngine {
         this.lastTouchTime = performance.now();
         const touchEvt = rawEvt as TouchEvent;
 
-        // GESTO COM 2 OU MAIS DEDOS NO MOBILE: BLOQUEIA TOTALMENTE SELEÇÃO E ARRASTE DE ITEM
+        // GESTO COM 2 OU MAIS DEDOS NO MOBILE: EXCLUSIVO PARA ZOOM/PINÇA DO PALCO
         if (touchEvt.touches && touchEvt.touches.length >= 2) {
           if (rawEvt.cancelable) rawEvt.preventDefault();
+          this.awaitingPinchLift = false;
 
-          // Aborta qualquer arraste de item que possa ter sido engatilhado pelo 1º dedo instantes antes
-          abortActiveNodeDrag(false);
+          // Cancela qualquer seleção/arraste/rotação iniciada pelo 1º dedo milissegundos antes
+          abortTouchItemInteraction(true);
 
           // 1. Gesto de Pinça na Capa (quando em modo Enquadrar Capa ativo)
           if (this.isRepositioningCover && this.selectedNode) {
@@ -1247,21 +1280,26 @@ export class CanvasEngine {
             return;
           }
 
-          if (!this.wasAlreadySelectedOnDown && this.selectedNodes.length <= 1) {
-            this.deselect();
-          }
-
           // 2. Gesto de Pinça e Pan do Palco Inteiro (apenas 2 dedos)
           startStagePinch(touchEvt.touches[0], touchEvt.touches[1]);
           return;
         }
 
-        if (touchEvt.touches && touchEvt.touches.length > 2) return;
-
-        // Cooldown após soltar a pinça: impede que o dedo residual toque ou arraste acidentalmente um item
-        if (performance.now() - this.lastPinchEndTime < 220) {
+        if (this.awaitingPinchLift) {
           if (rawEvt.cancelable) rawEvt.preventDefault();
           return;
+        }
+
+        // Cooldown após soltar a pinça: impede que o dedo residual toque ou arraste acidentalmente um item
+        if (performance.now() - this.lastPinchEndTime < 260) {
+          if (rawEvt.cancelable) rawEvt.preventDefault();
+          return;
+        }
+
+        if (!this.hasTouchInteractionSnapshot) {
+          this.touchStartSnapshotSelection = [...this.selectedNodes];
+          this.touchStartIsolatedGroupId = this.isolatedGroupId;
+          this.hasTouchInteractionSnapshot = true;
         }
       } else {
         // Ignora mousedown sintético disparado pelo navegador mobile após touchstart
@@ -1438,11 +1476,14 @@ export class CanvasEngine {
     const handleMove = (evt: MouseEvent | TouchEvent) => {
       const isTouch = evt.type.startsWith('touch');
 
-      // DETECÇÃO PRECOCE DE MULTI-TOQUE (2 DEDOS): CANCELA IMEDIATAMENTE QUALQUER ARRASTE DE ITEM
+      // DETECÇÃO PRECOCE DE MULTI-TOQUE (2 DEDOS): CANCELA IMEDIATAMENTE QUALQUER SELEÇÃO OU ARRASTE DE ITEM
       if (isTouch) {
         const touchEvt = evt as TouchEvent;
         if (touchEvt.touches && touchEvt.touches.length >= 2) {
-          abortActiveNodeDrag(true);
+          if (this.awaitingPinchLift) {
+            this.awaitingPinchLift = false;
+          }
+          abortTouchItemInteraction(true);
 
           if (this.isRepositioningCover && this.selectedNode) {
             if (!this.isPinchingCover) {
@@ -1451,6 +1492,8 @@ export class CanvasEngine {
           } else if (!this.isPinchingStage) {
             startStagePinch(touchEvt.touches[0], touchEvt.touches[1]);
           }
+        } else if (this.awaitingPinchLift) {
+          return;
         }
       }
 
@@ -1473,11 +1516,11 @@ export class CanvasEngine {
           const scaleRatio = dist / this.pinchStageStartDist;
           const rawTargetZoom = Math.max(0.4, Math.min(3.5, this.pinchStageStartZoom * scaleRatio));
 
-          // Leve trava no 100%: vindo acima de 100%, para em 100% na mesma pinça;
-          // partindo de 100%, exige pinça intencional para descer abaixo de 100%
+          // Trava firme em 100%: vindo acima de 100%, trava em 100% na mesma pinça;
+          // partindo de 100%, exige pinça bem intencional e forte (>38% de fechamento) para descer abaixo de 100%.
           let targetZoom = rawTargetZoom;
           if (!this.pinchUnlockedBelow100) {
-            if (this.pinchStageStartZoom > 1.01) {
+            if (this.pinchStageStartZoom > 1.002) {
               if (this.pinchLockedAt100) {
                 if (rawTargetZoom > 1.03) {
                   this.pinchLockedAt100 = false;
@@ -1490,7 +1533,8 @@ export class CanvasEngine {
                 targetZoom = 1.0;
               }
             } else if (rawTargetZoom < 1.0) {
-              if (scaleRatio < 0.90) {
+              const strongPinchDelta = this.pinchStageStartDist - dist;
+              if (scaleRatio <= 0.62 && (strongPinchDelta >= 45 || dist <= 45)) {
                 this.pinchUnlockedBelow100 = true;
                 this.pinchZoomAnchorDist = dist;
                 targetZoom = 1.0;
@@ -1713,13 +1757,32 @@ export class CanvasEngine {
         return;
       }
 
+      const isTouch = evt && evt.type.startsWith('touch');
+      const remainingTouches = isTouch ? ((evt as TouchEvent).touches?.length ?? 0) : 0;
+
       if (this.isPinchingStage) {
         this.isPinchingStage = false;
         this.pinchLockedAt100 = false;
         this.lastPinchEndTime = performance.now();
+        this.awaitingPinchLift = isTouch && remainingTouches > 0;
+        this.hasTouchInteractionSnapshot = false;
+        this.touchStartSnapshotSelection = [];
         this.clampPan();
         this.applyViewTransform();
         return;
+      }
+
+      if (this.awaitingPinchLift) {
+        if (!isTouch || remainingTouches === 0) {
+          this.awaitingPinchLift = false;
+          this.lastPinchEndTime = performance.now();
+        }
+        return;
+      }
+
+      if (!isTouch || remainingTouches === 0) {
+        this.hasTouchInteractionSnapshot = false;
+        this.touchStartSnapshotSelection = [];
       }
 
       if (this.isPinchingCover) {
@@ -1828,7 +1891,28 @@ export class CanvasEngine {
       }
     };
 
+    const handleGlobalTouchStart = (evt: TouchEvent) => {
+      if (!evt.touches || evt.touches.length < 2) return;
+      const stageContainer = this.stage?.container();
+      const targetNode = evt.target as Node | null;
+      const insideStage = Boolean(stageContainer && targetNode && stageContainer.contains(targetNode));
+      if (!this.hasTouchInteractionSnapshot && !this.awaitingPinchLift && !insideStage) return;
+      if (this.isPinchingStage || this.isPinchingCover) return;
+
+      if (evt.cancelable) evt.preventDefault();
+      this.lastTouchTime = performance.now();
+      this.awaitingPinchLift = false;
+      abortTouchItemInteraction(true);
+
+      if (this.isRepositioningCover && this.selectedNode) {
+        startCoverPinch(evt.touches[0], evt.touches[1]);
+      } else {
+        startStagePinch(evt.touches[0], evt.touches[1]);
+      }
+    };
+
     this.stage.on('mousedown touchstart', handleDown);
+    window.addEventListener('touchstart', handleGlobalTouchStart, { passive: false });
     window.addEventListener('mousemove', handleMove, { passive: false });
     window.addEventListener('touchmove', handleMove, { passive: false });
     window.addEventListener('mouseup', handleUp);
@@ -1857,11 +1941,12 @@ export class CanvasEngine {
       const zoomFactor = isZoomingOut ? 0.87 : 1.15;
       const now = performance.now();
 
-      // Leve trava no 100% ao diminuir zoom com scroll/trackpad:
-      // para exatamente em 100% na primeira tentativa e só desce após uma nova tentativa depois da trava
+      // Trava firme no 100% ao diminuir zoom com scroll/trackpad:
+      // para exatamente em 100% na primeira tentativa e exige pausa + múltiplas tentativas intencionais para descer
       if (isZoomingOut) {
         if (this.zoomLevel > 1.005) {
           this.wheel100Armed = true;
+          this.wheelBelow100Ticks = 0;
           if (this.zoomLevel * zoomFactor <= 1.005) {
             this.lastWheelZoomOutTime = now;
             this.setZoom(1.0, mouseX, mouseY);
@@ -1869,15 +1954,29 @@ export class CanvasEngine {
           }
         } else if (Math.abs(this.zoomLevel - 1.0) <= 0.005) {
           if (this.wheel100Armed) {
-            if (this.lastWheelZoomOutTime === 0 || now - this.lastWheelZoomOutTime < 350) {
-              this.lastWheelZoomOutTime = now;
+            const elapsed = now - this.lastWheelZoomOutTime;
+            if (this.wheelBelow100Ticks === 0) {
+              if (this.lastWheelZoomOutTime === 0 || elapsed < 450) {
+                this.lastWheelZoomOutTime = now;
+                return;
+              }
+              this.wheelBelow100Ticks = 1;
+            } else if (elapsed > 900) {
+              this.wheelBelow100Ticks = 1;
+            } else {
+              this.wheelBelow100Ticks += 1;
+            }
+            this.lastWheelZoomOutTime = now;
+            if (this.wheelBelow100Ticks < 4) {
               return;
             }
             this.wheel100Armed = false;
+            this.wheelBelow100Ticks = 0;
           }
         }
       } else if (this.zoomLevel * zoomFactor >= 0.995) {
         this.wheel100Armed = true;
+        this.wheelBelow100Ticks = 0;
       }
 
       this.setZoom(this.zoomLevel * zoomFactor, mouseX, mouseY);

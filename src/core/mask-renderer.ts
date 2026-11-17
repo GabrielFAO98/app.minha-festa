@@ -36,6 +36,31 @@ function getRectPanelBounds(type: string, width: number, height: number) {
  * Gera a função de recorte (clipFunc) do Konva baseada no formato geométrico da peça.
  * As coordenadas são proporcionais à largura (width) e altura (height) do nó no palco.
  */
+function tracePlushRugPath(ctx: any, width: number, height: number, scale: number = 1) {
+  const cx = width * 0.5;
+  const cy = height * 0.5;
+  const rx = width * (276 / 600) * scale;
+  const ry = height * (76 / 200) * scale;
+  const tuftRx = width * 0.014 * scale;
+  const tuftRy = height * 0.042 * scale;
+  const steps = 220;
+
+  ctx.beginPath();
+  for (let i = 0; i < steps; i++) {
+    const t = (i / steps) * Math.PI * 2;
+    const wave =
+      Math.sin(t * 29) * 0.42 +
+      Math.cos(t * 53 + 1.1) * 0.33 +
+      Math.sin(t * 97 + 2.4) * 0.25;
+    const spike = (i % 2 === 0 ? 1 : -0.6) * 0.35 + wave * 0.65;
+    const px = cx + (rx + spike * tuftRx) * Math.cos(t);
+    const py = cy + (ry + spike * tuftRy) * Math.sin(t);
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+}
+
 export function createClipFunction(type: string, width: number, height: number) {
   if (type === 'panel_round') {
     const cx = width * 0.5;
@@ -210,6 +235,12 @@ export function createClipFunction(type: string, width: number, height: number) 
     };
   }
 
+  if (type === 'rug_plush') {
+    return (ctx: any) => {
+      tracePlushRugPath(ctx, width, height);
+    };
+  }
+
   if (type === 'rug_round') {
     const cx = width * 0.5;
     const cy = height * 0.5;
@@ -338,6 +369,11 @@ export function calculateCoverPlacement(
     targetY = nodeHeight * (43 / vHeight);
     targetW = nodeWidth * (110 / 320);
     targetH = nodeHeight * ((vHeight - 45) / vHeight);
+  } else if (type === 'rug_plush') {
+    targetX = nodeWidth * (18 / 600);
+    targetY = nodeHeight * (18 / 200);
+    targetW = nodeWidth * (564 / 600);
+    targetH = nodeHeight * (164 / 200);
   }
 
   const baseScale = Math.max(targetW / (imgWidth || 1), targetH / (imgHeight || 1));
@@ -489,6 +525,37 @@ export function createShadingOverlay(type: string, width: number, height: number
     ctx.beginPath();
     ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2, false);
     ctx.fill();
+  } else if (type === 'rug_plush') {
+    const cx = w * 0.5;
+    const cy = h * 0.5;
+    const rx = w * (284 / 600);
+    const ry = h * (82 / 200);
+
+    // Sombreamento radial suave simulando volume de pelo alto
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(1.0, ry / rx);
+    const plushShade = ctx.createRadialGradient(0, -rx * 0.05, rx * 0.18, 0, 0, rx);
+    plushShade.addColorStop(0.0, 'rgba(255, 255, 255, 0.14)');
+    plushShade.addColorStop(0.65, 'rgba(0, 0, 0, 0.0)');
+    plushShade.addColorStop(0.90, 'rgba(15, 23, 42, 0.10)');
+    plushShade.addColorStop(1.0, 'rgba(15, 23, 42, 0.24)');
+    ctx.fillStyle = plushShade;
+    ctx.beginPath();
+    ctx.arc(0, 0, rx, 0, Math.PI * 2, false);
+    ctx.fill();
+    ctx.restore();
+
+    // Camada de textura interna com contorno de tufos de pelúcia
+    tracePlushRugPath(ctx, w, h, 0.92);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.34)';
+    ctx.lineWidth = Math.max(1.4, w * 0.004);
+    ctx.stroke();
+
+    tracePlushRugPath(ctx, w, h, 0.99);
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.18)';
+    ctx.lineWidth = Math.max(1.4, w * 0.004);
+    ctx.stroke();
   } else if (type === 'cube') {
     const scaleX = w / 160;
     const scaleY = h / 235;
@@ -582,6 +649,46 @@ export function createCylinderFloorShadow(width: number, height: number) {
 
   return new Konva.Image({
     name: 'cylinder-floor-shadow',
+    image: offCanvas,
+    width: width,
+    height: height,
+    listening: false
+  });
+}
+
+/**
+ * Cria sombra de contato suave no piso para o tapete de pelúcia quando vestido com capa/estampa.
+ */
+export function createPlushRugFloorShadow(width: number, height: number): Konva.Image {
+  const w = Math.max(1, Math.round(width));
+  const h = Math.max(1, Math.round(height));
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = w;
+  offCanvas.height = h;
+  const ctx = offCanvas.getContext('2d');
+
+  if (ctx) {
+    const cx = w * 0.5;
+    const cy = h * 0.525;
+    const rxShadow = w * (286 / 600);
+    const ryShadow = h * (84 / 200);
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(1.0, ryShadow / rxShadow);
+    const radGrad = ctx.createRadialGradient(0, 0, rxShadow * 0.55, 0, 0, rxShadow);
+    radGrad.addColorStop(0.0, 'rgba(15, 23, 42, 0.22)');
+    radGrad.addColorStop(0.72, 'rgba(15, 23, 42, 0.14)');
+    radGrad.addColorStop(1.0, 'rgba(15, 23, 42, 0)');
+    ctx.fillStyle = radGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, rxShadow, 0, Math.PI * 2, false);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  return new Konva.Image({
+    name: 'rug-floor-shadow',
     image: offCanvas,
     width: width,
     height: height,
@@ -731,6 +838,16 @@ export function isPointInsideMask(type: string, x: number, y: number, width: num
     const cy = height * 0.5;
     const rx = width * (133 / 280);
     const ry = height * (53 / 120);
+    const dx = (x - cx) / rx;
+    const dy = (y - cy) / ry;
+    return (dx * dx + dy * dy) <= 1.0;
+  }
+
+  if (type === 'rug_plush') {
+    const cx = width * 0.5;
+    const cy = height * 0.5;
+    const rx = width * (280 / 600);
+    const ry = height * (80 / 200);
     const dx = (x - cx) / rx;
     const dy = (y - cy) / ry;
     return (dx * dx + dy * dy) <= 1.0;

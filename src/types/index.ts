@@ -44,6 +44,7 @@ export type ItemType =
   | 'rug_round'
   | 'rug_rect_3d'
   | 'rug_oval'
+  | 'rug_plush'
   | 'display'
   | 'moinho'
   | 'generic'

@@ -6,12 +6,13 @@ import {
   isPointInsideMask,
   createShadingOverlay,
   createCylinderFloorShadow,
+  createPlushRugFloorShadow,
   createPanelSupportBase,
   createOrganicBeanTabletopNodeAsync,
   createPleatedShadingOverlay,
   createTopShadingOverlay
 } from './mask-renderer';
-import { generateOrganicBeanTableSVG, generateOrganicBeanTabletopOnlySVG, generateSkirtTableSVG, generateSkirtTablePartSVG, svgToDataUrl } from './presets-data';
+import { generateOrganicBeanTableSVG, generateOrganicBeanTabletopOnlySVG, generatePlushRugSVG, generateSkirtTableSVG, generateSkirtTablePartSVG, svgToDataUrl } from './presets-data';
 export const DEFAULT_SCENARIO_BG = '/cenarios/cenario-boiserie-madeira.jpg';
 import { generateBalloonArchDataUrl } from './balloon-generator';
 import { getItemCustomizationMode, generateModularSvgDataUrl } from './modular-svg-generator';
@@ -1919,7 +1920,7 @@ export class CanvasEngine {
 
           const w = node.width();
           const h = node.height();
-          const rawType = itemMeta?.type || '';
+          const rawType = this.resolveStructuralType(itemMeta);
           let effectiveType = rawType;
           if (rawType.startsWith('table_skirt')) {
             effectiveType = this.activeCoverRepositionPart === 'top' ? (rawType + '_top') : (rawType + '_bottom');
@@ -2133,8 +2134,9 @@ export class CanvasEngine {
         if (imgEl) {
           const imgNatW = (imgEl as any).naturalWidth || imgEl.width;
           const imgNatH = (imgEl as any).naturalHeight || imgEl.height;
+          const effectiveType = this.resolveStructuralType(meta);
           const placement = calculateCoverPlacement(
-            meta.type.startsWith('table_skirt') ? (meta.type + '_bottom') : meta.type,
+            effectiveType.startsWith('table_skirt') ? (effectiveType + '_bottom') : effectiveType,
             w,
             h,
             imgNatW,
@@ -2183,13 +2185,14 @@ export class CanvasEngine {
       return localPt.x >= 0 && localPt.x <= w && localPt.y >= 0 && localPt.y <= h;
     }
 
-    const geometricTypes = ['panel_round', 'panel_arch', 'panel_rect', 'panel_horizontal', 'panel_half_moon', 'cylinder', 'cylinder_fluted', 'rug_oval', 'rug_round', 'rug_rect_3d'];
-    if (meta.type && (geometricTypes.includes(meta.type) || meta.type.startsWith('rug'))) {
-      return isPointInsideMask(meta.type, localPt.x, localPt.y, w, h);
+    const effectiveType = this.resolveStructuralType(meta);
+    const geometricTypes = ['panel_round', 'panel_arch', 'panel_rect', 'panel_horizontal', 'panel_half_moon', 'cylinder', 'cylinder_fluted', 'rug_oval', 'rug_plush', 'rug_round', 'rug_rect_3d'];
+    if (effectiveType && (geometricTypes.includes(effectiveType) || effectiveType.startsWith('rug'))) {
+      return isPointInsideMask(effectiveType, localPt.x, localPt.y, w, h);
     }
 
     if (meta.customColor || meta.customCoverUrl) {
-      return isPointInsideMask(meta.type, localPt.x, localPt.y, w, h);
+      return isPointInsideMask(effectiveType, localPt.x, localPt.y, w, h);
     }
 
     const baseImgNode = group.findOne('.base-image') as Konva.Image | null;
@@ -2412,10 +2415,13 @@ export class CanvasEngine {
       return this.rotation() || 0;
     };
 
-    const svgRole = getItemCustomizationMode(itemData);
+    const normalizedItemData: PresetItem = itemData.id === 'preset-tapete-redondo-pelucia' && itemData.type === 'rug_oval'
+      ? { ...itemData, type: 'rug_plush' }
+      : itemData;
+    const svgRole = getItemCustomizationMode(normalizedItemData);
 
     group.setAttr('itemMeta', {
-      ...itemData,
+      ...normalizedItemData,
       svgRole,
       instanceId: itemData.instanceId || ('inst-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5)),
       customCoverUrl: itemData.customCoverUrl || null,
@@ -2702,6 +2708,14 @@ export class CanvasEngine {
     return true;
   }
 
+  private resolveStructuralType(meta: PresetItem | null | undefined): string {
+    if (!meta) return '';
+    if (meta.id === 'preset-tapete-redondo-pelucia' || meta.type === 'rug_plush') {
+      return 'rug_plush';
+    }
+    return meta.type || '';
+  }
+
   attachSolidColorToNode(node: Konva.Group, colorHex: string | null) {
     const meta = node.getAttr('itemMeta') as PresetItem;
     if (meta.type === 'table_skirt_scallop' || meta.type === 'table_skirt_straight') {
@@ -2711,6 +2725,10 @@ export class CanvasEngine {
       this.updateSkirtTableNode(node);
       return;
     }
+    const effectiveType = this.resolveStructuralType(meta);
+    if (effectiveType === 'rug_plush' && meta.type !== 'rug_plush') {
+      meta.type = 'rug_plush';
+    }
     meta.customColor = colorHex;
     if (colorHex) meta.customCoverUrl = null;
     node.setAttr('itemMeta', meta);
@@ -2719,6 +2737,10 @@ export class CanvasEngine {
     if (existingCoverGroup) {
       existingCoverGroup.destroy();
     }
+    const existingRugShadow = node.findOne('.rug-floor-shadow');
+    if (existingRugShadow) {
+      existingRugShadow.destroy();
+    }
 
     const baseImage = node.findOne('.base-image') as Konva.Image | null;
     const supportBase = node.findOne('.panel-support-base');
@@ -2726,8 +2748,8 @@ export class CanvasEngine {
 
     if (!colorHex) {
       if (baseImage) {
-        if (meta.type.startsWith('table_organic_bean')) {
-          const fullSvg = generateOrganicBeanTableSVG(meta.tabletopColor || '#FAF8F5', '#FFFFFF', meta.type);
+        if (effectiveType.startsWith('table_organic_bean')) {
+          const fullSvg = generateOrganicBeanTableSVG(meta.tabletopColor || '#FAF8F5', '#FFFFFF', effectiveType);
           loadImageAsync(svgToDataUrl(fullSvg)).then((img) => {
             baseImage.image(img);
             this.decorLayer.batchDraw();
@@ -2740,12 +2762,48 @@ export class CanvasEngine {
       return;
     }
 
+    if (effectiveType === 'rug_plush') {
+      if (baseImage) baseImage.visible(true);
+      if (supportBase) supportBase.visible(false);
+      if (tabletopOverlay) tabletopOverlay.visible(false);
+
+      const coloredPlushUrl = svgToDataUrl(generatePlushRugSVG(colorHex));
+      void loadImageAsync(coloredPlushUrl).then((coloredImg) => {
+        const latestMeta = node.getAttr('itemMeta') as PresetItem | undefined;
+        if (!latestMeta || latestMeta.customColor !== colorHex || latestMeta.customCoverUrl) {
+          return;
+        }
+        const staleCover = node.findOne('.cover-group');
+        if (staleCover) staleCover.destroy();
+        const staleShadow = node.findOne('.rug-floor-shadow');
+        if (staleShadow) staleShadow.destroy();
+
+        const coverGroup = new Konva.Group({
+          name: 'cover-group',
+          listening: false
+        });
+        coverGroup.add(new Konva.Image({
+          name: 'solid-color-node',
+          image: coloredImg,
+          x: 0,
+          y: 0,
+          width: node.width(),
+          height: node.height(),
+          listening: false
+        }));
+        node.add(coverGroup);
+        if (baseImage) baseImage.visible(false);
+        this.decorLayer.batchDraw();
+      });
+      return;
+    }
+
     if (baseImage) baseImage.visible(false);
     if (supportBase) supportBase.visible(true);
 
     const w = node.width();
     const h = node.height();
-    const clipFunc = createClipFunction(meta.type, w, h);
+    const clipFunc = createClipFunction(effectiveType, w, h);
 
     const coverGroup = new Konva.Group({
       name: 'cover-group',
@@ -2764,7 +2822,7 @@ export class CanvasEngine {
     });
     coverGroup.add(colorRect);
 
-    const shadingOverlay = createShadingOverlay(meta.type, w, h);
+    const shadingOverlay = createShadingOverlay(effectiveType, w, h);
     if (shadingOverlay) {
       coverGroup.add(shadingOverlay);
     }
@@ -2786,6 +2844,10 @@ export class CanvasEngine {
       await this.updateSkirtTableNode(node);
       return;
     }
+    const effectiveType = this.resolveStructuralType(meta);
+    if (effectiveType === 'rug_plush' && meta.type !== 'rug_plush') {
+      meta.type = 'rug_plush';
+    }
     meta.customCoverUrl = coverImageUrl;
     if (coverImageUrl) meta.customColor = null;
     node.setAttr('itemMeta', meta);
@@ -2794,6 +2856,10 @@ export class CanvasEngine {
     if (existingCoverGroup) {
       existingCoverGroup.destroy();
     }
+    const existingRugShadow = node.findOne('.rug-floor-shadow');
+    if (existingRugShadow) {
+      existingRugShadow.destroy();
+    }
 
     const baseImage = node.findOne('.base-image') as Konva.Image | null;
     const supportBase = node.findOne('.panel-support-base');
@@ -2801,8 +2867,8 @@ export class CanvasEngine {
 
     if (!coverImageUrl) {
       if (baseImage) {
-        if (meta.type.startsWith('table_organic_bean')) {
-          const fullSvg = generateOrganicBeanTableSVG(meta.tabletopColor || '#FAF8F5', '#FFFFFF', meta.type);
+        if (effectiveType.startsWith('table_organic_bean')) {
+          const fullSvg = generateOrganicBeanTableSVG(meta.tabletopColor || '#FAF8F5', '#FFFFFF', effectiveType);
           loadImageAsync(svgToDataUrl(fullSvg)).then((img) => {
             baseImage.image(img);
             this.decorLayer.batchDraw();
@@ -2821,12 +2887,27 @@ export class CanvasEngine {
     const w = node.width();
     const h = node.height();
     const coverImg = await loadImageAsync(coverImageUrl);
-    const clipFunc = createClipFunction(meta.type, w, h);
+    const latestMeta = node.getAttr('itemMeta') as PresetItem | undefined;
+    if (latestMeta && latestMeta.customCoverUrl !== coverImageUrl) {
+      return;
+    }
+
+    const staleCover = node.findOne('.cover-group');
+    if (staleCover) staleCover.destroy();
+    const staleShadow = node.findOne('.rug-floor-shadow');
+    if (staleShadow) staleShadow.destroy();
+
+    if (effectiveType === 'rug_plush') {
+      const floorShadow = createPlushRugFloorShadow(w, h);
+      node.add(floorShadow);
+    }
+
+    const clipFunc = createClipFunction(effectiveType, w, h);
 
     const imgNatW = (coverImg as any).naturalWidth || coverImg.width;
     const imgNatH = (coverImg as any).naturalHeight || coverImg.height;
     const placement = calculateCoverPlacement(
-      meta.type,
+      effectiveType,
       w,
       h,
       imgNatW,
@@ -2854,7 +2935,7 @@ export class CanvasEngine {
 
     coverGroup.add(coverImageNode);
 
-    const shadingOverlay = createShadingOverlay(meta.type, w, h);
+    const shadingOverlay = createShadingOverlay(effectiveType, w, h);
     if (shadingOverlay) {
       coverGroup.add(shadingOverlay);
     }

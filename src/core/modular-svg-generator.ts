@@ -130,6 +130,7 @@ export function getItemCustomizationMode(item: PresetItem | null | undefined): S
     type === 'table_skirt_straight' ||
     type === 'rug_rect_3d' ||
     type === 'rug_oval' ||
+    type === 'rug_plush' ||
     type === 'rug_round'
   ) {
     return 'structural';

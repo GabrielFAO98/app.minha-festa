@@ -880,13 +880,25 @@ export const SVG_RUG_OVAL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 
   <!-- Costura Overlock de Borda -->
   <ellipse cx="140" cy="60" rx="129.5" ry="50" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-dasharray="4,2" opacity="0.9"/>
 </svg>`;
-export const SVG_TAPETE_PELUCIA_BRANCO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" width="600" height="200">
+export function generatePlushRugSVG(colorHex: string = '#ffffff'): string {
+  const normalized = (colorHex || '#ffffff').trim().toLowerCase();
+  const isWhite = normalized === '#ffffff' || normalized === '#fff';
+
+  const stop0 = isWhite ? '#ffffff' : adjustColorBrightness(normalized, 0.28);
+  const stop1 = isWhite ? '#f8fafc' : normalized;
+  const stop2 = isWhite ? '#f1f5f9' : adjustColorBrightness(normalized, -0.08);
+  const stop3 = isWhite ? '#cbd5e1' : adjustColorBrightness(normalized, -0.22);
+  const outerStroke = isWhite ? '#e2e8f0' : adjustColorBrightness(normalized, -0.18);
+  const innerStroke = isWhite ? '#ffffff' : adjustColorBrightness(normalized, 0.36);
+  const innerOpacity = isWhite ? '0.7' : '0.45';
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" width="600" height="200">
   <defs>
     <radialGradient id="plushGrad" cx="50%" cy="45%" r="55%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="65%" stop-color="#f8fafc"/>
-      <stop offset="88%" stop-color="#f1f5f9"/>
-      <stop offset="100%" stop-color="#cbd5e1"/>
+      <stop offset="0%" stop-color="${stop0}"/>
+      <stop offset="65%" stop-color="${stop1}"/>
+      <stop offset="88%" stop-color="${stop2}"/>
+      <stop offset="100%" stop-color="${stop3}"/>
     </radialGradient>
     <filter id="furEdge" x="-10%" y="-15%" width="120%" height="130%">
       <feTurbulence type="fractalNoise" baseFrequency="0.14 0.25" numOctaves="3" result="noise"/>
@@ -897,10 +909,13 @@ export const SVG_TAPETE_PELUCIA_BRANCO = `<svg xmlns="http://www.w3.org/2000/svg
     </filter>
   </defs>
   <g filter="url(#rugShadow)">
-    <ellipse cx="300" cy="100" rx="276" ry="76" fill="url(#plushGrad)" stroke="#e2e8f0" stroke-width="2" filter="url(#furEdge)"/>
-    <ellipse cx="300" cy="96" rx="255" ry="64" fill="none" stroke="#ffffff" stroke-width="3" stroke-opacity="0.7" filter="url(#furEdge)"/>
+    <ellipse cx="300" cy="100" rx="276" ry="76" fill="url(#plushGrad)" stroke="${outerStroke}" stroke-width="2" filter="url(#furEdge)"/>
+    <ellipse cx="300" cy="96" rx="255" ry="64" fill="none" stroke="${innerStroke}" stroke-width="3" stroke-opacity="${innerOpacity}" filter="url(#furEdge)"/>
   </g>
 </svg>`;
+}
+
+export const SVG_TAPETE_PELUCIA_BRANCO = generatePlushRugSVG('#ffffff');
 export const SVG_VASO_CILINDRICO_VIDRO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 300" width="180" height="300">
   <defs>
     <linearGradient id="glassBody" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -3854,7 +3869,7 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     id: 'preset-tapete-redondo-pelucia',
     name: 'Tapete Redondo Pelúcia Branco',
     category: 'tapetes',
-    type: 'rug_oval',
+    type: 'rug_plush',
     widthCm: 150,
     heightCm: 50,
     previewUrl: svgToDataUrl(SVG_TAPETE_PELUCIA_BRANCO),

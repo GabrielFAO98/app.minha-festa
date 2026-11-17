@@ -4,7 +4,7 @@ import {
   autoTrimImage,
   optimizeUserUploadedImage
 } from '../core/image-optimizer';
-import { removeBackgroundLocalAI } from '../core/bg-remover';
+import { preloadBackgroundRemover, removeBackgroundLocalAI } from '../core/bg-remover';
 import type { PresetItem } from '../types';
 
 export class InventoryModal {
@@ -227,6 +227,7 @@ export class InventoryModal {
       } else {
         if (!isInitialEdit) {
           this.applyProportionalHeight(info.width / Math.max(1, info.height));
+          void preloadBackgroundRemover();
         }
         this.setBgStatus('Toque em "Remover Fundo (IA)" para deixar a peça sem fundo.', 'neutral');
       }

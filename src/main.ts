@@ -1,4 +1,5 @@
 import { initDatabase, getItemsByCategory, getProject } from './core/db';
+import { registerAiCacheServiceWorker } from './core/bg-remover';
 import { DEFAULT_PRESET_ITEMS } from './core/presets-data';
 import { CanvasEngine } from './core/canvas-engine';
 import { ScreenManager } from './core/screen-manager';
@@ -17,6 +18,7 @@ import { BalloonStudioModal } from './ui/balloon-studio-modal';
 
 async function bootstrap() {
   const splashStartTime = Date.now();
+  registerAiCacheServiceWorker();
 
   // 1. Inicializar Banco Local IndexedDB (Dexie)
   await initDatabase();

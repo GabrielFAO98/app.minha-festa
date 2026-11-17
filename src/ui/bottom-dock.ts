@@ -938,9 +938,15 @@ export class BottomDock {
 
   syncLayerSelection(selectedId?: string | null): void {
     if (!this.paneLayers) return;
+    const selectedIds = new Set(
+      this.canvasEngine.selectedNodes
+        .map((n) => (n.getAttr('itemMeta') as PresetItem | undefined)?.instanceId)
+        .filter(Boolean)
+    );
+    if (selectedId) selectedIds.add(selectedId);
     this.paneLayers.querySelectorAll('.layer-row-item').forEach((r) => {
       const itemEl = r as HTMLElement;
-      itemEl.classList.toggle('selected', Boolean(selectedId && itemEl.dataset.instanceId === selectedId));
+      itemEl.classList.toggle('selected', Boolean(itemEl.dataset.instanceId && selectedIds.has(itemEl.dataset.instanceId)));
     });
   }
 }

@@ -170,10 +170,17 @@ export class LayersDrawer {
 
   highlightSelected(node: Konva.Group | Konva.Node | null): void {
     if (!this.listEl) return;
-    const meta = node ? node.getAttr('itemMeta') : null;
+    const selectedIds = new Set(
+      this.canvasEngine.selectedNodes
+        .map((n) => (n.getAttr('itemMeta') as PresetItem | undefined)?.instanceId)
+        .filter(Boolean)
+    );
+    const singleId = (node?.getAttr('itemMeta') as PresetItem | undefined)?.instanceId;
+    if (singleId) selectedIds.add(singleId);
+
     this.listEl.querySelectorAll('.layer-item-row').forEach((row) => {
       const htmlRow = row as HTMLElement;
-      htmlRow.classList.toggle('active', !!(meta && htmlRow.dataset.instanceId === meta.instanceId));
+      htmlRow.classList.toggle('active', Boolean(htmlRow.dataset.instanceId && selectedIds.has(htmlRow.dataset.instanceId)));
     });
   }
 }

@@ -72,6 +72,11 @@ export class CanvasEngine {
   private pinchStageStartCenter: { x: number; y: number };
   private pinchStageStartPan: { x: number; y: number };
   private pinchStageStartVirtualFocus: { x: number; y: number };
+  private pinchUnlockedBelow100: boolean = false;
+  private pinchLockedAt100: boolean = false;
+  private pinchZoomAnchorDist: number = 1;
+  private wheel100Armed: boolean = true;
+  private lastWheelZoomOutTime: number = 0;
 
   // Modo Enquadrar Capa (Pinça + Arraste Direto)
   isRepositioningCover: boolean;
@@ -107,6 +112,8 @@ export class CanvasEngine {
   private wasSelectedByCycleOrLayer: boolean;
   private dragCandidatesOnDown: Konva.Group[];
   private pendingDragPos: { x: number; y: number } | null;
+  private pendingMultiDeselectNodes: Konva.Group[] | null = null;
+  private pendingNarrowSelectNode: Konva.Group | null = null;
   private pendingCoverRefresh: boolean;
   private rafId: number | null;
   private lastTouchTime: number;
@@ -403,6 +410,8 @@ export class CanvasEngine {
     this.zoomLevel = 1;
     this.panX = 0;
     this.panY = 0;
+    this.wheel100Armed = true;
+    this.lastWheelZoomOutTime = 0;
     this.applyViewTransform();
   }
 
@@ -1112,10 +1121,108 @@ export class CanvasEngine {
       y: (t1.clientY + t2.clientY) * 0.5
     });
 
+    const startCoverPinch = (t1: Touch, t2: Touch) => {
+      if (!this.selectedNode) return;
+      const meta = this.selectedNode.getAttr('itemMeta') || {};
+      const hasCover = Boolean(meta.customCoverUrl || meta.tabletopCoverUrl);
+      if (!hasCover) return;
+      const center = getTouchCenter(t1, t2);
+      this.isDraggingCoverInternal = false;
+      this.isPinchingCover = true;
+      this.isPinchingStage = false;
+      this.pinchStartDist = Math.max(12, getTouchDistance(t1, t2));
+      this.pinchStartScale = (this.activeCoverRepositionPart === 'top' ? meta.tabletopScale : meta.coverScale) || 1;
+      this.pinchStartCenterX = center.x;
+      this.pinchStartCenterY = center.y;
+      this.dragStartCoverOffsetX = (this.activeCoverRepositionPart === 'top' ? meta.tabletopOffsetX : meta.coverOffsetX) || 0;
+      this.dragStartCoverOffsetY = (this.activeCoverRepositionPart === 'top' ? meta.tabletopOffsetY : meta.coverOffsetY) || 0;
+    };
+
+    const startStagePinch = (t1: Touch, t2: Touch) => {
+      const dist = Math.max(12, getTouchDistance(t1, t2));
+      const center = getTouchCenter(t1, t2);
+      this.isDraggingCoverInternal = false;
+      this.isPinchingCover = false;
+      this.isPinchingStage = true;
+      this.pinchStageStartDist = dist;
+      this.pinchStageStartZoom = this.zoomLevel;
+      this.pinchUnlockedBelow100 = this.zoomLevel < 0.995;
+      this.pinchLockedAt100 = false;
+      this.pinchZoomAnchorDist = dist;
+      this.pinchStageStartCenter = { x: center.x, y: center.y };
+      this.pinchStageStartPan = { x: this.panX, y: this.panY };
+
+      const contentEl = this.stage?.content || this.stage?.container();
+      const rect = contentEl ? contentEl.getBoundingClientRect() : { left: 0, top: 0 };
+      const centerScreenX = (center.x - rect.left) / (this.dragContainerScaleX || 1);
+      const centerScreenY = (center.y - rect.top) / (this.dragContainerScaleY || 1);
+      const startScale = this.baseScale * this.zoomLevel;
+      this.pinchStageStartVirtualFocus = {
+        x: (centerScreenX - (this.baseOffsetX + this.panX)) / (startScale || 1),
+        y: (centerScreenY - (this.baseOffsetY + this.panY)) / (startScale || 1)
+      };
+    };
+
+    const startSelectedNodeDrag = (clientX: number, clientY: number, candidates: Konva.Group[]) => {
+      const unlockedNodes = this.selectedNodes.filter((n) => !n.getAttr('locked'));
+      if (unlockedNodes.length === 0) return;
+
+      this.draggingNode = unlockedNodes[0];
+      this.dragStartClientX = clientX;
+      this.dragStartClientY = clientY;
+      this.dragStartNodeX = this.draggingNode.x();
+      this.dragStartNodeY = this.draggingNode.y();
+      this.dragStartNodesPositions.clear();
+      unlockedNodes.forEach((n) => {
+        this.dragStartNodesPositions.set(n, { x: n.x(), y: n.y() });
+      });
+      this.hasMovedDuringDrag = false;
+      this.dragCandidatesOnDown = candidates;
+      this.pendingDragPos = null;
+    };
+
+    const abortActiveNodeDrag = (deselectIfNew: boolean) => {
+      this.pendingMultiDeselectNodes = null;
+      this.pendingNarrowSelectNode = null;
+      if (!this.draggingNode) return;
+
+      if (this.hasMovedDuringDrag) {
+        if (this.dragStartNodesPositions.size > 0) {
+          this.dragStartNodesPositions.forEach((pos, node) => {
+            node.position({ x: pos.x, y: pos.y });
+          });
+        } else {
+          this.draggingNode.position({ x: this.dragStartNodeX, y: this.dragStartNodeY });
+        }
+        if (this.transformer) {
+          this.transformer.visible(true);
+          (this.transformer as any)._resetTransformCache();
+          this.transformer.update();
+        }
+        if (this.uiLayer) {
+          this.uiLayer.listening(true);
+        }
+        this.updateCornerActionButtons();
+        this.decorLayer?.batchDraw();
+        this.uiLayer?.draw();
+      }
+
+      this.draggingNode = null;
+      this.pendingDragPos = null;
+      this.hasMovedDuringDrag = false;
+
+      if (deselectIfNew && !this.wasAlreadySelectedOnDown && !this.isRepositioningCover && this.selectedNodes.length <= 1) {
+        this.deselect();
+      }
+    };
+
     const handleDown = (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
       if (!this.stage) return;
       const rawEvt = e.evt;
       const isTouch = rawEvt.type.startsWith('touch');
+
+      this.pendingMultiDeselectNodes = null;
+      this.pendingNarrowSelectNode = null;
 
       const contentEl = this.stage.content || this.stage.container();
       const rect = contentEl.getBoundingClientRect();
@@ -1131,60 +1238,20 @@ export class CanvasEngine {
           if (rawEvt.cancelable) rawEvt.preventDefault();
 
           // Aborta qualquer arraste de item que possa ter sido engatilhado pelo 1º dedo instantes antes
-          if (this.draggingNode) {
-            if (this.hasMovedDuringDrag) {
-              this.draggingNode.position({ x: this.dragStartNodeX, y: this.dragStartNodeY });
-            }
-            this.draggingNode = null;
-            this.pendingDragPos = null;
-            this.hasMovedDuringDrag = false;
-          }
+          abortActiveNodeDrag(false);
+
           // 1. Gesto de Pinça na Capa (quando em modo Enquadrar Capa ativo)
           if (this.isRepositioningCover && this.selectedNode) {
-            const meta = this.selectedNode.getAttr('itemMeta') || {};
-            const hasCover = Boolean(meta.customCoverUrl || meta.tabletopCoverUrl);
-            if (hasCover) {
-              const t1 = touchEvt.touches[0];
-              const t2 = touchEvt.touches[1];
-              const center = getTouchCenter(t1, t2);
-              this.isDraggingCoverInternal = false;
-              this.isPinchingCover = true;
-              this.isPinchingStage = false;
-              this.pinchStartDist = Math.max(12, getTouchDistance(t1, t2));
-              this.pinchStartScale = (this.activeCoverRepositionPart === 'top' ? meta.tabletopScale : meta.coverScale) || 1;
-              this.pinchStartCenterX = center.x;
-              this.pinchStartCenterY = center.y;
-              this.dragStartCoverOffsetX = (this.activeCoverRepositionPart === 'top' ? meta.tabletopOffsetX : meta.coverOffsetX) || 0;
-              this.dragStartCoverOffsetY = (this.activeCoverRepositionPart === 'top' ? meta.tabletopOffsetY : meta.coverOffsetY) || 0;
-            }
+            startCoverPinch(touchEvt.touches[0], touchEvt.touches[1]);
             return;
           }
 
-          if (!this.wasAlreadySelectedOnDown) {
+          if (!this.wasAlreadySelectedOnDown && this.selectedNodes.length <= 1) {
             this.deselect();
           }
 
-          // 2. Gesto de Pinça e Pan do Palco Inteiro
-          const t1 = touchEvt.touches[0];
-          const t2 = touchEvt.touches[1];
-          const center = getTouchCenter(t1, t2);
-          this.isDraggingCoverInternal = false;
-          this.isPinchingCover = false;
-          this.isPinchingStage = true;
-          this.pinchStageStartDist = Math.max(12, getTouchDistance(t1, t2));
-          this.pinchStageStartZoom = this.zoomLevel;
-          this.pinchStageStartCenter = { x: center.x, y: center.y };
-          this.pinchStageStartPan = { x: this.panX, y: this.panY };
-
-          const contentEl = this.stage?.content || this.stage?.container();
-          const rect = contentEl ? contentEl.getBoundingClientRect() : { left: 0, top: 0 };
-          const centerScreenX = (center.x - rect.left) / (this.dragContainerScaleX || 1);
-          const centerScreenY = (center.y - rect.top) / (this.dragContainerScaleY || 1);
-          const startScale = this.baseScale * this.zoomLevel;
-          this.pinchStageStartVirtualFocus = {
-            x: (centerScreenX - (this.baseOffsetX + this.panX)) / (startScale || 1),
-            y: (centerScreenY - (this.baseOffsetY + this.panY)) / (startScale || 1)
-          };
+          // 2. Gesto de Pinça e Pan do Palco Inteiro (apenas 2 dedos)
+          startStagePinch(touchEvt.touches[0], touchEvt.touches[1]);
           return;
         }
 
@@ -1241,19 +1308,8 @@ export class CanvasEngine {
       }
 
       // Se clicou/tocou na Alça de Arraste (Move Handle), inicia o arraste da peça selecionada com visão 100% livre
-      if (this.isMoveHandle(e.target) && this.selectedNodes.length > 0 && !this.selectedNodes[0].getAttr('locked')) {
-        this.draggingNode = this.selectedNodes[0];
-        this.dragStartClientX = clientX;
-        this.dragStartClientY = clientY;
-        this.dragStartNodeX = this.selectedNodes[0].x();
-        this.dragStartNodeY = this.selectedNodes[0].y();
-        this.dragStartNodesPositions.clear();
-        this.selectedNodes.forEach((n) => {
-          this.dragStartNodesPositions.set(n, { x: n.x(), y: n.y() });
-        });
-        this.hasMovedDuringDrag = false;
-        this.dragCandidatesOnDown = this.selectedNodes;
-        this.pendingDragPos = null;
+      if (this.isMoveHandle(e.target) && this.selectedNodes.length > 0) {
+        startSelectedNodeDrag(clientX, clientY, this.selectedNodes);
         return;
       }
 
@@ -1283,12 +1339,14 @@ export class CanvasEngine {
 
       if (candidates.length === 0) {
         this.deselect();
-        // Permite arrastar (pan) clicando no fundo vazio
-        this.dragStartClientX = clientX;
-        this.dragStartClientY = clientY;
-        this.pinchStageStartPan = { x: this.panX, y: this.panY };
-        this.isPinchingStage = true;
-        this.pinchStageStartDist = 0; // Marca como pan de 1 ponteiro
+        // No touch, apenas 2 dedos em pinça arrastam o cenário (1 dedo no fundo não arrasta)
+        if (!isTouch) {
+          this.dragStartClientX = clientX;
+          this.dragStartClientY = clientY;
+          this.pinchStageStartPan = { x: this.panX, y: this.panY };
+          this.isPinchingStage = true;
+          this.pinchStageStartDist = 0; // Pan de 1 ponteiro apenas para mouse no desktop
+        }
         return;
       }
 
@@ -1330,49 +1388,50 @@ export class CanvasEngine {
         }
       } else if (isMulti) {
         // Multi-seleção ativa (Shift ou botão Vários)
-        const targetNodes = clickedMeta?.groupId
-          ? this.getSceneNodes().filter((n) => (n.getAttr('itemMeta') as PresetItem | undefined)?.groupId === clickedMeta.groupId)
-          : [clicked];
+        this.wasAlreadySelectedOnDown = false;
+        this.wasSelectedByCycleOrLayer = false;
 
-        let newSelection = [...this.selectedNodes];
-        const isAlreadySelected = targetNodes.some((n) => newSelection.includes(n));
+        const targetNodes =
+          clickedMeta?.groupId && this.isolatedGroupId !== clickedMeta.groupId
+            ? this.getSceneNodes().filter(
+                (n) => (n.getAttr('itemMeta') as PresetItem | undefined)?.groupId === clickedMeta.groupId
+              )
+            : [clicked];
+
+        const isAlreadySelected = targetNodes.every((n) => this.selectedNodes.includes(n));
 
         if (isAlreadySelected) {
-          newSelection = newSelection.filter((n) => !targetNodes.includes(n));
+          // Adia a remoção para o handleUp (caso o usuário não arraste) para permitir arrastar todo o conjunto
+          this.pendingMultiDeselectNodes = targetNodes;
         } else {
+          const newSelection = [...this.selectedNodes];
           targetNodes.forEach((n) => {
             if (!newSelection.includes(n)) newSelection.push(n);
           });
+          this.selectNodes(newSelection);
         }
-        this.selectNodes(newSelection);
       } else {
-        const keepCurrentSelected =
-          Boolean(this.selectedNode && candidates.includes(this.selectedNode)) &&
-          (candidates[0] === this.selectedNode || this.wasSelectedByCycleOrLayer);
-
-        if (keepCurrentSelected && this.selectedNode) {
-          this.wasAlreadySelectedOnDown = true;
-        } else {
+        if (this.selectedNodes.length > 1 && this.selectedNodes.includes(clicked)) {
+          // Clicou em uma das múltiplas peças já selecionadas: mantém todas para permitir o arraste conjunto
           this.wasAlreadySelectedOnDown = false;
           this.wasSelectedByCycleOrLayer = false;
-          this.selectNodes([clicked]);
+          this.pendingNarrowSelectNode = clicked;
+        } else {
+          const keepCurrentSelected =
+            Boolean(this.selectedNode && candidates.includes(this.selectedNode)) &&
+            (candidates[0] === this.selectedNode || this.wasSelectedByCycleOrLayer);
+
+          if (keepCurrentSelected && this.selectedNode) {
+            this.wasAlreadySelectedOnDown = true;
+          } else {
+            this.wasAlreadySelectedOnDown = false;
+            this.wasSelectedByCycleOrLayer = false;
+            this.selectNodes([clicked]);
+          }
         }
       }
 
-      if (this.selectedNodes.length > 0 && !this.selectedNodes[0].getAttr('locked')) {
-        this.draggingNode = this.selectedNodes[0];
-        this.dragStartClientX = clientX;
-        this.dragStartClientY = clientY;
-        this.dragStartNodeX = this.selectedNodes[0].x();
-        this.dragStartNodeY = this.selectedNodes[0].y();
-        this.dragStartNodesPositions.clear();
-        this.selectedNodes.forEach((n) => {
-          this.dragStartNodesPositions.set(n, { x: n.x(), y: n.y() });
-        });
-        this.hasMovedDuringDrag = false;
-        this.dragCandidatesOnDown = candidates;
-        this.pendingDragPos = null;
-      }
+      startSelectedNodeDrag(clientX, clientY, candidates);
     };
 
     const handleMove = (evt: MouseEvent | TouchEvent) => {
@@ -1382,60 +1441,14 @@ export class CanvasEngine {
       if (isTouch) {
         const touchEvt = evt as TouchEvent;
         if (touchEvt.touches && touchEvt.touches.length >= 2) {
-          if (this.draggingNode) {
-            if (this.hasMovedDuringDrag) {
-              this.draggingNode.position({ x: this.dragStartNodeX, y: this.dragStartNodeY });
-            }
-            this.draggingNode = null;
-            this.pendingDragPos = null;
-            this.hasMovedDuringDrag = false;
-            if (!this.wasAlreadySelectedOnDown && !this.isRepositioningCover) {
-              this.deselect();
-            }
-          }
+          abortActiveNodeDrag(true);
 
           if (this.isRepositioningCover && this.selectedNode) {
-            // Em modo de enquadramento da capa: se a pinça ainda não iniciou, inicia agora
             if (!this.isPinchingCover) {
-              const meta = this.selectedNode.getAttr('itemMeta') || {};
-              const hasCover = Boolean(meta.customCoverUrl || meta.tabletopCoverUrl);
-              if (hasCover) {
-                const t1 = touchEvt.touches[0];
-                const t2 = touchEvt.touches[1];
-                const center = getTouchCenter(t1, t2);
-                this.isDraggingCoverInternal = false;
-                this.isPinchingCover = true;
-                this.isPinchingStage = false;
-                this.pinchStartDist = Math.max(12, getTouchDistance(t1, t2));
-                this.pinchStartScale = (this.activeCoverRepositionPart === 'top' ? meta.tabletopScale : meta.coverScale) || 1;
-                this.pinchStartCenterX = center.x;
-                this.pinchStartCenterY = center.y;
-                this.dragStartCoverOffsetX = (this.activeCoverRepositionPart === 'top' ? meta.tabletopOffsetX : meta.coverOffsetX) || 0;
-                this.dragStartCoverOffsetY = (this.activeCoverRepositionPart === 'top' ? meta.tabletopOffsetY : meta.coverOffsetY) || 0;
-              }
+              startCoverPinch(touchEvt.touches[0], touchEvt.touches[1]);
             }
-          } else {
-            // Se ainda não estava em modo pinça de palco (e NÃO está em enquadramento), inicia imediatamente
-            if (!this.isPinchingStage) {
-              const t1 = touchEvt.touches[0];
-              const t2 = touchEvt.touches[1];
-              const center = getTouchCenter(t1, t2);
-              this.isPinchingStage = true;
-              this.pinchStageStartDist = Math.max(12, getTouchDistance(t1, t2));
-              this.pinchStageStartZoom = this.zoomLevel;
-              this.pinchStageStartCenter = { x: center.x, y: center.y };
-              this.pinchStageStartPan = { x: this.panX, y: this.panY };
-
-              const contentEl = this.stage?.content || this.stage?.container();
-              const rect = contentEl ? contentEl.getBoundingClientRect() : { left: 0, top: 0 };
-              const centerScreenX = (center.x - rect.left) / (this.dragContainerScaleX || 1);
-              const centerScreenY = (center.y - rect.top) / (this.dragContainerScaleY || 1);
-              const startScale = this.baseScale * this.zoomLevel;
-              this.pinchStageStartVirtualFocus = {
-                x: (centerScreenX - (this.baseOffsetX + this.panX)) / (startScale || 1),
-                y: (centerScreenY - (this.baseOffsetY + this.panY)) / (startScale || 1)
-              };
-            }
+          } else if (!this.isPinchingStage) {
+            startStagePinch(touchEvt.touches[0], touchEvt.touches[1]);
           }
         }
       }
@@ -1446,41 +1459,68 @@ export class CanvasEngine {
 
         if (isTouch) {
           const touchEvt = evt as TouchEvent;
-          if (touchEvt.touches.length >= 2) {
-            const t1 = touchEvt.touches[0];
-            const t2 = touchEvt.touches[1];
-            const dist = Math.max(12, getTouchDistance(t1, t2));
-            const center = getTouchCenter(t1, t2);
-
-            const scaleRatio = dist / this.pinchStageStartDist;
-            const targetZoom = Math.max(0.4, Math.min(3.5, this.pinchStageStartZoom * scaleRatio));
-            this.zoomLevel = targetZoom;
-
-            // Mantém o centro focal original exatamente estável sob os dois dedos
-            const contentEl = this.stage?.content || this.stage?.container();
-            const rect = contentEl ? contentEl.getBoundingClientRect() : { left: 0, top: 0 };
-            const currentScreenX = (center.x - rect.left) / (this.dragContainerScaleX || 1);
-            const currentScreenY = (center.y - rect.top) / (this.dragContainerScaleY || 1);
-            const newScale = this.baseScale * targetZoom;
-
-            this.panX = currentScreenX - this.baseOffsetX - this.pinchStageStartVirtualFocus.x * newScale;
-            this.panY = currentScreenY - this.baseOffsetY - this.pinchStageStartVirtualFocus.y * newScale;
-            this.clampPan();
-            this.applyViewTransform();
+          if (touchEvt.touches.length < 2) {
+            // No touch, com menos de 2 dedos nunca arrasta o palco
             return;
           }
+
+          const t1 = touchEvt.touches[0];
+          const t2 = touchEvt.touches[1];
+          const dist = Math.max(12, getTouchDistance(t1, t2));
+          const center = getTouchCenter(t1, t2);
+
+          const scaleRatio = dist / this.pinchStageStartDist;
+          const rawTargetZoom = Math.max(0.4, Math.min(3.5, this.pinchStageStartZoom * scaleRatio));
+
+          // Leve trava no 100%: vindo acima de 100%, para em 100% na mesma pinça;
+          // partindo de 100%, exige pinça intencional para descer abaixo de 100%
+          let targetZoom = rawTargetZoom;
+          if (!this.pinchUnlockedBelow100) {
+            if (this.pinchStageStartZoom > 1.01) {
+              if (this.pinchLockedAt100) {
+                if (rawTargetZoom > 1.03) {
+                  this.pinchLockedAt100 = false;
+                  targetZoom = rawTargetZoom;
+                } else {
+                  targetZoom = 1.0;
+                }
+              } else if (rawTargetZoom <= 1.0) {
+                this.pinchLockedAt100 = true;
+                targetZoom = 1.0;
+              }
+            } else if (rawTargetZoom < 1.0) {
+              if (scaleRatio < 0.90) {
+                this.pinchUnlockedBelow100 = true;
+                this.pinchZoomAnchorDist = dist;
+                targetZoom = 1.0;
+              } else {
+                targetZoom = 1.0;
+              }
+            }
+          } else if (this.pinchStageStartZoom >= 0.995) {
+            targetZoom = Math.max(0.4, Math.min(3.5, dist / this.pinchZoomAnchorDist));
+          }
+
+          this.zoomLevel = targetZoom;
+
+          // Mantém o centro focal original exatamente estável sob os dois dedos
+          const contentEl = this.stage?.content || this.stage?.container();
+          const rect = contentEl ? contentEl.getBoundingClientRect() : { left: 0, top: 0 };
+          const currentScreenX = (center.x - rect.left) / (this.dragContainerScaleX || 1);
+          const currentScreenY = (center.y - rect.top) / (this.dragContainerScaleY || 1);
+          const newScale = this.baseScale * targetZoom;
+
+          this.panX = currentScreenX - this.baseOffsetX - this.pinchStageStartVirtualFocus.x * newScale;
+          this.panY = currentScreenY - this.baseOffsetY - this.pinchStageStartVirtualFocus.y * newScale;
+          this.clampPan();
+          this.applyViewTransform();
+          return;
         }
 
-        // Pan com 1 ponteiro (mouse ou 1 dedo em fundo vazio)
-        const clientX = isTouch
-          ? (evt as TouchEvent).touches[0].clientX
-          : (evt as MouseEvent).clientX;
-        const clientY = isTouch
-          ? (evt as TouchEvent).touches[0].clientY
-          : (evt as MouseEvent).clientY;
-
-        const screenDx = (clientX - this.dragStartClientX) / (this.dragContainerScaleX || 1);
-        const screenDy = (clientY - this.dragStartClientY) / (this.dragContainerScaleY || 1);
+        // Pan com 1 ponteiro (apenas mouse no desktop em fundo vazio)
+        const mouseEvt = evt as MouseEvent;
+        const screenDx = (mouseEvt.clientX - this.dragStartClientX) / (this.dragContainerScaleX || 1);
+        const screenDy = (mouseEvt.clientY - this.dragStartClientY) / (this.dragContainerScaleY || 1);
         this.panX = this.pinchStageStartPan.x + screenDx;
         this.panY = this.pinchStageStartPan.y + screenDy;
         this.clampPan();
@@ -1641,14 +1681,11 @@ export class CanvasEngine {
 
         // Permite transbordamento generoso para elementos decorativos grandes (arcos de balões, tapetes, displays)
         const MARGIN = 1400;
-        if (this.selectedNodes.length > 1) {
-          this.selectedNodes.forEach((n) => {
-            const startPos = this.dragStartNodesPositions.get(n);
-            if (startPos) {
-              const nx = Math.max(-MARGIN, Math.min(this.VIRTUAL_WIDTH + MARGIN, startPos.x + virtualDx));
-              const ny = Math.max(-MARGIN, Math.min(this.VIRTUAL_HEIGHT + MARGIN, startPos.y + virtualDy));
-              n.position({ x: nx, y: ny });
-            }
+        if (this.dragStartNodesPositions.size > 1) {
+          this.dragStartNodesPositions.forEach((startPos, n) => {
+            const nx = Math.max(-MARGIN, Math.min(this.VIRTUAL_WIDTH + MARGIN, startPos.x + virtualDx));
+            const ny = Math.max(-MARGIN, Math.min(this.VIRTUAL_HEIGHT + MARGIN, startPos.y + virtualDy));
+            n.position({ x: nx, y: ny });
           });
           this.scheduleFastDraw();
         } else {
@@ -1677,6 +1714,7 @@ export class CanvasEngine {
 
       if (this.isPinchingStage) {
         this.isPinchingStage = false;
+        this.pinchLockedAt100 = false;
         this.lastPinchEndTime = performance.now();
         this.clampPan();
         this.applyViewTransform();
@@ -1718,7 +1756,20 @@ export class CanvasEngine {
         return;
       }
 
-      if (!this.draggingNode) return;
+      const pendingDeselect = this.pendingMultiDeselectNodes;
+      const pendingNarrow = this.pendingNarrowSelectNode;
+      this.pendingMultiDeselectNodes = null;
+      this.pendingNarrowSelectNode = null;
+
+      if (!this.draggingNode) {
+        if (pendingDeselect && pendingDeselect.length > 0) {
+          const remaining = this.selectedNodes.filter((n) => !pendingDeselect.includes(n));
+          this.selectNodes(remaining);
+        } else if (pendingNarrow) {
+          this.selectNodes([pendingNarrow]);
+        }
+        return;
+      }
 
       const moved = this.hasMovedDuringDrag;
       const finalPos = this.pendingDragPos;
@@ -1755,8 +1806,19 @@ export class CanvasEngine {
         this.updateCornerActionButtons();
         this.uiLayer?.draw();
 
-        // Toque rápido sem arrastar: se havia mais de 1 peça sobreposta, alterna para a peça de baixo
-        if (this.wasAlreadySelectedOnDown && this.dragCandidatesOnDown.length > 1 && this.selectedNode) {
+        if (pendingDeselect && pendingDeselect.length > 0) {
+          const remaining = this.selectedNodes.filter((n) => !pendingDeselect.includes(n));
+          this.selectNodes(remaining);
+        } else if (pendingNarrow) {
+          this.selectNodes([pendingNarrow]);
+        } else if (
+          this.wasAlreadySelectedOnDown &&
+          this.dragCandidatesOnDown.length > 1 &&
+          this.selectedNode &&
+          this.selectedNodes.length === 1 &&
+          !this.isMultiSelectMode
+        ) {
+          // Toque rápido sem arrastar em peça única: se havia mais de 1 peça sobreposta, alterna para a peça de baixo
           const currentIndex = this.dragCandidatesOnDown.indexOf(this.selectedNode);
           const nextIndex = (currentIndex + 1) % this.dragCandidatesOnDown.length;
           this.wasSelectedByCycleOrLayer = true;
@@ -1790,7 +1852,33 @@ export class CanvasEngine {
       const rect = contentEl ? contentEl.getBoundingClientRect() : { left: 0, top: 0 };
       const mouseX = (e.evt.clientX - rect.left) / (this.dragContainerScaleX || 1);
       const mouseY = (e.evt.clientY - rect.top) / (this.dragContainerScaleY || 1);
-      const zoomFactor = e.evt.deltaY < 0 ? 1.15 : 0.87;
+      const isZoomingOut = e.evt.deltaY > 0;
+      const zoomFactor = isZoomingOut ? 0.87 : 1.15;
+      const now = performance.now();
+
+      // Leve trava no 100% ao diminuir zoom com scroll/trackpad:
+      // para exatamente em 100% na primeira tentativa e só desce após uma nova tentativa depois da trava
+      if (isZoomingOut) {
+        if (this.zoomLevel > 1.005) {
+          this.wheel100Armed = true;
+          if (this.zoomLevel * zoomFactor <= 1.005) {
+            this.lastWheelZoomOutTime = now;
+            this.setZoom(1.0, mouseX, mouseY);
+            return;
+          }
+        } else if (Math.abs(this.zoomLevel - 1.0) <= 0.005) {
+          if (this.wheel100Armed) {
+            if (this.lastWheelZoomOutTime === 0 || now - this.lastWheelZoomOutTime < 350) {
+              this.lastWheelZoomOutTime = now;
+              return;
+            }
+            this.wheel100Armed = false;
+          }
+        }
+      } else if (this.zoomLevel * zoomFactor >= 0.995) {
+        this.wheel100Armed = true;
+      }
+
       this.setZoom(this.zoomLevel * zoomFactor, mouseX, mouseY);
     });
   }
@@ -2412,11 +2500,13 @@ export class CanvasEngine {
       this.exitCoverRepositionMode(false);
     }
 
-    if (this.isolatedGroupId && (!nodes[0] || (nodes[0].getAttr('itemMeta') as PresetItem | undefined)?.groupId !== this.isolatedGroupId)) {
+    const cleanNodes = Array.from(new Set(nodes.filter((n) => n && Boolean(n.getLayer()))));
+
+    if (this.isolatedGroupId && (!cleanNodes[0] || (cleanNodes[0].getAttr('itemMeta') as PresetItem | undefined)?.groupId !== this.isolatedGroupId)) {
       this.isolatedGroupId = null;
     }
 
-    nodes.forEach((node) => {
+    cleanNodes.forEach((node) => {
       if (node && !(node as any).__patchedRotation) {
         (node as any).__patchedRotation = true;
         (node as any).getAbsoluteRotation = function () {
@@ -2425,12 +2515,12 @@ export class CanvasEngine {
       }
     });
 
-    this.selectedNodes = [...nodes];
-    this.selectedNode = nodes[0] || null;
+    this.selectedNodes = cleanNodes;
+    this.selectedNode = cleanNodes[0] || null;
 
-    if (this.transformer && nodes.length > 0) {
+    if (this.transformer && cleanNodes.length > 0) {
       this.transformer.padding(4);
-      this.transformer.nodes(nodes);
+      this.transformer.nodes(cleanNodes);
     } else {
       this.transformer?.nodes([]);
     }

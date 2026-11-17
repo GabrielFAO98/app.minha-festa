@@ -4426,6 +4426,32 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 28
+  },
+  {
+    id: 'preset-display-cerejinha-laco',
+    name: 'Display Cereja Vermelha com Laço',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 28,
+    heightCm: 45,
+    previewUrl: '/items/display-cerejinha-laco.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 22
+  },
+  {
+    id: 'preset-display-cerejinha-trio',
+    name: 'Display Trio de Cerejas MDF',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 40,
+    heightCm: 46,
+    previewUrl: '/items/display-cerejinha-trio.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 25
   }
 ];
 

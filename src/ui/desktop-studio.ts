@@ -517,13 +517,18 @@ export class DesktopStudio {
     const btnCover = document.getElementById('btn-desktop-cover');
     const framingPanel = document.getElementById('desktop-cover-framing-panel');
 
-    // Sincroniza o destaque de camada ativa na lista do painel
+    // Sincroniza o destaque de camada ativa na lista do painel (suporta múltipla seleção)
     const listEl = document.getElementById('desktop-layers-list');
     if (listEl) {
-      const selectedId = meta?.instanceId || null;
+      const selectedIds = new Set(
+        this.canvasEngine.selectedNodes
+          .map((n) => (n.getAttr('itemMeta') as PresetItem | undefined)?.instanceId)
+          .filter(Boolean)
+      );
+      if (meta?.instanceId) selectedIds.add(meta.instanceId);
       listEl.querySelectorAll('.layer-row-item').forEach((r) => {
         const itemEl = r as HTMLElement;
-        itemEl.classList.toggle('selected', Boolean(selectedId && itemEl.dataset.instanceId === selectedId));
+        itemEl.classList.toggle('selected', Boolean(itemEl.dataset.instanceId && selectedIds.has(itemEl.dataset.instanceId)));
       });
     }
 

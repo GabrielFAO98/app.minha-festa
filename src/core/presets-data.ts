@@ -4190,6 +4190,19 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     rentalPrice: 20
   },
   {
+    id: 'preset-acessorio-capim-pampas-vaso',
+    name: 'Arranjo Capim dos Pampas com Vaso Terracota',
+    category: 'acessorios',
+    type: 'generic',
+    svgRole: 'photo',
+    widthCm: 34,
+    heightCm: 52,
+    previewUrl: '/items/acessorio-capim-pampas-vaso.webp',
+    isCustom: false,
+    stockQuantity: 2,
+    rentalPrice: 28
+  },
+  {
     id: 'preset-acessorio-pelucia-girafa',
     name: 'Pelúcia Safari Baby - Girafinha Sentada',
     category: 'acessorios',
@@ -4467,6 +4480,86 @@ export const DEFAULT_PRESET_ITEMS: PresetItem[] = [
     isCustom: false,
     stockQuantity: 1,
     rentalPrice: 25
+  },
+
+  // --- DISPLAYS TEMÁTICOS CURADOS (JARDIM, FAZENDINHA, 15 ANOS, REVELAÇÃO, FUTEBOL) ---
+  {
+    id: 'preset-display-jardim-cogumelo',
+    name: 'Display Cogumelo Encantado Vermelho',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 47,
+    heightCm: 46,
+    previewUrl: '/items/display-jardim-cogumelo.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 25
+  },
+  {
+    id: 'preset-display-jardim-regador-flores',
+    name: 'Display Regador Vintage Floral',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 32,
+    heightCm: 22,
+    previewUrl: '/items/display-jardim-regador-flores.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 20
+  },
+  {
+    id: 'preset-display-fazendinha-celeiro',
+    name: 'Display Celeiro Vermelho Fazendinha',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 65,
+    heightCm: 64,
+    previewUrl: '/items/display-fazendinha-celeiro.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 35
+  },
+  {
+    id: 'preset-display-15anos-letreiro',
+    name: 'Letreiro "Meus 15 Anos" Dourado',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 47,
+    heightCm: 26,
+    previewUrl: '/items/display-15anos-letreiro.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 25
+  },
+  {
+    id: 'preset-display-revelacao-nuvem',
+    name: 'Display Nuvem Madeira Pinus',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 37,
+    heightCm: 22,
+    previewUrl: '/items/display-revelacao-nuvem.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 20
+  },
+  {
+    id: 'preset-display-futebol-bola',
+    name: 'Bola de Futebol Realista 3D',
+    category: 'displays',
+    type: 'display',
+    svgRole: 'photo',
+    widthCm: 26,
+    heightCm: 26,
+    previewUrl: '/items/display-futebol-bola.webp',
+    isCustom: false,
+    stockQuantity: 1,
+    rentalPrice: 20
   }
 ];
 

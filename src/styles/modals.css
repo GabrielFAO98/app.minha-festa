@@ -87,11 +87,16 @@
 
 .modal-body {
   padding: 20px;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.modal-body > * {
+  flex-shrink: 0;
 }
 
 .modal-footer {
@@ -114,6 +119,85 @@
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-muted);
+}
+
+.form-label-optional {
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+/* Dropdown de campos opcionais (Medidas, Estoque, Valor) */
+.inventory-optional-details {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-surface-elevated);
+  overflow: hidden;
+  transition: border-color var(--transition-fast);
+}
+
+.inventory-optional-details[open] {
+  border-color: rgba(181, 137, 56, 0.45);
+}
+
+.inventory-optional-summary {
+  list-style: none;
+  min-height: 46px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--text-main);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.inventory-optional-summary::-webkit-details-marker {
+  display: none;
+}
+
+.inventory-optional-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inventory-optional-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--primary-soft-text);
+  background-color: var(--primary-light);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.inventory-optional-chevron {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.inventory-optional-details[open] .inventory-optional-chevron {
+  transform: rotate(180deg);
+  color: var(--primary);
+}
+
+.inventory-optional-content {
+  padding: 4px 14px 14px;
+  border-top: 1px solid var(--border-subtle);
+  background-color: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inventory-optional-hint {
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+  margin-top: 8px;
 }
 
 .form-input, .form-select, .form-textarea {
@@ -306,6 +390,11 @@
 
 /* Botões do Modal */
 .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-height: 44px;
   height: 44px;
   padding: 0 18px;
   border-radius: var(--radius-md);
@@ -320,14 +409,29 @@
   transition: all var(--transition-fast);
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background-color: var(--primary-hover);
   border-color: var(--primary-hover);
 }
 
-.btn-primary:active {
+.btn-primary:active:not(:disabled) {
   transform: scale(0.97);
   filter: brightness(0.95);
+}
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.inventory-save-btn {
+  margin-top: 4px;
+  width: 100%;
+  min-height: 46px;
+  height: 46px;
+  font-weight: 700;
 }
 
 .btn-whatsapp {

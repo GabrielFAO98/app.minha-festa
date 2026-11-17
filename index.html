@@ -818,7 +818,7 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
-      <form id="inventory-form" class="modal-body">
+      <form id="inventory-form" class="modal-body" novalidate>
         <input type="hidden" id="item-edit-id" value="" />
         <div class="form-group">
           <label class="form-label">Foto da Peça (Câmera ou Galeria)</label>
@@ -855,46 +855,62 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="item-name-input">Nome da Peça</label>
-          <input type="text" id="item-name-input" class="form-input" placeholder="Ex: Mesa Sextavada Dourada" required />
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="item-category-input">Categoria</label>
-            <select id="item-category-input" class="form-select">
-              <option value="paineis">Painéis</option>
-              <option value="cilindros">Cilindros</option>
-              <option value="mesas">Mesas e Móveis</option>
-            <option value="baloes">Balões e Arcos</option>
-              <option value="tapetes">Tapetes</option>
-              <option value="displays">Displays</option>
-              <option value="acessorios">Acessórios / Mesa</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="item-stock-input">Qtd. Estoque</label>
-            <input type="number" id="item-stock-input" class="form-input" value="1" min="1" required />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="item-width-input">Largura (cm)</label>
-            <input type="number" id="item-width-input" class="form-input" value="60" min="10" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="item-height-input">Altura (cm)</label>
-            <input type="number" id="item-height-input" class="form-input" value="80" min="10" required />
-          </div>
+          <label class="form-label" for="item-name-input">Nome da Peça <span class="form-label-optional">(opcional)</span></label>
+          <input type="text" id="item-name-input" class="form-input" placeholder="Ex: Mesa Sextavada Dourada" />
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="item-price-input">Valor de Locação (R$)</label>
-          <input type="number" id="item-price-input" class="form-input" placeholder="0,00" step="0.5" min="0" />
+          <label class="form-label" for="item-category-input">Categoria</label>
+          <select id="item-category-input" class="form-select">
+            <option value="paineis">Painéis</option>
+            <option value="cilindros">Cilindros</option>
+            <option value="mesas">Mesas e Móveis</option>
+            <option value="baloes">Balões e Arcos</option>
+            <option value="tapetes">Tapetes</option>
+            <option value="displays">Displays</option>
+            <option value="acessorios">Acessórios / Mesa</option>
+          </select>
         </div>
 
-        <button type="submit" id="btn-save-inventory" class="btn-primary" style="margin-top: 6px; width: 100%;">
+        <details id="inventory-optional-details" class="inventory-optional-details">
+          <summary class="inventory-optional-summary">
+            <span class="inventory-optional-title">
+              Medidas, estoque e valor
+              <span class="inventory-optional-badge">Opcional</span>
+            </span>
+            <svg class="inventory-optional-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </summary>
+
+          <div class="inventory-optional-content">
+            <p class="inventory-optional-hint">Se não preencher, a peça entra com medida padrão proporcional e estoque 1.</p>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="item-width-input">Largura (cm)</label>
+                <input type="number" id="item-width-input" class="form-input" placeholder="60" min="1" step="1" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="item-height-input">Altura (cm)</label>
+                <input type="number" id="item-height-input" class="form-input" placeholder="80" min="1" step="1" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="item-stock-input">Qtd. Estoque</label>
+                <input type="number" id="item-stock-input" class="form-input" placeholder="1" min="1" step="1" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="item-price-input">Valor de Locação (R$)</label>
+                <input type="number" id="item-price-input" class="form-input" placeholder="0,00" step="0.5" min="0" />
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <button type="submit" id="btn-save-inventory" class="btn-primary inventory-save-btn">
           Salvar no Meu Acervo
         </button>
       </form>

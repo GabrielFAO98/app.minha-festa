@@ -30,12 +30,15 @@ export class InventoryModal {
 
   widthInputEl: HTMLInputElement | null;
   heightInputEl: HTMLInputElement | null;
+  optionalDetailsEl: HTMLDetailsElement | null;
 
   currentImageData: string | null;
   originalImageData: string | null;
   editingItemId: string | null;
   isProcessingBg: boolean;
+  isSaving: boolean;
   hasManualDimensions: boolean;
+  defaultHeightCm: number;
   private sessionSeq: number;
 
   constructor(
@@ -64,12 +67,15 @@ export class InventoryModal {
 
     this.widthInputEl = document.getElementById('item-width-input') as HTMLInputElement | null;
     this.heightInputEl = document.getElementById('item-height-input') as HTMLInputElement | null;
+    this.optionalDetailsEl = document.getElementById('inventory-optional-details') as HTMLDetailsElement | null;
 
     this.currentImageData = null;
     this.originalImageData = null;
     this.editingItemId = null;
     this.isProcessingBg = false;
+    this.isSaving = false;
     this.hasManualDimensions = false;
+    this.defaultHeightCm = 80;
     this.sessionSeq = 0;
 
     this.setupEvents();
@@ -120,7 +126,18 @@ export class InventoryModal {
     this.isProcessingBg = active;
     if (this.btnRemoveBgAi) this.btnRemoveBgAi.disabled = active;
     if (this.btnRestoreOriginal) this.btnRestoreOriginal.disabled = active;
-    if (this.submitBtn) this.submitBtn.disabled = active;
+    if (this.submitBtn) this.submitBtn.disabled = active || this.isSaving;
+  }
+
+  private setSavingState(saving: boolean): void {
+    this.isSaving = saving;
+    if (!this.submitBtn) return;
+    this.submitBtn.disabled = saving || this.isProcessingBg;
+    if (saving) {
+      this.submitBtn.textContent = 'Salvando...';
+    } else {
+      this.submitBtn.textContent = this.editingItemId ? 'Salvar Alterações' : 'Salvar no Meu Acervo';
+    }
   }
 
   private applyProportionalHeight(aspectRatio: number): void {
@@ -130,7 +147,11 @@ export class InventoryModal {
     }
     const widthCm = Number(this.widthInputEl.value) || 60;
     const nextHeight = Math.max(10, Math.min(400, Math.round(widthCm / aspectRatio)));
-    this.heightInputEl.value = String(nextHeight);
+    this.defaultHeightCm = nextHeight;
+    this.heightInputEl.placeholder = String(nextHeight);
+    if (this.heightInputEl.value.trim()) {
+      this.heightInputEl.value = String(nextHeight);
+    }
   }
 
   private async runLocalAiCutout(): Promise<void> {
@@ -258,7 +279,7 @@ export class InventoryModal {
 
     this.formEl?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (this.isProcessingBg) return;
+      if (this.isProcessingBg || this.isSaving) return;
 
       if (!this.currentImageData) {
         alert('Por favor, selecione uma foto para a peça do seu acervo.');
@@ -272,61 +293,76 @@ export class InventoryModal {
       const stockInput = document.getElementById('item-stock-input') as HTMLInputElement | null;
       const priceInput = document.getElementById('item-price-input') as HTMLInputElement | null;
 
+      const rawWidth = widthInput?.value.trim() ? Number(widthInput.value) : NaN;
+      const rawHeight = heightInput?.value.trim() ? Number(heightInput.value) : NaN;
+      const rawStock = stockInput?.value.trim() ? Number(stockInput.value) : NaN;
+      const rawPrice = priceInput?.value.trim() ? Number(priceInput.value) : NaN;
+
       const name = nameInput?.value.trim() || 'Nova Peça';
       const category = categoryInput?.value || 'paineis';
-      const widthCm = Number(widthInput?.value) || 50;
-      const heightCm = Number(heightInput?.value) || 50;
-      const stockQuantity = Number(stockInput?.value) || 1;
-      const rentalPrice = Number(priceInput?.value) || 0;
+      const widthCm = Number.isFinite(rawWidth) && rawWidth > 0 ? Math.round(rawWidth) : 60;
+      const heightCm = Number.isFinite(rawHeight) && rawHeight > 0 ? Math.round(rawHeight) : this.defaultHeightCm;
+      const stockQuantity = Number.isFinite(rawStock) && rawStock > 0 ? Math.round(rawStock) : 1;
+      const rentalPrice = Number.isFinite(rawPrice) && rawPrice >= 0 ? rawPrice : 0;
 
       // Fotos próprias do usuário sempre usam recorte por alpha real ('generic'),
       // evitando colisões com máscaras geométricas SVG de painéis/cilindros/mesas de fábrica.
       const type = 'generic';
 
-      if (this.editingItemId) {
-        const updated = await updateCustomItem(this.editingItemId, {
-          name,
-          category,
-          type,
-          svgRole: 'photo',
-          widthCm,
-          heightCm,
-          previewUrl: this.currentImageData,
-          stockQuantity,
-          rentalPrice
-        });
-        this.close();
-        if (updated && this.onItemUpdated) {
-          this.onItemUpdated(updated);
+      this.setSavingState(true);
+      try {
+        if (this.editingItemId) {
+          const updated = await updateCustomItem(this.editingItemId, {
+            name,
+            category,
+            type,
+            svgRole: 'photo',
+            widthCm,
+            heightCm,
+            previewUrl: this.currentImageData,
+            stockQuantity,
+            rentalPrice
+          });
+          this.close();
+          if (updated && this.onItemUpdated) {
+            this.onItemUpdated(updated);
+          }
+        } else {
+          const newItem = await addCustomItem({
+            name,
+            category,
+            type,
+            svgRole: 'photo',
+            widthCm,
+            heightCm,
+            previewUrl: this.currentImageData,
+            stockQuantity,
+            rentalPrice
+          });
+          this.close();
+          if (this.onItemCreated) {
+            this.onItemCreated(newItem);
+          }
         }
-      } else {
-        const newItem = await addCustomItem({
-          name,
-          category,
-          type,
-          svgRole: 'photo',
-          widthCm,
-          heightCm,
-          previewUrl: this.currentImageData,
-          stockQuantity,
-          rentalPrice
-        });
-        this.close();
-        if (this.onItemCreated) {
-          this.onItemCreated(newItem);
-        }
+      } catch (err) {
+        console.error('[InventoryModal] Erro ao salvar peça:', err);
+        alert('Não foi possível salvar a peça. Tente novamente.');
+      } finally {
+        this.setSavingState(false);
       }
     });
   }
 
   open(itemToEdit?: PresetItem): void {
     this.hasManualDimensions = false;
+    if (this.optionalDetailsEl) this.optionalDetailsEl.open = false;
 
     if (itemToEdit) {
       this.editingItemId = itemToEdit.id;
       this.hasManualDimensions = true;
+      this.defaultHeightCm = itemToEdit.heightCm || 80;
       if (this.titleEl) this.titleEl.textContent = 'Editar Peça do Acervo';
-      if (this.submitBtn) this.submitBtn.textContent = 'Salvar Alterações';
+      this.setSavingState(false);
 
       const nameInput = document.getElementById('item-name-input') as HTMLInputElement | null;
       const categoryInput = document.getElementById('item-category-input') as HTMLSelectElement | null;
@@ -335,9 +371,15 @@ export class InventoryModal {
 
       if (nameInput) nameInput.value = itemToEdit.name;
       if (categoryInput) categoryInput.value = itemToEdit.category || 'paineis';
-      if (this.widthInputEl) this.widthInputEl.value = String(itemToEdit.widthCm || 50);
-      if (this.heightInputEl) this.heightInputEl.value = String(itemToEdit.heightCm || 50);
-      if (stockInput) stockInput.value = String(itemToEdit.stockQuantity || 1);
+      if (this.widthInputEl) {
+        this.widthInputEl.value = itemToEdit.widthCm ? String(itemToEdit.widthCm) : '';
+        this.widthInputEl.placeholder = '60';
+      }
+      if (this.heightInputEl) {
+        this.heightInputEl.value = itemToEdit.heightCm ? String(itemToEdit.heightCm) : '';
+        this.heightInputEl.placeholder = '80';
+      }
+      if (stockInput) stockInput.value = itemToEdit.stockQuantity ? String(itemToEdit.stockQuantity) : '';
       if (priceInput) priceInput.value = itemToEdit.rentalPrice ? String(itemToEdit.rentalPrice) : '';
 
       if (itemToEdit.previewUrl) {
@@ -348,8 +390,8 @@ export class InventoryModal {
     } else {
       this.editingItemId = null;
       if (this.titleEl) this.titleEl.textContent = 'Cadastrar Nova Peça';
-      if (this.submitBtn) this.submitBtn.textContent = 'Salvar no Meu Acervo';
       this.resetForm();
+      this.setSavingState(false);
     }
 
     this.modalEl?.classList.add('open');
@@ -357,6 +399,7 @@ export class InventoryModal {
 
   close(): void {
     this.sessionSeq++;
+    this.isSaving = false;
     this.setProcessingState(false);
     this.modalEl?.classList.remove('open');
   }
@@ -367,12 +410,18 @@ export class InventoryModal {
     this.currentImageData = null;
     this.originalImageData = null;
     this.editingItemId = null;
+    this.isSaving = false;
     this.hasManualDimensions = false;
+    this.defaultHeightCm = 80;
+    if (this.optionalDetailsEl) this.optionalDetailsEl.open = false;
+    if (this.widthInputEl) this.widthInputEl.placeholder = '60';
+    if (this.heightInputEl) this.heightInputEl.placeholder = '80';
     this.setPreviewImage(null);
     this.setProgress(null);
     if (this.btnRestoreOriginal) this.btnRestoreOriginal.style.display = 'none';
     if (this.fileInputEl) {
       this.fileInputEl.value = '';
     }
+    this.setSavingState(false);
   }
 }

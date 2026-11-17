@@ -1,6 +1,6 @@
 /**
  * Utilitários locais (100% no navegador, custo R$ 0,00) para otimização,
- * detecção de transparência, auto-trim, remoção rápida de fundo claro e WebP Alpha.
+ * detecção de transparência, auto-trim e WebP Alpha.
  */
 
 export interface ProcessedImageResult {
@@ -175,173 +175,12 @@ export async function downscaleImageForInference(src: string, maxDim = 800): Pro
     canvas.toBlob(
       (blob) => {
         if (blob) resolve(blob);
-        else reject(new Error('Falha ao preparar imagem para recorte.'));
+        else reject(new Error('Não foi possível preparar a foto para recorte.'));
       },
       'image/png',
       0.92
     );
   });
-}
-
-function colorDistSq(r1: number, g1: number, b1: number, r2: number, g2: number, b2: number): number {
-  const dr = r1 - r2;
-  const dg = g1 - g2;
-  const db = b1 - b2;
-  return dr * dr + dg * dg + db * db;
-}
-
-function extractCornerPalette(data: Uint8ClampedArray, w: number, h: number): Array<[number, number, number]> {
-  const insetX = Math.min(4, Math.floor(w * 0.05));
-  const insetY = Math.min(4, Math.floor(h * 0.05));
-  const sampleCoords = [
-    [insetX, insetY],
-    [w - 1 - insetX, insetY],
-    [insetX, h - 1 - insetY],
-    [w - 1 - insetX, h - 1 - insetY],
-    [Math.floor(w / 2), insetY],
-    [Math.floor(w / 2), h - 1 - insetY]
-  ];
-
-  const palette: Array<[number, number, number]> = [];
-  for (const [sx, sy] of sampleCoords) {
-    const idx = (sy * w + sx) * 4;
-    if (data[idx + 3] < 200) continue;
-    const r = data[idx];
-    const g = data[idx + 1];
-    const b = data[idx + 2];
-    const duplicate = palette.some(([pr, pg, pb]) => colorDistSq(r, g, b, pr, pg, pb) < 18 * 18);
-    if (!duplicate) palette.push([r, g, b]);
-  }
-  return palette.length > 0 ? palette : [[255, 255, 255]];
-}
-
-function minPaletteDistSq(r: number, g: number, b: number, palette: Array<[number, number, number]>): number {
-  let minSq = Infinity;
-  for (let i = 0; i < palette.length; i++) {
-    const d = colorDistSq(r, g, b, palette[i][0], palette[i][1], palette[i][2]);
-    if (d < minSq) minSq = d;
-  }
-  return minSq;
-}
-
-/**
- * Motor instantâneo (0 MB extra, ~20ms): Flood-Fill a partir das bordas no Canvas 2D.
- * Ideal para fotos de catálogo/fornecedor em fundo branco, cinza ou parede uniforme,
- * preservando áreas internas da peça sem conexão com as bordas.
- */
-export async function removeLightBackgroundFast(
-  src: string,
-  tolerance = 28,
-  maxDim = 1024
-): Promise<ProcessedImageResult> {
-  const img = await loadHtmlImage(src);
-  const natW = img.naturalWidth || img.width;
-  const natH = img.naturalHeight || img.height;
-  const scale = Math.min(1, maxDim / Math.max(natW, natH));
-  const w = Math.max(1, Math.round(natW * scale));
-  const h = Math.max(1, Math.round(natH * scale));
-
-  const { canvas, ctx } = createSizedCanvas(w, h);
-  ctx.drawImage(img, 0, 0, w, h);
-  const imgData = ctx.getImageData(0, 0, w, h);
-  const data = imgData.data;
-
-  const palette = extractCornerPalette(data, w, h);
-  const baseTol = 14 + Math.max(0, Math.min(80, tolerance)) * 1.15;
-  const baseTolSq = baseTol * baseTol;
-  const stepTolSq = Math.pow(Math.max(20, baseTol * 0.65), 2);
-  const featherTolSq = Math.pow(baseTol * 1.38, 2);
-
-  const total = w * h;
-  const removed = new Uint8Array(total);
-  const queued = new Uint8Array(total);
-  const queue = new Int32Array(total);
-  let head = 0;
-  let tail = 0;
-
-  const trySeed = (idx: number) => {
-    if (queued[idx]) return;
-    const p = idx * 4;
-    if (data[p + 3] < 25 || minPaletteDistSq(data[p], data[p + 1], data[p + 2], palette) <= baseTolSq) {
-      queued[idx] = 1;
-      queue[tail++] = idx;
-    }
-  };
-
-  for (let x = 0; x < w; x++) {
-    trySeed(x);
-    trySeed((h - 1) * w + x);
-  }
-  for (let y = 1; y < h - 1; y++) {
-    trySeed(y * w);
-    trySeed(y * w + (w - 1));
-  }
-
-  while (head < tail) {
-    const idx = queue[head++];
-    removed[idx] = 1;
-
-    const p = idx * 4;
-    const pr = data[p];
-    const pg = data[p + 1];
-    const pb = data[p + 2];
-    const x = idx % w;
-    const y = (idx - x) / w;
-
-    const checkNeighbor = (nIdx: number) => {
-      if (queued[nIdx]) return;
-      const np = nIdx * 4;
-      const nr = data[np];
-      const ng = data[np + 1];
-      const nb = data[np + 2];
-      if (data[np + 3] < 25) {
-        queued[nIdx] = 1;
-        queue[tail++] = nIdx;
-        return;
-      }
-      if (
-        minPaletteDistSq(nr, ng, nb, palette) <= baseTolSq &&
-        colorDistSq(pr, pg, pb, nr, ng, nb) <= stepTolSq
-      ) {
-        queued[nIdx] = 1;
-        queue[tail++] = nIdx;
-      }
-    };
-
-    if (x > 0) checkNeighbor(idx - 1);
-    if (x < w - 1) checkNeighbor(idx + 1);
-    if (y > 0) checkNeighbor(idx - w);
-    if (y < h - 1) checkNeighbor(idx + w);
-  }
-
-  for (let idx = 0; idx < total; idx++) {
-    if (removed[idx]) {
-      data[idx * 4 + 3] = 0;
-    }
-  }
-
-  // Suavização anti-serrilhado de 1px apenas nos pixels de borda tocando a área removida
-  for (let y = 1; y < h - 1; y++) {
-    for (let x = 1; x < w - 1; x++) {
-      const idx = y * w + x;
-      if (removed[idx]) continue;
-      if (!removed[idx - 1] && !removed[idx + 1] && !removed[idx - w] && !removed[idx + w]) {
-        continue;
-      }
-      const p = idx * 4;
-      const dSq = minPaletteDistSq(data[p], data[p + 1], data[p + 2], palette);
-      if (dSq < featherTolSq) {
-        const d = Math.sqrt(dSq);
-        const low = baseTol * 0.85;
-        const high = baseTol * 1.38;
-        const t = Math.max(0, Math.min(1, (d - low) / Math.max(1, high - low)));
-        data[p + 3] = Math.round(data[p + 3] * t);
-      }
-    }
-  }
-
-  ctx.putImageData(imgData, 0, 0);
-  return await autoTrimImage(encodeTransparentCanvas(canvas), maxDim);
 }
 
 /**

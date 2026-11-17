@@ -2,8 +2,7 @@ import { addCustomItem, updateCustomItem } from '../core/db';
 import {
   analyzeImageTransparency,
   autoTrimImage,
-  optimizeUserUploadedImage,
-  removeLightBackgroundFast
+  optimizeUserUploadedImage
 } from '../core/image-optimizer';
 import { removeBackgroundLocalAI } from '../core/bg-remover';
 import type { PresetItem } from '../types';
@@ -27,11 +26,7 @@ export class InventoryModal {
   bgProgressWrapEl: HTMLElement | null;
   bgProgressFillEl: HTMLElement | null;
   btnRemoveBgAi: HTMLButtonElement | null;
-  btnRemoveBgFast: HTMLButtonElement | null;
   btnRestoreOriginal: HTMLButtonElement | null;
-  toleranceRowEl: HTMLElement | null;
-  toleranceInputEl: HTMLInputElement | null;
-  toleranceValEl: HTMLElement | null;
 
   widthInputEl: HTMLInputElement | null;
   heightInputEl: HTMLInputElement | null;
@@ -42,7 +37,6 @@ export class InventoryModal {
   isProcessingBg: boolean;
   hasManualDimensions: boolean;
   private sessionSeq: number;
-  private fastAdjustTimer: number | null;
 
   constructor(
     onItemCreated?: ((item: PresetItem) => void) | null,
@@ -66,11 +60,7 @@ export class InventoryModal {
     this.bgProgressWrapEl = document.getElementById('bg-removal-progress-wrap');
     this.bgProgressFillEl = document.getElementById('bg-removal-progress-fill');
     this.btnRemoveBgAi = document.getElementById('btn-remove-bg-ai') as HTMLButtonElement | null;
-    this.btnRemoveBgFast = document.getElementById('btn-remove-bg-fast') as HTMLButtonElement | null;
     this.btnRestoreOriginal = document.getElementById('btn-restore-bg-original') as HTMLButtonElement | null;
-    this.toleranceRowEl = document.getElementById('bg-fast-tolerance-row');
-    this.toleranceInputEl = document.getElementById('bg-fast-tolerance') as HTMLInputElement | null;
-    this.toleranceValEl = document.getElementById('bg-fast-tolerance-val');
 
     this.widthInputEl = document.getElementById('item-width-input') as HTMLInputElement | null;
     this.heightInputEl = document.getElementById('item-height-input') as HTMLInputElement | null;
@@ -81,7 +71,6 @@ export class InventoryModal {
     this.isProcessingBg = false;
     this.hasManualDimensions = false;
     this.sessionSeq = 0;
-    this.fastAdjustTimer = null;
 
     this.setupEvents();
   }
@@ -130,10 +119,8 @@ export class InventoryModal {
   private setProcessingState(active: boolean): void {
     this.isProcessingBg = active;
     if (this.btnRemoveBgAi) this.btnRemoveBgAi.disabled = active;
-    if (this.btnRemoveBgFast) this.btnRemoveBgFast.disabled = active;
     if (this.btnRestoreOriginal) this.btnRestoreOriginal.disabled = active;
     if (this.submitBtn) this.submitBtn.disabled = active;
-    if (this.toleranceInputEl) this.toleranceInputEl.disabled = active;
   }
 
   private applyProportionalHeight(aspectRatio: number): void {
@@ -146,43 +133,13 @@ export class InventoryModal {
     this.heightInputEl.value = String(nextHeight);
   }
 
-  private async runFastCutout(): Promise<void> {
-    if (this.isProcessingBg || !this.originalImageData) return;
-    const seq = this.sessionSeq;
-    const tolerance = Number(this.toleranceInputEl?.value || 28);
-
-    this.setProcessingState(true);
-    this.setProgress(null);
-    if (this.toleranceRowEl) this.toleranceRowEl.style.display = 'flex';
-
-    try {
-      const result = await removeLightBackgroundFast(this.originalImageData, tolerance, 1024);
-      if (seq !== this.sessionSeq) return;
-
-      this.currentImageData = result.dataUrl;
-      this.setPreviewImage(result.dataUrl);
-      this.applyProportionalHeight(result.aspectRatio);
-      if (this.btnRestoreOriginal) this.btnRestoreOriginal.style.display = 'inline-flex';
-      this.setBgStatus('Fundo claro recortado! Ajuste a suavidade abaixo se precisar.', 'success');
-    } catch (err) {
-      if (seq !== this.sessionSeq) return;
-      console.error('Falha no recorte rápido de fundo claro:', err);
-      this.setBgStatus('Não foi possível processar esta foto no modo rápido.', 'error');
-    } finally {
-      if (seq === this.sessionSeq) {
-        this.setProcessingState(false);
-      }
-    }
-  }
-
   private async runLocalAiCutout(): Promise<void> {
     if (this.isProcessingBg || !this.originalImageData) return;
     const seq = this.sessionSeq;
 
     this.setProcessingState(true);
-    if (this.toleranceRowEl) this.toleranceRowEl.style.display = 'none';
     this.setProgress(5);
-    this.setBgStatus('Iniciando motor IA local...', 'neutral');
+    this.setBgStatus('Iniciando recorte...', 'neutral');
 
     try {
       const result = await removeBackgroundLocalAI(this.originalImageData, (pct, label) => {
@@ -197,13 +154,13 @@ export class InventoryModal {
       this.applyProportionalHeight(result.aspectRatio);
       if (this.btnRestoreOriginal) this.btnRestoreOriginal.style.display = 'inline-flex';
       this.setProgress(null);
-      this.setBgStatus('Fundo removido com IA local e bordas ajustadas!', 'success');
+      this.setBgStatus('Pronto! Fundo removido com sucesso.', 'success');
     } catch (err) {
       if (seq !== this.sessionSeq) return;
-      console.error('Falha ao remover fundo localmente com IA:', err);
+      console.error('Falha ao remover fundo com IA:', err);
       this.setProgress(null);
       this.setBgStatus(
-        'Não foi possível rodar a IA neste momento (verifique internet no 1º uso) ou tente "Fundo Claro Rápido".',
+        'Não foi possível remover o fundo agora. Verifique sua internet e tente novamente.',
         'error'
       );
     } finally {
@@ -217,7 +174,6 @@ export class InventoryModal {
     if (this.isProcessingBg || !this.originalImageData) return;
     this.currentImageData = this.originalImageData;
     this.setPreviewImage(this.originalImageData);
-    if (this.toleranceRowEl) this.toleranceRowEl.style.display = 'none';
     if (this.btnRestoreOriginal) this.btnRestoreOriginal.style.display = 'none';
     this.setProgress(null);
     this.setBgStatus('Foto original restaurada.', 'neutral');
@@ -228,7 +184,6 @@ export class InventoryModal {
     this.originalImageData = src;
     this.currentImageData = src;
     this.setPreviewImage(src);
-    if (this.toleranceRowEl) this.toleranceRowEl.style.display = 'none';
     if (this.btnRestoreOriginal) this.btnRestoreOriginal.style.display = 'none';
     this.setProgress(null);
 
@@ -247,16 +202,16 @@ export class InventoryModal {
         if (this.btnRestoreOriginal && trimmed.dataUrl !== src) {
           this.btnRestoreOriginal.style.display = 'inline-flex';
         }
-        this.setBgStatus('Fundo transparente detectado e margens ajustadas.', 'success');
+        this.setBgStatus('Foto já está com fundo transparente.', 'success');
       } else {
         if (!isInitialEdit) {
           this.applyProportionalHeight(info.width / Math.max(1, info.height));
         }
-        this.setBgStatus('Escolha "Remover Fundo (IA)" ou "Fundo Claro Rápido" se precisar recortar.', 'neutral');
+        this.setBgStatus('Toque em "Remover Fundo (IA)" para deixar a peça sem fundo.', 'neutral');
       }
     } catch {
       if (seq !== this.sessionSeq) return;
-      this.setBgStatus('Foto pronta. Recorte o fundo abaixo se desejar.', 'neutral');
+      this.setBgStatus('Foto carregada. Toque abaixo se quiser remover o fundo.', 'neutral');
     }
   }
 
@@ -289,7 +244,7 @@ export class InventoryModal {
         await this.handleLoadedSource(optimized, false);
       } catch (err) {
         console.error('Falha ao processar foto:', err);
-        this.setBgStatus('Falha ao ler a imagem selecionada.', 'error');
+        this.setBgStatus('Não foi possível abrir esta foto. Tente outra imagem.', 'error');
       }
     });
 
@@ -297,24 +252,8 @@ export class InventoryModal {
       void this.runLocalAiCutout();
     });
 
-    this.btnRemoveBgFast?.addEventListener('click', () => {
-      void this.runFastCutout();
-    });
-
     this.btnRestoreOriginal?.addEventListener('click', () => {
       this.restoreOriginalPhoto();
-    });
-
-    this.toleranceInputEl?.addEventListener('input', () => {
-      const val = Number(this.toleranceInputEl?.value || 28);
-      if (this.toleranceValEl) this.toleranceValEl.textContent = String(val);
-      if (this.fastAdjustTimer !== null) {
-        window.clearTimeout(this.fastAdjustTimer);
-      }
-      this.fastAdjustTimer = window.setTimeout(() => {
-        this.fastAdjustTimer = null;
-        void this.runFastCutout();
-      }, 90);
     });
 
     this.formEl?.addEventListener('submit', async (e) => {
@@ -382,8 +321,6 @@ export class InventoryModal {
 
   open(itemToEdit?: PresetItem): void {
     this.hasManualDimensions = false;
-    if (this.toleranceInputEl) this.toleranceInputEl.value = '28';
-    if (this.toleranceValEl) this.toleranceValEl.textContent = '28';
 
     if (itemToEdit) {
       this.editingItemId = itemToEdit.id;
@@ -420,10 +357,6 @@ export class InventoryModal {
 
   close(): void {
     this.sessionSeq++;
-    if (this.fastAdjustTimer !== null) {
-      window.clearTimeout(this.fastAdjustTimer);
-      this.fastAdjustTimer = null;
-    }
     this.setProcessingState(false);
     this.modalEl?.classList.remove('open');
   }
@@ -437,7 +370,6 @@ export class InventoryModal {
     this.hasManualDimensions = false;
     this.setPreviewImage(null);
     this.setProgress(null);
-    if (this.toleranceRowEl) this.toleranceRowEl.style.display = 'none';
     if (this.btnRestoreOriginal) this.btnRestoreOriginal.style.display = 'none';
     if (this.fileInputEl) {
       this.fileInputEl.value = '';

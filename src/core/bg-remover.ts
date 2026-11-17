@@ -34,14 +34,14 @@ export async function removeBackgroundLocalAI(
   const cacheKey = makeCacheKey(sourceDataUrl);
   const cached = aiCutoutCache.get(cacheKey);
   if (cached) {
-    onProgress?.(100, 'Recorte recuperado da memória.');
+    onProgress?.(100, 'Pronto! Fundo removido.');
     return cached;
   }
 
-  onProgress?.(5, 'Preparando imagem leve...');
+  onProgress?.(5, 'Preparando sua foto...');
   const inputBlob = await downscaleImageForInference(sourceDataUrl, 800);
 
-  onProgress?.(10, 'Carregando motor IA local...');
+  onProgress?.(10, 'Preparando recorte automático...');
   const { removeBackground } = await import('@imgly/background-removal');
 
   const handleProgress = (key: string, current: number, total: number) => {
@@ -49,10 +49,10 @@ export async function removeBackgroundLocalAI(
     const ratio = Math.max(0, Math.min(1, current / total));
     if (key.includes('fetch')) {
       const pct = 10 + Math.round(ratio * 55);
-      onProgress(pct, `Baixando modelo IA (1ª vez): ${Math.round(ratio * 100)}%`);
+      onProgress(pct, `Preparando ferramenta (só na 1ª vez): ${Math.round(ratio * 100)}%`);
     } else {
       const pct = 65 + Math.round(ratio * 25);
-      onProgress(pct, 'Recortando objeto no aparelho...');
+      onProgress(pct, 'Recortando a peça...');
     }
   };
 
@@ -64,9 +64,9 @@ export async function removeBackgroundLocalAI(
       output: { format: 'image/png', quality: 0.9 },
       progress: handleProgress
     });
-  } catch (gpuErr) {
-    // Fallback seguro para WASM CPU se o driver WebGPU falhar em algum dispositivo
-    onProgress?.(55, 'Alternando para modo compatível (CPU)...');
+  } catch {
+    // Fallback seguro caso WebGPU não esteja disponível no dispositivo
+    onProgress?.(55, 'Recortando a peça...');
     outputBlob = await removeBackground(inputBlob, {
       model: 'isnet_quint8',
       device: 'cpu',
@@ -75,11 +75,11 @@ export async function removeBackgroundLocalAI(
     });
   }
 
-  onProgress?.(94, 'Ajustando bordas e proporção...');
+  onProgress?.(94, 'Dando o acabamento nas bordas...');
   const rawResultDataUrl = await blobToDataUrl(outputBlob);
   const trimmed = await autoTrimImage(rawResultDataUrl, 1024);
 
   aiCutoutCache.set(cacheKey, trimmed);
-  onProgress?.(100, 'Fundo removido com sucesso!');
+  onProgress?.(100, 'Pronto! Fundo removido com sucesso.');
   return trimmed;
 }

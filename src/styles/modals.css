@@ -260,7 +260,6 @@
 }
 
 .btn-bg-ai,
-.btn-bg-fast,
 .btn-bg-restore {
   min-height: 38px;
   padding: 0 12px;
@@ -287,18 +286,6 @@
   color: #fff;
 }
 
-.btn-bg-fast {
-  flex: 1 1 130px;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-main);
-}
-
-.btn-bg-fast:hover:not(:disabled) {
-  border-color: var(--primary);
-  color: var(--primary-hover);
-}
-
 .btn-bg-restore {
   flex: 0 0 auto;
   background-color: transparent;
@@ -312,29 +299,9 @@
 }
 
 .btn-bg-ai:disabled,
-.btn-bg-fast:disabled,
 .btn-bg-restore:disabled {
   opacity: 0.55;
   cursor: wait;
-}
-
-.bg-fast-tolerance-row {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding-top: 2px;
-}
-
-.bg-fast-tolerance-row label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.bg-fast-tolerance-row input[type="range"] {
-  width: 100%;
-  accent-color: var(--primary);
-  cursor: pointer;
 }
 
 /* Botões do Modal */

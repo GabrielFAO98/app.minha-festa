@@ -6,3 +6,6 @@ dist
 *.local
 covers_inbox/_processados
 scratch/
+.tmp_curated/
+.tmp_downloads/
+.tmp_lote1/

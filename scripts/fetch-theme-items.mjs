@@ -1,283 +1,513 @@
 /**
- * Pipeline de Aquisição Automatizada de Displays Reais do Mercado
- * Busca peças populares de MDF/acrílico em marketplaces (Shopee, Elo7, Mercado Livre),
- * baixa em alta resolução, remove o fundo com IA neural (@imgly),
- * preenche automaticamente furos internos em áreas claras (barriga, patas, focinho),
- * remove margens transparentes (Sharp trim), valida integridade das bordas (sem cortes)
- * e calcula proporções reais para totens de chão e displays de mesa.
+ * Pipeline Inteligente de Pesquisa, Curadoria e Aquisição de Elementos Reais
+ *
+ * Modos de uso:
+ * 1) Listar temas e tendências planejadas:
+ *    node scripts/fetch-theme-items.mjs --list-themes
+ *    node scripts/fetch-theme-items.mjs --plan jardim-encantado
+ *
+ * 2) Pesquisar e curar Top-3 candidatos por peça (NÃO grava em public/items até aprovação visual):
+ *    node scripts/fetch-theme-items.mjs --theme=jardim-encantado
+ *    node scripts/fetch-theme-items.mjs --theme="pascoa" --items="coelhinho pelucia,cesta ovos"
+ *
+ * 3) Promover candidatos aprovados visualmente para public/items/ + gerar snippets de presets-data.ts:
+ *    node scripts/fetch-theme-items.mjs --promote=jardim-encantado --pick=display-jardim-cogumelo:1,display-jardim-borboleta:2
  */
 
 import { removeBackground } from '@imgly/background-removal-node';
 import sharp from 'sharp';
 import https from 'node:https';
-import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import {
+  THEME_CATALOG_PLANS,
+  resolveItemSpec,
+  buildSmartQueries,
+  extractBingCandidates,
+  scoreCandidateMetadata,
+  evaluateAndProcessCandidate,
+  buildCurationHtml,
+  slugify
+} from './element-curation-engine.mjs';
 
-async function fetchMarketImages(query) {
+const CURATED_ROOT = path.resolve('.tmp_curated');
+const DOWNLOAD_TMP_ROOT = path.resolve('.tmp_downloads');
+const PUBLIC_ITEMS_DIR = path.resolve('public', 'items');
+
+async function fetchWikimediaPngs(query, tierMeta) {
+  const searchTerm = `${query} filemime:image/png`;
+  const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(searchTerm)}&gsrlimit=12&prop=imageinfo&iiprop=url|size|mime&format=json`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'MinhaFestaCurator/1.0 (https://app.minha-festa.local)' },
+      signal: controller.signal
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const pages = Object.values(data?.query?.pages || {});
+    const candidates = [];
+    for (const p of pages) {
+      const info = p?.imageinfo?.[0];
+      if (!info?.url || info.mime !== 'image/png') continue;
+      if (Math.max(info.width || 0, info.height || 0) < 400) continue;
+      candidates.push({
+        url: info.url.split('?')[0],
+        pageUrl: info.descriptionurl || '',
+        title: (p.title || '').replace(/^File:/i, ''),
+        desc: 'Wikimedia Commons PNG',
+        md5: '',
+        tier: tierMeta.tier,
+        tierLabel: tierMeta.label
+      });
+    }
+    return candidates;
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function fetchBingSearchHtml(query, qft = '') {
   return new Promise((resolve, reject) => {
     const encoded = encodeURIComponent(query);
-    const req = https.get(`https://www.bing.com/images/search?q=${encoded}&form=HDRSC2&first=1`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+    const qftParam = qft ? `&qft=${encodeURIComponent(qft)}` : '';
+    const url = `https://www.bing.com/images/search?q=${encoded}${qftParam}&form=HDRSC2&first=1`;
+
+    const req = https.get(
+      url,
+      {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
+        },
+        timeout: 12000
+      },
+      (res) => {
+        let data = '';
+        res.on('data', (chunk) => (data += chunk));
+        res.on('end', () => resolve(data));
       }
-    }, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        const matches = [...data.matchAll(/murl&quot;:&quot;(http[^&]+)&quot;/g)];
-        resolve(matches.map(m => m[1]));
-      });
-    });
+    );
+    req.on('timeout', () => req.destroy(new Error('Search timeout')));
     req.on('error', reject);
   });
 }
 
-async function downloadFile(url, destPath) {
-  return new Promise((resolve, reject) => {
-    const client = url.startsWith('https') ? https : http;
-    const req = client.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36'
-      },
-      timeout: 10000
-    }, res => {
-      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        return downloadFile(res.headers.location, destPath).then(resolve).catch(reject);
-      }
-      if (res.statusCode !== 200) {
-        return reject(new Error(`HTTP ${res.statusCode}`));
-      }
-      const fileStream = fs.createWriteStream(destPath);
-      res.pipe(fileStream);
-      fileStream.on('finish', () => {
-        fileStream.close();
-        resolve();
-      });
-      fileStream.on('error', reject);
-    });
-    req.on('error', reject);
-  });
+async function downloadBuffer(url, destPath, referer = '') {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000);
+  try {
+    const headers = {
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      Accept: 'image/avif,image/webp,image/png,image/jpeg,image/*,*/*;q=0.8'
+    };
+    if (referer) {
+      headers.Referer = referer;
+    }
+    const res = await fetch(url, { headers, redirect: 'follow', signal: controller.signal });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const contentType = (res.headers.get('content-type') || '').toLowerCase();
+    if (contentType && !contentType.startsWith('image/') && !contentType.includes('octet-stream')) {
+      throw new Error(`Tipo não-imagem (${contentType.split(';')[0]})`);
+    }
+    if (contentType.includes('svg') || contentType.includes('gif')) {
+      throw new Error(`Formato ignorado (${contentType.split(';')[0]})`);
+    }
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (destPath) fs.writeFileSync(destPath, buf);
+    return buf;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function removeBgViaBuffer(rawBuffer, tempPath) {
+  const pngPath = `${tempPath}.png`;
+  try {
+    const normalizedPng = await sharp(rawBuffer).ensureAlpha().png().toBuffer();
+    fs.writeFileSync(pngPath, normalizedPng);
+    const blob = await removeBackground(pathToFileURL(pngPath).href);
+    return Buffer.from(await blob.arrayBuffer());
+  } finally {
+    try {
+      if (fs.existsSync(pngPath)) fs.unlinkSync(pngPath);
+    } catch {}
+  }
 }
 
 /**
- * Preenche furos internos na máscara de opacidade via Flood Fill de bordas.
- * Qualquer pixel que não seja alcançável a partir das 4 bordas externas
- * pertence ao corpo do totem e recebe opacidade total (alpha = 255).
+ * Pesquisa multi-tier, filtra semanticamente e ranqueia até Top-N candidatos limpos por elemento.
  */
-function fillAlphaHoles(alphaChannel, width, height, alphaCutoff = 40) {
-  const isOutside = new Uint8Array(width * height);
-  const queue = [];
+export async function curateCandidatesForSpec(spec, options = {}) {
+  const topN = options.topN || 3;
+  const maxDownloads = options.maxDownloads || 14;
+  const queries = buildSmartQueries(spec);
 
-  for (let x = 0; x < width; x++) {
-    const topIdx = 0 * width + x;
-    if (alphaChannel[topIdx] < alphaCutoff) {
-      isOutside[topIdx] = 1;
-      queue.push(topIdx);
-    }
-    const btmIdx = (height - 1) * width + x;
-    if (alphaChannel[btmIdx] < alphaCutoff) {
-      isOutside[btmIdx] = 1;
-      queue.push(btmIdx);
-    }
-  }
+  console.log(`\n🔍 Curando "${spec.name}" (${spec.slug})...`);
+  const allCandidates = [];
+  const seenUrls = new Set();
 
-  for (let y = 0; y < height; y++) {
-    const leftIdx = y * width + 0;
-    if (!isOutside[leftIdx] && alphaChannel[leftIdx] < alphaCutoff) {
-      isOutside[leftIdx] = 1;
-      queue.push(leftIdx);
-    }
-    const rightIdx = y * width + (width - 1);
-    if (!isOutside[rightIdx] && alphaChannel[rightIdx] < alphaCutoff) {
-      isOutside[rightIdx] = 1;
-      queue.push(rightIdx);
-    }
-  }
-
-  // BFS Flood Fill
-  let head = 0;
-  while (head < queue.length) {
-    const curr = queue[head++];
-    const cx = curr % width;
-    const cy = Math.floor(curr / width);
-
-    const neighbors = [
-      cx > 0 ? curr - 1 : -1,
-      cx < width - 1 ? curr + 1 : -1,
-      cy > 0 ? curr - width : -1,
-      cy < height - 1 ? curr + width : -1,
-    ];
-
-    for (const n of neighbors) {
-      if (n >= 0 && !isOutside[n]) {
-        if (alphaChannel[n] < alphaCutoff) {
-          isOutside[n] = 1;
-          queue.push(n);
+  for (const q of queries) {
+    try {
+      console.log(`   [${q.tier}] Buscando: "${q.query}"`);
+      const parsed =
+        q.engine === 'wikimedia'
+          ? await fetchWikimediaPngs(q.query, q)
+          : extractBingCandidates(await fetchBingSearchHtml(q.query, q.qft), q);
+      for (const c of parsed) {
+        if (!seenUrls.has(c.url)) {
+          seenUrls.add(c.url);
+          allCandidates.push(c);
         }
+      }
+    } catch (err) {
+      console.log(`   ⚠️ Falha na busca [${q.tier}]: ${err.message}`);
+    }
+  }
+
+  // Pré-seleção e ranqueamento semântico ANTES de baixar imagens
+  const preFiltered = [];
+  let rejectedMetaCount = 0;
+
+  for (const cand of allCandidates) {
+    const verdict = scoreCandidateMetadata(cand, spec);
+    if (verdict.accepted) {
+      preFiltered.push({ cand, metaScore: verdict.score });
+    } else {
+      rejectedMetaCount++;
+    }
+  }
+
+  // Intercala os melhores candidatos de cada tier (PNG nativo, estúdio isolado, mercado real)
+  // para evitar que miniaturas 360x360 de um único tier consumam todo o orçamento de downloads.
+  const byTier = new Map();
+  for (const item of preFiltered) {
+    const t = item.cand.tier || 'other';
+    if (!byTier.has(t)) byTier.set(t, []);
+    byTier.get(t).push(item);
+  }
+  const orderedQueue = [];
+  const tierQueues = [...byTier.values()].map((list) => list.sort((a, b) => b.metaScore - a.metaScore));
+  let remaining = true;
+  while (remaining) {
+    remaining = false;
+    for (const q of tierQueues) {
+      if (q.length > 0) {
+        orderedQueue.push(q.shift());
+        remaining = true;
       }
     }
   }
 
-  const newAlpha = new Uint8Array(width * height);
-  for (let i = 0; i < width * height; i++) {
-    if (isOutside[i]) {
-      newAlpha[i] = alphaChannel[i] < alphaCutoff ? 0 : alphaChannel[i];
-    } else {
-      newAlpha[i] = 255;
+  console.log(
+    `   📊 ${allCandidates.length} URLs encontradas -> ${orderedQueue.length} passaram no filtro semântico (${rejectedMetaCount} kits/marcas/ruído descartados).`
+  );
+
+  if (!fs.existsSync(DOWNLOAD_TMP_ROOT)) fs.mkdirSync(DOWNLOAD_TMP_ROOT, { recursive: true });
+  const approved = [];
+  let processedImages = 0;
+  const maxAttempts = Math.min(orderedQueue.length, 45);
+
+  for (let i = 0; i < maxAttempts; i++) {
+    if (processedImages >= maxDownloads || approved.length >= topN * 2) break;
+    const { cand, metaScore } = orderedQueue[i];
+    const tmpRawPath = path.join(DOWNLOAD_TMP_ROOT, `${spec.slug}_${i}.tmp`);
+
+    try {
+      const rawBuf = await downloadBuffer(cand.url, tmpRawPath, cand.pageUrl);
+      if (rawBuf.length < 15000) {
+        console.log(`   [${i + 1}] ❌ Arquivo pequeno (${rawBuf.length} B)`);
+        continue;
+      }
+
+      // Garante que o buffer é uma imagem real decodificável antes de contabilizar no orçamento
+      await sharp(rawBuf).metadata();
+      processedImages++;
+
+      const result = await evaluateAndProcessCandidate(
+        rawBuf,
+        cand,
+        metaScore,
+        spec,
+        (buf) => removeBgViaBuffer(buf, tmpRawPath)
+      );
+
+      if (!result.accepted) {
+        console.log(`   [${i + 1}] ❌ Rejeitado: ${result.reason}`);
+        continue;
+      }
+
+      console.log(
+        `   [${i + 1}] ✅ Nota ${result.score}/100 | ${result.alphaSource} | ${result.widthPx}x${result.heightPx}px (${result.sizeKb} KB) | ilhas: ${result.components}`
+      );
+      approved.push(result);
+    } catch (err) {
+      console.log(`   [${i + 1}] ⚠️ Pulado (${err.message})`);
+    } finally {
+      try {
+        if (fs.existsSync(tmpRawPath)) fs.unlinkSync(tmpRawPath);
+      } catch {}
     }
   }
 
-  return newAlpha;
+  approved.sort((a, b) => b.score - a.score);
+  return approved.slice(0, topN);
 }
 
-async function checkTouch(buffer) {
-  const image = sharp(buffer);
-  const { data, info } = await image.raw().toBuffer({ resolveWithObject: true });
-  const { width, height, channels } = info;
-
-  let topTouch = 0, bottomTouch = 0, leftTouch = 0, rightTouch = 0;
-
-  for (let x = 0; x < width; x++) {
-    if (data[(0 * width + x) * channels + (channels - 1)] > 50) topTouch++;
-    if (data[((height - 1) * width + x) * channels + (channels - 1)] > 50) bottomTouch++;
+/**
+ * Retrocompatibilidade com chamadas diretas `processItem(query, slug)` usando curadoria inteligente.
+ */
+export async function processItem(searchQuery, itemSlug) {
+  const spec = resolveItemSpec('', searchQuery, { slug: itemSlug, searchTerms: [searchQuery] });
+  const winners = await curateCandidatesForSpec(spec, { topN: 1, maxDownloads: 10 });
+  if (winners.length === 0) {
+    throw new Error(`Nenhum candidato de alta qualidade encontrado para "${searchQuery}"`);
   }
-
-  for (let y = 0; y < height; y++) {
-    if (data[(y * width + 0) * channels + (channels - 1)] > 50) leftTouch++;
-    if (data[(y * width + (width - 1)) * channels + (channels - 1)] > 50) rightTouch++;
-  }
+  const best = winners[0];
+  if (!fs.existsSync(PUBLIC_ITEMS_DIR)) fs.mkdirSync(PUBLIC_ITEMS_DIR, { recursive: true });
+  const finalWebpPath = path.join(PUBLIC_ITEMS_DIR, `${itemSlug}.webp`);
+  fs.writeFileSync(finalWebpPath, best.webpBuffer);
+  console.log(`   🎯 Promovido vencedor (nota ${best.score}/100, ${best.alphaSource}) -> public/items/${itemSlug}.webp`);
 
   return {
-    topTouchPercent: (topTouch / width) * 100,
-    bottomTouchPercent: (bottomTouch / width) * 100,
-    leftTouchPercent: (leftTouch / height) * 100,
-    rightTouchPercent: (rightTouch / height) * 100,
+    slug: itemSlug,
+    widthPx: best.widthPx,
+    heightPx: best.heightPx,
+    aspectRatio: best.aspectRatio,
+    sourceUrl: best.url,
+    score: best.score,
+    alphaSource: best.alphaSource
   };
 }
 
-export async function processItem(searchQuery, itemSlug) {
-  console.log(`\n🔍 Buscando itens reais: "${searchQuery}"...`);
-  const urls = await fetchMarketImages(searchQuery);
-  console.log(`   ${urls.length} imagens candidatas encontradas no mercado.`);
+function parseCliArgs(argv) {
+  const opts = {
+    listThemes: false,
+    plan: '',
+    theme: '',
+    items: [],
+    top: 3,
+    auto: false,
+    promote: '',
+    pick: {},
+    category: '',
+    type: ''
+  };
 
-  const tmpDir = path.resolve('.tmp_downloads');
-  if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
-
-  for (let i = 0; i < Math.min(urls.length, 12); i++) {
-    const url = urls[i];
-    if (url.includes('.svg') || url.includes('.gif')) continue;
-
-    const rawFile = path.join(tmpDir, `${itemSlug}_cand_${i}.raw`);
-    try {
-      console.log(`  [Candidato ${i + 1}] Baixando ${url.slice(0, 75)}...`);
-      await downloadFile(url, rawFile);
-
-      const stats = fs.statSync(rawFile);
-      if (stats.size < 20000) {
-        console.log(`    ❌ Arquivo muito pequeno ou corrompido (${stats.size} bytes)`);
-        continue;
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === '--list-themes') opts.listThemes = true;
+    else if (arg === '--auto') opts.auto = true;
+    else if (arg === '--plan' && argv[i + 1]) opts.plan = argv[++i];
+    else if (arg.startsWith('--plan=')) opts.plan = arg.slice(7);
+    else if (arg.startsWith('--theme=')) opts.theme = arg.slice(8);
+    else if (arg === '--theme' && argv[i + 1]) opts.theme = argv[++i];
+    else if (arg.startsWith('--items=')) opts.items = arg.slice(8).split(',').map((s) => s.trim()).filter(Boolean);
+    else if (arg.startsWith('--top=')) opts.top = Math.max(1, Math.min(5, Number(arg.slice(6)) || 3));
+    else if (arg.startsWith('--promote=')) opts.promote = arg.slice(10);
+    else if (arg.startsWith('--category=')) opts.category = arg.slice(11);
+    else if (arg.startsWith('--type=')) opts.type = arg.slice(7);
+    else if (arg.startsWith('--pick=')) {
+      const pairs = arg.slice(7).split(',').map((s) => s.trim()).filter(Boolean);
+      for (const p of pairs) {
+        const [k, v] = p.split(':');
+        if (k) opts.pick[k.trim()] = Number(v) || 1;
       }
-
-      // 1. Extrai RGB original
-      const origImage = sharp(rawFile);
-      const origMeta = await origImage.metadata();
-      const { data: origRgb } = await origImage.removeAlpha().raw().toBuffer({ resolveWithObject: true });
-
-      // 2. Remoção de fundo neural (@imgly)
-      console.log(`    Removendo fundo (IA neural @imgly)...`);
-      const fileUrl = pathToFileURL(rawFile).href;
-      const blob = await removeBackground(fileUrl);
-      const bgRemovedBuffer = Buffer.from(await blob.arrayBuffer());
-
-      // 3. Extrai canal alfa e preenche furos internos (barriga, patas, etc)
-      const bgImage = sharp(bgRemovedBuffer).resize(origMeta.width, origMeta.height);
-      const { data: bgRgba } = await bgImage.raw().toBuffer({ resolveWithObject: true });
-      const alphaChannel = new Uint8Array(origMeta.width * origMeta.height);
-      for (let j = 0; j < alphaChannel.length; j++) {
-        alphaChannel[j] = bgRgba[j * 4 + 3];
-      }
-
-      const solidAlpha = fillAlphaHoles(alphaChannel, origMeta.width, origMeta.height, 40);
-
-      // 4. Combina RGB original com Alpha sólido
-      const combinedRgba = Buffer.alloc(origMeta.width * origMeta.height * 4);
-      for (let j = 0; j < origMeta.width * origMeta.height; j++) {
-        combinedRgba[j * 4 + 0] = origRgb[j * 3 + 0];
-        combinedRgba[j * 4 + 1] = origRgb[j * 3 + 1];
-        combinedRgba[j * 4 + 2] = origRgb[j * 3 + 2];
-        combinedRgba[j * 4 + 3] = solidAlpha[j];
-      }
-
-      // 5. Trim automático de bordas transparentes
-      const trimmedBuffer = await sharp(combinedRgba, {
-        raw: {
-          width: origMeta.width,
-          height: origMeta.height,
-          channels: 4
-        }
-      }).trim().toBuffer();
-
-      const trimmedMeta = await sharp(trimmedBuffer).metadata();
-
-      // 6. Checa se ficou cortado (orelhas, patas, etc)
-      const touch = await checkTouch(trimmedBuffer);
-      console.log(`    Dimensões: ${trimmedMeta.width}x${trimmedMeta.height}px | Topo: ${touch.topTouchPercent.toFixed(1)}% | Esquerda: ${touch.leftTouchPercent.toFixed(1)}% | Direita: ${touch.rightTouchPercent.toFixed(1)}%`);
-
-      if (touch.topTouchPercent > 5 || touch.leftTouchPercent > 5 || touch.rightTouchPercent > 5) {
-        console.log(`    ❌ Imagem cortada nas extremidades. Buscando próximo modelo...`);
-        continue;
-      }
-
-      const aspect = trimmedMeta.width / trimmedMeta.height;
-      if (aspect < 0.3 || aspect > 1.8) {
-        console.log(`    ❌ Proporção atípica (${aspect.toFixed(2)}).`);
-        continue;
-      }
-
-      // Salva arquivo otimizado
-      const finalWebpPath = path.resolve('public', 'items', `${itemSlug}.webp`);
-      await sharp(trimmedBuffer)
-        .webp({ quality: 90 })
-        .toFile(finalWebpPath);
-
-      console.log(`    ✅ SUCESSO! Salvo em public/items/${itemSlug}.webp (${trimmedMeta.width}x${trimmedMeta.height}px)`);
-
-      try { fs.unlinkSync(rawFile); } catch {}
-
-      return {
-        slug: itemSlug,
-        widthPx: trimmedMeta.width,
-        heightPx: trimmedMeta.height,
-        aspectRatio: aspect,
-        sourceUrl: url
-      };
-    } catch (err) {
-      console.log(`    ❌ Erro no candidato ${i + 1}: ${err.message}`);
     }
   }
-
-  throw new Error(`Não foi possível encontrar uma imagem válida e intacta para "${searchQuery}"`);
+  return opts;
 }
 
-// Execução direta via CLI se chamado diretamente
-if (process.argv[1] && process.argv[1].endsWith('fetch-theme-items.mjs')) {
-  const theme = process.argv[2] || 'safari baby';
-  const itemsArg = process.argv[3] || 'leao,girafa,elefante,zebra,macaco';
-  const items = itemsArg.split(',').map(s => s.trim());
+function printThemePlan(themeSlug) {
+  const key = slugify(themeSlug);
+  const plan = THEME_CATALOG_PLANS[key];
+  if (!plan) {
+    console.log(`\nTema "${themeSlug}" ainda não possui blueprint pré-cadastrado.`);
+    console.log(`Temas disponíveis: ${Object.keys(THEME_CATALOG_PLANS).join(', ')}\n`);
+    return;
+  }
+  console.log(`\n=== Plano Curado de Tendências: ${plan.title} ===`);
+  console.log(`Tendência: ${plan.trendNotes}\n`);
+  for (const it of plan.items) {
+    console.log(
+      `- [${it.slug}] ${it.name} | Cat: ${it.category} | Pos: ${it.placement} | ${it.widthCm}×${it.heightCm} cm`
+    );
+  }
+  console.log('');
+}
 
-  console.log(`=== Pipeline de Itens de Decoração ===`);
-  console.log(`Tema: ${theme}`);
-  console.log(`Itens: ${items.join(', ')}`);
+async function promoteCuratedItems(themeSlug, pickMap) {
+  const normTheme = slugify(themeSlug);
+  const themeDir = path.join(CURATED_ROOT, normTheme);
+  const reportPath = path.join(themeDir, 'curation-report.json');
+  if (!fs.existsSync(reportPath)) {
+    throw new Error(`Relatório de curadoria não encontrado em ${reportPath}`);
+  }
 
-  (async () => {
-    for (const item of items) {
-      const slug = `display-${theme.toLowerCase().replace(/\s+/g, '-')}-${item.toLowerCase().replace(/\s+/g, '-')}`;
-      const query = `display mdf ${theme} ${item}`;
-      await processItem(query, slug);
+  const report = JSON.parse(fs.readFileSync(reportPath, 'utf-8'));
+  if (!fs.existsSync(PUBLIC_ITEMS_DIR)) fs.mkdirSync(PUBLIC_ITEMS_DIR, { recursive: true });
+
+  console.log(`\n📦 Promovendo itens aprovados de "${report.themeTitle}" para public/items/...\n`);
+  const presetSnippets = [];
+
+  for (const item of report.items) {
+    if (!item.candidates.length) continue;
+    const chosenRank = pickMap[item.slug] || (Object.keys(pickMap).length === 0 ? 1 : 0);
+    if (!chosenRank) continue;
+
+    const candidate = item.candidates[chosenRank - 1];
+    if (!candidate) {
+      console.log(`⚠️ Candidato #${chosenRank} inexistente para ${item.slug}`);
+      continue;
     }
-    console.log(`\n🎉 Processamento concluído com sucesso!`);
-  })().catch(console.error);
+
+    const srcFile = path.join(themeDir, item.slug, candidate.fileName);
+    const destFile = path.join(PUBLIC_ITEMS_DIR, `${item.slug}.webp`);
+
+    // Garante otimização final (< 120 KB quando possível mantendo qualidade)
+    let buf = fs.readFileSync(srcFile);
+    if (buf.length > 120 * 1024) {
+      buf = await sharp(buf).resize(900, 900, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 84 }).toBuffer();
+    }
+    fs.writeFileSync(destFile, buf);
+
+    const calcWidth = item.heightCm ? Math.max(10, Math.round(candidate.aspectRatio * item.heightCm)) : item.widthCm;
+    const entry = {
+      id: `preset-${item.slug}`,
+      name: item.name,
+      category: item.category,
+      type: item.type,
+      svgRole: 'photo',
+      widthCm: calcWidth,
+      heightCm: item.heightCm,
+      previewUrl: `/items/${item.slug}.webp`,
+      isCustom: false,
+      stockQuantity: 1,
+      rentalPrice: item.category === 'acessorios' ? 20 : item.placement === 'chao' ? 35 : 22
+    };
+    presetSnippets.push(entry);
+    console.log(`✅ public/items/${item.slug}.webp (${(buf.length / 1024).toFixed(1)} KB, ${calcWidth}×${item.heightCm} cm)`);
+  }
+
+  console.log('\n📋 Snippets prontos para src/core/presets-data.ts:\n');
+  console.log(JSON.stringify(presetSnippets, null, 2));
+}
+
+async function runCli() {
+  const opts = parseCliArgs(process.argv.slice(2));
+
+  if (opts.listThemes) {
+    console.log('\nTemas curados disponíveis:\n');
+    for (const [k, v] of Object.entries(THEME_CATALOG_PLANS)) {
+      console.log(`- ${k}: ${v.title} (${v.items.length} peças) — ${v.trendNotes}`);
+    }
+    console.log('');
+    return;
+  }
+
+  if (opts.plan) {
+    printThemePlan(opts.plan);
+    return;
+  }
+
+  if (opts.promote) {
+    await promoteCuratedItems(opts.promote, opts.pick);
+    return;
+  }
+
+  const themeArg = opts.theme || 'safari-baby';
+  const normTheme = slugify(themeArg);
+  const plan = THEME_CATALOG_PLANS[normTheme];
+
+  const specs =
+    opts.items.length > 0
+      ? opts.items.map((name) =>
+          resolveItemSpec(normTheme, name, {
+            ...(opts.category ? { category: opts.category } : {}),
+            ...(opts.type ? { type: opts.type } : {})
+          })
+        )
+      : plan
+      ? plan.items
+      : [resolveItemSpec(normTheme, themeArg)];
+
+  const themeDir = path.join(CURATED_ROOT, normTheme || 'geral');
+  fs.mkdirSync(themeDir, { recursive: true });
+
+  const itemReports = [];
+
+  for (const spec of specs) {
+    const winners = await curateCandidatesForSpec(spec, { topN: opts.top, maxDownloads: 14 });
+    const itemDir = path.join(themeDir, spec.slug);
+    fs.mkdirSync(itemDir, { recursive: true });
+
+    const serializedCandidates = [];
+    for (let idx = 0; idx < winners.length; idx++) {
+      const w = winners[idx];
+      const fileName = `cand_${idx + 1}.webp`;
+      fs.writeFileSync(path.join(itemDir, fileName), w.webpBuffer);
+
+      serializedCandidates.push({
+        rank: idx + 1,
+        fileName,
+        score: w.score,
+        alphaSource: w.alphaSource,
+        widthPx: w.widthPx,
+        heightPx: w.heightPx,
+        sizeKb: w.sizeKb,
+        aspectRatio: w.aspectRatio,
+        sharpness: w.sharpness,
+        components: w.components,
+        fillRatio: w.fillRatio,
+        title: w.title,
+        tier: w.tier,
+        url: w.url
+      });
+
+      if (opts.auto && idx === 0) {
+        if (!fs.existsSync(PUBLIC_ITEMS_DIR)) fs.mkdirSync(PUBLIC_ITEMS_DIR, { recursive: true });
+        fs.writeFileSync(path.join(PUBLIC_ITEMS_DIR, `${spec.slug}.webp`), w.webpBuffer);
+      }
+    }
+
+    itemReports.push({
+      slug: spec.slug,
+      name: spec.name,
+      category: spec.category,
+      type: spec.type,
+      placement: spec.placement,
+      widthCm: spec.widthCm,
+      heightCm: spec.heightCm,
+      candidates: serializedCandidates
+    });
+  }
+
+  const reportPayload = {
+    themeSlug: normTheme,
+    themeTitle: plan?.title || themeArg,
+    generatedAt: new Date().toISOString(),
+    items: itemReports
+  };
+
+  fs.writeFileSync(path.join(themeDir, 'curation-report.json'), JSON.stringify(reportPayload, null, 2));
+  fs.writeFileSync(path.join(themeDir, 'preview.html'), buildCurationHtml(reportPayload.themeTitle, itemReports));
+
+  console.log(`\n✨ Curadoria salva em ${themeDir}`);
+  console.log(`   Abra os .webp candidatos ou preview.html para inspeção visual antes de promover:`);
+  console.log(`   node scripts/fetch-theme-items.mjs --promote=${normTheme} --pick=slug:1,...\n`);
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'))) {
+  runCli().catch((err) => {
+    console.error('❌ Erro no pipeline de curadoria:', err);
+    process.exit(1);
+  });
 }

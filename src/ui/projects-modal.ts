@@ -13,6 +13,7 @@ export class ProjectsModal {
   hasCustomName = false;
   hasEverBeenSaved = false;
   isDirty = false;
+  private isAutosaving = false;
   private autosaveTimer: any = null;
 
   // Tela Exclusiva de Projetos
@@ -131,13 +132,15 @@ export class ProjectsModal {
 
     this.isDirty = true;
     if (this.autosaveTimer) clearTimeout(this.autosaveTimer);
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
 
     this.autosaveTimer = setTimeout(async () => {
       await this.performAutosave();
-    }, 800);
+    }, 1000);
   }
 
-  async performAutosave(): Promise<void> {
+  async performAutosave(skipThumbnail = false): Promise<void> {
+    if (this.isAutosaving) return;
     const elements = this.canvasEngine.getSceneElements();
     if (elements.length === 0) return;
 
@@ -145,8 +148,9 @@ export class ProjectsModal {
       this.currentProjectId = 'proj-' + Date.now();
     }
 
+    this.isAutosaving = true;
     try {
-      const thumb = this.canvasEngine.exportHDImage();
+      const thumb = skipThumbnail ? undefined : this.canvasEngine.exportThumbnailImage(360);
       await saveProject({
         id: this.currentProjectId,
         title: this.currentProjectTitle || 'Novo Cenário',
@@ -155,13 +159,25 @@ export class ProjectsModal {
         wallTextureUrl: this.canvasEngine.wallTextureUrl,
         floorTextureUrl: this.canvasEngine.floorTextureUrl,
         bgImageUrl: this.canvasEngine.bgImageUrl || DEFAULT_SCENARIO_BG,
-        thumbnailUrl: thumb
+        ...(thumb ? { thumbnailUrl: thumb } : {})
       });
 
       this.hasEverBeenSaved = true;
       this.isDirty = false;
     } catch (err) {
       console.warn('Erro ao salvar cenário automaticamente:', err);
+    } finally {
+      this.isAutosaving = false;
+    }
+  }
+
+  async flushAutosave(skipThumbnail = true): Promise<void> {
+    if (this.autosaveTimer) {
+      clearTimeout(this.autosaveTimer);
+      this.autosaveTimer = null;
+    }
+    if (this.isDirty) {
+      await this.performAutosave(skipThumbnail);
     }
   }
 
@@ -206,7 +222,7 @@ export class ProjectsModal {
         wallTextureUrl: this.canvasEngine.wallTextureUrl,
         floorTextureUrl: this.canvasEngine.floorTextureUrl,
         bgImageUrl: this.canvasEngine.bgImageUrl || undefined,
-        thumbnailUrl: this.canvasEngine.exportHDImage()
+        thumbnailUrl: this.canvasEngine.exportThumbnailImage(360)
       });
       this.hasEverBeenSaved = true;
       this.isDirty = false;
@@ -221,6 +237,10 @@ export class ProjectsModal {
 
   markClean(): void {
     this.isDirty = false;
+    if (this.autosaveTimer) {
+      clearTimeout(this.autosaveTimer);
+      this.autosaveTimer = null;
+    }
   }
 
   // ========================================================
@@ -527,7 +547,7 @@ export class ProjectsModal {
       return await this.openSaveModal();
     }
 
-    const thumb = this.canvasEngine.exportHDImage();
+    const thumb = this.canvasEngine.exportThumbnailImage(360);
 
     await saveProject({
       id: this.currentProjectId,
@@ -554,7 +574,7 @@ export class ProjectsModal {
       return false;
     }
 
-    const thumb = this.canvasEngine.exportHDImage();
+    const thumb = this.canvasEngine.exportThumbnailImage(360);
 
     const saved = await saveProject({
       id: this.currentProjectId || undefined,

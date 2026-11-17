@@ -3,6 +3,7 @@ import {
   createClipFunction,
   calculateCoverPlacement,
   loadImageAsync,
+  invalidateBitmapCacheEntry,
   isPointInsideMask,
   createShadingOverlay,
   createCylinderFloorShadow,
@@ -21,10 +22,11 @@ import type { PresetItem, SceneElement } from '../types';
 
 // OTIMIZAÇÃO CRÍTICA PARA MOBILE:
 // 1. Desativa detecção de colisão durante arraste
-// 2. Limita pixelRatio em 2x (Retina) para evitar sobrecarga de fill-rate 3x/3.5x em GPUs mobile
+// 2. Limita pixelRatio (1.5x no mobile para poupar VRAM GPU e evitar crash em 2º plano; 2x no desktop)
 Konva.hitOnDragEnabled = false;
 if (typeof window !== 'undefined') {
-  Konva.pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  const isCompactMobile = window.innerWidth <= 900;
+  Konva.pixelRatio = Math.min(window.devicePixelRatio || 1, isCompactMobile ? 1.5 : 2);
 }
 
 export class CanvasEngine {
@@ -161,7 +163,7 @@ export class CanvasEngine {
 
     this.undoStack = [];
     this.redoStack = [];
-    this.maxHistory = 35;
+    this.maxHistory = typeof window !== 'undefined' && window.innerWidth <= 900 ? 18 : 35;
     this.isRestoringState = false;
 
     this.zoomLevel = 1;
@@ -244,11 +246,16 @@ export class CanvasEngine {
     this.decorLayer = new Konva.Layer({ listening: false });
     this.stage.add(this.decorLayer);
 
-    // Aplica sombra de base/contato realista no canvas da camada de peças decorativas
+    // Aplica sombra de camada apenas no desktop; no mobile poupa um FBO inteiro da GPU evitando crash em 2º plano
     const decorCanvasEl = this.decorLayer.getCanvas()?._canvas;
+    const isTouchOrMobile =
+      typeof window !== 'undefined' &&
+      (window.innerWidth <= 900 || (navigator.maxTouchPoints || 0) > 0);
     if (decorCanvasEl) {
       decorCanvasEl.classList.add('canvas-decor-layer');
-      decorCanvasEl.style.filter = 'drop-shadow(0 8px 10px rgba(0, 0, 0, 0.18))';
+      if (!isTouchOrMobile) {
+        decorCanvasEl.style.filter = 'drop-shadow(0 8px 10px rgba(0, 0, 0, 0.18))';
+      }
     }
 
     // Apenas uiLayer possui listening: true para as 4 âncoras de redimensionamento/rotação do Transformer
@@ -440,6 +447,66 @@ export class CanvasEngine {
       this.stage.height(newH);
       this.fitToView();
     }
+  }
+
+  /**
+   * Restaura camadas e superfícies de canvas após o retorno do app de segundo plano no mobile,
+   * preservando zoom/pan e recarregando bitmaps eventualmente descartados pela GPU do sistema.
+   */
+  async recoverAfterResume(): Promise<void> {
+    if (!this.stage) return;
+
+    const container = this.stage.container();
+    if (container && container.clientWidth > 0 && container.clientHeight > 0) {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      if (this.stage.width() !== w || this.stage.height() !== h) {
+        this.stage.width(w);
+        this.stage.height(h);
+      }
+      this.baseScale = Math.max(w / this.VIRTUAL_WIDTH, h / this.VIRTUAL_HEIGHT);
+      this.baseOffsetX = (w - this.VIRTUAL_WIDTH * this.baseScale) / 2;
+      this.baseOffsetY = (h - this.VIRTUAL_HEIGHT * this.baseScale) / 2;
+    }
+
+    const isKonvaImageBroken = (imgNode: Konva.Image): boolean => {
+      const src = imgNode.image();
+      if (!src) return true;
+      if (src instanceof HTMLCanvasElement) {
+        return src.width === 0 || src.height === 0;
+      }
+      if (src instanceof HTMLImageElement) {
+        return !src.complete || src.naturalWidth === 0;
+      }
+      return false;
+    };
+
+    const bgImages = (this.bgLayer?.find('Image') || []) as Konva.Image[];
+    const needsBgRebuild = !this.bgLayer || bgImages.length === 0 || bgImages.some(isKonvaImageBroken);
+    if (needsBgRebuild) {
+      if (this.bgImageUrl) invalidateBitmapCacheEntry(this.bgImageUrl);
+      if (this.wallTextureUrl) invalidateBitmapCacheEntry(this.wallTextureUrl);
+      if (this.floorTextureUrl) invalidateBitmapCacheEntry(this.floorTextureUrl);
+      await this.renderEnvironment();
+    }
+
+    const decorImages = (this.decorLayer?.find('Image') || []) as Konva.Image[];
+    const hasBrokenDecor = decorImages.some(isKonvaImageBroken);
+    if (hasBrokenDecor) {
+      const selectedId = this.selectedNode?.getAttr('itemMeta')?.instanceId || null;
+      const elements = this.getSceneElements();
+      for (const el of elements) {
+        if (el.previewUrl) invalidateBitmapCacheEntry(el.previewUrl);
+        if (el.customCoverUrl) invalidateBitmapCacheEntry(el.customCoverUrl);
+        if (el.tabletopCoverUrl) invalidateBitmapCacheEntry(el.tabletopCoverUrl);
+      }
+      await this.loadSceneElements(elements, selectedId);
+    }
+
+    this.applyViewTransform();
+    this.bgLayer?.draw();
+    this.decorLayer?.draw();
+    this.uiLayer?.draw();
   }
 
   async renderEnvironment() {
@@ -3760,7 +3827,14 @@ export class CanvasEngine {
         exportCtx.drawImage(decorCanvas, 0, 0);
         exportCtx.restore();
 
+        bgCanvas.width = 0;
+        bgCanvas.height = 0;
+        decorCanvas.width = 0;
+        decorCanvas.height = 0;
+
         dataUrl = exportCanvas.toDataURL('image/png') || '';
+        exportCanvas.width = 0;
+        exportCanvas.height = 0;
       }
 
       if (!dataUrl && this.stage) {
@@ -3792,6 +3866,79 @@ export class CanvasEngine {
     }
 
     return dataUrl;
+  }
+
+  /**
+   * Gera miniatura leve (360×640 JPEG) para cards e autosave sem sobrecarregar a GPU/RAM mobile.
+   */
+  exportThumbnailImage(targetWidth: number = 360): string {
+    if (!this.stage || !this.bgLayer || !this.decorLayer) return '';
+
+    const wasUiVisible = this.uiLayer?.visible() ?? true;
+    const prevZoom = this.zoomLevel;
+    const prevPanX = this.panX;
+    const prevPanY = this.panY;
+    const needsReset = prevZoom !== 1 || prevPanX !== 0 || prevPanY !== 0;
+
+    let thumbUrl = '';
+    try {
+      if (this.uiLayer) this.uiLayer.visible(false);
+      if (needsReset) {
+        this.zoomLevel = 1;
+        this.panX = 0;
+        this.panY = 0;
+        this.applyViewTransform();
+      }
+
+      const ratio = targetWidth / this.VIRTUAL_WIDTH;
+      const thumbW = Math.round(targetWidth);
+      const thumbH = Math.round(this.VIRTUAL_HEIGHT * ratio);
+      const cropScale = this.baseScale || 1;
+      const pixelRatio = Math.max(0.25, ratio / cropScale);
+
+      const outCanvas = document.createElement('canvas');
+      outCanvas.width = thumbW;
+      outCanvas.height = thumbH;
+      const ctx = outCanvas.getContext('2d');
+      if (ctx) {
+        const crop = {
+          x: this.baseOffsetX,
+          y: this.baseOffsetY,
+          width: this.VIRTUAL_WIDTH * cropScale,
+          height: this.VIRTUAL_HEIGHT * cropScale,
+          pixelRatio
+        };
+        const bgCanvas = this.bgLayer.toCanvas(crop);
+        ctx.drawImage(bgCanvas, 0, 0, thumbW, thumbH);
+        const decorCanvas = this.decorLayer.toCanvas(crop);
+        ctx.drawImage(decorCanvas, 0, 0, thumbW, thumbH);
+
+        // Libera canvases intermediários imediatamente para GC móvel
+        bgCanvas.width = 0;
+        bgCanvas.height = 0;
+        decorCanvas.width = 0;
+        decorCanvas.height = 0;
+
+        thumbUrl = outCanvas.toDataURL('image/jpeg', 0.78) || '';
+        outCanvas.width = 0;
+        outCanvas.height = 0;
+      }
+    } catch {
+      thumbUrl = '';
+    } finally {
+      if (this.uiLayer) {
+        this.uiLayer.visible(wasUiVisible);
+        this.uiLayer.draw();
+      }
+      if (needsReset) {
+        this.zoomLevel = prevZoom;
+        this.panX = prevPanX;
+        this.panY = prevPanY;
+        this.applyViewTransform();
+      }
+    }
+
+    return thumbUrl;
   }
 
   getSceneNodes(): Konva.Group[] {
@@ -3848,14 +3995,18 @@ export class CanvasEngine {
     this.decorLayer.destroyChildren();
 
     for (const elem of elements) {
-      const node = await this.addItem(elem, { x: elem.x, y: elem.y }, false, false);
-      if (node) {
-        node.scaleX(elem.scaleX || 1);
-        node.scaleY(elem.scaleY || 1);
-        node.rotation(elem.rotation || 0);
-        if ((elem.scaleX || 1) < 0) {
-          node.offsetX(node.width());
+      try {
+        const node = await this.addItem(elem, { x: elem.x, y: elem.y }, false, false);
+        if (node) {
+          node.scaleX(elem.scaleX || 1);
+          node.scaleY(elem.scaleY || 1);
+          node.rotation(elem.rotation || 0);
+          if ((elem.scaleX || 1) < 0) {
+            node.offsetX(node.width());
+          }
         }
+      } catch (err) {
+        console.warn('Falha ao restaurar peça do cenário:', elem?.id, err);
       }
     }
 

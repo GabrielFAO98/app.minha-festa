@@ -2,8 +2,43 @@ import Konva from 'konva';
 import { svgToDataUrl, generateOrganicBeanTabletopOnlySVG, generateSkirtTablePartSVG } from './presets-data';
 import { adjustColorBrightness } from './modular-svg-generator';
 
-// Cache em memória de imagens e SVGs pré-rasterizados em GPU Bitmap
+// Cache em memória limitado (LRU) de imagens e SVGs pré-rasterizados em GPU Bitmap
+const MAX_BITMAP_CACHE_ENTRIES = 60;
 const imageBitmapCache = new Map<string, HTMLImageElement | HTMLCanvasElement>();
+
+function isValidCachedBitmap(entry: HTMLImageElement | HTMLCanvasElement | undefined): boolean {
+  if (!entry) return false;
+  if (entry instanceof HTMLCanvasElement) {
+    return entry.width > 0 && entry.height > 0;
+  }
+  return Boolean(entry.complete && entry.naturalWidth > 0);
+}
+
+function setCachedBitmap(src: string, entry: HTMLImageElement | HTMLCanvasElement): void {
+  if (imageBitmapCache.has(src)) {
+    imageBitmapCache.delete(src);
+  }
+  imageBitmapCache.set(src, entry);
+  while (imageBitmapCache.size > MAX_BITMAP_CACHE_ENTRIES) {
+    const oldestKey = imageBitmapCache.keys().next().value;
+    if (oldestKey === undefined) break;
+    const evicted = imageBitmapCache.get(oldestKey);
+    imageBitmapCache.delete(oldestKey);
+    if (evicted instanceof HTMLCanvasElement) {
+      evicted.width = 0;
+      evicted.height = 0;
+    }
+  }
+}
+
+export function invalidateBitmapCacheEntry(src: string): void {
+  const existing = imageBitmapCache.get(src);
+  if (existing instanceof HTMLCanvasElement) {
+    existing.width = 0;
+    existing.height = 0;
+  }
+  imageBitmapCache.delete(src);
+}
 
 /**
  * Retorna a caixa útil interna dos painéis retangulares (vertical 1x2m e horizontal 2m)
@@ -911,8 +946,13 @@ function attachAlphaHitGrid(source: HTMLImageElement | HTMLCanvasElement) {
  */
 export function loadImageAsync(src: string): Promise<HTMLImageElement> {
   const cached = imageBitmapCache.get(src);
-  if (cached) {
+  if (isValidCachedBitmap(cached)) {
+    // Atualiza ordem LRU sem realocar memória
+    imageBitmapCache.delete(src);
+    imageBitmapCache.set(src, cached!);
     return Promise.resolve(cached as HTMLImageElement);
+  } else if (cached) {
+    imageBitmapCache.delete(src);
   }
 
   return new Promise<HTMLImageElement>((resolve, reject) => {
@@ -925,7 +965,8 @@ export function loadImageAsync(src: string): Promise<HTMLImageElement> {
         try {
           const natW = img.naturalWidth || img.width || 300;
           const natH = img.naturalHeight || img.height || 300;
-          const maxDim = 768;
+          const isMobileViewport = typeof window !== 'undefined' && window.innerWidth <= 900;
+          const maxDim = isMobileViewport ? 512 : 768;
           const scale = Math.min(2, maxDim / Math.max(natW, natH, 1));
           const targetW = Math.max(1, Math.round(natW * scale));
           const targetH = Math.max(1, Math.round(natH * scale));
@@ -940,7 +981,7 @@ export function loadImageAsync(src: string): Promise<HTMLImageElement> {
             (rasterCanvas as any).naturalHeight = natH;
             (rasterCanvas as any).complete = true;
             attachAlphaHitGrid(rasterCanvas);
-            imageBitmapCache.set(src, rasterCanvas);
+            setCachedBitmap(src, rasterCanvas);
             resolve(rasterCanvas as unknown as HTMLImageElement);
             return;
           }
@@ -950,7 +991,7 @@ export function loadImageAsync(src: string): Promise<HTMLImageElement> {
       }
 
       attachAlphaHitGrid(img);
-      imageBitmapCache.set(src, img);
+      setCachedBitmap(src, img);
       resolve(img);
     };
     img.onerror = (err) => reject(err);

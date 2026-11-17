@@ -1,4 +1,4 @@
-import { initDatabase, getItemsByCategory } from './core/db';
+import { initDatabase, getItemsByCategory, getProject } from './core/db';
 import { DEFAULT_PRESET_ITEMS } from './core/presets-data';
 import { CanvasEngine } from './core/canvas-engine';
 import { ScreenManager } from './core/screen-manager';
@@ -107,6 +107,10 @@ async function bootstrap() {
       }
       if (newScreen === 'scenario') {
         canvasEngine.fitToView();
+      } else {
+        try {
+          localStorage.removeItem('decoraly_scenario_recovery_v1');
+        } catch {}
       }
       history.pushState({ screen: newScreen }, '');
     }
@@ -370,9 +374,126 @@ async function bootstrap() {
     screenManager.navigateTo('home');
   };
 
-  // Inicia rigorosamente na Home
-  screenManager.forceNavigateTo('home');
-  history.replaceState({ screen: 'home' }, '');
+  const SCENARIO_RECOVERY_KEY = 'decoraly_scenario_recovery_v1';
+
+  const saveScenarioRecoveryMarker = (isHidden: boolean) => {
+    if (screenManager.activeScreen !== 'scenario') {
+      try {
+        localStorage.removeItem(SCENARIO_RECOVERY_KEY);
+      } catch {}
+      return;
+    }
+
+    const elements = canvasEngine.getSceneElements();
+    const basePayload = {
+      active: true,
+      hidden: isHidden,
+      projectId: projectsModal.currentProjectId,
+      title: projectsModal.currentProjectTitle || 'Novo Cenário',
+      bgImageUrl: canvasEngine.bgImageUrl,
+      wallTextureUrl: canvasEngine.wallTextureUrl,
+      floorTextureUrl: canvasEngine.floorTextureUrl,
+      updatedAt: Date.now()
+    };
+
+    try {
+      const fullJson = JSON.stringify({ ...basePayload, elements });
+      if (fullJson.length <= 1_500_000) {
+        localStorage.setItem(SCENARIO_RECOVERY_KEY, fullJson);
+      } else {
+        localStorage.setItem(SCENARIO_RECOVERY_KEY, JSON.stringify(basePayload));
+      }
+    } catch {
+      try {
+        localStorage.setItem(SCENARIO_RECOVERY_KEY, JSON.stringify(basePayload));
+      } catch {}
+    }
+  };
+
+  // Tenta restaurar automaticamente se o celular encerrou a aba em segundo plano durante edição de cenário
+  let restoredScenarioFromBackground = false;
+  try {
+    const rawRecovery = localStorage.getItem(SCENARIO_RECOVERY_KEY);
+    if (rawRecovery) {
+      const rec = JSON.parse(rawRecovery);
+      const isRecent = typeof rec?.updatedAt === 'number' && Date.now() - rec.updatedAt < 12 * 3600 * 1000;
+      const wasDiscarded = Boolean((document as any).wasDiscarded);
+
+      if (rec?.active && isRecent && (rec.hidden || wasDiscarded)) {
+        const storedProject = rec.projectId ? await getProject(rec.projectId) : undefined;
+        const elementsToLoad =
+          Array.isArray(rec.elements) && rec.elements.length > 0
+            ? rec.elements
+            : storedProject?.elements || [];
+
+        if (storedProject || elementsToLoad.length > 0) {
+          if (storedProject) {
+            await projectsModal.loadProject({
+              ...storedProject,
+              elements: elementsToLoad
+            });
+          } else {
+            await canvasEngine.loadSceneElements(elementsToLoad);
+            if (rec.bgImageUrl) {
+              await canvasEngine.setEnvironmentScenario(rec.bgImageUrl);
+            } else if (rec.wallTextureUrl || rec.floorTextureUrl) {
+              await canvasEngine.setEnvironmentTextures(rec.wallTextureUrl || null, rec.floorTextureUrl || null);
+            }
+            projectsModal.currentProjectTitle = rec.title || 'Novo Cenário';
+            if (projectsModal.titleDisplay) {
+              projectsModal.titleDisplay.textContent = projectsModal.currentProjectTitle;
+            }
+            screenManager.forceNavigateTo('scenario');
+            canvasEngine.fitToView();
+          }
+          restoredScenarioFromBackground = true;
+          saveScenarioRecoveryMarker(false);
+        }
+      }
+      if (!restoredScenarioFromBackground) {
+        localStorage.removeItem(SCENARIO_RECOVERY_KEY);
+      }
+    }
+  } catch (err) {
+    console.warn('Falha ao restaurar rascunho após retorno do 2º plano:', err);
+  }
+
+  if (!restoredScenarioFromBackground) {
+    // Inicia rigorosamente na Home
+    screenManager.forceNavigateTo('home');
+    history.replaceState({ screen: 'home' }, '');
+  } else {
+    history.replaceState({ screen: 'scenario' }, '');
+  }
+
+  // Proteção contra suspensão e descarte de GPU em segundo plano no celular
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      if (screenManager.activeScreen === 'scenario') {
+        saveScenarioRecoveryMarker(true);
+        void projectsModal.flushAutosave(true);
+      }
+    } else if (document.visibilityState === 'visible') {
+      if (screenManager.activeScreen === 'scenario') {
+        saveScenarioRecoveryMarker(false);
+        void canvasEngine.recoverAfterResume();
+      }
+    }
+  });
+
+  window.addEventListener('pagehide', () => {
+    if (screenManager.activeScreen === 'scenario') {
+      saveScenarioRecoveryMarker(true);
+      void projectsModal.flushAutosave(true);
+    }
+  });
+
+  window.addEventListener('pageshow', (e) => {
+    if (screenManager.activeScreen === 'scenario' && (e.persisted || document.visibilityState === 'visible')) {
+      saveScenarioRecoveryMarker(false);
+      void canvasEngine.recoverAfterResume();
+    }
+  });
 
   // Interceptação global do Botão Voltar do Mobile / Navegador
   window.addEventListener('popstate', async () => {
@@ -429,6 +550,9 @@ async function bootstrap() {
 
   // Alerta nativo caso feche a aba com alterações pendentes
   window.addEventListener('beforeunload', (e) => {
+    if (screenManager.activeScreen === 'scenario') {
+      saveScenarioRecoveryMarker(false);
+    }
     if (projectsModal.hasUnsavedChanges() || balloonStudioModal.isDirty) {
       e.preventDefault();
       e.returnValue = '';
@@ -438,6 +562,14 @@ async function bootstrap() {
   // 12. Desativa a Splash Screen suavemente
   HomeScreen.dismissSplashScreen(650, splashStartTime);
 }
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.warn('[Decoraly] Erro assíncrono capturado:', event.reason);
+});
+
+window.addEventListener('error', (event) => {
+  console.warn('[Decoraly] Erro de execução capturado:', event.message);
+});
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', bootstrap);

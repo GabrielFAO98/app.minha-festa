@@ -28,6 +28,9 @@ export default defineConfig(({ mode }) => {
       host: true
     },
     plugins: [decoralyLocalApiPlugin()],
+    worker: {
+      format: 'es'
+    },
     build: {
       outDir: 'dist',
       sourcemap: false

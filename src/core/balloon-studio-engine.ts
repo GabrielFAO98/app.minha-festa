@@ -108,6 +108,62 @@ export function isLightColor(hex: string): boolean {
   return (r * 0.299 + g * 0.587 + b * 0.114) > 220;
 }
 
+function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h /= 6;
+  }
+  return { h, s, l };
+}
+
+function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: number } {
+  let r: number, g: number, b: number;
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    const hue2rgb = (pVal: number, qVal: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return pVal + (qVal - pVal) * 6 * t;
+      if (t < 1 / 2) return qVal;
+      if (t < 2 / 3) return pVal + (qVal - pVal) * (2 / 3 - t) * 6;
+      return pVal;
+    };
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+  return { r: r * 255, g: g * 255, b: b * 255 };
+}
+
+function shadeLatexColor(hex: string, lDelta: number, sBoost: number = 0): string {
+  const { r, g, b } = hexToRgb(hex);
+  const hsl = rgbToHsl(r, g, b);
+  if (hsl.s < 0.08 && hsl.l > 0.88) {
+    const nl = Math.max(0.05, Math.min(1, hsl.l + lDelta * 0.66));
+    const rgb = hslToRgb(0.09, lDelta < 0 ? 0.08 : 0.02, nl);
+    return rgbToHex(rgb.r, rgb.g, rgb.b);
+  }
+  const rgb = hslToRgb(
+    hsl.h,
+    Math.max(0, Math.min(1, hsl.s + sBoost)),
+    Math.max(0.04, Math.min(0.99, hsl.l + lDelta))
+  );
+  return rgbToHex(rgb.r, rgb.g, rgb.b);
+}
+
 // Catálogo de Cores da Moda para Balões de Festa no Brasil
 export interface FashionColor {
   name: string;
@@ -310,15 +366,20 @@ export function generateStudioDefs(palette: BalloonPaletteConfig, idPrefix: stri
       <stop offset="60%" stop-color="#0f172a" stop-opacity="0.08"/>
       <stop offset="100%" stop-color="#0f172a" stop-opacity="0"/>
     </radialGradient>
+    <radialGradient id="${idPrefix}aoShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="52%" stop-color="#1c120e" stop-opacity="0.22"/>
+      <stop offset="82%" stop-color="#1c120e" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#1c120e" stop-opacity="0"/>
+    </radialGradient>
     <radialGradient id="${idPrefix}glare_soft" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
-      <stop offset="65%" stop-color="#ffffff" stop-opacity="0.10"/>
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.52"/>
+      <stop offset="55%" stop-color="#ffffff" stop-opacity="0.14"/>
       <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="${idPrefix}glare_chrome" cx="45%" cy="40%" r="55%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85"/>
-      <stop offset="40%" stop-color="#ffffff" stop-opacity="0.35"/>
-      <stop offset="75%" stop-color="#ffffff" stop-opacity="0.05"/>
+    <radialGradient id="${idPrefix}glare_chrome" cx="44%" cy="38%" r="54%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.94"/>
+      <stop offset="35%" stop-color="#ffffff" stop-opacity="0.42"/>
+      <stop offset="72%" stop-color="#ffffff" stop-opacity="0.06"/>
       <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
   `;
@@ -326,54 +387,38 @@ export function generateStudioDefs(palette: BalloonPaletteConfig, idPrefix: stri
   const slots: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
   for (const slot of slots) {
     const hex = palette[slot] || (slot === 'E' ? '#f8fafc' : '#d4af37');
-    const isLight = isLightColor(hex);
 
-    // 1. SATIN
-    const satLight = isLight ? '#ffffff' : adjustColorBrightness(hex, 0.42);
-    const satMid = hex;
-    const satShadow = isLight ? '#cbd5e1' : adjustColorBrightness(hex, -0.24);
-    const satDeep = isLight ? '#94a3b8' : adjustColorBrightness(hex, -0.38);
-
+    // 1. SATIN (preserva matiz em tons pastel + luz rebatida suave na borda)
     defs += `
-    <radialGradient id="${idPrefix}grad_satin_${slot}" cx="38%" cy="34%" r="65%" fx="32%" fy="28%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="${isLight ? 0.95 : 0.75}"/>
-      <stop offset="16%" stop-color="${satLight}"/>
-      <stop offset="52%" stop-color="${satMid}"/>
-      <stop offset="84%" stop-color="${satShadow}"/>
-      <stop offset="100%" stop-color="${satDeep}"/>
+    <radialGradient id="${idPrefix}grad_satin_${slot}" cx="36%" cy="32%" r="68%" fx="30%" fy="26%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.70"/>
+      <stop offset="15%" stop-color="${shadeLatexColor(hex, 0.22, -0.04)}"/>
+      <stop offset="48%" stop-color="${hex}"/>
+      <stop offset="80%" stop-color="${shadeLatexColor(hex, -0.15, 0.08)}"/>
+      <stop offset="94%" stop-color="${shadeLatexColor(hex, -0.26, 0.12)}"/>
+      <stop offset="100%" stop-color="${shadeLatexColor(hex, -0.14, 0.05)}"/>
     </radialGradient>
     `;
 
-    // 2. MATTE
-    const matLight = isLight ? '#ffffff' : adjustColorBrightness(hex, 0.28);
-    const matMid = hex;
-    const matShadow = isLight ? '#cbd5e1' : adjustColorBrightness(hex, -0.18);
-    const matDeep = isLight ? '#94a3b8' : adjustColorBrightness(hex, -0.28);
-
+    // 2. MATTE (aveludado natural sem sombra azul-acinzentada)
     defs += `
-    <radialGradient id="${idPrefix}grad_matte_${slot}" cx="40%" cy="36%" r="68%" fx="36%" fy="32%">
-      <stop offset="0%" stop-color="${matLight}" stop-opacity="0.9"/>
-      <stop offset="35%" stop-color="${matMid}"/>
-      <stop offset="80%" stop-color="${matShadow}"/>
-      <stop offset="100%" stop-color="${matDeep}"/>
+    <radialGradient id="${idPrefix}grad_matte_${slot}" cx="38%" cy="34%" r="68%" fx="34%" fy="29%">
+      <stop offset="0%" stop-color="${shadeLatexColor(hex, 0.13, -0.04)}"/>
+      <stop offset="36%" stop-color="${hex}"/>
+      <stop offset="78%" stop-color="${shadeLatexColor(hex, -0.14, 0.07)}"/>
+      <stop offset="100%" stop-color="${shadeLatexColor(hex, -0.23, 0.11)}"/>
     </radialGradient>
     `;
 
-    // 3. CHROME
-    const chrHighlight = '#ffffff';
-    const chrBright = adjustColorBrightness(hex, 0.55);
-    const chrMid = hex;
-    const chrDark = adjustColorBrightness(hex, -0.45);
-    const chrRim = adjustColorBrightness(hex, 0.25);
-
+    // 3. CHROME (reflexo metálico realista)
     defs += `
-    <radialGradient id="${idPrefix}grad_chrome_${slot}" cx="36%" cy="30%" r="70%" fx="30%" fy="24%">
-      <stop offset="0%" stop-color="${chrHighlight}" stop-opacity="0.95"/>
-      <stop offset="15%" stop-color="${chrBright}"/>
-      <stop offset="42%" stop-color="${chrMid}"/>
-      <stop offset="78%" stop-color="${chrDark}"/>
-      <stop offset="94%" stop-color="${chrMid}"/>
-      <stop offset="100%" stop-color="${chrRim}"/>
+    <radialGradient id="${idPrefix}grad_chrome_${slot}" cx="34%" cy="28%" r="72%" fx="28%" fy="22%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="14%" stop-color="${shadeLatexColor(hex, 0.32, 0.05)}"/>
+      <stop offset="40%" stop-color="${hex}"/>
+      <stop offset="76%" stop-color="${shadeLatexColor(hex, -0.34, 0.16)}"/>
+      <stop offset="92%" stop-color="${hex}"/>
+      <stop offset="100%" stop-color="${shadeLatexColor(hex, 0.16, 0.04)}"/>
     </radialGradient>
     `;
 
@@ -496,16 +541,16 @@ export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPalet
     <circle cx="${(x - starR * 0.18).toFixed(1)}" cy="${(y - starR * 0.28).toFixed(1)}" r="${Math.max(2, starR * 0.07)}" fill="#ffffff" opacity="0.8"/>
   </g>`;
   }
-  const rx = r * 0.97;
-  const ry = r * 1.03;
+  const rx = r * 0.96;
+  const ry = r * 1.04;
 
-  const gx = x - rx * 0.24;
-  const gy = y - ry * 0.26;
-  const gw = rx * 0.38;
-  const gh = ry * 0.28;
-  const dotX = x - rx * 0.16;
-  const dotY = y - ry * 0.36;
-  const dotR = Math.max(1, r * 0.055);
+  const gx = x - rx * 0.25;
+  const gy = y - ry * 0.27;
+  const gw = rx * 0.36;
+  const gh = ry * 0.24;
+  const dotX = x - rx * 0.20;
+  const dotY = y - ry * 0.37;
+  const dotR = Math.max(1.2, r * 0.052);
 
   let interior = '';
   const isCrystalOrGlitter = effectiveFinish === 'crystal' || effectiveFinish === 'glitter';
@@ -550,19 +595,26 @@ export function renderBalloonPieceSvg(piece: BalloonPiece, palette: BalloonPalet
   const isMatte = !hasCover && effectiveFinish === 'matte';
   const isChrome = !hasCover && effectiveFinish === 'chrome';
   const glareGrad = isChrome ? `url(#${idPrefix}glare_chrome)` : `url(#${idPrefix}glare_soft)`;
+  const rotAttr = piece.rotation ? ` transform="rotate(${piece.rotation} ${x} ${y})"` : '';
 
   return `
   <g id="piece-${piece.id}" class="balloon-piece">
-    <!-- Sombra vetorial leve de alto desempenho (zero overhead de filtro SVG) -->
-    <ellipse cx="${(x + 1.4).toFixed(1)}" cy="${(y + 2.8).toFixed(1)}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}" fill="#090d16" opacity="${isCrystalOrGlitter ? 0.10 : 0.14}"/>
-    ${hasCover ? `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#${idPrefix}pat_cover_${effectiveSlot})"/>` : `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#${gradId})"/>`}
-    ${hasCover ? `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#${idPrefix}grad_satin_${effectiveSlot})" opacity="0.32"/>` : ''}
+    <!-- Oclusão ambiental radial leve de alto desempenho (zero overhead de filtro SVG) -->
+    ${isCrystalOrGlitter
+      ? `<ellipse cx="${(x + 1.4).toFixed(1)}" cy="${(y + 2.8).toFixed(1)}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}" fill="#090d16" opacity="0.10"/>`
+      : `<ellipse cx="${(x + 2.0).toFixed(1)}" cy="${(y + 3.4).toFixed(1)}" rx="${(rx * 1.12).toFixed(1)}" ry="${(ry * 1.12).toFixed(1)}" fill="url(#${idPrefix}aoShadow)"/>`
+    }
+    ${hasCover
+      ? `<ellipse cx="${x}" cy="${y}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}"${rotAttr} fill="url(#${idPrefix}pat_cover_${effectiveSlot})"/>`
+      : `<ellipse cx="${x}" cy="${y}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}"${rotAttr} fill="url(#${gradId})"/>`
+    }
+    ${hasCover ? `<ellipse cx="${x}" cy="${y}" rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}"${rotAttr} fill="url(#${idPrefix}grad_satin_${effectiveSlot})" opacity="0.32"/>` : ''}
     ${interior}
     ${!isMatte ? `
-      <ellipse cx="${gx}" cy="${gy}" rx="${gw}" ry="${gh}" transform="rotate(-25 ${gx} ${gy})" fill="${glareGrad}"/>
-      ${!isMini ? `<circle cx="${dotX}" cy="${dotY}" r="${dotR}" fill="#ffffff" opacity="${isChrome ? 0.95 : (isCrystalOrGlitter ? 0.85 : 0.65)}"/>` : ''}
-      ${isChrome ? `<ellipse cx="${x + rx * 0.22}" cy="${y + ry * 0.25}" rx="${rx * 0.26}" ry="${ry * 0.16}" transform="rotate(30 ${x + rx * 0.22} ${y + ry * 0.25})" fill="#ffffff" opacity="0.25"/>` : ''}
-    ` : ''}
+      <ellipse cx="${gx.toFixed(1)}" cy="${gy.toFixed(1)}" rx="${gw.toFixed(1)}" ry="${gh.toFixed(1)}" transform="rotate(-28 ${gx.toFixed(1)} ${gy.toFixed(1)})" fill="${glareGrad}"/>
+      ${!isMini ? `<circle cx="${dotX.toFixed(1)}" cy="${dotY.toFixed(1)}" r="${dotR.toFixed(1)}" fill="#ffffff" opacity="${isChrome ? 0.92 : (isCrystalOrGlitter ? 0.85 : 0.56)}"/>` : ''}
+      ${isChrome ? `<ellipse cx="${(x + rx * 0.26).toFixed(1)}" cy="${(y + ry * 0.28).toFixed(1)}" rx="${(rx * 0.24).toFixed(1)}" ry="${(ry * 0.13).toFixed(1)}" transform="rotate(32 ${(x + rx * 0.26).toFixed(1)} ${(y + ry * 0.28).toFixed(1)})" fill="#ffffff" opacity="0.28"/>` : ''}
+    ` : `<ellipse cx="${gx.toFixed(1)}" cy="${gy.toFixed(1)}" rx="${(gw * 1.05).toFixed(1)}" ry="${(gh * 1.05).toFixed(1)}" transform="rotate(-28 ${gx.toFixed(1)} ${gy.toFixed(1)})" fill="${glareGrad}" opacity="0.26"/>`}
   </g>`;
 }
 
@@ -603,25 +655,20 @@ export function calculateArrangementStats(pieces: BalloonPiece[], palette?: Ball
   };
 }
 
-// Ordena balões por profundidade física automática (24" e 18" no fundo, 12"/10" no meio, 5" na frente)
+// Ordena balões por profundidade física 3D (respeitando coordenada z explícita e mantendo fallback automático para peças sem z)
 export function sortPiecesByDepth(pieces: BalloonPiece[]): BalloonPiece[] {
+  const getEffectiveZ = (p: BalloonPiece): number => {
+    if (p.shape === 'star') return 100 + (p.z ?? 0);
+    if (p.z !== undefined) return p.z;
+    if (p.sizeInches === 5) return 45;
+    if (p.sizeInches >= 18) return -15;
+    return 10;
+  };
+
   return [...pieces].sort((a, b) => {
-    // Balões estrela (foil) e 5" balões de acabamento sempre na frente (pontos de luz/destaque)
-    if (a.shape === 'star' && b.shape !== 'star') return 1;
-    if (b.shape === 'star' && a.shape !== 'star') return -1;
-
-    if (a.sizeInches === 5 && b.sizeInches !== 5) return 1;
-    if (b.sizeInches === 5 && a.sizeInches !== 5) return -1;
-
-    // Balões gigantes (18", 24", 36") de base e impacto estrutural atrás
-    if (a.sizeInches >= 18 && b.sizeInches < 18) return -1;
-    if (b.sizeInches >= 18 && a.sizeInches < 18) return 1;
-
-    // Coordenada z 3D de profundidade no cluster
-    if (a.z !== undefined && b.z !== undefined) {
-      if (Math.abs(a.z - b.z) > 4) return a.z - b.z;
-    }
-
+    const za = getEffectiveZ(a);
+    const zb = getEffectiveZ(b);
+    if (za !== zb) return za - zb;
     return a.y - b.y;
   });
 }
@@ -637,11 +684,26 @@ export function mirrorArrangementHorizontal(pieces: BalloonPiece[]): BalloonPiec
   const midX = (minX + maxX) / 2;
   return pieces.map((p) => ({
     ...p,
-    x: Math.round(midX - (p.x - midX))
+    x: Math.round(midX - (p.x - midX)),
+    ...(p.rotation ? { rotation: -p.rotation } : {})
   }));
 }
 
-// Distribui as cores da paleta no arranjo conforme o modo escolhido
+interface ColorMetaPiece {
+  origIdx: number;
+  piece: BalloonPiece;
+  slot: BalloonSlot;
+  r: number;
+  t: number;
+  sn: number;
+  kind: 'big' | 'quad' | 'mini';
+  clusterIdx: number;
+  rosetteIdx: number;
+  locked?: boolean;
+}
+
+// Distribui as cores da paleta no arranjo seguindo a geometria real da curva,
+// preservando rosetas de 5" monocromáticas, moldura contrastante nos 16"/18" e ritmo equilibrado
 export function distributeColors(
   pieces: BalloonPiece[],
   mode: 'mesclado' | 'degrade' | 'blocos',
@@ -650,49 +712,376 @@ export function distributeColors(
   if (pieces.length === 0) return [];
   const allSlots: BalloonSlot[] = ['A', 'B', 'C', 'D', 'E'];
   const count = Math.max(2, Math.min(5, activeCount));
-  const slots = allSlots.slice(0, count);
-  const total = pieces.length;
+  const activeSlots = allSlots.slice(0, count);
 
-  if (mode === 'degrade') {
-    const sortedIndices = pieces
-      .map((p, idx) => ({ idx, val: p.x * 0.7 + p.y }))
-      .sort((a, b) => a.val - b.val);
+  const meta: ColorMetaPiece[] = pieces.map((p, idx) => ({
+    origIdx: idx,
+    piece: p,
+    slot: p.slot,
+    r: BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 23,
+    t: 0,
+    sn: 0,
+    kind: p.sizeInches >= 16 ? 'big' : 'quad',
+    clusterIdx: -1,
+    rosetteIdx: -1
+  }));
 
-    const result = [...pieces];
-    sortedIndices.forEach(({ idx }, i) => {
-      const ratio = i / Math.max(1, total - 1);
-      const slotIdx = Math.min(count - 1, Math.floor(ratio * count));
-      result[idx] = { ...result[idx], slot: slots[slotIdx] };
-    });
-    return result;
-  }
-
-  if (mode === 'blocos') {
-    const blockSize = Math.max(3, Math.round(total / (count * 1.5)));
-    return pieces.map((p, i) => {
-      const blockIdx = Math.floor(i / blockSize) % count;
-      return { ...p, slot: slots[blockIdx] };
-    });
-  }
-
-  // Mesclado proporcional
-  const baseWeights = [0.38, 0.28, 0.18, 0.10, 0.06].slice(0, count);
-  const sumWeights = baseWeights.reduce((a, b) => a + b, 0);
-  const weights = baseWeights.map((w) => w / sumWeights);
-
-  return pieces.map((p, i) => {
-    const hash = Math.abs(Math.sin(p.x * 12.9898 + p.y * 78.233 + i) * 43758.5453) % 1;
-    let acc = 0;
-    let chosen: BalloonSlot = slots[0];
-    for (let s = 0; s < count; s++) {
-      acc += weights[s];
-      if (hash <= acc) {
-        chosen = slots[s];
-        break;
+  // 1. Detectar rosetas compactas de 5" (grupos conectados de 3–6 balões de 5" encostados em balão >= 9")
+  const minis = meta.filter((m) => m.piece.sizeInches === 5);
+  const visited = new Set<number>();
+  let rosId = 0;
+  for (const m of minis) {
+    if (visited.has(m.origIdx)) continue;
+    const comp: ColorMetaPiece[] = [];
+    const queue: ColorMetaPiece[] = [m];
+    visited.add(m.origIdx);
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      comp.push(cur);
+      for (const other of minis) {
+        if (!visited.has(other.origIdx) && Math.hypot(cur.piece.x - other.piece.x, cur.piece.y - other.piece.y) < 32) {
+          visited.add(other.origIdx);
+          queue.push(other);
+        }
       }
     }
-    return { ...p, slot: chosen };
+    const cx = comp.reduce((s, b) => s + b.piece.x, 0) / comp.length;
+    const cy = comp.reduce((s, b) => s + b.piece.y, 0) / comp.length;
+    const nearBig = meta.some(
+      (b) => b.piece.sizeInches >= 9 && Math.hypot(b.piece.x - cx, b.piece.y - cy) < b.r + 28
+    );
+    if (comp.length >= 3 && comp.length <= 6 && nearBig) {
+      for (const b of comp) {
+        b.kind = 'mini';
+        b.rosetteIdx = rosId;
+      }
+      rosId++;
+    }
+  }
+
+  // 2. Reconstruir progressão curvilínea t ∈ [0, 1] acompanhando o formato do arranjo
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const m of meta) {
+    if (m.piece.x < minX) minX = m.piece.x;
+    if (m.piece.x > maxX) maxX = m.piece.x;
+    if (m.piece.y < minY) minY = m.piece.y;
+    if (m.piece.y > maxY) maxY = m.piece.y;
+  }
+  const spanX = Math.max(1, maxX - minX);
+  const spanY = Math.max(1, maxY - minY);
+
+  if (spanX > spanY * 1.45) {
+    const midY = (minY + maxY) / 2;
+    for (const m of meta) {
+      m.t = (m.piece.x - minX) / spanX;
+      m.sn = m.piece.y - midY;
+    }
+  } else if (spanY > spanX * 1.45) {
+    const midX = (minX + maxX) / 2;
+    for (const m of meta) {
+      m.t = (maxY - m.piece.y) / spanY;
+      m.sn = m.piece.x - midX;
+    }
+  } else {
+    const cx = minX + spanX * 0.58;
+    const cy = minY + spanY * 0.56;
+    const angles = meta.map((m) => {
+      let a = Math.atan2(m.piece.y - cy, m.piece.x - cx);
+      if (a < Math.PI * 0.35) a += Math.PI * 2;
+      return a;
+    });
+    const minA = Math.min(...angles);
+    const maxA = Math.max(...angles);
+    const spanA = Math.max(0.001, maxA - minA);
+    const meanR = meta.reduce((s, m) => s + Math.hypot(m.piece.x - cx, m.piece.y - cy), 0) / meta.length;
+    meta.forEach((m, i) => {
+      m.t = (angles[i] - minA) / spanA;
+      m.sn = Math.hypot(m.piece.x - cx, m.piece.y - cy) - meanR;
+    });
+  }
+
+  const bigs = meta.filter((m) => m.kind === 'big').sort((a, b) => a.t - b.t);
+  const quads = meta.filter((m) => m.kind === 'quad').sort((a, b) => a.t - b.t);
+  quads.forEach((q, i) => {
+    q.clusterIdx = Math.floor(i / 4);
   });
+
+  const rosettesMap = new Map<number, ColorMetaPiece[]>();
+  for (const m of meta) {
+    if (m.kind === 'mini' && m.rosetteIdx >= 0) {
+      const list = rosettesMap.get(m.rosetteIdx) || [];
+      list.push(m);
+      rosettesMap.set(m.rosetteIdx, list);
+    }
+  }
+  const rosettes = [...rosettesMap.values()].sort((a, b) => a[0].t - b[0].t);
+
+  // MODO DEGRADÊ SUAVE (Ombré ao longo da curva real com transição esfumada)
+  if (mode === 'degrade') {
+    const pickGradSlot = (m: ColorMetaPiece, feather: number = 0.072): BalloonSlot => {
+      const hash = Math.sin(m.piece.x * 0.137 + m.piece.y * 0.193 + (m.piece.z ?? 0) * 0.11);
+      const tJitter = Math.max(0, Math.min(0.9999, m.t + hash * feather));
+      return activeSlots[Math.min(activeSlots.length - 1, Math.floor(tJitter * activeSlots.length))];
+    };
+    for (const b of [...quads, ...bigs]) {
+      b.slot = pickGradSlot(b, 0.072);
+    }
+    for (const ros of rosettes) {
+      const avgT = ros.reduce((s, m) => s + m.t, 0) / ros.length;
+      const slot = activeSlots[Math.min(activeSlots.length - 1, Math.floor(Math.max(0, Math.min(0.9999, avgT)) * activeSlots.length))];
+      for (const m of ros) m.slot = slot;
+    }
+    return meta.map((m) => ({ ...m.piece, slot: m.slot }));
+  }
+
+  // MODO BLOCOS ORGÂNICOS (Color Blocking real em nuvens transversais + acento C nas costuras)
+  if (mode === 'blocos') {
+    const bodyOrder: BalloonSlot[] =
+      count === 2 ? ['A', 'B', 'A', 'B']
+      : count === 3 ? ['A', 'B', 'C', 'A']
+      : count === 4 ? ['A', 'D', 'B', 'A']
+      : ['A', 'B', 'D', 'E', 'A'];
+    const numBlocks = meta.length < 65 ? Math.min(3, bodyOrder.length) : bodyOrder.length;
+    const seq = bodyOrder.slice(0, numBlocks);
+
+    const blockFor = (tVal: number, snVal: number, zVal: number): BalloonSlot => {
+      const seamTilt = snVal / 720;
+      const organicWave = Math.sin(tVal * 19 + zVal * 0.11) * 0.016;
+      const u = Math.max(0, Math.min(0.9999, tVal + seamTilt + organicWave));
+      return seq[Math.min(seq.length - 1, Math.floor(u * seq.length))];
+    };
+
+    for (const b of [...quads, ...bigs]) {
+      b.slot = blockFor(b.t, b.sn, b.piece.z ?? 0);
+    }
+
+    if (count >= 4) {
+      const seamTs: number[] = [];
+      for (let k = 1; k < seq.length; k++) seamTs.push(k / seq.length);
+
+      const maxCRosettes = rosettes.length >= 4 ? 2 : 1;
+      const scoredRos = rosettes.map((ros, rIdx) => {
+        const avgT = ros.reduce((s, m) => s + m.t, 0) / ros.length;
+        const cx = ros.reduce((s, m) => s + m.piece.x, 0) / ros.length;
+        const cy = ros.reduce((s, m) => s + m.piece.y, 0) / ros.length;
+        const minSeamDist = seamTs.length ? Math.min(...seamTs.map((st) => Math.abs(avgT - st))) : 0.5;
+        return { ros, rIdx, avgT, cx, cy, minSeamDist };
+      }).sort((a, b) => a.minSeamDist - b.minSeamDist);
+
+      const cRosSet = new Set<number>();
+      const cRosCenters: { cx: number; cy: number }[] = [];
+      for (const sr of scoredRos) {
+        if (cRosSet.size >= maxCRosettes) break;
+        if (cRosCenters.some((c) => Math.hypot(c.cx - sr.cx, c.cy - sr.cy) < 115)) continue;
+        cRosSet.add(sr.rIdx);
+        cRosCenters.push({ cx: sr.cx, cy: sr.cy });
+      }
+
+      rosettes.forEach((ros, rIdx) => {
+        const avgT = ros.reduce((s, m) => s + m.t, 0) / ros.length;
+        const localSlot = blockFor(avgT, 0, 10);
+        const contrastPool: BalloonSlot[] = (['D', 'B', 'A'] as BalloonSlot[]).filter((s) => s !== localSlot);
+        const rosSlot: BalloonSlot = cRosSet.has(rIdx) ? 'C' : contrastPool[rIdx % contrastPool.length];
+        for (const m of ros) m.slot = rosSlot;
+      });
+
+      const chosenC: ColorMetaPiece[] = [];
+      for (const st of seamTs) {
+        let best: ColorMetaPiece | null = null;
+        let bestScore = Infinity;
+        for (const q of quads) {
+          if (q.piece.sizeInches < 7 || q.piece.sizeInches > 10 || (q.piece.z ?? 0) < 4) continue;
+          if (chosenC.some((c) => Math.hypot(c.piece.x - q.piece.x, c.piece.y - q.piece.y) < 82)) continue;
+          if (cRosCenters.some((c) => Math.hypot(c.cx - q.piece.x, c.cy - q.piece.y) < 62)) continue;
+          const d = Math.abs(q.t - st);
+          if (d < bestScore) { bestScore = d; best = q; }
+        }
+        if (best) {
+          best.slot = 'C';
+          chosenC.push(best);
+        }
+      }
+    } else {
+      rosettes.forEach((ros, rIdx) => {
+        const avgT = ros.reduce((s, m) => s + m.t, 0) / ros.length;
+        const localSlot = blockFor(avgT, 0, 10);
+        const others = activeSlots.filter((s) => s !== localSlot);
+        const rosSlot = others[rIdx % others.length] || activeSlots[0];
+        for (const m of ros) m.slot = rosSlot;
+      });
+    }
+
+    return meta.map((m) => ({ ...m.piece, slot: m.slot }));
+  }
+
+  // MODO MESCLADO ORGÂNICO (Padrão consistente por duplas + moldura nos 16"/18" + rosetas 5" monocromáticas)
+  const bodySlots: BalloonSlot[] =
+    count === 2 ? ['A', 'B']
+    : count === 3 ? ['A', 'B', 'C']
+    : count === 4 ? ['A', 'B', 'D']
+    : ['A', 'B', 'D', 'E'];
+  const accentSlot: BalloonSlot | null = count >= 4 ? 'C' : null;
+
+  bigs.forEach((b, idx) => {
+    b.slot = bodySlots[idx % bodySlots.length];
+    b.locked = true;
+  });
+
+  const quadRecipes: BalloonSlot[][] =
+    count === 2 ? [
+      ['A', 'A', 'B', 'B'],
+      ['B', 'A', 'A', 'B'],
+      ['A', 'B', 'B', 'A']
+    ] : count === 3 ? [
+      ['A', 'A', 'B', 'C'],
+      ['B', 'B', 'C', 'A'],
+      ['A', 'C', 'B', 'A'],
+      ['C', 'B', 'A', 'B']
+    ] : count === 4 ? [
+      ['A', 'A', 'B', 'D'],
+      ['B', 'B', 'D', 'A'],
+      ['D', 'A', 'A', 'B'],
+      ['B', 'D', 'A', 'B'],
+      ['A', 'B', 'D', 'A']
+    ] : [
+      ['A', 'A', 'B', 'D'],
+      ['B', 'E', 'D', 'A'],
+      ['D', 'A', 'E', 'B'],
+      ['E', 'B', 'A', 'D']
+    ];
+
+  const clusterGroups = new Map<number, ColorMetaPiece[]>();
+  for (const q of quads) {
+    const cid = q.clusterIdx >= 0 ? q.clusterIdx : Math.floor(q.t * 16);
+    const list = clusterGroups.get(cid) || [];
+    list.push(q);
+    clusterGroups.set(cid, list);
+  }
+  [...clusterGroups.keys()].sort((a, b) => a - b).forEach((cid, seqIdx) => {
+    const members = clusterGroups.get(cid)!;
+    const cx = members.reduce((s, m) => s + m.piece.x, 0) / members.length;
+    const cy = members.reduce((s, m) => s + m.piece.y, 0) / members.length;
+    members.sort((a, b) => Math.atan2(a.piece.y - cy, a.piece.x - cx) - Math.atan2(b.piece.y - cy, b.piece.x - cx));
+    const recipe = quadRecipes[seqIdx % quadRecipes.length];
+    const rotShift = (seqIdx + Math.floor(seqIdx / 2)) % 4;
+    members.forEach((m, k) => {
+      m.slot = recipe[(k + rotShift) % 4];
+    });
+  });
+
+  const structural = [...quads, ...bigs];
+  const getTouching = (target: ColorMetaPiece, list: ColorMetaPiece[], factor: number = 1.05): ColorMetaPiece[] =>
+    list.filter((o) => o.origIdx !== target.origIdx && Math.hypot(o.piece.x - target.piece.x, o.piece.y - target.piece.y) < (target.r + o.r) * factor);
+
+  for (const big of bigs) {
+    for (const q of getTouching(big, quads, 1.04).filter((x) => !x.locked && (x.piece.z ?? 0) >= -8)) {
+      if (q.slot === big.slot) {
+        const qn = getTouching(q, structural, 1.05);
+        const cands = bodySlots.filter((s) => s !== big.slot);
+        q.slot = cands.sort((a, b) => qn.filter((n) => n.slot === a).length - qn.filter((n) => n.slot === b).length)[0];
+      }
+    }
+  }
+
+  for (let pass = 0; pass < 2; pass++) {
+    for (const q of quads) {
+      if (q.locked) continue;
+      const neighs = getTouching(q, structural, 1.05).filter((n) => (n.piece.z ?? 0) >= -10);
+      const sameCnt = neighs.filter((n) => n.slot === q.slot).length;
+      if (sameCnt >= 3) {
+        let bestS = q.slot;
+        let bestCnt = sameCnt;
+        for (const s of bodySlots) {
+          if (s === q.slot) continue;
+          const touchesSameBig = neighs.some((n) => n.kind === 'big' && n.slot === s);
+          const cnt = neighs.filter((n) => n.slot === s).length + (touchesSameBig ? 3 : 0);
+          if (cnt < bestCnt) { bestCnt = cnt; bestS = s; }
+        }
+        q.slot = bestS;
+      }
+    }
+  }
+
+  // Rosetas de 5" monocromáticas (escolhendo primeiro as rosetas de destaque C)
+  const rosetteMeta = rosettes.map((ros, idx) => {
+    const cx = ros.reduce((s, m) => s + m.piece.x, 0) / ros.length;
+    const cy = ros.reduce((s, m) => s + m.piece.y, 0) / ros.length;
+    const neighborCounts: Record<string, number> = {};
+    for (const s of structural) {
+      if (Math.hypot(s.piece.x - cx, s.piece.y - cy) < s.r + 44 && (s.piece.z ?? 0) >= -8) {
+        neighborCounts[s.slot] = (neighborCounts[s.slot] || 0) + (s.piece.sizeInches >= 16 ? 3.5 : 1);
+      }
+    }
+    return { ros, idx, cx, cy, neighborCounts };
+  });
+
+  const cRosetteSet = new Set<number>();
+  const cRosetteCenters: { cx: number; cy: number }[] = [];
+  if (accentSlot && rosetteMeta.length > 0) {
+    const pickIndices =
+      rosetteMeta.length >= 4 ? [1, rosetteMeta.length - 1]
+      : rosetteMeta.length === 3 ? [2]
+      : [0];
+    for (const pi of pickIndices) {
+      cRosetteSet.add(rosetteMeta[pi].idx);
+      cRosetteCenters.push({ cx: rosetteMeta[pi].cx, cy: rosetteMeta[pi].cy });
+    }
+  }
+
+  const usedBodyRosSlots: BalloonSlot[] = [];
+  rosetteMeta.forEach((rm) => {
+    let chosenSlot: BalloonSlot;
+    if (accentSlot && cRosetteSet.has(rm.idx)) {
+      chosenSlot = accentSlot;
+    } else {
+      const prefOrder: BalloonSlot[] = count >= 4 ? ['D', 'B', 'A'] : bodySlots;
+      let bestS = prefOrder[0];
+      let bestPenalty = Infinity;
+      for (const s of prefOrder) {
+        const neighPen = (rm.neighborCounts[s] || 0) * 3.0;
+        const repeatPen = usedBodyRosSlots[usedBodyRosSlots.length - 1] === s ? 2.8 : 0;
+        const countPen = usedBodyRosSlots.filter((x) => x === s).length * 1.4;
+        const pen = neighPen + repeatPen + countPen;
+        if (pen < bestPenalty) { bestPenalty = pen; bestS = s; }
+      }
+      chosenSlot = bestS;
+      usedBodyRosSlots.push(chosenSlot);
+    }
+    for (const m of rm.ros) m.slot = chosenSlot;
+  });
+
+  // Balões médios de acento C triangulados e espaçados das rosetas C
+  if (accentSlot) {
+    const accentPieces: ColorMetaPiece[] = [];
+    const targetAccentTs = meta.length < 65 ? [0.22, 0.54, 0.86] : [0.16, 0.40, 0.62, 0.85];
+    const desiredSides = [1, -1, 1, -1];
+
+    targetAccentTs.forEach((targetT, idx) => {
+      let best: ColorMetaPiece | null = null;
+      let bestScore = -Infinity;
+      const wantSide = desiredSides[idx % desiredSides.length];
+      for (const q of quads) {
+        if (q.locked) continue;
+        if (q.piece.sizeInches !== 7 && q.piece.sizeInches !== 9 && q.piece.sizeInches !== 10) continue;
+        if ((q.piece.z ?? 0) < 4) continue;
+        if (accentPieces.some((a) => Math.hypot(a.piece.x - q.piece.x, a.piece.y - q.piece.y) < 88)) continue;
+        if (cRosetteCenters.some((c) => Math.hypot(c.cx - q.piece.x, c.cy - q.piece.y) < 64)) continue;
+        const dt = Math.abs(q.t - targetT);
+        if (dt > 0.16) continue;
+        const sideBonus = Math.sign(q.sn) === wantSide ? 0.04 : 0;
+        const sizeBonus = q.piece.sizeInches === 9 ? 0.03 : q.piece.sizeInches === 10 ? 0.02 : 0.01;
+        const score = -dt + sideBonus + sizeBonus;
+        if (score > bestScore) { bestScore = score; best = q; }
+      }
+      if (best) {
+        best.slot = accentSlot;
+        best.locked = true;
+        accentPieces.push(best);
+      }
+    });
+  }
+
+  return meta.map((m) => ({ ...m.piece, slot: m.slot }));
 }
 
 // Variação orgânica com semente nova mantendo a integridade do modelo
@@ -817,90 +1206,99 @@ export function arrangementSvgToDataUrl(svg: string): string {
 export const BALLOON_STUDIO_TEMPLATES: BalloonModelTemplate[] = [
   {
     id: "modelo-arco-l-luxo",
-    name: "Arco Orgânico em L Luxo",
-    description: "Cotovelo com Big Balloon de 24\", coluna sinuosa com balões de 18\", cristais com glitter e tufos de acabamento.",
-    palette: {"A":"#c97a8e","B":"#f7dbe1","C":"#d4af37","D":"#ffffff","names":{"A":"Rosa Quartzo","B":"Blush Suave","C":"Ouro Nobre","D":"Branco Neve","E":"Pérola"},"finishes":{"A":"satin","B":"satin","C":"chrome","D":"matte","E":"satin"}},
-    defaultWidthCm: 175,
-    defaultHeightCm: 215,
+    name: "Arco Orgânico em L (Romano / Retangular)",
+    description: "Coluna volumosa apoiada no piso, quina superior esquerda cheia e braço horizontal afinado, com cores equilibradas por duplas e ouro cromo em 12–15%.",
+    palette: {"A":"#c97a8e","B":"#f7dbe1","C":"#d4af37","D":"#fdfbf7","names":{"A":"Rosa Quartzo","B":"Blush Suave","C":"Ouro Nobre","D":"Off-White Pérola","E":"Pérola"},"finishes":{"A":"satin","B":"satin","C":"chrome","D":"matte","E":"satin"}},
+    defaultWidthCm: 212,
+    defaultHeightCm: 228,
     pieces: [
-      { id: "p1", x: 339, y: 163, z: 10, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p2", x: 345, y: 191, z: 6, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p3", x: 336, y: 168, z: -7, sizeInches: 5, slot: "B", finish: "satin" },
-      { id: "p4", x: 336, y: 135, z: -5, sizeInches: 18, slot: "C", finish: "chrome", shape: "star" },
-      { id: "p5", x: 307, y: 167, z: 11, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p6", x: 314, y: 194, z: -8, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p7", x: 302, y: 162, z: -7, sizeInches: 5, slot: "B", finish: "satin" },
-      { id: "p8", x: 303, y: 139, z: 9, sizeInches: 10, slot: "B", finish: "satin" },
-      { id: "p9", x: 282, y: 210, z: -8, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p10", x: 276, y: 154, z: -14, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p11", x: 270, y: 124, z: 7, sizeInches: 10, slot: "B", finish: "satin" },
-      { id: "p12", x: 276, y: 180, z: 17, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p13", x: 246, y: 172, z: -21, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p14", x: 238, y: 122, z: -3, sizeInches: 10, slot: "B", finish: "satin" },
-      { id: "p15", x: 252, y: 147, z: 17, sizeInches: 10, slot: "B", finish: "satin" },
-      { id: "p16", x: 245, y: 202, z: 5, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p17", x: 202, y: 128, z: -15, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p18", x: 218, y: 157, z: 19, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p19", x: 219, y: 223, z: 11, sizeInches: 10, slot: "B", finish: "satin" },
-      { id: "p20", x: 211, y: 187, z: -18, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p21", x: 171, y: 120, z: 15, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p22", x: 180, y: 187, z: 22, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p23", x: 191, y: 212, z: -10, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p24", x: 186, y: 159, z: -22, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p25", x: 155, y: 152, z: 29, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p26", x: 158, y: 215, z: -2, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p27", x: 141, y: 184, z: -42, sizeInches: 18, slot: "C", finish: "satin" },
-      { id: "p28", x: 138, y: 100, z: 3, sizeInches: 18, slot: "C", finish: "chrome", shape: "star" },
-      { id: "p29", x: 173, y: 247, z: 10, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p30", x: 136, y: 232, z: -27, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p31", x: 43, y: 159, z: -18, sizeInches: 18, slot: "C", finish: "satin" },
-      { id: "p32", x: 77, y: 176, z: 26, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p33", x: 148, y: 264, z: -19, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p34", x: 55, y: 220, z: -21, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p35", x: 26, y: 198, z: 26, sizeInches: 18, slot: "C", finish: "satin" },
-      { id: "p36", x: 105, y: 237, z: 20, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p37", x: 78, y: 242, z: -21, sizeInches: 10, slot: "C", finish: "satin" },
-      { id: "p38", x: 36, y: 250, z: 4, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p39", x: 72, y: 262, z: 21, sizeInches: 10, slot: "C", finish: "satin" },
-      { id: "p40", x: 107, y: 263, z: -7, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p41", x: 15, y: 279, z: -5, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p42", x: 46, y: 285, z: 23, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p43", x: 130, y: 286, z: 6, sizeInches: 10, slot: "B", finish: "satin" },
-      { id: "p44", x: 78, y: 285, z: -24, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p45", x: 60, y: 314, z: 15, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p46", x: 112, y: 308, z: 11, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p47", x: 83, y: 313, z: -15, sizeInches: 10, slot: "B", finish: "satin" },
-      { id: "p48", x: 31, y: 310, z: -13, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p49", x: 90, y: 330, z: 15, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p50", x: 115, y: 342, z: -13, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p51", x: 65, y: 335, z: -15, sizeInches: 10, slot: "B", finish: "satin" },
-      { id: "p52", x: 36, y: 338, z: 16, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p53", x: 144, y: 367, z: -5, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p54", x: 49, y: 363, z: -24, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p55", x: 20, y: 367, z: 4, sizeInches: 10, slot: "B", finish: "satin" },
-      { id: "p56", x: 84, y: 357, z: 24, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p57", x: 81, y: 379, z: -21, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p58", x: 24, y: 398, z: -6, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p59", x: 56, y: 386, z: 20, sizeInches: 10, slot: "B", finish: "satin" },
-      { id: "p60", x: 109, y: 383, z: 5, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p61", x: 71, y: 457, z: -20, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p62", x: 42, y: 440, z: 19, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p63", x: 143, y: 413, z: 27, sizeInches: 18, slot: "A", finish: "satin" },
-      { id: "p64", x: 112, y: 435, z: -18, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p65", x: 65, y: 485, z: 9, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p66", x: 122, y: 463, z: 28, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p67", x: 161, y: 452, z: -18, sizeInches: 18, slot: "A", finish: "satin" },
-      { id: "p68", x: 99, y: 483, z: -27, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "big-69", x: 109, y: 145, z: -10, sizeInches: 24, slot: "A", finish: "satin" },
-      { id: "big-70", x: 100, y: 203, z: -10, sizeInches: 18, slot: "C", finish: "satin" },
-      { id: "big-71", x: 70, y: 415, z: -10, sizeInches: 18, slot: "B", finish: "satin" },
-      { id: "tufo-72", x: 58, y: 246, z: 50, sizeInches: 5, slot: "B", finish: "satin" },
-      { id: "tufo-73", x: 61, y: 256, z: 52, sizeInches: 5, slot: "B", finish: "satin" },
-      { id: "tufo-74", x: 76, y: 308, z: 50, sizeInches: 5, slot: "B", finish: "satin" },
-      { id: "tufo-75", x: 79, y: 317, z: 52, sizeInches: 5, slot: "B", finish: "satin" },
-      { id: "tufo-76", x: 86, y: 367, z: 50, sizeInches: 5, slot: "D", finish: "satin" },
-      { id: "tufo-77", x: 67, y: 431, z: 50, sizeInches: 5, slot: "C", finish: "chrome" },
-      { id: "tufo-78", x: 65, y: 441, z: 52, sizeInches: 5, slot: "C", finish: "chrome" }
+      { id: "q94", x: 331, y: 124, z: -16, sizeInches: 7, slot: "D", finish: "satin", rotation: -15 },
+      { id: "q19", x: 80, y: 373, z: -13, sizeInches: 12, slot: "D", finish: "satin", rotation: 2 },
+      { id: "q37", x: 76, y: 231, z: -13, sizeInches: 12, slot: "A", finish: "satin", rotation: 2 },
+      { id: "q43", x: 78, y: 185, z: -13, sizeInches: 12, slot: "D", finish: "satin", rotation: 3 },
+      { id: "q1", x: 138, y: 465, z: -13, sizeInches: 12, slot: "A", finish: "satin", rotation: -9 },
+      { id: "q25", x: 83, y: 324, z: -11, sizeInches: 12, slot: "B", finish: "satin", rotation: 2 },
+      { id: "q75", x: 251, y: 107, z: -11, sizeInches: 7, slot: "D", finish: "satin", rotation: -14 },
+      { id: "big102", x: 120, y: 118, z: -9, sizeInches: 16, slot: "D", finish: "satin", rotation: -5 },
+      { id: "q67", x: 210, y: 147, z: -9, sizeInches: 9, slot: "A", finish: "satin", rotation: 15 },
+      { id: "big100", x: 14, y: 466, z: -7, sizeInches: 18, slot: "A", finish: "satin", rotation: -2 },
+      { id: "big101", x: 5, y: 201, z: -7, sizeInches: 18, slot: "B", finish: "satin", rotation: -3 },
+      { id: "q23", x: 17, y: 348, z: -7, sizeInches: 12, slot: "A", finish: "satin", rotation: -24 },
+      { id: "q31", x: 82, y: 276, z: -7, sizeInches: 12, slot: "A", finish: "satin" },
+      { id: "q13", x: 81, y: 419, z: -6, sizeInches: 12, slot: "D", finish: "satin", rotation: 1 },
+      { id: "q82", x: 279, y: 105, z: -4, sizeInches: 7, slot: "B", finish: "satin", rotation: -14 },
+      { id: "q73", x: 245, y: 150, z: -4, sizeInches: 9, slot: "D", finish: "satin", rotation: 15 },
+      { id: "q65", x: 189, y: 98, z: -3, sizeInches: 9, slot: "D", finish: "satin", rotation: -12 },
+      { id: "q80", x: 276, y: 150, z: -3, sizeInches: 7, slot: "B", finish: "satin", rotation: 16 },
+      { id: "q71", x: 224, y: 98, z: -3, sizeInches: 9, slot: "A", finish: "satin", rotation: -12 },
+      { id: "q55", x: 132, y: 165, z: -3, sizeInches: 12, slot: "A", finish: "satin", rotation: 14 },
+      { id: "q29", x: 21, y: 301, z: -1, sizeInches: 12, slot: "B", finish: "satin", rotation: -27 },
+      { id: "q88", x: 305, y: 152, z: 0, sizeInches: 7, slot: "D", finish: "satin", rotation: 17 },
+      { id: "q98", x: 353, y: 124, z: 0, sizeInches: 7, slot: "A", finish: "satin", rotation: -13 },
+      { id: "q90", x: 314, y: 110, z: 1, sizeInches: 7, slot: "A", finish: "satin", rotation: -13 },
+      { id: "q96", x: 339, y: 153, z: 2, sizeInches: 5, slot: "B", finish: "satin", rotation: 17 },
+      { id: "q35", x: 14, y: 257, z: 3, sizeInches: 12, slot: "A", finish: "satin", rotation: -27 },
+      { id: "q17", x: 14, y: 397, z: 3, sizeInches: 12, slot: "B", finish: "satin", rotation: -25 },
+      { id: "q61", x: 178, y: 152, z: 4, sizeInches: 9, slot: "D", finish: "satin", rotation: 15 },
+      { id: "q53", x: 89, y: 99, z: 6, sizeInches: 9, slot: "A", finish: "satin", rotation: -14 },
+      { id: "q77", x: 262, y: 115, z: 6, sizeInches: 5, slot: "A", finish: "satin", rotation: -11 },
+      { id: "q85", x: 294, y: 119, z: 6, sizeInches: 5, slot: "D", finish: "satin", rotation: -12 },
+      { id: "q93", x: 330, y: 126, z: 8, sizeInches: 5, slot: "A", finish: "satin", rotation: -9 },
+      { id: "q4", x: 106, y: 457, z: 10, sizeInches: 10, slot: "B", finish: "satin", rotation: -10 },
+      { id: "q92", x: 324, y: 143, z: 11, sizeInches: 5, slot: "B", finish: "satin", rotation: 19 },
+      { id: "q89", x: 310, y: 130, z: 11, sizeInches: 5, slot: "B", finish: "satin", rotation: -6 },
+      { id: "q44", x: 30, y: 157, z: 12, sizeInches: 10, slot: "A", finish: "satin", rotation: -22 },
+      { id: "q59", x: 157, y: 103, z: 12, sizeInches: 9, slot: "A", finish: "satin", rotation: -13 },
+      { id: "q97", x: 343, y: 140, z: 13, sizeInches: 5, slot: "D", finish: "satin", rotation: -6 },
+      { id: "q57", x: 125, y: 91, z: 13, sizeInches: 9, slot: "B", finish: "satin", rotation: -17 },
+      { id: "q62", x: 179, y: 122, z: 14, sizeInches: 7, slot: "B", finish: "satin", rotation: -10 },
+      { id: "q46", x: 49, y: 125, z: 14, sizeInches: 10, slot: "C", finish: "satin", rotation: 9 },
+      { id: "q70", x: 227, y: 133, z: 14, sizeInches: 7, slot: "B", finish: "satin", rotation: 15 },
+      { id: "q81", x: 278, y: 118, z: 15, sizeInches: 5, slot: "A", finish: "satin", rotation: -12 },
+      { id: "q74", x: 243, y: 111, z: 16, sizeInches: 7, slot: "C", finish: "satin", rotation: -10 },
+      { id: "q68", x: 207, y: 113, z: 16, sizeInches: 7, slot: "A", finish: "satin", rotation: -8 },
+      { id: "q64", x: 199, y: 136, z: 17, sizeInches: 7, slot: "B", finish: "satin", rotation: 15 },
+      { id: "q40", x: 68, y: 206, z: 17, sizeInches: 10, slot: "A", finish: "satin", rotation: 3 },
+      { id: "m109", x: 52, y: 314, z: 17, sizeInches: 5, slot: "C", finish: "satin", rotation: 4 },
+      { id: "q84", x: 290, y: 138, z: 18, sizeInches: 7, slot: "A", finish: "satin", rotation: 18 },
+      { id: "q8", x: 56, y: 486, z: 18, sizeInches: 10, slot: "B", finish: "satin", rotation: 21 },
+      { id: "q2", x: 128, y: 486, z: 18, sizeInches: 10, slot: "A", finish: "satin", rotation: 20 },
+      { id: "q10", x: 69, y: 449, z: 18, sizeInches: 10, slot: "B", finish: "satin", rotation: 2 },
+      { id: "q22", x: 70, y: 350, z: 19, sizeInches: 10, slot: "B", finish: "satin", rotation: 3 },
+      { id: "q76", x: 260, y: 135, z: 19, sizeInches: 7, slot: "D", finish: "satin", rotation: 17 },
+      { id: "q14", x: 45, y: 419, z: 19, sizeInches: 10, slot: "C", finish: "satin", rotation: -25 },
+      { id: "m119", x: 131, y: 133, z: 20, sizeInches: 5, slot: "C", finish: "satin", rotation: -3 },
+      { id: "q16", x: 65, y: 390, z: 20, sizeInches: 10, slot: "D", finish: "satin", rotation: 2 },
+      { id: "q28", x: 67, y: 304, z: 20, sizeInches: 10, slot: "D", finish: "satin", rotation: 3 },
+      { id: "m107", x: 38, y: 302, z: 21, sizeInches: 5, slot: "C", finish: "satin", rotation: 2 },
+      { id: "q50", x: 83, y: 126, z: 21, sizeInches: 9, slot: "A", finish: "satin", rotation: -13 },
+      { id: "q38", x: 40, y: 231, z: 21, sizeInches: 10, slot: "C", finish: "satin", rotation: -22 },
+      { id: "q26", x: 41, y: 330, z: 21, sizeInches: 10, slot: "D", finish: "satin", rotation: -24 },
+      { id: "q20", x: 37, y: 369, z: 21, sizeInches: 10, slot: "B", finish: "satin", rotation: -23 },
+      { id: "q49", x: 70, y: 160, z: 22, sizeInches: 12, slot: "B", finish: "satin", rotation: 12 },
+      { id: "m114", x: 61, y: 180, z: 22, sizeInches: 5, slot: "D", finish: "satin" },
+      { id: "q34", x: 70, y: 246, z: 22, sizeInches: 10, slot: "B", finish: "satin", rotation: 2 },
+      { id: "q58", x: 152, y: 137, z: 22, sizeInches: 10, slot: "B", finish: "satin", rotation: 16 },
+      { id: "q32", x: 44, y: 275, z: 24, sizeInches: 10, slot: "D", finish: "satin", rotation: -25 },
+      { id: "m112", x: 47, y: 168, z: 25, sizeInches: 5, slot: "D", finish: "satin", rotation: 6 },
+      { id: "q52", x: 109, y: 149, z: 25, sizeInches: 10, slot: "A", finish: "satin", rotation: 16 },
+      { id: "m117", x: 144, y: 121, z: 26, sizeInches: 5, slot: "C", finish: "satin", rotation: 8 },
+      { id: "m105", x: 50, y: 437, z: 26, sizeInches: 5, slot: "A", finish: "satin", rotation: -7 },
+      { id: "q56", x: 123, y: 119, z: 30, sizeInches: 9, slot: "B", finish: "satin", rotation: -12 },
+      { id: "m103", x: 66, y: 430, z: 32, sizeInches: 5, slot: "A", finish: "satin", rotation: 1 },
+      { id: "m110", x: 41, y: 317, z: 33, sizeInches: 5, slot: "C", finish: "satin", rotation: 6 },
+      { id: "q5", x: 90, y: 481, z: 33, sizeInches: 12, slot: "D", finish: "satin", rotation: 17 },
+      { id: "q41", x: 39, y: 190, z: 34, sizeInches: 12, slot: "D", finish: "satin", rotation: -25 },
+      { id: "m108", x: 53, y: 303, z: 35, sizeInches: 5, slot: "C", finish: "satin", rotation: 5 },
+      { id: "q11", x: 37, y: 452, z: 36, sizeInches: 12, slot: "D", finish: "satin", rotation: -27 },
+      { id: "m115", x: 50, y: 183, z: 38, sizeInches: 5, slot: "D", finish: "satin", rotation: 6 },
+      { id: "m120", x: 130, y: 122, z: 39, sizeInches: 5, slot: "C", finish: "satin", rotation: 5 },
+      { id: "m113", x: 61, y: 169, z: 40, sizeInches: 5, slot: "D", finish: "satin" },
+      { id: "m118", x: 143, y: 134, z: 42, sizeInches: 5, slot: "C", finish: "satin", rotation: -12 },
+      { id: "m106", x: 52, y: 427, z: 45, sizeInches: 5, slot: "A", finish: "satin", rotation: -10 },
+      { id: "m104", x: 61, y: 442, z: 48, sizeInches: 5, slot: "A", finish: "satin", rotation: -7 },
+      { id: "m111", x: 45, y: 309, z: 52, sizeInches: 5, slot: "C", finish: "satin", rotation: 2 },
+      { id: "m116", x: 54, y: 175, z: 57, sizeInches: 5, slot: "D", finish: "satin", rotation: -3 }
     ]
   },
   {
@@ -968,147 +1366,162 @@ export const BALLOON_STUDIO_TEMPLATES: BalloonModelTemplate[] = [
   },
   {
     id: "modelo-demi-arco",
-    name: "Demi-Arco Desconstruído",
-    description: "Semi-arco moderno que contorna 60% do painel com base volumosa no chão e caimento leve no topo.",
-    palette: {"A":"#f8b4d9","B":"#d8b4fe","C":"#93c5fd","D":"#fef08a","names":{"A":"Rosa Doce","B":"Lilás Mágico","C":"Azul Céu","D":"Amarelo Candy","E":"Branco Neve"},"finishes":{"A":"matte","B":"matte","C":"satin","D":"matte","E":"satin"}},
-    defaultWidthCm: 160,
-    defaultHeightCm: 185,
+    name: "Arco Desconstruído Painel Redondo",
+    description: "Quartetos encaixados a 45° no painel redondo Ø 1,50 m, cachos monocromáticos de 5\" nos bolsões reais e mesclado consistente por duplas do chão até a ponta.",
+    palette: {"A":"#f8b4d9","B":"#d8b4fe","C":"#93c5fd","D":"#fef08a","names":{"A":"Rosa Doce","B":"Lilás Lavanda","C":"Azul Céu","D":"Amarelo Candy","E":"Branco Neve"},"finishes":{"A":"matte","B":"matte","C":"satin","D":"matte","E":"satin"}},
+    defaultWidthCm: 197,
+    defaultHeightCm: 225,
     pieces: [
-      { id: "p1", x: 103, y: 423, z: 26, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p2", x: 77, y: 445, z: 17, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p3", x: 42, y: 433, z: -36, sizeInches: 18, slot: "B", finish: "satin" },
-      { id: "p4", x: 133, y: 423, z: -16, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p5", x: 68, y: 411, z: 22, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p6", x: 29, y: 395, z: -19, sizeInches: 18, slot: "C", finish: "chrome", shape: "star" },
-      { id: "p7", x: 153, y: 384, z: -34, sizeInches: 18, slot: "B", finish: "satin" },
-      { id: "p8", x: 117, y: 393, z: 20, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p9", x: 20, y: 364, z: -9, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p10", x: 104, y: 331, z: -26, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p11", x: 134, y: 350, z: 11, sizeInches: 18, slot: "B", finish: "satin" },
-      { id: "p12", x: 44, y: 350, z: 26, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p13", x: 58, y: 330, z: -22, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p14", x: 133, y: 310, z: -3, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p15", x: 79, y: 341, z: 22, sizeInches: 10, slot: "B", finish: "satin" },
-      { id: "p16", x: 23, y: 331, z: -1, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p17", x: 93, y: 304, z: -13, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p18", x: 78, y: 318, z: 17, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p19", x: 33, y: 303, z: 13, sizeInches: 10, slot: "D", finish: "satin" },
-      { id: "p20", x: 60, y: 302, z: -22, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p21", x: 108, y: 287, z: 14, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p22", x: 51, y: 279, z: 22, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p23", x: 24, y: 279, z: -12, sizeInches: 10, slot: "D", finish: "satin" },
-      { id: "p24", x: 81, y: 275, z: -20, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p25", x: 68, y: 250, z: 24, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p26", x: 23, y: 250, z: -8, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p27", x: 94, y: 248, z: -20, sizeInches: 10, slot: "C", finish: "satin" },
-      { id: "p28", x: 132, y: 263, z: 5, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p29", x: 44, y: 204, z: 7, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p30", x: 50, y: 230, z: -26, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p31", x: 153, y: 241, z: -3, sizeInches: 10, slot: "C", finish: "satin" },
-      { id: "p32", x: 116, y: 235, z: 26, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p33", x: 93, y: 172, z: -24, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p34", x: 136, y: 217, z: -13, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p35", x: 119, y: 198, z: 18, sizeInches: 10, slot: "D", finish: "satin" },
-      { id: "p36", x: 63, y: 178, z: 12, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p37", x: 140, y: 185, z: -21, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p38", x: 163, y: 207, z: 16, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p39", x: 118, y: 172, z: 17, sizeInches: 10, slot: "D", finish: "satin" },
-      { id: "p40", x: 101, y: 141, z: -17, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p41", x: 164, y: 178, z: 4, sizeInches: 10, slot: "B", finish: "satin" },
-      { id: "p42", x: 130, y: 145, z: 23, sizeInches: 12, slot: "B", finish: "satin" },
-      { id: "p43", x: 130, y: 122, z: -6, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p44", x: 156, y: 156, z: -24, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p45", x: 185, y: 156, z: 22, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p46", x: 161, y: 110, z: 4, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p47", x: 179, y: 134, z: -18, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p48", x: 194, y: 189, z: -4, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p49", x: 207, y: 111, z: 10, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p50", x: 213, y: 137, z: -17, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p51", x: 228, y: 188, z: -9, sizeInches: 10, slot: "D", finish: "satin" },
-      { id: "p52", x: 218, y: 165, z: 17, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p53", x: 247, y: 110, z: -12, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p54", x: 248, y: 165, z: -16, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p55", x: 277, y: 152, z: 9, sizeInches: 10, slot: "D", finish: "satin" },
-      { id: "p56", x: 243, y: 136, z: 15, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p57", x: 305, y: 147, z: -13, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p58", x: 283, y: 177, z: 2, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p59", x: 274, y: 147, z: 9, sizeInches: 5, slot: "D", finish: "satin" },
-      { id: "p60", x: 275, y: 127, z: -4, sizeInches: 10, slot: "D", finish: "satin" },
-      { id: "big-61", x: 78, y: 374, z: -10, sizeInches: 24, slot: "A", finish: "satin" },
-      { id: "big-62", x: 90, y: 212, z: -10, sizeInches: 18, slot: "B", finish: "satin" },
-      { id: "tufo-63", x: 80, y: 277, z: 50, sizeInches: 5, slot: "B", finish: "satin" },
-      { id: "tufo-64", x: 83, y: 286, z: 52, sizeInches: 5, slot: "B", finish: "satin" },
-      { id: "tufo-65", x: 140, y: 192, z: 50, sizeInches: 5, slot: "B", finish: "satin" },
-      { id: "tufo-66", x: 145, y: 201, z: 52, sizeInches: 5, slot: "B", finish: "satin" },
-      { id: "tufo-67", x: 177, y: 144, z: 50, sizeInches: 5, slot: "A", finish: "satin" },
-      { id: "tufo-68", x: 183, y: 153, z: 52, sizeInches: 5, slot: "A", finish: "satin" },
-      { id: "tufo-69", x: 243, y: 139, z: 50, sizeInches: 5, slot: "A", finish: "satin" },
-      { id: "tufo-70", x: 239, y: 147, z: 52, sizeInches: 5, slot: "A", finish: "satin" }
+      { id: "q57", x: 168, y: 118, z: -16, sizeInches: 9, slot: "B", finish: "satin", rotation: -17 },
+      { id: "q13", x: 77, y: 412, z: -13, sizeInches: 12, slot: "D", finish: "satin" },
+      { id: "q31", x: 62, y: 273, z: -13, sizeInches: 12, slot: "D", finish: "satin", rotation: 3 },
+      { id: "q43", x: 95, y: 203, z: -13, sizeInches: 12, slot: "A", finish: "satin", rotation: 8 },
+      { id: "q1", x: 143, y: 468, z: -13, sizeInches: 12, slot: "A", finish: "satin", rotation: -9 },
+      { id: "q19", x: 70, y: 367, z: -13, sizeInches: 12, slot: "B", finish: "satin", rotation: 2 },
+      { id: "q49", x: 135, y: 182, z: -13, sizeInches: 12, slot: "B", finish: "satin", rotation: 11 },
+      { id: "q25", x: 68, y: 320, z: -12, sizeInches: 12, slot: "B", finish: "satin" },
+      { id: "q94", x: 332, y: 231, z: -11, sizeInches: 7, slot: "A", finish: "satin", rotation: -8 },
+      { id: "big98", x: 122, y: 114, z: -9, sizeInches: 16, slot: "D", finish: "satin", rotation: 3 },
+      { id: "q75", x: 280, y: 148, z: -9, sizeInches: 7, slot: "B", finish: "satin", rotation: -9 },
+      { id: "q95", x: 310, y: 232, z: -7, sizeInches: 5, slot: "D", finish: "satin", rotation: 21 },
+      { id: "big96", x: 16, y: 457, z: -7, sizeInches: 18, slot: "A", finish: "satin", rotation: -4 },
+      { id: "big97", x: 39, y: 220, z: -7, sizeInches: 18, slot: "B", finish: "satin", rotation: -3 },
+      { id: "q47", x: 75, y: 138, z: -5, sizeInches: 12, slot: "B", finish: "satin", rotation: -17 },
+      { id: "q29", x: 0, y: 300, z: -5, sizeInches: 12, slot: "D", finish: "satin", rotation: -27 },
+      { id: "q90", x: 333, y: 203, z: -4, sizeInches: 7, slot: "A", finish: "satin", rotation: -5 },
+      { id: "q67", x: 233, y: 169, z: -3, sizeInches: 9, slot: "A", finish: "satin", rotation: 18 },
+      { id: "q65", x: 231, y: 116, z: -3, sizeInches: 9, slot: "D", finish: "satin", rotation: -11 },
+      { id: "q23", x: 6, y: 349, z: -2, sizeInches: 12, slot: "B", finish: "satin", rotation: -26 },
+      { id: "q73", x: 260, y: 182, z: -1, sizeInches: 7, slot: "D", finish: "satin", rotation: 19 },
+      { id: "q82", x: 313, y: 171, z: 3, sizeInches: 7, slot: "B", finish: "satin", rotation: -8 },
+      { id: "q80", x: 280, y: 201, z: 3, sizeInches: 7, slot: "B", finish: "satin", rotation: 21 },
+      { id: "q17", x: 9, y: 398, z: 4, sizeInches: 12, slot: "B", finish: "satin", rotation: -27 },
+      { id: "q88", x: 303, y: 219, z: 4, sizeInches: 5, slot: "A", finish: "satin", rotation: 24 },
+      { id: "q77", x: 290, y: 164, z: 5, sizeInches: 5, slot: "A", finish: "satin", rotation: -7 },
+      { id: "q85", x: 315, y: 192, z: 6, sizeInches: 5, slot: "D", finish: "satin", rotation: -3 },
+      { id: "q59", x: 190, y: 111, z: 7, sizeInches: 9, slot: "A", finish: "satin", rotation: -12 },
+      { id: "q55", x: 176, y: 170, z: 7, sizeInches: 12, slot: "D", finish: "satin", rotation: 13 },
+      { id: "q74", x: 271, y: 160, z: 7, sizeInches: 5, slot: "A", finish: "satin", rotation: -1 },
+      { id: "q81", x: 296, y: 183, z: 8, sizeInches: 5, slot: "A", finish: "satin", rotation: -5 },
+      { id: "q92", x: 318, y: 232, z: 9, sizeInches: 5, slot: "B", finish: "satin", rotation: 27 },
+      { id: "q93", x: 334, y: 223, z: 9, sizeInches: 5, slot: "A", finish: "satin", rotation: -4 },
+      { id: "q35", x: 1, y: 249, z: 10, sizeInches: 12, slot: "A", finish: "satin", rotation: -23 },
+      { id: "q37", x: 83, y: 240, z: 10, sizeInches: 12, slot: "D", finish: "satin", rotation: 5 },
+      { id: "q41", x: 39, y: 170, z: 10, sizeInches: 12, slot: "A", finish: "satin", rotation: -21 },
+      { id: "q89", x: 318, y: 212, z: 11, sizeInches: 5, slot: "B", finish: "satin", rotation: -4 },
+      { id: "q4", x: 114, y: 455, z: 12, sizeInches: 10, slot: "B", finish: "satin", rotation: -8 },
+      { id: "q64", x: 213, y: 154, z: 13, sizeInches: 7, slot: "B", finish: "satin", rotation: 20 },
+      { id: "q68", x: 237, y: 141, z: 14, sizeInches: 7, slot: "A", finish: "satin", rotation: -6 },
+      { id: "q11", x: 52, y: 481, z: 15, sizeInches: 12, slot: "D", finish: "satin", rotation: 24 },
+      { id: "q71", x: 268, y: 137, z: 15, sizeInches: 9, slot: "C", finish: "satin", rotation: -8 },
+      { id: "q62", x: 212, y: 128, z: 16, sizeInches: 7, slot: "B", finish: "satin", rotation: -10 },
+      { id: "q56", x: 162, y: 131, z: 17, sizeInches: 9, slot: "B", finish: "satin", rotation: -13 },
+      { id: "q10", x: 76, y: 431, z: 17, sizeInches: 10, slot: "C", finish: "satin" },
+      { id: "q50", x: 105, y: 148, z: 17, sizeInches: 9, slot: "B", finish: "satin", rotation: -15 },
+      { id: "q58", x: 190, y: 140, z: 17, sizeInches: 7, slot: "A", finish: "satin", rotation: 16 },
+      { id: "m114", x: 171, y: 145, z: 18, sizeInches: 5, slot: "C", finish: "satin", rotation: -1 },
+      { id: "q28", x: 53, y: 298, z: 18, sizeInches: 10, slot: "B", finish: "satin", rotation: 2 },
+      { id: "q70", x: 253, y: 163, z: 19, sizeInches: 7, slot: "B", finish: "satin", rotation: 21 },
+      { id: "q16", x: 62, y: 392, z: 19, sizeInches: 10, slot: "D", finish: "satin", rotation: 1 },
+      { id: "q76", x: 279, y: 178, z: 19, sizeInches: 7, slot: "D", finish: "satin", rotation: 22 },
+      { id: "q22", x: 57, y: 344, z: 19, sizeInches: 10, slot: "A", finish: "satin", rotation: 3 },
+      { id: "q2", x: 133, y: 486, z: 20, sizeInches: 10, slot: "A", finish: "satin", rotation: 21 },
+      { id: "q46", x: 109, y: 182, z: 20, sizeInches: 10, slot: "C", finish: "satin", rotation: 12 },
+      { id: "q52", x: 139, y: 160, z: 20, sizeInches: 10, slot: "A", finish: "satin", rotation: 14 },
+      { id: "q84", x: 301, y: 201, z: 20, sizeInches: 7, slot: "D", finish: "satin", rotation: 24 },
+      { id: "q26", x: 27, y: 322, z: 21, sizeInches: 10, slot: "D", finish: "satin", rotation: -24 },
+      { id: "m105", x: 38, y: 307, z: 22, sizeInches: 5, slot: "C", finish: "satin", rotation: -8 },
+      { id: "q14", x: 41, y: 420, z: 22, sizeInches: 10, slot: "D", finish: "satin", rotation: -26 },
+      { id: "q20", x: 32, y: 371, z: 22, sizeInches: 10, slot: "D", finish: "satin", rotation: -25 },
+      { id: "q39", x: 18, y: 211, z: 22, sizeInches: 9, slot: "C", finish: "satin", rotation: -25 },
+      { id: "m101", x: 58, y: 435, z: 23, sizeInches: 5, slot: "A", finish: "satin", rotation: 9 },
+      { id: "m110", x: 68, y: 183, z: 23, sizeInches: 5, slot: "D", finish: "satin", rotation: -8 },
+      { id: "q32", x: 21, y: 282, z: 23, sizeInches: 10, slot: "A", finish: "satin", rotation: -24 },
+      { id: "m112", x: 188, y: 143, z: 24, sizeInches: 5, slot: "C", finish: "satin", rotation: -10 },
+      { id: "q34", x: 51, y: 260, z: 25, sizeInches: 10, slot: "D", finish: "satin", rotation: 6 },
+      { id: "m103", x: 25, y: 295, z: 25, sizeInches: 5, slot: "C", finish: "satin", rotation: 12 },
+      { id: "q8", x: 61, y: 454, z: 25, sizeInches: 10, slot: "B", finish: "satin", rotation: 22 },
+      { id: "q40", x: 77, y: 203, z: 25, sizeInches: 10, slot: "D", finish: "satin", rotation: 9 },
+      { id: "q44", x: 75, y: 166, z: 26, sizeInches: 10, slot: "A", finish: "satin", rotation: -19 },
+      { id: "q53", x: 134, y: 130, z: 27, sizeInches: 9, slot: "A", finish: "satin", rotation: -15 },
+      { id: "m99", x: 42, y: 440, z: 29, sizeInches: 5, slot: "A", finish: "satin", rotation: -12 },
+      { id: "m108", x: 85, y: 187, z: 29, sizeInches: 5, slot: "D", finish: "satin", rotation: -6 },
+      { id: "q5", x: 94, y: 481, z: 31, sizeInches: 12, slot: "D", finish: "satin", rotation: 18 },
+      { id: "q38", x: 49, y: 225, z: 34, sizeInches: 10, slot: "A", finish: "satin", rotation: -20 },
+      { id: "m115", x: 176, y: 135, z: 37, sizeInches: 5, slot: "C", finish: "satin" },
+      { id: "m106", x: 27, y: 310, z: 38, sizeInches: 5, slot: "C", finish: "satin", rotation: 3 },
+      { id: "m104", x: 40, y: 296, z: 39, sizeInches: 5, slot: "C", finish: "satin", rotation: -10 },
+      { id: "m113", x: 179, y: 152, z: 40, sizeInches: 5, slot: "C", finish: "satin", rotation: 12 },
+      { id: "m102", x: 56, y: 445, z: 42, sizeInches: 5, slot: "A", finish: "satin" },
+      { id: "m111", x: 76, y: 176, z: 42, sizeInches: 5, slot: "D", finish: "satin", rotation: -2 },
+      { id: "m100", x: 49, y: 429, z: 45, sizeInches: 5, slot: "A", finish: "satin", rotation: -6 },
+      { id: "m109", x: 74, y: 193, z: 45, sizeInches: 5, slot: "D", finish: "satin", rotation: -10 },
+      { id: "m107", x: 31, y: 302, z: 56, sizeInches: 5, slot: "C", finish: "satin", rotation: -2 }
     ]
   },
   {
     id: "modelo-guirlanda-suspensa",
-    name: "Guirlanda Orgânica Suspensa",
-    description: "Faixa orgânica horizontal perfeita para topo de boiserie, mesas ou painéis retangulares.",
-    palette: {"A":"#1e40af","B":"#60a5fa","C":"#cbd5e1","D":"#ffffff","names":{"A":"Azul Royal","B":"Azul Celeste","C":"Prata Espelho","D":"Branco Neve","E":"Azul Bebê"},"finishes":{"A":"satin","B":"satin","C":"chrome","D":"matte","E":"satin"}},
-    defaultWidthCm: 180,
-    defaultHeightCm: 80,
+    name: "Guirlanda Orgânica de Topo",
+    description: "Guirlanda volumosa assimétrica com pontas afinadas, 3 cachos monocromáticos de 5\" nos vales reais e ritmo cromático uniforme de ponta a ponta.",
+    palette: {"A":"#52796f","B":"#84a98c","C":"#d4af37","D":"#fdfbf7","names":{"A":"Verde Eucalipto","B":"Sálvia Suave","C":"Ouro Nobre","D":"Off-White Pérola","E":"Branco Neve"},"finishes":{"A":"matte","B":"matte","C":"chrome","D":"satin","E":"satin"}},
+    defaultWidthCm: 207,
+    defaultHeightCm: 96,
     pieces: [
-      { id: "p1", x: 72, y: 171, z: 10, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p2", x: 55, y: 126, z: 6, sizeInches: 10, slot: "A", finish: "satin" },
-      { id: "p3", x: 70, y: 146, z: -7, sizeInches: 5, slot: "C", finish: "satin" },
-      { id: "p4", x: 61, y: 151, z: -6, sizeInches: 10, slot: "C", finish: "satin" },
-      { id: "p5", x: 77, y: 134, z: 13, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p6", x: 83, y: 112, z: -12, sizeInches: 12, slot: "A", finish: "satin" },
-      { id: "p7", x: 88, y: 157, z: -11, sizeInches: 10, slot: "C", finish: "satin" },
-      { id: "p8", x: 95, y: 181, z: 11, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p9", x: 105, y: 102, z: -7, sizeInches: 10, slot: "C", finish: "satin" },
-      { id: "p10", x: 109, y: 149, z: -19, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p11", x: 116, y: 173, z: 5, sizeInches: 10, slot: "C", finish: "satin" },
-      { id: "p12", x: 101, y: 122, z: 19, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p13", x: 134, y: 145, z: -24, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p14", x: 138, y: 167, z: 2, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p15", x: 121, y: 133, z: 19, sizeInches: 10, slot: "C", finish: "satin" },
-      { id: "p16", x: 127, y: 109, z: 1, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p17", x: 160, y: 185, z: -7, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p18", x: 152, y: 136, z: 27, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p19", x: 151, y: 86, z: 11, sizeInches: 18, slot: "C", finish: "satin" },
-      { id: "p20", x: 147, y: 114, z: -26, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p21", x: 175, y: 162, z: 20, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p22", x: 179, y: 102, z: 23, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p23", x: 182, y: 75, z: -29, sizeInches: 18, slot: "C", finish: "satin" },
-      { id: "p24", x: 156, y: 157, z: -25, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p25", x: 201, y: 121, z: 30, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p26", x: 199, y: 98, z: -3, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p27", x: 198, y: 153, z: -44, sizeInches: 18, slot: "D", finish: "satin" },
-      { id: "p28", x: 193, y: 181, z: 5, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p29", x: 236, y: 81, z: 4, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p30", x: 218, y: 90, z: -29, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p31", x: 224, y: 177, z: -4, sizeInches: 18, slot: "D", finish: "satin" },
-      { id: "p32", x: 220, y: 149, z: 29, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p33", x: 259, y: 123, z: -25, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p34", x: 256, y: 180, z: -11, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p35", x: 250, y: 151, z: 38, sizeInches: 18, slot: "D", finish: "satin" },
-      { id: "p36", x: 255, y: 101, z: 12, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "p37", x: 274, y: 147, z: -17, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p38", x: 276, y: 171, z: 17, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p39", x: 276, y: 127, z: 15, sizeInches: 10, slot: "C", finish: "satin" },
-      { id: "p40", x: 280, y: 106, z: -16, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p41", x: 301, y: 173, z: 9, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p42", x: 296, y: 128, z: 16, sizeInches: 10, slot: "C", finish: "satin" },
-      { id: "p43", x: 303, y: 107, z: -7, sizeInches: 10, slot: "C", finish: "satin" },
-      { id: "p44", x: 299, y: 151, z: -19, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p45", x: 316, y: 140, z: 18, sizeInches: 12, slot: "C", finish: "satin" },
-      { id: "p46", x: 322, y: 115, z: -1, sizeInches: 10, slot: "C", finish: "satin" },
-      { id: "p47", x: 335, y: 136, z: -15, sizeInches: 10, slot: "D", finish: "satin" },
-      { id: "p48", x: 326, y: 166, z: 0, sizeInches: 12, slot: "D", finish: "satin" },
-      { id: "big-49", x: 177, y: 129, z: -10, sizeInches: 18, slot: "A", finish: "satin" },
-      { id: "big-50", x: 228, y: 122, z: -10, sizeInches: 18, slot: "C", finish: "satin" },
-      { id: "tufo-51", x: 90, y: 133, z: 50, sizeInches: 5, slot: "D", finish: "satin" },
-      { id: "tufo-52", x: 94, y: 140, z: 52, sizeInches: 5, slot: "D", finish: "satin" },
-      { id: "tufo-53", x: 180, y: 129, z: 50, sizeInches: 5, slot: "C", finish: "chrome" },
-      { id: "tufo-54", x: 267, y: 152, z: 50, sizeInches: 5, slot: "C", finish: "chrome" },
-      { id: "tufo-55", x: 263, y: 160, z: 52, sizeInches: 5, slot: "C", finish: "chrome" }
+      { id: "q55", x: 362, y: 192, z: -16, sizeInches: 7, slot: "B", finish: "satin", rotation: -12 },
+      { id: "q14", x: 82, y: 184, z: -13, sizeInches: 12, slot: "A", finish: "satin", rotation: 11 },
+      { id: "q26", x: 166, y: 156, z: -13, sizeInches: 12, slot: "D", finish: "satin", rotation: 14 },
+      { id: "q32", x: 211, y: 156, z: -13, sizeInches: 12, slot: "A", finish: "satin", rotation: 16 },
+      { id: "q20", x: 122, y: 167, z: -11, sizeInches: 12, slot: "D", finish: "satin", rotation: 12 },
+      { id: "big58", x: 259, y: 142, z: -9, sizeInches: 16, slot: "B", finish: "satin", rotation: -1 },
+      { id: "q10", x: 22, y: 162, z: -9, sizeInches: 7, slot: "B", finish: "satin", rotation: -21 },
+      { id: "q3", x: -3, y: 198, z: -8, sizeInches: 7, slot: "A", finish: "satin", rotation: -21 },
+      { id: "q30", x: 189, y: 91, z: -7, sizeInches: 12, slot: "B", finish: "satin", rotation: -12 },
+      { id: "big57", x: 126, y: 91, z: -7, sizeInches: 18, slot: "A", finish: "satin", rotation: 2 },
+      { id: "q48", x: 339, y: 140, z: -6, sizeInches: 9, slot: "B", finish: "satin", rotation: -7 },
+      { id: "q8", x: 46, y: 200, z: -5, sizeInches: 9, slot: "A", finish: "satin", rotation: 9 },
+      { id: "q50", x: 332, y: 193, z: -4, sizeInches: 9, slot: "B", finish: "satin", rotation: 21 },
+      { id: "q18", x: 73, y: 114, z: -3, sizeInches: 12, slot: "D", finish: "satin", rotation: -15 },
+      { id: "q12", x: 41, y: 140, z: -1, sizeInches: 9, slot: "B", finish: "satin", rotation: -18 },
+      { id: "q44", x: 292, y: 183, z: 1, sizeInches: 12, slot: "D", finish: "satin", rotation: 18 },
+      { id: "q54", x: 365, y: 178, z: 1, sizeInches: 5, slot: "A", finish: "satin", rotation: -7 },
+      { id: "q56", x: 358, y: 196, z: 3, sizeInches: 5, slot: "D", finish: "satin", rotation: 19 },
+      { id: "q42", x: 289, y: 105, z: 6, sizeInches: 12, slot: "D", finish: "satin", rotation: -9 },
+      { id: "q1", x: 24, y: 217, z: 7, sizeInches: 7, slot: "B", finish: "satin", rotation: 9 },
+      { id: "q2", x: 9, y: 202, z: 9, sizeInches: 5, slot: "A", finish: "satin", rotation: -18 },
+      { id: "q6", x: 7, y: 176, z: 10, sizeInches: 9, slot: "B", finish: "satin", rotation: -18 },
+      { id: "q51", x: 354, y: 161, z: 10, sizeInches: 7, slot: "B", finish: "satin", rotation: -7 },
+      { id: "q36", x: 236, y: 95, z: 12, sizeInches: 12, slot: "A", finish: "satin", rotation: -11 },
+      { id: "q9", x: 35, y: 166, z: 14, sizeInches: 7, slot: "A", finish: "satin", rotation: -17 },
+      { id: "q38", x: 247, y: 172, z: 17, sizeInches: 12, slot: "D", finish: "satin", rotation: 17 },
+      { id: "q23", x: 144, y: 148, z: 17, sizeInches: 10, slot: "B", finish: "satin", rotation: 15 },
+      { id: "m70", x: 269, y: 173, z: 18, sizeInches: 5, slot: "C", finish: "satin", rotation: -2 },
+      { id: "q45", x: 316, y: 132, z: 18, sizeInches: 10, slot: "A", finish: "satin", rotation: -6 },
+      { id: "q5", x: 30, y: 193, z: 18, sizeInches: 7, slot: "D", finish: "satin", rotation: 11 },
+      { id: "q29", x: 187, y: 144, z: 18, sizeInches: 10, slot: "D", finish: "satin", rotation: 15 },
+      { id: "q21", x: 102, y: 132, z: 18, sizeInches: 10, slot: "B", finish: "satin", rotation: -14 },
+      { id: "q27", x: 166, y: 115, z: 19, sizeInches: 10, slot: "B", finish: "satin", rotation: -9 },
+      { id: "m61", x: 96, y: 150, z: 19, sizeInches: 5, slot: "B", finish: "satin", rotation: 9 },
+      { id: "q53", x: 352, y: 186, z: 19, sizeInches: 7, slot: "C", finish: "satin", rotation: 23 },
+      { id: "q11", x: 61, y: 181, z: 20, sizeInches: 10, slot: "D", finish: "satin", rotation: 10 },
+      { id: "q17", x: 98, y: 166, z: 21, sizeInches: 10, slot: "C", finish: "satin", rotation: 14 },
+      { id: "q47", x: 324, y: 168, z: 22, sizeInches: 10, slot: "D", finish: "satin", rotation: 20 },
+      { id: "m65", x: 177, y: 122, z: 23, sizeInches: 5, slot: "D", finish: "satin", rotation: 1 },
+      { id: "q15", x: 65, y: 145, z: 24, sizeInches: 10, slot: "D", finish: "satin", rotation: -14 },
+      { id: "m68", x: 277, y: 158, z: 24, sizeInches: 5, slot: "C", finish: "satin", rotation: -9 },
+      { id: "q33", x: 201, y: 112, z: 24, sizeInches: 10, slot: "C", finish: "satin", rotation: -10 },
+      { id: "m59", x: 80, y: 144, z: 25, sizeInches: 5, slot: "B", finish: "satin", rotation: -3 },
+      { id: "q35", x: 226, y: 139, z: 25, sizeInches: 10, slot: "A", finish: "satin", rotation: 17 },
+      { id: "m63", x: 194, y: 127, z: 26, sizeInches: 5, slot: "D", finish: "satin", rotation: 4 },
+      { id: "q41", x: 284, y: 150, z: 28, sizeInches: 10, slot: "A", finish: "satin", rotation: 21 },
+      { id: "q39", x: 258, y: 123, z: 29, sizeInches: 10, slot: "D", finish: "satin", rotation: -7 },
+      { id: "m71", x: 263, y: 164, z: 37, sizeInches: 5, slot: "C", finish: "satin", rotation: 3 },
+      { id: "q24", x: 134, y: 120, z: 37, sizeInches: 12, slot: "D", finish: "satin", rotation: -14 },
+      { id: "m62", x: 88, y: 157, z: 38, sizeInches: 5, slot: "B", finish: "satin", rotation: 8 },
+      { id: "m66", x: 186, y: 115, z: 39, sizeInches: 5, slot: "D", finish: "satin", rotation: -11 },
+      { id: "m69", x: 280, y: 171, z: 40, sizeInches: 5, slot: "C", finish: "satin", rotation: -1 },
+      { id: "m64", x: 180, y: 132, z: 40, sizeInches: 5, slot: "D", finish: "satin", rotation: 9 },
+      { id: "m60", x: 92, y: 140, z: 41, sizeInches: 5, slot: "B", finish: "satin", rotation: -1 },
+      { id: "m67", x: 185, y: 123, z: 57, sizeInches: 5, slot: "D", finish: "satin", rotation: -1 }
     ]
   },
   {

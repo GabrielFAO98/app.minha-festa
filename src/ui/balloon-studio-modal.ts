@@ -15,8 +15,6 @@ import {
   sortPiecesByDepth,
   mirrorArrangementHorizontal,
   distributeColors,
-  variateArrangement,
-  applyVolumeLevel,
   adjustColorBrightness,
   getFriendlyColorName,
   type BalloonPiece,
@@ -67,6 +65,11 @@ export class BalloonStudioModal {
   private activeColorSlot: BalloonSlot = 'A';
   private currentVolumeLevel: 'enxuto' | 'padrao' | 'cheio' = 'padrao';
   private currentDistributionMode: 'mesclado' | 'degrade' | 'blocos' = 'mesclado';
+  private currentScaleLevel: 'compacto' | 'padrao' | 'grande' = 'padrao';
+  private scaleOrigins: Map<string, { x: number; y: number; sizeInches: BalloonSizeInches }> = new Map();
+  private backdropMode: 'redondo' | 'romano' | 'cilindro' | 'livre' = 'redondo';
+  private showPersonRef: boolean = true;
+  private modelSheetMode: 'append' | 'replace' = 'append';
 
   // Ferramenta ativa no canvas (Ajustar por padrão)
   private activeTouchTool:
@@ -91,12 +94,21 @@ export class BalloonStudioModal {
     | 'big-balloon' = 'adjust';
 
   // Aba ativa no dock inferior (Inicia sem nenhum menu aberto)
-  private activeBottomTab: 'cores' | 'incluir' | 'ajustes' | null = null;
+  private activeBottomTab: 'cores' | 'incluir' | 'arranjo' | null = null;
   private isBottomDrawerOpen: boolean = false;
   private activeColorCount: number = 4;
   private hasConfirmedVariar: boolean = false;
   private colorSheetSubtab: 'colors' | 'covers' = 'colors';
   private cachedCovers: CoverItemRecord[] = [];
+
+  // Seleção múltipla moderna (Long-press + botão "+ Vários" + barra contextual inferior)
+  private isMultiSelectMode: boolean = false;
+  private isMarqueeMode: boolean = false;
+  private selectionSubpanel: 'color' | 'size' | null = null;
+  private longPressTimer: number | null = null;
+  private longPressTriggered: boolean = false;
+  private dragStartClientX: number = 0;
+  private dragStartClientY: number = 0;
 
   // Estado de movimentação da tela (Pan) - seja por ferramenta ou por arrasto no fundo livre
   private isPanning: boolean = false;
@@ -107,7 +119,6 @@ export class BalloonStudioModal {
   private cachedCanvasRect: DOMRect | null = null;
   private cachedCanvasWidth: number = 400;
   private cachedCanvasHeight: number = 400;
-  private quickBarPreviewTimer: number | null = null;
   private multiSelectToggleCandidate: string | null = null;
   private hasMovedDrag: boolean = false;
 
@@ -323,6 +334,14 @@ export class BalloonStudioModal {
             </div>
 
             <div class="bs-header-right-actions">
+              <div class="bs-undo-redo-group">
+                <button id="bs-btn-header-undo" class="bs-btn-header-icon" title="Desfazer (Ctrl+Z)" aria-label="Desfazer" disabled>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
+                </button>
+                <button id="bs-btn-header-redo" class="bs-btn-header-icon" title="Refazer (Ctrl+Y)" aria-label="Refazer" disabled>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path></svg>
+                </button>
+              </div>
               <!-- Ação Principal de Saída -->
               <button id="bs-btn-conclude-flow" class="bs-btn-conclude" title="Salvar Arranjo">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -335,53 +354,10 @@ export class BalloonStudioModal {
             </div>
           </header>
 
-          <!-- Banner / Faixa de Modo Ativo com Ações Rápidas -->
-          <div id="bs-tool-active-banner" class="bs-tool-banner" style="display:none">
-            <div class="bs-tool-banner-content" id="bs-tool-banner-content">
-              <span id="bs-tool-banner-text">Toque no cenário para posicionar</span>
-              <div id="bs-multiselect-actions" class="bs-multiselect-actions" style="display:none">
-                <span id="bs-multiselect-count-badge" class="bs-multi-badge">0 sel.</span>
-                <button type="button" id="bs-btn-multi-all" class="bs-multi-chip-btn" title="Selecionar todos os balões">Tudo</button>
-                <button type="button" id="bs-btn-multi-by-size" class="bs-multi-chip-btn" title="Selecionar por tamanho">Tamanho ▾</button>
-                <button type="button" id="bs-btn-multi-by-color" class="bs-multi-chip-btn" title="Selecionar por cor">Cor ▾</button>
-                <button type="button" id="bs-btn-multi-clear" class="bs-multi-chip-btn" title="Limpar seleção">Limpar</button>
-              </div>
-            </div>
-            <button id="bs-btn-cancel-tool" class="bs-tool-cancel-btn" title="Concluir ou cancelar modo">Cancelar</button>
-          </div>
-          <!-- Menu dropdown flutuante de seleção por categoria -->
-          <div id="bs-multiselect-filter-dropdown" class="bs-multiselect-filter-dropdown" style="display:none"></div>
-
-          <!-- Centro: Canvas Interativo com Zoom Estável por Pinça -->
+          <!-- Centro: Canvas Interativo Limpo com Zoom por Pinça e Long-Press -->
           <main class="bs-canvas-area" id="bs-canvas-container">
-            <!-- Chips Flutuantes -->
+            <!-- Chips Flutuantes Discretos -->
             <div id="bs-chip-dimension" class="bs-canvas-chip bs-chip-dim">180 × 230 cm</div>
-            <div id="bs-canvas-quick-bar" class="bs-canvas-quick-bar">
-              <button id="bs-quick-btn-adjust" class="bs-quick-btn active" title="Modo Ajustar: selecione e arraste balões livremente">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"></path><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"></path><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"></path><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"></path></svg>
-                <span>Ajustar</span>
-              </button>
-              <button id="bs-quick-btn-multiselect" class="bs-quick-btn" title="Seleção Múltipla: selecione vários balões">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="12" height="12" rx="2" stroke-dasharray="2 1.5"></rect><path d="M8 21h11a2 2 0 0 0 2-2V8"></path></svg>
-                <span>Múltiplos</span>
-              </button>
-              <button id="bs-quick-btn-eraser" class="bs-quick-btn" title="Modo Apagar: toque em qualquer balão para excluir">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"></path><path d="M22 21H7"></path><path d="m5 11 9 9"></path></svg>
-                <span>Apagar</span>
-              </button>
-              <button id="bs-quick-btn-mirror" class="bs-quick-btn" title="Inverter o arranjo horizontalmente (espelhar)">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2 2"></line><path d="M8 7 2 12l6 5V7z" fill="currentColor" fill-opacity="0.18"></path><path d="M16 7l6 5-6 5V7z" fill="currentColor" fill-opacity="0.75"></path></svg>
-                <span>Inverter</span>
-              </button>
-              <button id="bs-quick-btn-undo" class="bs-quick-btn" title="Desfazer (Ctrl+Z)">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
-                <span>Desfazer</span>
-              </button>
-              <button id="bs-quick-btn-redo" class="bs-quick-btn" title="Refazer (Ctrl+Y)">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path></svg>
-                <span>Refazer</span>
-              </button>
-            </div>
             <button id="bs-btn-reset-view" class="bs-canvas-chip bs-chip-reset" style="display:none" title="Resetar zoom e centralizar">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
               <span id="bs-zoom-level-badge">100%</span>
@@ -391,8 +367,6 @@ export class BalloonStudioModal {
               <span id="bs-chip-count-label">0 balões</span>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </button>
-
-
 
             <!-- Estado Vazio (quando tela estiver em branco) -->
             <div id="bs-canvas-empty-state" class="bs-canvas-empty-state" style="display:none">
@@ -411,49 +385,22 @@ export class BalloonStudioModal {
               <g id="bs-highlight-layer"></g>
               <g id="bs-marquee-layer"></g>
             </svg>
-
-            <!-- Pílula Flutuante no Balão Selecionado -->
-            <div id="bs-floating-balloon-pill" class="bs-balloon-pill" style="display:none">
-              <button id="bs-pill-color-btn" class="bs-pill-btn" title="Mudar cor desta família">
-                <span id="bs-pill-swatch-dot" class="bs-pill-swatch-dot"></span>
-                <span id="bs-pill-color-name">Cor</span>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-              </button>
-              <button id="bs-pill-size-btn" class="bs-pill-btn" title="Mudar tamanho">
-                <span id="bs-pill-size-text">12"</span>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-              </button>
-              <button id="bs-pill-group-btn" class="bs-pill-btn" title="Agrupar ou Desagrupar" style="display:none">
-                <svg id="bs-pill-group-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
-                  <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
-                  <path d="M10 6.5h4a2 2 0 0 1 2 2v4M14 17.5h-4a2 2 0 0 1-2-2v-4"></path>
-                </svg>
-                <span id="bs-pill-group-text">Agrupar</span>
-              </button>
-              <button id="bs-pill-dup-btn" class="bs-pill-btn" title="Duplicar">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-              </button>
-              <button id="bs-pill-del-btn" class="bs-pill-btn bs-pill-btn-danger" title="Excluir">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-              </button>
-            </div>
           </main>
-
-          <!-- Faixa da Paleta (Exibida APENAS no Menu Cores) -->
-          <section class="bs-palette-strip" id="bs-palette-strip-bar">
-            <div class="bs-swatches-row" id="bs-swatches-container">
-              <!-- Swatches gerados dinamicamente -->
-            </div>
-          </section>
 
           <!-- Painel Ativo da Aba -->
           <section class="bs-tab-panel" id="bs-tab-active-panel" style="display:none">
-            <!-- Conteúdo injetado dinamicamente: Cores, Incluir ou Ajustes -->
+            <!-- Conteúdo injetado dinamicamente: Cores, Incluir ou Arranjo -->
           </section>
 
-          <!-- Dock Inferior com 3 Abas: Cores | Incluir (Centro Destacado) | Ajustes -->
-          <nav class="bs-tabs-dock">
+          <!-- Barra Contextual Inferior de Seleção (Zona do Polegar — substitui o dock ao selecionar balões) -->
+          <section id="bs-selection-dock" class="bs-selection-dock" style="display:none" aria-label="Ações de seleção">
+            <div id="bs-selection-subpanel" class="bs-selection-subpanel" style="display:none"></div>
+            <div id="bs-selection-top-row" class="bs-selection-top-row"></div>
+            <div id="bs-selection-actions-row" class="bs-selection-actions-row"></div>
+          </section>
+
+          <!-- Dock Inferior com 3 Abas: Cores | Incluir | Arranjo -->
+          <nav id="bs-tabs-dock" class="bs-tabs-dock">
             <button class="bs-dock-tab" data-tab="cores">
               <span class="bs-dock-tab-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z"></path></svg>
@@ -469,16 +416,17 @@ export class BalloonStudioModal {
               </span>
               <span>Incluir</span>
             </button>
-            <button class="bs-dock-tab" data-tab="ajustes">
+            <button class="bs-dock-tab" data-tab="arranjo">
               <span class="bs-dock-tab-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
-                  <line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line>
-                  <line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line>
-                  <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                  <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                  <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                  <path d="M14 17.5h7"></path>
+                  <path d="M17.5 14v7"></path>
                 </svg>
               </span>
-              <span>Ajustes</span>
+              <span>Arranjo</span>
             </button>
           </nav>
         </section>
@@ -571,19 +519,19 @@ export class BalloonStudioModal {
           </div>
         </div>
 
-        <!-- Gaveta: Adicionar Arranjo Modelo -->
+        <!-- Gaveta: Adicionar ou Trocar Arranjo Modelo -->
         <div id="bs-append-model-sheet" class="bs-sheet-dim" style="display:none">
           <div class="bs-bottom-sheet">
             <div class="bs-sheet-grabber"></div>
             <div class="bs-sheet-header">
-              <h3 class="bs-sheet-title">Adicionar Arranjo Modelo</h3>
+              <h3 class="bs-sheet-title" id="bs-append-sheet-title">Somar Outro Modelo</h3>
               <button id="bs-btn-close-append-sheet" class="bs-sheet-close">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
             </div>
             <div class="bs-sheet-body">
               <div class="bs-label-row" style="margin-bottom:8px">
-                <span>Escolha um modelo para somar ao arranjo atual:</span>
+                <span id="bs-append-sheet-subtitle">Escolha um modelo para somar ao arranjo atual:</span>
               </div>
               <div class="bs-models-append-grid">
                 ${BALLOON_STUDIO_TEMPLATES.map((tmpl) => {
@@ -773,74 +721,15 @@ export class BalloonStudioModal {
 
 
 
-    document.getElementById('bs-btn-conclude-flow')?.addEventListener('click', () => {
-      this.openConcludeModal();
-    });
-
-    // 3. Quick Bar Vertical do Canvas
-    document.getElementById('bs-quick-btn-adjust')?.addEventListener('click', () => {
-      this.setActiveTouchTool('adjust');
-    });
-    document.getElementById('bs-quick-btn-multiselect')?.addEventListener('click', () => {
-      this.setActiveTouchTool(this.activeTouchTool === 'multi-select' ? 'adjust' : 'multi-select');
-    });
-    document.getElementById('bs-quick-btn-eraser')?.addEventListener('click', () => {
-      this.setActiveTouchTool(this.activeTouchTool === 'eraser' ? 'adjust' : 'eraser');
-    });
-    document.getElementById('bs-quick-btn-mirror')?.addEventListener('click', () => {
-      this.mirrorArrangement();
-    });
-    document.getElementById('bs-quick-btn-undo')?.addEventListener('click', () => {
+    document.getElementById('bs-btn-header-undo')?.addEventListener('click', () => {
       this.undo();
     });
-    document.getElementById('bs-quick-btn-redo')?.addEventListener('click', () => {
+    document.getElementById('bs-btn-header-redo')?.addEventListener('click', () => {
       this.redo();
     });
 
-    // Botão cancelar modo ativo no banner
-    document.getElementById('bs-btn-cancel-tool')?.addEventListener('click', () => {
-      this.setActiveTouchTool('adjust');
-    });
-
-    // Ações Rápidas de Seleção Múltipla
-    document.getElementById('bs-btn-multi-all')?.addEventListener('click', () => {
-      this.selectedPieceIds.clear();
-      this.pieces.forEach((p) => this.selectedPieceIds.add(p.id));
-      this.renderSelectionHighlights();
-      this.showBalloonPill();
-      this.updateMultiSelectBadge();
-      const dropdown = document.getElementById('bs-multiselect-filter-dropdown');
-      if (dropdown) dropdown.style.display = 'none';
-    });
-
-    document.getElementById('bs-btn-multi-by-size')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.renderMultiSelectFilterDropdown('size');
-    });
-
-    document.getElementById('bs-btn-multi-by-color')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.renderMultiSelectFilterDropdown('color');
-    });
-
-    document.getElementById('bs-btn-multi-clear')?.addEventListener('click', () => {
-      this.selectedPieceIds.clear();
-      this.renderSelectionHighlights();
-      this.hideBalloonPill();
-      this.updateMultiSelectBadge();
-      const dropdown = document.getElementById('bs-multiselect-filter-dropdown');
-      if (dropdown) dropdown.style.display = 'none';
-    });
-
-    // Fecha dropdown se clicar fora
-    document.addEventListener('click', (e) => {
-      const dropdown = document.getElementById('bs-multiselect-filter-dropdown');
-      if (dropdown && dropdown.style.display !== 'none') {
-        const target = e.target as HTMLElement;
-        if (!target.closest('#bs-multiselect-filter-dropdown') && !target.closest('#bs-btn-multi-by-size') && !target.closest('#bs-btn-multi-by-color')) {
-          dropdown.style.display = 'none';
-        }
-      }
+    document.getElementById('bs-btn-conclude-flow')?.addEventListener('click', () => {
+      this.openConcludeModal();
     });
 
     document.getElementById('bs-btn-reset-view')?.addEventListener('click', () => {
@@ -851,43 +740,72 @@ export class BalloonStudioModal {
       this.openShoppingModal();
     });
 
-    // 4. Pílula Flutuante do Balão
-    document.getElementById('bs-pill-color-btn')?.addEventListener('click', () => {
-      const slots: BalloonSlot[] = (['A', 'B', 'C', 'D', 'E'] as const).slice(0, this.activeColorCount);
-      const currentSlot = this.getActiveSelectedPiece()?.slot || 'A';
-      const nextIdx = (slots.indexOf(currentSlot) + 1) % slots.length;
-      this.setSelectedPieceSlot(slots[nextIdx]);
-    });
+    // 4. Barra Contextual Inferior de Seleção (eventos delegados)
+    document.getElementById('bs-selection-dock')?.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
 
-    document.getElementById('bs-pill-size-btn')?.addEventListener('click', () => {
-      const sizes: BalloonSizeInches[] = [5, 7, 9, 10, 12, 16, 18, 24, 36];
-      const p = this.getActiveSelectedPiece();
-      if (!p) return;
-      if (p.shape === 'star') {
+      const slotBtn = target.closest('[data-sel-slot]') as HTMLElement | null;
+      if (slotBtn) {
+        const slot = slotBtn.dataset.selSlot as BalloonSlot;
+        if (slot) this.setSelectedPieceSlot(slot);
         return;
       }
-      const currentSize = p.sizeInches || 12;
-      const nextIdx = (sizes.indexOf(currentSize) + 1) % sizes.length;
-      this.setSelectedPieceSize(sizes[nextIdx]);
-    });
 
-    document.getElementById('bs-pill-group-btn')?.addEventListener('click', () => {
-      this.toggleGroupSelected();
-    });
+      const sizeBtn = target.closest('[data-sel-size]') as HTMLElement | null;
+      if (sizeBtn) {
+        const sz = Number(sizeBtn.dataset.selSize) as BalloonSizeInches;
+        if (sz) this.setSelectedPieceSize(sz);
+        return;
+      }
 
-    document.getElementById('bs-pill-dup-btn')?.addEventListener('click', () => {
-      this.duplicateSelected();
-    });
+      const cmdBtn = target.closest('[data-sel-cmd]') as HTMLElement | null;
+      if (cmdBtn) {
+        const cmd = cmdBtn.dataset.selCmd;
+        if (cmd === 'enter-multi') {
+          this.enterMultiSelectMode();
+        } else if (cmd === 'exit-multi' || cmd === 'clear') {
+          this.exitMultiSelectMode(true);
+        } else if (cmd === 'same-color') {
+          this.selectSameColor();
+        } else if (cmd === 'same-size') {
+          this.selectSameSize();
+        } else if (cmd === 'toggle-marquee') {
+          this.toggleMarqueeMode();
+        } else if (cmd === 'select-all') {
+          this.selectAllPieces();
+        }
+        return;
+      }
 
-    document.getElementById('bs-pill-del-btn')?.addEventListener('click', () => {
-      this.deleteSelected();
+      const actBtn = target.closest('[data-sel-act]') as HTMLElement | null;
+      if (actBtn) {
+        if ((actBtn as HTMLButtonElement).disabled) return;
+        const act = actBtn.dataset.selAct;
+        if (act === 'color') {
+          this.selectionSubpanel = this.selectionSubpanel === 'color' ? null : 'color';
+          this.renderSelectionDock();
+        } else if (act === 'size') {
+          this.selectionSubpanel = this.selectionSubpanel === 'size' ? null : 'size';
+          this.renderSelectionDock();
+        } else if (act === 'bring-front') {
+          this.bringSelectedForward();
+        } else if (act === 'send-back') {
+          this.sendSelectedBackward();
+        } else if (act === 'group') {
+          this.toggleGroupSelected();
+        } else if (act === 'duplicate') {
+          this.duplicateSelected();
+        } else if (act === 'delete') {
+          this.deleteSelected();
+        }
+      }
     });
 
     // 6. Dock de Abas Inferiores com Comportamento de Toggle ao Re-clicar
     this.overlayEl.querySelectorAll('.bs-dock-tab').forEach((tabBtn) => {
       tabBtn.addEventListener('click', (e) => {
         const btn = e.currentTarget as HTMLElement;
-        const tab = btn.dataset.tab as 'cores' | 'incluir' | 'ajustes';
+        const tab = btn.dataset.tab as 'cores' | 'incluir' | 'arranjo';
         if (tab) this.toggleBottomTab(tab);
       });
     });
@@ -932,13 +850,17 @@ export class BalloonStudioModal {
       if (coverUploadInput) coverUploadInput.value = '';
     });
 
-    // Clique nos cards de Adicionar Arranjo Modelo
+    // Clique nos cards de Adicionar ou Trocar Arranjo Modelo
     this.overlayEl.querySelectorAll('.bs-append-card').forEach((card) => {
       card.addEventListener('click', (e) => {
         const target = e.currentTarget as HTMLElement;
         const id = target.dataset.templateId;
         if (id) {
-          this.appendModelTemplate(id);
+          if (this.modelSheetMode === 'replace') {
+            this.replaceModelKeepingPalette(id);
+          } else {
+            this.appendModelTemplate(id);
+          }
         }
       });
     });
@@ -987,7 +909,7 @@ export class BalloonStudioModal {
       if (hex) this.updateSlotColorAndName(this.editingColorSlot, hex, getFriendlyColorName(hex));
     });
 
-    // 8. Eventos de Canvas: Pinch-to-zoom com multi-touch guard e arrasto de balões
+    // 8. Eventos de Canvas: Pinch-to-zoom com multi-touch guard, long-press e arrasto de balões
     this.setupCanvasPointerGestures();
 
     // 9. Atalhos de teclado no estúdio
@@ -1005,7 +927,11 @@ export class BalloonStudioModal {
         e.preventDefault();
         this.redo();
       } else if (e.key === 'Escape') {
-        this.requestExit();
+        if (this.isMultiSelectMode || this.selectedPieceIds.size > 0) {
+          this.exitMultiSelectMode(true);
+        } else {
+          this.requestExit();
+        }
       }
     });
   }
@@ -1021,7 +947,8 @@ export class BalloonStudioModal {
     if (screen === 'editor') {
       this.computeBaseViewBox();
       this.renderCanvas();
-      this.syncPaletteSwatches();
+      this.updateUndoRedoButtons();
+      this.renderSelectionDock();
       // Não reabre menus automaticamente; apenas renderiza se a gaveta estiver explicitamente aberta
       if (this.isBottomDrawerOpen) {
         this.renderTabActivePanel();
@@ -1030,6 +957,7 @@ export class BalloonStudioModal {
         if (panel) panel.style.display = 'none';
       }
     } else if (screen === 'gallery') {
+      this.exitMultiSelectMode(true);
       this.closeBottomDrawer();
       this.closeAllSheets();
       this.renderSavedArrangements();
@@ -1040,9 +968,9 @@ export class BalloonStudioModal {
   // SISTEMA DE ZOOM POR PINÇA E GESTOS NO CANVAS
   // ----------------------------------------------------------------------
 
-  // Calcula viewBox base estável baseado na cenografia física real (Painel + Pessoa + Piso) e no modelo
+  // Calcula viewBox base estável e centralizado baseado na cenografia física real e no modelo
   private computeBaseViewBox(): void {
-    // Dimensões de referência padrão da cenografia física real (Painel Ø 1,80m + Pessoa 1,70m + Piso)
+    // Dimensões de referência padrão da cenografia física real (Painel + Pessoa 1,70m + Piso)
     let minX = -30;
     let maxX = 475;
     let minY = -25;
@@ -1057,12 +985,11 @@ export class BalloonStudioModal {
       if (p.y + r > maxY) maxY = p.y + r;
     }
 
-    // Leva em conta o espaço ocupado pela barra vertical à direita (+50px de clearance)
-    const pad = 30;
-    const sceneW = (maxX - minX) + pad * 2 + 35; // clearance para a quick bar
+    const pad = 28;
+    const sceneW = (maxX - minX) + pad * 2;
     const sceneH = (maxY - minY) + pad * 2;
     const size = Math.max(sceneW, sceneH);
-    const cx = (minX + maxX) / 2 + 18;
+    const cx = (minX + maxX) / 2;
     const cy = (minY + maxY) / 2;
 
     this.baseViewBox = {
@@ -1123,13 +1050,17 @@ export class BalloonStudioModal {
     const canvas = this.canvasSvgEl;
     if (!canvas) return;
 
+    // Evita menu de contexto nativo do celular durante long-press em balões
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
     canvas.addEventListener('pointerdown', (e: PointerEvent) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
 
       this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-      // DOIS DEDOS: CANCELA IMEDIATAMENTE QUALQUER ARRASTO DE BALÃO!
+      // DOIS DEDOS: CANCELA IMEDIATAMENTE QUALQUER ARRASTO OU LONG-PRESS!
       if (this.activePointers.size >= 2) {
+        this.cancelLongPressTimer();
         if (this.isDragging) {
           this.cleanupDragState();
 
@@ -1144,7 +1075,13 @@ export class BalloonStudioModal {
           });
           this.renderCanvas(false);
         }
-        this.hideBalloonPill();
+
+        if (this.isMarqueeSelecting) {
+          this.isMarqueeSelecting = false;
+          this.marqueePointerId = -1;
+          const marqueeLayer = document.getElementById('bs-marquee-layer');
+          if (marqueeLayer) marqueeLayer.innerHTML = '';
+        }
 
         // Inicia pinça de zoom de alto desempenho com ancoragem focal
         if (this.isPanning) {
@@ -1181,8 +1118,7 @@ export class BalloonStudioModal {
       const target = e.target as SVGElement;
       const pieceGroup = target.closest('.balloon-piece') as unknown as SVGElement | null;
 
-      // Execução conforme a ferramenta ativa:
-      // 1. Mover a Tela (Pan explícito da ferramenta)
+      // 1. Mover a Tela (Pan explícito caso ferramenta esteja ativa)
       if (this.activeTouchTool === 'pan') {
         this.isPanning = true;
         this.panPointerId = e.pointerId;
@@ -1195,7 +1131,6 @@ export class BalloonStudioModal {
         this.cachedCanvasWidth = rect.width || 400;
         this.cachedCanvasHeight = rect.height || 400;
 
-        this.hideBalloonPill();
         const container = document.getElementById('bs-canvas-container');
         if (container) container.classList.add('is-panning');
         try {
@@ -1204,7 +1139,7 @@ export class BalloonStudioModal {
         return;
       }
 
-      // 2. Apagar
+      // 2. Apagar (se ativado programaticamente)
       if (this.activeTouchTool === 'eraser') {
         if (pieceGroup) {
           const pieceId = pieceGroup.id.replace('piece-', '');
@@ -1213,7 +1148,7 @@ export class BalloonStudioModal {
         return;
       }
 
-      // 3. Inserção de Peças
+      // 3. Inserção de Peças por toque no canvas (se ativo)
       if (this.activeTouchTool === 'balloon-5' || this.activeTouchTool === 'light-point') {
         const svgCoords = this.screenToSvgCoordinates(e.clientX, e.clientY);
         this.insertSingleBalloonAt(svgCoords.x, svgCoords.y, 5);
@@ -1293,8 +1228,8 @@ export class BalloonStudioModal {
         return;
       }
 
-      // 4. Modo Múltiplos (Seleção Múltipla acumulativa e arrasto de grupo)
-      if (this.activeTouchTool === 'multi-select') {
+      // 4. Seleção Múltipla Ativa (Toque acumula/alterna, arrasto >8px move grupo, Caixa desenha retângulo)
+      if (this.isMultiSelectMode) {
         if (pieceGroup) {
           const pieceId = pieceGroup.id.replace('piece-', '');
           const clickedPiece = this.pieces.find((x) => x.id === pieceId);
@@ -1310,9 +1245,12 @@ export class BalloonStudioModal {
             this.multiSelectToggleCandidate = null;
           }
           this.hasMovedDrag = false;
+          this.longPressTriggered = false;
+          this.dragStartClientX = e.clientX;
+          this.dragStartClientY = e.clientY;
 
           this.renderSelectionHighlights();
-          this.showBalloonPill();
+          this.renderSelectionDock();
 
           this.isDragging = true;
           this.dragPointerId = e.pointerId;
@@ -1336,20 +1274,18 @@ export class BalloonStudioModal {
             if (el) this.draggedDomElements.push(el);
           });
           this.highlightLayerEl = document.getElementById('bs-highlight-layer');
-          this.hideBalloonPill();
 
           try {
             canvas.setPointerCapture(e.pointerId);
           } catch (_) {}
-        } else {
-          // Tocou no fundo livre no modo múltiplos: inicia o Retângulo de Seleção (Marquee Box)
+        } else if (this.isMarqueeMode) {
+          // Modo Caixa explícito: arrastar no fundo livre desenha o retângulo de seleção
           this.isMarqueeSelecting = true;
           this.marqueePointerId = e.pointerId;
           const svgPt = this.screenToSvgCoordinates(e.clientX, e.clientY);
           this.marqueeStartSvg = svgPt;
           this.marqueeCurrentSvg = { ...svgPt };
           this.marqueeInitialSelected = new Set(this.selectedPieceIds);
-          this.hideBalloonPill();
 
           const marqueeLayer = document.getElementById('bs-marquee-layer');
           if (marqueeLayer) marqueeLayer.innerHTML = '';
@@ -1357,14 +1293,37 @@ export class BalloonStudioModal {
           try {
             canvas.setPointerCapture(e.pointerId);
           } catch (_) {}
+        } else {
+          // Mesmo em seleção múltipla, arrastar fundo livre mantém Pan natural com 1 dedo!
+          this.isPanning = true;
+          this.panPointerId = e.pointerId;
+          this.panStartClient = { x: e.clientX, y: e.clientY };
+          this.panStartPan = { ...this.panOffset };
+          this.hasMovedPan = false;
+
+          const rect = this.canvasSvgEl.getBoundingClientRect();
+          this.cachedCanvasRect = rect;
+          this.cachedCanvasWidth = rect.width || 400;
+          this.cachedCanvasHeight = rect.height || 400;
+
+          const container = document.getElementById('bs-canvas-container');
+          if (container) container.classList.add('is-panning');
+          try {
+            canvas.setPointerCapture(e.pointerId);
+          } catch (_) {}
         }
         return;
       }
 
-      // 5. Modo Ajustar (Padrão: move peça ou grupo inteiro se já estiver selecionado)
+      // 5. Modo Padrão (Toque seleciona, Arrasto >8px move, Segurar 360ms ativa Seleção Múltipla)
       if (pieceGroup) {
         const pieceId = pieceGroup.id.replace('piece-', '');
         const clickedPiece = this.pieces.find((x) => x.id === pieceId);
+
+        // Fecha gaveta de aba caso esteja aberta para dar foco total à edição do balão
+        if (this.isBottomDrawerOpen) {
+          this.closeBottomDrawer();
+        }
 
         // Se o balão faz parte de um grupo vinculado, seleciona todos os balões do grupo juntos
         if (clickedPiece?.groupId) {
@@ -1378,8 +1337,33 @@ export class BalloonStudioModal {
           this.selectedPieceIds.clear();
           this.selectedPieceIds.add(pieceId);
         }
+
+        this.hasMovedDrag = false;
+        this.longPressTriggered = false;
+        this.dragStartClientX = e.clientX;
+        this.dragStartClientY = e.clientY;
+
         this.renderSelectionHighlights();
-        this.showBalloonPill();
+        this.renderSelectionDock();
+
+        // Inicia timer de long-press (360ms) para ativar seleção múltipla naturalmente
+        this.cancelLongPressTimer();
+        this.longPressTimer = window.setTimeout(() => {
+          this.longPressTimer = null;
+          if (!this.hasMovedDrag && !this.isPinching && this.activePointers.size === 1) {
+            this.longPressTriggered = true;
+            this.cleanupDragState();
+            this.isMultiSelectMode = true;
+            this.isMarqueeMode = false;
+            this.selectionSubpanel = null;
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+              try { navigator.vibrate(25); } catch (_) {}
+            }
+            this.renderSelectionHighlights();
+            this.renderSelectionDock();
+            this.showToast('Seleção múltipla ativa — toque em outros balões');
+          }
+        }, 360);
 
         this.isDragging = true;
         this.dragPointerId = e.pointerId;
@@ -1403,7 +1387,6 @@ export class BalloonStudioModal {
           if (el) this.draggedDomElements.push(el);
         });
         this.highlightLayerEl = document.getElementById('bs-highlight-layer');
-        this.hideBalloonPill();
 
         try {
           canvas.setPointerCapture(e.pointerId);
@@ -1434,7 +1417,7 @@ export class BalloonStudioModal {
         this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       }
 
-      // Retângulo de Seleção (Marquee Box) no Modo Múltiplos
+      // Retângulo de Seleção (Marquee Box) quando Modo Caixa está ativo
       if (this.isMarqueeSelecting && e.pointerId === this.marqueePointerId && this.activePointers.size === 1) {
         const svgPt = this.screenToSvgCoordinates(e.clientX, e.clientY);
         this.marqueeCurrentSvg = svgPt;
@@ -1448,7 +1431,6 @@ export class BalloonStudioModal {
 
         // Atualiza a seleção em tempo real com todos os balões capturados pelo retângulo
         const currentSelected = new Set(this.marqueeInitialSelected);
-        let newlyEnclosedCount = 0;
 
         for (let i = 0; i < this.pieces.length; i++) {
           const p = this.pieces[i];
@@ -1461,40 +1443,38 @@ export class BalloonStudioModal {
                 if (sibling.groupId === p.groupId) currentSelected.add(sibling.id);
               }
             }
-            newlyEnclosedCount++;
           }
         }
 
         this.selectedPieceIds = currentSelected;
         this.renderSelectionHighlights();
-        this.updateMultiSelectBadge();
+        this.renderSelectionDock();
 
         const marqueeLayer = document.getElementById('bs-marquee-layer');
         if (marqueeLayer) {
           const badgeHtml = currentSelected.size > 0
             ? `<g transform="translate(${maxX}, ${minY})">
-                <rect x="-34" y="-20" width="34" height="17" rx="4" fill="#D97706"/>
+                <rect x="-34" y="-20" width="34" height="17" rx="4" fill="#B58938"/>
                 <text x="-17" y="-8" fill="#FFFFFF" font-size="10" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">${currentSelected.size}</text>
                </g>`
             : '';
 
           marqueeLayer.innerHTML = `
             <rect x="${minX}" y="${minY}" width="${Math.max(1, w)}" height="${Math.max(1, h)}" rx="3"
-              fill="rgba(217, 119, 6, 0.12)" stroke="#D97706" stroke-width="1.8" stroke-dasharray="4 3"/>
+              fill="rgba(181, 137, 56, 0.14)" stroke="#B58938" stroke-width="1.8" stroke-dasharray="4 3"/>
             ${badgeHtml}
           `;
         }
         return;
       }
 
-      // Mover Tela (Pan) - seja pela ferramenta dedicada ou por arrastar o fundo livre
+      // Mover Tela (Pan) - arrastar o fundo livre
       if (this.isPanning && e.pointerId === this.panPointerId && this.activePointers.size === 1) {
         const dx = e.clientX - this.panStartClient.x;
         const dy = e.clientY - this.panStartClient.y;
 
-        if (Math.hypot(dx, dy) > 3) {
+        if (Math.hypot(dx, dy) > 4) {
           this.hasMovedPan = true;
-          this.hideBalloonPill();
         }
 
         const cWidth = this.cachedCanvasWidth || 400;
@@ -1546,25 +1526,26 @@ export class BalloonStudioModal {
         return;
       }
 
-      // Arraste de peças (individual ou grupo selecionado) com 1 único dedo (60/120fps via rAF transform)
+      // Arraste de peças com deadzone de 8px em tela (evita arrasto acidental ao tocar/desmarcar)
       if (this.isDragging && e.pointerId === this.dragPointerId && this.activePointers.size === 1) {
-        const svgPt = this.screenToSvgCoordinates(e.clientX, e.clientY);
-        const dx = svgPt.x - this.dragStartSvgX;
-        const dy = svgPt.y - this.dragStartSvgY;
+        const clientDist = Math.hypot(e.clientX - this.dragStartClientX, e.clientY - this.dragStartClientY);
+        if (clientDist <= 8 && !this.hasMovedDrag) {
+          return;
+        }
 
-        if (Math.hypot(dx, dy) > 3) {
-          if (!this.hasMovedDrag) {
-            this.hasMovedDrag = true;
-            const container = document.getElementById('bs-canvas-container');
-            if (container) container.classList.add('is-dragging-balloon');
-            for (let i = 0; i < this.draggedDomElements.length; i++) {
-              this.draggedDomElements[i].classList.add('is-dragged');
-            }
+        if (!this.hasMovedDrag) {
+          this.cancelLongPressTimer();
+          this.hasMovedDrag = true;
+          const container = document.getElementById('bs-canvas-container');
+          if (container) container.classList.add('is-dragging-balloon');
+          for (let i = 0; i < this.draggedDomElements.length; i++) {
+            this.draggedDomElements[i].classList.add('is-dragged');
           }
         }
 
-        this.currentDragDx = dx;
-        this.currentDragDy = dy;
+        const svgPt = this.screenToSvgCoordinates(e.clientX, e.clientY);
+        this.currentDragDx = svgPt.x - this.dragStartSvgX;
+        this.currentDragDy = svgPt.y - this.dragStartSvgY;
 
         if (!this.dragRafId) {
           this.dragRafId = requestAnimationFrame(() => this.applyDragTransform());
@@ -1574,6 +1555,7 @@ export class BalloonStudioModal {
 
     const onPointerEnd = (e: PointerEvent) => {
       this.activePointers.delete(e.pointerId);
+      this.cancelLongPressTimer();
 
       // Finaliza Retângulo de Seleção (Marquee Box)
       if (this.isMarqueeSelecting && e.pointerId === this.marqueePointerId) {
@@ -1587,18 +1569,13 @@ export class BalloonStudioModal {
           }
         } catch (_) {}
 
-        if (this.selectedPieceIds.size > 0) {
-          this.showBalloonPill();
-          if (typeof navigator !== 'undefined' && navigator.vibrate) {
-            try { navigator.vibrate(20); } catch (_) {}
-          }
-        } else {
-          this.hideBalloonPill();
+        if (this.selectedPieceIds.size > 0 && typeof navigator !== 'undefined' && navigator.vibrate) {
+          try { navigator.vibrate(18); } catch (_) {}
         }
-        this.updateMultiSelectBadge();
+        this.renderSelectionDock();
       }
 
-      // Finaliza pan da tela (tanto da ferramenta 'pan' quanto do arraste no espaço livre)
+      // Finaliza pan da tela
       if (this.isPanning && e.pointerId === this.panPointerId) {
         const didMove = this.hasMovedPan;
         this.isPanning = false;
@@ -1616,15 +1593,15 @@ export class BalloonStudioModal {
           this.viewportRafId = null;
         }
 
-        if (!didMove) {
-          // Clique/toque simples no fundo livre sem arrastar: limpa seleção
-          this.selectedPieceIds.clear();
-          this.renderSelectionHighlights();
-          this.hideBalloonPill();
-        } else {
-          // Se moveu a tela e havia algo selecionado, reposiciona a pílula
+        if (!didMove && !this.isMultiSelectMode) {
+          // Toque simples no fundo livre fora do modo múltiplos: limpa seleção e fecha subpainel
           if (this.selectedPieceIds.size > 0) {
-            this.showBalloonPill();
+            this.selectedPieceIds.clear();
+            this.selectionSubpanel = null;
+            this.renderSelectionHighlights();
+            this.renderSelectionDock();
+          } else if (this.isBottomDrawerOpen) {
+            this.closeBottomDrawer();
           }
         }
         this.applyViewport();
@@ -1650,9 +1627,13 @@ export class BalloonStudioModal {
 
         this.cleanupDragState();
 
-        // No modo múltiplos, se tocou em uma peça já selecionada sem arrastar, desmarca ela
-        if (this.activeTouchTool === 'multi-select' && !didMove && this.multiSelectToggleCandidate) {
-          this.selectedPieceIds.delete(this.multiSelectToggleCandidate);
+        // No modo múltiplos, se tocou em uma peça (ou grupo) já selecionada sem arrastar, desmarca ela
+        if (this.isMultiSelectMode && !didMove && this.multiSelectToggleCandidate) {
+          const clickedPiece = this.pieces.find((x) => x.id === this.multiSelectToggleCandidate);
+          const toggleIds = clickedPiece?.groupId
+            ? this.pieces.filter((x) => x.groupId === clickedPiece.groupId).map((x) => x.id)
+            : [this.multiSelectToggleCandidate];
+          toggleIds.forEach((id) => this.selectedPieceIds.delete(id));
           this.multiSelectToggleCandidate = null;
         }
 
@@ -1663,13 +1644,19 @@ export class BalloonStudioModal {
         } catch (_) {}
 
         if (didMove) {
-          // Atualiza as posições finais consolidadas das peças movidas
+          const scaleFactor = this.getScaleFactor(this.currentScaleLevel);
+          // Atualiza as posições finais consolidadas das peças movidas (e origins de escala se existirem)
           this.selectedPieceIds.forEach((id) => {
             const init = this.dragPieceInitialPositions.get(id);
             const p = this.pieces.find((x) => x.id === id);
             if (init && p) {
               p.x = Math.round(init.x + finalDx);
               p.y = Math.round(init.y + finalDy);
+              const orig = this.scaleOrigins.get(id);
+              if (orig && scaleFactor > 0) {
+                orig.x = Math.round(orig.x + finalDx / scaleFactor);
+                orig.y = Math.round(orig.y + finalDy / scaleFactor);
+              }
             }
           });
 
@@ -1678,11 +1665,11 @@ export class BalloonStudioModal {
         }
 
         this.renderSelectionHighlights();
-        if (this.selectedPieceIds.size === 0) {
-          this.hideBalloonPill();
-        } else {
-          this.showBalloonPill();
-        }
+        this.renderSelectionDock();
+      }
+
+      if (this.longPressTriggered) {
+        this.longPressTriggered = false;
       }
     };
 
@@ -1698,6 +1685,13 @@ export class BalloonStudioModal {
       this.zoomLevel = Math.max(0.5, Math.min(3.5, this.zoomLevel * delta));
       this.applyViewport();
     }, { passive: false });
+  }
+
+  private cancelLongPressTimer(): void {
+    if (this.longPressTimer !== null) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
   }
 
   // Converte coordenadas da tela para o espaço SVG real
@@ -1778,8 +1772,8 @@ export class BalloonStudioModal {
     this.renderSelectionHighlights();
   }
 
-  // Cenário de fundo estático em escala real (Painel Redondo Ø 1,80 m + Pessoa 1,70 m + Solo)
-  private renderStaticBackdrop(): void {
+  // Cenário de fundo estático em escala real (Guias configuráveis: Redondo, Romano, Cilindro, Livre + Pessoa 1,70 m)
+  private renderStaticBackdrop(force = false): void {
     let layer: Element | null = document.getElementById('bs-backdrop-sketch-layer');
     if (!layer && this.canvasSvgEl) {
       layer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -1793,86 +1787,143 @@ export class BalloonStudioModal {
     }
     if (!layer) return;
 
-    // Se já estiver renderizado, mantém estático (não reconstrói nem muda de posição com o arrasto de balões)
-    if (layer.children.length > 0) return;
+    // Se já estiver renderizado e não forçado, mantém estático (zero custo durante arrasto)
+    if (!force && layer.children.length > 0) return;
 
     const floorY = 510;
-    // Dimensões do Painel Redondo Oficial (Catálogo Decoraly: 150cm diâmetro x 190cm altura total)
-    // Escala métrica do app: 0.52 cm por pixel (12" = 30cm = 56px diâmetro)
-    const panelRadius = 144; // 150cm / 0.52 ≈ 288px -> r = 144px
-    const panelTotalHeight = 365; // 190cm / 0.52 ≈ 365px
-    const panelTopY = floorY - panelTotalHeight; // 145px (1,90 m do chão)
-    const panelCy = panelTopY + panelRadius; // 289px (1,15 m do chão)
-    const panelCx = 185; // Alinhado ergonomicamente à esquerda da pessoa
-    const personHeight = 327; // 170cm de altura (170 / 0.52 ≈ 326.9px)
-    const personCx = 412; // Posicionada confortavelmente ao lado do painel
+    const panelCx = 185;
+    const personHeight = 327; // 170cm / 0.52 ≈ 327px
+    const personCx = 412;
+
+    let structureSvg = '';
+
+    if (this.backdropMode === 'redondo') {
+      const panelRadius = 144; // Ø 1,50 m
+      const panelTotalHeight = 365; // 1,90 m
+      const panelTopY = floorY - panelTotalHeight; // 145
+      const panelCy = panelTopY + panelRadius; // 289
+      structureSvg = `
+        <!-- Painel Redondo de Festa (Ø 1,50 m x 1,90 m) -->
+        <g class="bs-ghost-panel">
+          <line x1="${panelCx - 58}" y1="${panelCy + 75}" x2="${panelCx - 58}" y2="${floorY}" stroke="#8c857b" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="${panelCx + 58}" y1="${panelCy + 75}" x2="${panelCx + 58}" y2="${floorY}" stroke="#8c857b" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="${panelCx - 78}" y1="${floorY}" x2="${panelCx - 38}" y2="${floorY}" stroke="#78716c" stroke-width="3" stroke-linecap="round"/>
+          <line x1="${panelCx + 38}" y1="${floorY}" x2="${panelCx + 78}" y2="${floorY}" stroke="#78716c" stroke-width="3" stroke-linecap="round"/>
+          <line x1="${panelCx - 58}" y1="${floorY - 28}" x2="${panelCx + 58}" y2="${floorY - 28}" stroke="#a8a29e" stroke-width="1.4" stroke-dasharray="3 3"/>
+
+          <circle cx="${panelCx}" cy="${panelCy}" r="${panelRadius}"
+            fill="rgba(255, 255, 255, 0.45)" stroke="#8c857b" stroke-width="1.8" stroke-dasharray="6 4"/>
+          <circle cx="${panelCx}" cy="${panelCy}" r="${panelRadius - 2.5}"
+            fill="none" stroke="#d6d3d1" stroke-width="0.8" opacity="0.5"/>
+
+          <g class="bs-ghost-dim-diameter">
+            <line x1="${panelCx - Math.round(panelRadius * 0.76)}" y1="${panelCy + Math.round(panelRadius * 0.65)}"
+                  x2="${panelCx + Math.round(panelRadius * 0.76)}" y2="${panelCy - Math.round(panelRadius * 0.65)}"
+                  stroke="#a8a29e" stroke-width="1" stroke-dasharray="3 3"/>
+            <polyline points="${panelCx - Math.round(panelRadius * 0.76) + 8} ${panelCy + Math.round(panelRadius * 0.65) - 2} ${panelCx - Math.round(panelRadius * 0.76)} ${panelCy + Math.round(panelRadius * 0.65)} ${panelCx - Math.round(panelRadius * 0.76) + 2} ${panelCy + Math.round(panelRadius * 0.65) - 8}"
+              fill="none" stroke="#78716c" stroke-width="1.2"/>
+            <polyline points="${panelCx + Math.round(panelRadius * 0.76) - 8} ${panelCy - Math.round(panelRadius * 0.65) + 2} ${panelCx + Math.round(panelRadius * 0.76)} ${panelCy - Math.round(panelRadius * 0.65)} ${panelCx + Math.round(panelRadius * 0.76) - 2} ${panelCy - Math.round(panelRadius * 0.65) + 8}"
+              fill="none" stroke="#78716c" stroke-width="1.2"/>
+
+            <rect x="${panelCx - 44}" y="${panelCy - 9.5}" width="88" height="22" rx="11" fill="rgba(28,25,23,0.06)"/>
+            <rect x="${panelCx - 44}" y="${panelCy - 11}" width="88" height="22" rx="11" fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1"/>
+            <text x="${panelCx}" y="${panelCy + 4}" fill="#44403c" font-size="11" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">Ø 1,50 m</text>
+          </g>
+
+          <g class="bs-ghost-dim-panel-height">
+            <line x1="${panelCx - panelRadius - 10}" y1="${panelTopY}" x2="${panelCx - panelRadius - 40}" y2="${panelTopY}" stroke="#a8a29e" stroke-width="0.9" stroke-dasharray="2 2"/>
+            <line x1="${panelCx - 78}" y1="${floorY}" x2="${panelCx - panelRadius - 40}" y2="${floorY}" stroke="#a8a29e" stroke-width="0.9" stroke-dasharray="2 2"/>
+            <line x1="${panelCx - panelRadius - 30}" y1="${panelTopY + 4}" x2="${panelCx - panelRadius - 30}" y2="${floorY - 4}" stroke="#78716c" stroke-width="1.2"/>
+            <polyline points="${panelCx - panelRadius - 33.5} ${panelTopY + 7} ${panelCx - panelRadius - 30} ${panelTopY} ${panelCx - panelRadius - 26.5} ${panelTopY + 7}" fill="none" stroke="#78716c" stroke-width="1.2"/>
+            <polyline points="${panelCx - panelRadius - 33.5} ${floorY - 7} ${panelCx - panelRadius - 30} ${floorY} ${panelCx - panelRadius - 26.5} ${floorY - 7}" fill="none" stroke="#78716c" stroke-width="1.2"/>
+
+            <rect x="${panelCx - panelRadius - 52}" y="${panelTopY + 173.5}" width="44" height="20" rx="4" fill="rgba(28,25,23,0.06)"/>
+            <rect x="${panelCx - panelRadius - 52}" y="${panelTopY + 172}" width="44" height="20" rx="4" fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1"/>
+            <text x="${panelCx - panelRadius - 30}" y="${panelTopY + 186}" fill="#57534e" font-size="10" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">1,90 m</text>
+          </g>
+        </g>
+      `;
+    } else if (this.backdropMode === 'romano') {
+      // Painel Romano Clássico: 1,00 m largura (192px) × 2,00 m altura (385px)
+      const w = 192;
+      const halfW = w / 2; // 96
+      const h = 385;
+      const topY = floorY - h; // 125
+      const archSpringY = topY + halfW; // 221
+      const leftX = panelCx - halfW;
+      const rightX = panelCx + halfW;
+      const archPath = `M ${leftX} ${floorY} L ${leftX} ${archSpringY} A ${halfW} ${halfW} 0 0 1 ${rightX} ${archSpringY} L ${rightX} ${floorY} Z`;
+      const dimLeftX = leftX - 30;
+      structureSvg = `
+        <!-- Painel Romano Clássico (1,00 m x 2,00 m) -->
+        <g class="bs-ghost-panel">
+          <path d="${archPath}" fill="rgba(255, 255, 255, 0.48)" stroke="#8c857b" stroke-width="1.8" stroke-dasharray="6 4"/>
+          <line x1="${leftX - 10}" y1="${floorY}" x2="${rightX + 10}" y2="${floorY}" stroke="#78716c" stroke-width="3" stroke-linecap="round"/>
+
+          <!-- Cota largura 1,00 m -->
+          <line x1="${leftX + 10}" y1="${archSpringY + 70}" x2="${rightX - 10}" y2="${archSpringY + 70}" stroke="#a8a29e" stroke-width="1" stroke-dasharray="3 3"/>
+          <rect x="${panelCx - 44}" y="${archSpringY + 59}" width="88" height="22" rx="11" fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1"/>
+          <text x="${panelCx}" y="${archSpringY + 74}" fill="#44403c" font-size="10.5" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">1,00 × 2,00 m</text>
+
+          <!-- Cota altura 2,00 m -->
+          <line x1="${leftX - 8}" y1="${topY}" x2="${dimLeftX - 8}" y2="${topY}" stroke="#a8a29e" stroke-width="0.9" stroke-dasharray="2 2"/>
+          <line x1="${leftX - 8}" y1="${floorY}" x2="${dimLeftX - 8}" y2="${floorY}" stroke="#a8a29e" stroke-width="0.9" stroke-dasharray="2 2"/>
+          <line x1="${dimLeftX}" y1="${topY + 4}" x2="${dimLeftX}" y2="${floorY - 4}" stroke="#78716c" stroke-width="1.2"/>
+          <polyline points="${dimLeftX - 3.5} ${topY + 7} ${dimLeftX} ${topY} ${dimLeftX + 3.5} ${topY + 7}" fill="none" stroke="#78716c" stroke-width="1.2"/>
+          <polyline points="${dimLeftX - 3.5} ${floorY - 7} ${dimLeftX} ${floorY} ${dimLeftX + 3.5} ${floorY - 7}" fill="none" stroke="#78716c" stroke-width="1.2"/>
+          <rect x="${dimLeftX - 22}" y="${topY + 182}" width="44" height="20" rx="4" fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1"/>
+          <text x="${dimLeftX}" y="${topY + 196}" fill="#57534e" font-size="10" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">2,00 m</text>
+        </g>
+      `;
+    } else if (this.backdropMode === 'cilindro') {
+      // Trio de Mesas Cilindro de Festa (G: 50×80cm, M: 44×65cm, P: 38×50cm)
+      const gW = 96, gH = 154, gX = panelCx - 48, gTop = floorY - gH;
+      const mW = 84, mH = 125, mX = panelCx - 118, mTop = floorY - mH;
+      const pW = 73, pH = 96, pX = panelCx + 36, pTop = floorY - pH;
+      structureSvg = `
+        <!-- Trio de Mesas Cilindro de Festa -->
+        <g class="bs-ghost-panel">
+          <!-- Cilindro Médio (esquerda) -->
+          <rect x="${mX}" y="${mTop}" width="${mW}" height="${mH}" rx="4" fill="rgba(255,255,255,0.42)" stroke="#a8a29e" stroke-width="1.5" stroke-dasharray="5 3"/>
+          <ellipse cx="${mX + mW / 2}" cy="${mTop}" rx="${mW / 2}" ry="7" fill="rgba(255,255,255,0.65)" stroke="#a8a29e" stroke-width="1.3"/>
+
+          <!-- Cilindro Pequeno (direita) -->
+          <rect x="${pX}" y="${pTop}" width="${pW}" height="${pH}" rx="4" fill="rgba(255,255,255,0.42)" stroke="#a8a29e" stroke-width="1.5" stroke-dasharray="5 3"/>
+          <ellipse cx="${pX + pW / 2}" cy="${pTop}" rx="${pW / 2}" ry="6" fill="rgba(255,255,255,0.65)" stroke="#a8a29e" stroke-width="1.3"/>
+
+          <!-- Cilindro Grande (centro) -->
+          <rect x="${gX}" y="${gTop}" width="${gW}" height="${gH}" rx="4" fill="rgba(255,255,255,0.58)" stroke="#8c857b" stroke-width="1.8" stroke-dasharray="6 4"/>
+          <ellipse cx="${gX + gW / 2}" cy="${gTop}" rx="${gW / 2}" ry="8" fill="rgba(255,255,255,0.8)" stroke="#8c857b" stroke-width="1.5"/>
+
+          <!-- Etiqueta de escala -->
+          <rect x="${panelCx - 48}" y="${gTop + 64}" width="96" height="22" rx="11" fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1"/>
+          <text x="${panelCx}" y="${gTop + 79}" fill="#44403c" font-size="10" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">Cilindros · 80 cm</text>
+        </g>
+      `;
+    }
+
+    const floorSvg = this.backdropMode === 'livre'
+      ? `
+        <g class="bs-ghost-floor">
+          <line x1="-80" y1="${floorY}" x2="520" y2="${floorY}" stroke="#d6d3d1" stroke-width="1.2" stroke-dasharray="5 5"/>
+        </g>
+      `
+      : `
+        <g class="bs-ghost-floor">
+          <line x1="-80" y1="${floorY}" x2="520" y2="${floorY}" stroke="#8c857b" stroke-width="1.6" stroke-linecap="round"/>
+          ${Array.from({ length: 24 }).map((_, i) => {
+            const x = -70 + i * 25;
+            return `<line x1="${x}" y1="${floorY}" x2="${x - 8}" y2="${floorY + 6}" stroke="#a8a29e" stroke-width="1" opacity="0.6"/>`;
+          }).join('')}
+          <rect x="-44" y="${floorY - 18}" width="38" height="15" rx="3" fill="#FAF8F5" stroke="#d6d3d1" stroke-width="0.8"/>
+          <text x="-25" y="${floorY - 7}" fill="#8c857b" font-size="8.5" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" letter-spacing="0.5">PISO</text>
+        </g>
+      `;
 
     layer.innerHTML = `
-      <!-- Piso / Linha de Chão de Referência -->
-      <g class="bs-ghost-floor">
-        <line x1="-80" y1="${floorY}" x2="520" y2="${floorY}" stroke="#8c857b" stroke-width="1.6" stroke-linecap="round"/>
-        <!-- Traços arquitetônicos de piso -->
-        ${Array.from({ length: 24 }).map((_, i) => {
-          const x = -70 + i * 25;
-          return `<line x1="${x}" y1="${floorY}" x2="${x - 8}" y2="${floorY + 6}" stroke="#a8a29e" stroke-width="1" opacity="0.6"/>`;
-        }).join('')}
-        <!-- Etiqueta do piso -->
-        <rect x="-44" y="${floorY - 18}" width="38" height="15" rx="3" fill="#FAF8F5" stroke="#d6d3d1" stroke-width="0.8"/>
-        <text x="-25" y="${floorY - 7}" fill="#8c857b" font-size="8.5" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" letter-spacing="0.5">PISO</text>
-      </g>
-
-      <!-- Painel Redondo de Festa (Estrutura Real de Decoração: Ø 1,50 m x 1,90 m) -->
-      <g class="bs-ghost-panel">
-        <!-- Pés tubulares de ferro da estrutura (2 colunas com sapatas no chão, padrão real de locação) -->
-        <line x1="${panelCx - 58}" y1="${panelCy + 75}" x2="${panelCx - 58}" y2="${floorY}" stroke="#8c857b" stroke-width="2.2" stroke-linecap="round"/>
-        <line x1="${panelCx + 58}" y1="${panelCy + 75}" x2="${panelCx + 58}" y2="${floorY}" stroke="#8c857b" stroke-width="2.2" stroke-linecap="round"/>
-        
-        <!-- Sapatas retas no chão para estabilidade -->
-        <line x1="${panelCx - 78}" y1="${floorY}" x2="${panelCx - 38}" y2="${floorY}" stroke="#78716c" stroke-width="3" stroke-linecap="round"/>
-        <line x1="${panelCx + 38}" y1="${floorY}" x2="${panelCx + 78}" y2="${floorY}" stroke="#78716c" stroke-width="3" stroke-linecap="round"/>
-
-        <!-- Travessa horizontal inferior de reforço da estrutura tubular -->
-        <line x1="${panelCx - 58}" y1="${floorY - 28}" x2="${panelCx + 58}" y2="${floorY - 28}" stroke="#a8a29e" stroke-width="1.4" stroke-dasharray="3 3"/>
-
-        <!-- Aro circular do painel em contorno croqui elegante -->
-        <circle cx="${panelCx}" cy="${panelCy}" r="${panelRadius}"
-          fill="rgba(255, 255, 255, 0.45)" stroke="#8c857b" stroke-width="1.8" stroke-dasharray="6 4"/>
-        <circle cx="${panelCx}" cy="${panelCy}" r="${panelRadius - 2.5}"
-          fill="none" stroke="#d6d3d1" stroke-width="0.8" opacity="0.5"/>
-
-        <!-- Cota de Diâmetro do Painel (Ø 1,50 m) com seta inclinada clara a 40° -->
-        <g class="bs-ghost-dim-diameter">
-          <line x1="${panelCx - Math.round(panelRadius * 0.76)}" y1="${panelCy + Math.round(panelRadius * 0.65)}"
-                x2="${panelCx + Math.round(panelRadius * 0.76)}" y2="${panelCy - Math.round(panelRadius * 0.65)}"
-                stroke="#a8a29e" stroke-width="1" stroke-dasharray="3 3"/>
-          <polyline points="${panelCx - Math.round(panelRadius * 0.76) + 8} ${panelCy + Math.round(panelRadius * 0.65) - 2} ${panelCx - Math.round(panelRadius * 0.76)} ${panelCy + Math.round(panelRadius * 0.65)} ${panelCx - Math.round(panelRadius * 0.76) + 2} ${panelCy + Math.round(panelRadius * 0.65) - 8}"
-            fill="none" stroke="#78716c" stroke-width="1.2"/>
-          <polyline points="${panelCx + Math.round(panelRadius * 0.76) - 8} ${panelCy - Math.round(panelRadius * 0.65) + 2} ${panelCx + Math.round(panelRadius * 0.76)} ${panelCy - Math.round(panelRadius * 0.65)} ${panelCx + Math.round(panelRadius * 0.76) - 2} ${panelCy - Math.round(panelRadius * 0.65) + 8}"
-            fill="none" stroke="#78716c" stroke-width="1.2"/>
-
-          <!-- Etiqueta Diâmetro Ø 1,50 m centralizada no aro -->
-          <rect x="${panelCx - 44}" y="${panelCy - 9.5}" width="88" height="22" rx="11" fill="rgba(28,25,23,0.06)"/>
-          <rect x="${panelCx - 44}" y="${panelCy - 11}" width="88" height="22" rx="11" fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1"/>
-          <text x="${panelCx}" y="${panelCy + 4}" fill="#44403c" font-size="11" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">Ø 1,50 m</text>
-        </g>
-
-        <!-- Cota de Altura Total da Estrutura (1,90 m) no lado esquerdo -->
-        <g class="bs-ghost-dim-panel-height">
-          <line x1="${panelCx - panelRadius - 10}" y1="${panelTopY}" x2="${panelCx - panelRadius - 40}" y2="${panelTopY}" stroke="#a8a29e" stroke-width="0.9" stroke-dasharray="2 2"/>
-          <line x1="${panelCx - 78}" y1="${floorY}" x2="${panelCx - panelRadius - 40}" y2="${floorY}" stroke="#a8a29e" stroke-width="0.9" stroke-dasharray="2 2"/>
-          
-          <line x1="${panelCx - panelRadius - 30}" y1="${panelTopY + 4}" x2="${panelCx - panelRadius - 30}" y2="${floorY - 4}" stroke="#78716c" stroke-width="1.2"/>
-          <polyline points="${panelCx - panelRadius - 33.5} ${panelTopY + 7} ${panelCx - panelRadius - 30} ${panelTopY} ${panelCx - panelRadius - 26.5} ${panelTopY + 7}" fill="none" stroke="#78716c" stroke-width="1.2"/>
-          <polyline points="${panelCx - panelRadius - 33.5} ${floorY - 7} ${panelCx - panelRadius - 30} ${floorY} ${panelCx - panelRadius - 26.5} ${floorY - 7}" fill="none" stroke="#78716c" stroke-width="1.2"/>
-
-          <rect x="${panelCx - panelRadius - 52}" y="${panelTopY + 173.5}" width="44" height="20" rx="4" fill="rgba(28,25,23,0.06)"/>
-          <rect x="${panelCx - panelRadius - 52}" y="${panelTopY + 172}" width="44" height="20" rx="4" fill="#FFFFFF" stroke="#d6d3d1" stroke-width="1"/>
-          <text x="${panelCx - panelRadius - 30}" y="${panelTopY + 186}" fill="#57534e" font-size="10" font-weight="700" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif">1,90 m</text>
-        </g>
-      </g>
-
-      <!-- Pessoa em Escala Real (1,70 m) -->
-      ${this.buildPersonSilhouetteSvg(personCx, floorY, personHeight)}
+      ${floorSvg}
+      ${structureSvg}
+      ${this.showPersonRef ? this.buildPersonSilhouetteSvg(personCx, floorY, personHeight) : ''}
     `;
   }
 
@@ -1963,104 +2014,10 @@ export class BalloonStudioModal {
       }
     });
     layer.innerHTML = h;
-    this.updateMultiSelectBadge();
-  }
-
-  private updateMultiSelectBadge(): void {
-    const badge = document.getElementById('bs-multiselect-count-badge');
-    if (badge) {
-      badge.textContent = `${this.selectedPieceIds.size} sel.`;
-      badge.style.display = this.selectedPieceIds.size > 0 ? 'inline-block' : 'none';
-    }
-  }
-
-  // Renderiza menu flutuante para selecionar balões por tamanho ou por cor
-  private renderMultiSelectFilterDropdown(type: 'size' | 'color'): void {
-    const dropdown = document.getElementById('bs-multiselect-filter-dropdown');
-    if (!dropdown) return;
-
-    if (dropdown.style.display !== 'none' && dropdown.getAttribute('data-type') === type) {
-      dropdown.style.display = 'none';
-      return;
-    }
-
-    dropdown.setAttribute('data-type', type);
-    dropdown.style.display = 'block';
-
-    if (type === 'size') {
-      const sizeCounts: Record<number, number> = {};
-      for (const p of this.pieces) {
-        sizeCounts[p.sizeInches] = (sizeCounts[p.sizeInches] || 0) + 1;
-      }
-      const sortedSizes = Object.keys(sizeCounts).map(Number).sort((a, b) => a - b);
-
-      dropdown.innerHTML = `
-        <div class="bs-filter-dropdown-title">Selecionar por Tamanho:</div>
-        <div class="bs-filter-dropdown-chips">
-          ${sortedSizes.map((sz) => `
-            <button type="button" class="bs-filter-chip" data-filter-size="${sz}">
-              ${sz}" <span style="opacity:0.65;font-size:10px">(${sizeCounts[sz]})</span>
-            </button>
-          `).join('')}
-        </div>
-      `;
-
-      dropdown.querySelectorAll('[data-filter-size]').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const sz = Number(btn.getAttribute('data-filter-size'));
-          this.selectedPieceIds.clear();
-          this.pieces.filter((p) => p.sizeInches === sz).forEach((p) => this.selectedPieceIds.add(p.id));
-          this.renderSelectionHighlights();
-          this.showBalloonPill();
-          this.updateMultiSelectBadge();
-          dropdown.style.display = 'none';
-        });
-      });
-    } else if (type === 'color') {
-      const slotCounts: Record<string, number> = {};
-      for (const p of this.pieces) {
-        const slot = p.slot || 'A';
-        slotCounts[slot] = (slotCounts[slot] || 0) + 1;
-      }
-
-      const slots: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
-      const activeSlots = slots.filter((s) => (slotCounts[s] || 0) > 0);
-
-      dropdown.innerHTML = `
-        <div class="bs-filter-dropdown-title">Selecionar por Família de Cor:</div>
-        <div class="bs-filter-dropdown-chips">
-          ${activeSlots.map((s) => {
-            const hex = this.palette[s] || '#D4AF37';
-            const name = (this.palette.names && this.palette.names[s]) || getFriendlyColorName(hex);
-            return `
-              <button type="button" class="bs-filter-chip" data-filter-slot="${s}">
-                <span class="bs-filter-dot" style="background:${hex}"></span>
-                <span>${name}</span>
-                <span style="opacity:0.65;font-size:10px">(${slotCounts[s]})</span>
-              </button>
-            `;
-          }).join('')}
-        </div>
-      `;
-
-      dropdown.querySelectorAll('[data-filter-slot]').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const slot = btn.getAttribute('data-filter-slot');
-          this.selectedPieceIds.clear();
-          this.pieces.filter((p) => p.slot === slot).forEach((p) => this.selectedPieceIds.add(p.id));
-          this.renderSelectionHighlights();
-          this.showBalloonPill();
-          this.updateMultiSelectBadge();
-          dropdown.style.display = 'none';
-        });
-      });
-    }
   }
 
   // ----------------------------------------------------------------------
-  // PÍLULA FLUTUANTE DO BALÃO SELECIONADO
+  // BARRA CONTEXTUAL INFERIOR DE SELEÇÃO & SELEÇÃO MÚLTIPLA INTELIGENTE
   // ----------------------------------------------------------------------
 
   private getActiveSelectedPiece(): BalloonPiece | undefined {
@@ -2069,222 +2026,349 @@ export class BalloonStudioModal {
     return this.pieces.find((p) => p.id === firstId);
   }
 
-  private showBalloonPill(): void {
-    const pill = document.getElementById('bs-floating-balloon-pill');
-    if (!pill || this.selectedPieceIds.size === 0) return;
+  private enterMultiSelectMode(): void {
+    this.isMultiSelectMode = true;
+    this.isMarqueeMode = false;
+    this.selectionSubpanel = null;
+    if (this.isBottomDrawerOpen) this.closeBottomDrawer();
+    const container = document.getElementById('bs-canvas-container');
+    if (container) container.classList.add('tool-multiselect');
+    this.renderSelectionHighlights();
+    this.renderSelectionDock();
+    this.showToast('Toque nos balões para somar à seleção');
+  }
 
-    const colorDot = document.getElementById('bs-pill-swatch-dot');
-    const colorName = document.getElementById('bs-pill-color-name');
-    const sizeText = document.getElementById('bs-pill-size-text');
+  private exitMultiSelectMode(clearSelection = true): void {
+    this.cancelLongPressTimer();
+    this.isMultiSelectMode = false;
+    this.isMarqueeMode = false;
+    this.selectionSubpanel = null;
+    this.multiSelectToggleCandidate = null;
+    if (clearSelection) {
+      this.selectedPieceIds.clear();
+    }
+    const container = document.getElementById('bs-canvas-container');
+    if (container) {
+      container.classList.remove('tool-multiselect');
+      container.classList.remove('tool-marquee');
+    }
+    const marqueeLayer = document.getElementById('bs-marquee-layer');
+    if (marqueeLayer) marqueeLayer.innerHTML = '';
+    this.renderSelectionHighlights();
+    this.renderSelectionDock();
+  }
 
-    const groupBtn = document.getElementById('bs-pill-group-btn');
-    const groupText = document.getElementById('bs-pill-group-text');
-    const groupIcon = document.getElementById('bs-pill-group-icon');
-    const selectedPieces = this.pieces.filter((p) => this.selectedPieceIds.has(p.id));
-    const isGroup = this.isGroupSelected();
+  private toggleMarqueeMode(): void {
+    if (!this.isMultiSelectMode) this.isMultiSelectMode = true;
+    this.isMarqueeMode = !this.isMarqueeMode;
+    this.selectionSubpanel = null;
+    const container = document.getElementById('bs-canvas-container');
+    if (container) container.classList.toggle('tool-marquee', this.isMarqueeMode);
+    this.renderSelectionDock();
+    if (this.isMarqueeMode) {
+      this.showToast('Arraste no fundo para circular os balões');
+    }
+  }
 
-    if (groupBtn && groupText) {
-      if (isGroup) {
-        groupBtn.style.display = 'inline-flex';
-        groupText.textContent = 'Desagrupar';
-        groupBtn.title = 'Desvincular balões deste grupo';
-        if (groupIcon) {
-          groupIcon.innerHTML = '<rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><line x1="10" y1="14" x2="14" y2="10" stroke-dasharray="2 2"></line>';
+  private selectSameColor(): void {
+    if (this.selectedPieceIds.size === 0) return;
+    const targetSlots = new Set<BalloonSlot>();
+    this.pieces.forEach((p) => {
+      if (this.selectedPieceIds.has(p.id)) targetSlots.add(p.slot);
+    });
+    this.pieces.forEach((p) => {
+      if (targetSlots.has(p.slot)) this.selectedPieceIds.add(p.id);
+    });
+    this.isMultiSelectMode = true;
+    this.renderSelectionHighlights();
+    this.renderSelectionDock();
+  }
+
+  private selectSameSize(): void {
+    if (this.selectedPieceIds.size === 0) return;
+    const targetSizes = new Set<BalloonSizeInches>();
+    this.pieces.forEach((p) => {
+      if (this.selectedPieceIds.has(p.id)) targetSizes.add(p.sizeInches);
+    });
+    this.pieces.forEach((p) => {
+      if (targetSizes.has(p.sizeInches)) this.selectedPieceIds.add(p.id);
+    });
+    this.isMultiSelectMode = true;
+    this.renderSelectionHighlights();
+    this.renderSelectionDock();
+  }
+
+  private selectAllPieces(): void {
+    this.selectedPieceIds.clear();
+    this.pieces.forEach((p) => this.selectedPieceIds.add(p.id));
+    this.isMultiSelectMode = true;
+    this.renderSelectionHighlights();
+    this.renderSelectionDock();
+  }
+
+  private getEffectivePieceZ(p: BalloonPiece): number {
+    if (p.shape === 'star') return 100 + (p.z ?? 0);
+    if (p.z !== undefined) return p.z;
+    if (p.sizeInches === 5) return 45;
+    if (p.sizeInches >= 18) return -15;
+    return 10;
+  }
+
+  private bringSelectedForward(): void {
+    if (this.selectedPieceIds.size === 0) return;
+    const selected = this.pieces.filter((p) => this.selectedPieceIds.has(p.id));
+    const unselected = this.pieces.filter((p) => !this.selectedPieceIds.has(p.id));
+
+    let minDelta = Infinity;
+    for (const sp of selected) {
+      const spZ = this.getEffectivePieceZ(sp);
+      const rp = BALLOON_SIZE_RADIUS_MAP[sp.sizeInches] || 28;
+      for (const up of unselected) {
+        const ru = BALLOON_SIZE_RADIUS_MAP[up.sizeInches] || 28;
+        if (Math.hypot(sp.x - up.x, sp.y - up.y) < rp + ru + 6) {
+          const upZ = this.getEffectivePieceZ(up);
+          if (upZ >= spZ) {
+            const needed = (upZ - spZ) + 4;
+            if (needed < minDelta) minDelta = needed;
+          }
         }
-      } else if (selectedPieces.length > 1) {
-        groupBtn.style.display = 'inline-flex';
-        groupText.textContent = 'Agrupar';
-        groupBtn.title = 'Vincular balões selecionados (Estilo Canva)';
-        if (groupIcon) {
-          groupIcon.innerHTML = '<rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><path d="M10 6.5h4a2 2 0 0 1 2 2v4M14 17.5h-4a2 2 0 0 1-2-2v-4"></path>';
-        }
-      } else if (selectedPieces.length === 1 && selectedPieces[0].groupId) {
-        groupBtn.style.display = 'inline-flex';
-        groupText.textContent = 'Desagrupar';
-        groupBtn.title = 'Desvincular este balão do grupo';
-        if (groupIcon) {
-          groupIcon.innerHTML = '<rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><line x1="10" y1="14" x2="14" y2="10" stroke-dasharray="2 2"></line>';
-        }
-      } else {
-        groupBtn.style.display = 'none';
       }
     }
 
-    if (this.selectedPieceIds.size > 1) {
-      if (colorDot) colorDot.style.background = '#d4af37';
-      if (colorName) colorName.textContent = isGroup ? `Grupo (${this.selectedPieceIds.size} balões)` : `${this.selectedPieceIds.size} balões`;
-      const allSelected = this.pieces.filter((p) => this.selectedPieceIds.has(p.id));
-      const firstSize = allSelected[0]?.sizeInches;
-      const allSameSize = allSelected.every((p) => p.sizeInches === firstSize);
-      if (sizeText) sizeText.textContent = allSameSize ? `${firstSize}"` : 'Grupo';
-    } else {
-      const p = this.getActiveSelectedPiece();
-      if (!p) return;
-      const slotHex = (this.palette as any)[p.slot] || '#c97a8e';
-      const slotFriendlyName = this.palette.names?.[p.slot as 'A' | 'B' | 'C' | 'D' | 'E'] || `Cor ${p.slot}`;
-
-      if (colorDot) colorDot.style.background = slotHex;
-      if (colorName) colorName.textContent = slotFriendlyName;
-      if (sizeText) sizeText.textContent = p.shape === 'star' ? `⭐ 18"` : `${p.sizeInches}"`;
+    const delta = minDelta === Infinity ? 8 : Math.max(4, minDelta);
+    for (const sp of selected) {
+      const curZ = this.getEffectivePieceZ(sp);
+      const nextEff = Math.min(sp.shape === 'star' ? 160 : 95, curZ + delta);
+      sp.z = sp.shape === 'star' ? nextEff - 100 : nextEff;
     }
 
-    pill.style.display = 'flex';
-    this.updateBalloonPillPosition();
+    this.saveHistory();
+    this.renderCanvas(false);
+    this.renderSelectionDock();
+  }
+
+  private sendSelectedBackward(): void {
+    if (this.selectedPieceIds.size === 0) return;
+    const selected = this.pieces.filter((p) => this.selectedPieceIds.has(p.id));
+    const unselected = this.pieces.filter((p) => !this.selectedPieceIds.has(p.id));
+
+    let minDelta = Infinity;
+    for (const sp of selected) {
+      const spZ = this.getEffectivePieceZ(sp);
+      const rp = BALLOON_SIZE_RADIUS_MAP[sp.sizeInches] || 28;
+      for (const up of unselected) {
+        const ru = BALLOON_SIZE_RADIUS_MAP[up.sizeInches] || 28;
+        if (Math.hypot(sp.x - up.x, sp.y - up.y) < rp + ru + 6) {
+          const upZ = this.getEffectivePieceZ(up);
+          if (upZ <= spZ) {
+            const needed = (spZ - upZ) + 4;
+            if (needed < minDelta) minDelta = needed;
+          }
+        }
+      }
+    }
+
+    const delta = minDelta === Infinity ? 8 : Math.max(4, minDelta);
+    for (const sp of selected) {
+      const curZ = this.getEffectivePieceZ(sp);
+      const nextEff = Math.max(-60, curZ - delta);
+      sp.z = sp.shape === 'star' ? nextEff - 100 : nextEff;
+    }
+
+    this.saveHistory();
+    this.renderCanvas(false);
+    this.renderSelectionDock();
+  }
+
+  private renderSelectionDock(): void {
+    const selDock = document.getElementById('bs-selection-dock');
+    const tabsDock = document.getElementById('bs-tabs-dock');
+    const subpanelEl = document.getElementById('bs-selection-subpanel');
+    const topRowEl = document.getElementById('bs-selection-top-row');
+    const actionsRowEl = document.getElementById('bs-selection-actions-row');
+    if (!selDock || !tabsDock || !subpanelEl || !topRowEl || !actionsRowEl) return;
+
+    // Remove IDs que possam ter sido apagados via Undo/Redo
+    if (this.selectedPieceIds.size > 0) {
+      const validIds = new Set(this.pieces.map((p) => p.id));
+      for (const id of Array.from(this.selectedPieceIds)) {
+        if (!validIds.has(id)) this.selectedPieceIds.delete(id);
+      }
+    }
+
+    const count = this.selectedPieceIds.size;
+    const isActive = count > 0 || this.isMultiSelectMode;
+
+    if (!isActive) {
+      this.selectionSubpanel = null;
+      selDock.style.display = 'none';
+      tabsDock.style.display = 'flex';
+      return;
+    }
+
+    // Esconde dock principal das 3 abas enquanto barra contextual de seleção está ativa
+    tabsDock.style.display = 'none';
+    selDock.style.display = 'flex';
+
+    const selectedPieces = this.pieces.filter((p) => this.selectedPieceIds.has(p.id));
+    const isGroup = this.isGroupSelected();
+    const firstPiece = selectedPieces[0];
+    const allSameSlot = selectedPieces.length > 0 && selectedPieces.every((p) => p.slot === firstPiece.slot);
+    const allSameSize = selectedPieces.length > 0 && selectedPieces.every((p) => p.sizeInches === firstPiece.sizeInches && p.shape === firstPiece.shape);
+    const allStars = selectedPieces.length > 0 && selectedPieces.every((p) => p.shape === 'star');
+
+    // 1. Subpainel inline (1 toque para trocar Cor ou Tamanho sem sair do polegar)
+    if (count > 0 && this.selectionSubpanel === 'color') {
+      const allSlots: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
+      const activeSlots = allSlots.slice(0, this.activeColorCount);
+      subpanelEl.style.display = 'flex';
+      subpanelEl.innerHTML = `
+        <div class="bs-sel-sub-scroll">
+          ${activeSlots.map((s) => {
+            const hex = (this.palette as any)[s] || '#d4af37';
+            const hasCover = Boolean(this.palette.covers && this.palette.covers[s]);
+            const coverUrl = this.palette.covers?.[s];
+            const name = hasCover
+              ? (this.palette.coverNames?.[s] || `Capa ${s}`)
+              : (this.palette.names?.[s] || getFriendlyColorName(hex));
+            const isSel = allSameSlot && firstPiece?.slot === s;
+            const dotStyle = hasCover
+              ? `background-image:url('${coverUrl}');background-size:cover;background-position:center;`
+              : `background:${hex};`;
+            return `
+              <button type="button" class="bs-sel-color-chip ${isSel ? 'active' : ''}" data-sel-slot="${s}">
+                <span class="bs-sel-color-dot" style="${dotStyle}"></span>
+                <span>${name}</span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      `;
+    } else if (count > 0 && this.selectionSubpanel === 'size') {
+      const sizes: BalloonSizeInches[] = [5, 7, 9, 10, 12, 16, 18, 24, 36];
+      subpanelEl.style.display = 'flex';
+      subpanelEl.innerHTML = allStars
+        ? `<div class="bs-sel-sub-hint">Estrela Metalizada tem tamanho fixo de 18"</div>`
+        : `
+          <div class="bs-sel-sub-scroll">
+            ${sizes.map((sz) => {
+              const isSel = allSameSize && firstPiece?.sizeInches === sz;
+              return `<button type="button" class="bs-sel-size-chip ${isSel ? 'active' : ''}" data-sel-size="${sz}">${sz}"</button>`;
+            }).join('')}
+          </div>
+        `;
+    } else {
+      subpanelEl.style.display = 'none';
+      subpanelEl.innerHTML = '';
+    }
+
+    // 2. Faixa Superior Contextual (Resumo + "+ Vários" OU chips inteligentes de Seleção Múltipla)
+    if (this.isMultiSelectMode) {
+      topRowEl.innerHTML = `
+        <div class="bs-sel-chips-scroll">
+          <span class="bs-sel-count-pill">${count} sel.</span>
+          <button type="button" class="bs-sel-smart-chip" data-sel-cmd="same-color" ${count === 0 ? 'disabled' : ''}>Mesma cor</button>
+          <button type="button" class="bs-sel-smart-chip" data-sel-cmd="same-size" ${count === 0 ? 'disabled' : ''}>Mesmo tam.</button>
+          <button type="button" class="bs-sel-smart-chip ${this.isMarqueeMode ? 'active' : ''}" data-sel-cmd="toggle-marquee" title="Arraste no fundo para selecionar em caixa">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 3"></rect></svg>
+            <span>${this.isMarqueeMode ? 'Caixa ✓' : 'Caixa'}</span>
+          </button>
+          <button type="button" class="bs-sel-smart-chip" data-sel-cmd="select-all">Tudo</button>
+        </div>
+        <button type="button" class="bs-sel-done-btn" data-sel-cmd="exit-multi">Concluir</button>
+      `;
+    } else {
+      const slotHex = firstPiece ? ((this.palette as any)[firstPiece.slot] || '#c97a8e') : '#d4af37';
+      const slotName = firstPiece
+        ? (this.palette.names?.[firstPiece.slot as 'A' | 'B' | 'C' | 'D' | 'E'] || getFriendlyColorName(slotHex))
+        : '';
+      const summaryLabel = count > 1
+        ? (isGroup ? `Grupo · ${count} balões` : `${count} balões selecionados`)
+        : `${firstPiece?.shape === 'star' ? 'Estrela 18"' : `${firstPiece?.sizeInches}"`} · ${slotName}`;
+
+      topRowEl.innerHTML = `
+        <div class="bs-sel-single-info">
+          <span class="bs-sel-info-dot" style="background:${count > 1 && !allSameSlot ? 'conic-gradient(#c97a8e,#d4af37,#f7dbe1,#c97a8e)' : slotHex}"></span>
+          <span class="bs-sel-info-text">${summaryLabel}</span>
+        </div>
+        <div class="bs-sel-single-right">
+          <button type="button" class="bs-sel-multi-trigger" data-sel-cmd="enter-multi" title="Selecionar vários balões">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="3" width="12" height="12" rx="2" stroke-dasharray="2.5 1.5"></rect><path d="M8 21h11a2 2 0 0 0 2-2V8"></path></svg>
+            <span>+ Vários</span>
+          </button>
+          <button type="button" class="bs-sel-close-btn" data-sel-cmd="clear" title="Fechar seleção" aria-label="Fechar seleção">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+      `;
+    }
+
+    // 3. Faixa Principal de Ações (alvos táteis confortáveis na zona do polegar)
+    const disabledAttr = count === 0 ? 'disabled' : '';
+    const dotBg = count > 0 && allSameSlot && firstPiece
+      ? ((this.palette as any)[firstPiece.slot] || '#c97a8e')
+      : 'conic-gradient(#c97a8e, #d4af37, #7dd3fc, #c97a8e)';
+    const sizeBadgeText = count > 0 && allSameSize && firstPiece
+      ? (firstPiece.shape === 'star' ? '18"' : `${firstPiece.sizeInches}"`)
+      : 'Tam.';
+
+    const showGroupBtn = count > 1 || (count === 1 && Boolean(firstPiece?.groupId));
+    const ungroupMode = isGroup || (count === 1 && Boolean(firstPiece?.groupId));
+
+    actionsRowEl.innerHTML = `
+      <button type="button" class="bs-sel-act-btn ${this.selectionSubpanel === 'color' ? 'active' : ''}" data-sel-act="color" ${disabledAttr}>
+        <span class="bs-sel-act-swatch" style="background:${dotBg}"></span>
+        <span>Cor</span>
+      </button>
+      <button type="button" class="bs-sel-act-btn ${this.selectionSubpanel === 'size' ? 'active' : ''}" data-sel-act="size" ${disabledAttr}>
+        <span class="bs-sel-act-size-pill">${sizeBadgeText}</span>
+        <span>Tamanho</span>
+      </button>
+      <button type="button" class="bs-sel-act-btn" data-sel-act="bring-front" title="Trazer para frente" ${disabledAttr}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2" fill="currentColor" fill-opacity="0.14"></rect><path d="M4 16V6a2 2 0 0 1 2-2h10"></path></svg>
+        <span>Frente</span>
+      </button>
+      <button type="button" class="bs-sel-act-btn" data-sel-act="send-back" title="Enviar para trás" ${disabledAttr}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="12" height="12" rx="2"></rect><path d="M16 8h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-2"></path></svg>
+        <span>Trás</span>
+      </button>
+      ${showGroupBtn ? `
+        <button type="button" class="bs-sel-act-btn" data-sel-act="group" ${disabledAttr}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            ${ungroupMode
+              ? '<rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><line x1="10" y1="14" x2="14" y2="10" stroke-dasharray="2 2"></line>'
+              : '<rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect><path d="M10 6.5h4a2 2 0 0 1 2 2v4M14 17.5h-4a2 2 0 0 1-2-2v-4"></path>'}
+          </svg>
+          <span>${ungroupMode ? 'Separar' : 'Agrupar'}</span>
+        </button>
+      ` : ''}
+      <button type="button" class="bs-sel-act-btn" data-sel-act="duplicate" ${disabledAttr}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        <span>Duplicar</span>
+      </button>
+      <button type="button" class="bs-sel-act-btn bs-sel-act-danger" data-sel-act="delete" ${disabledAttr}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        <span>Excluir</span>
+      </button>
+    `;
+  }
+
+  private showBalloonPill(): void {
+    this.renderSelectionDock();
   }
 
   private hideBalloonPill(): void {
-    const pill = document.getElementById('bs-floating-balloon-pill');
-    if (pill) pill.style.display = 'none';
+    this.renderSelectionDock();
   }
 
   private updateBalloonPillPosition(): void {
-    const pill = document.getElementById('bs-floating-balloon-pill');
-    if (!pill || this.selectedPieceIds.size === 0 || !this.canvasSvgEl || pill.style.display === 'none') return;
-
-    const selectedPieces = this.pieces.filter((p) => this.selectedPieceIds.has(p.id));
-    if (selectedPieces.length === 0) return;
-
-    let targetX = 0;
-    let targetTopY = Infinity;
-    let targetBottomY = -Infinity;
-
-    if (selectedPieces.length === 1) {
-      const p = selectedPieces[0];
-      const r = BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28;
-      targetX = p.x;
-      targetTopY = p.y - r;
-      targetBottomY = p.y + r;
-    } else {
-      let minX = Infinity;
-      let maxX = -Infinity;
-      let minY = Infinity;
-      let maxY = -Infinity;
-      selectedPieces.forEach((p) => {
-        const r = BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28;
-        if (p.x - r < minX) minX = p.x - r;
-        if (p.x + r > maxX) maxX = p.x + r;
-        if (p.y - r < minY) minY = p.y - r;
-        if (p.y + r > maxY) maxY = p.y + r;
-      });
-      targetX = (minX + maxX) / 2;
-      targetTopY = minY;
-      targetBottomY = maxY;
-    }
-
-    const ctm = this.canvasSvgEl.getScreenCTM();
-    if (!ctm) return;
-
-    const container = document.getElementById('bs-canvas-container');
-    if (!container) return;
-    const containerRect = container.getBoundingClientRect();
-    const quickBar = document.getElementById('bs-canvas-quick-bar');
-    const quickBarRect = quickBar?.getBoundingClientRect();
-
-    // Converte topo e base do balão para coordenadas locais do container
-    const ptTop = this.canvasSvgEl.createSVGPoint();
-    ptTop.x = targetX;
-    ptTop.y = targetTopY;
-    const screenTop = ptTop.matrixTransform(ctm);
-
-    const ptBottom = this.canvasSvgEl.createSVGPoint();
-    ptBottom.x = targetX;
-    ptBottom.y = targetBottomY;
-    const screenBottom = ptBottom.matrixTransform(ctm);
-
-    const balloonScreenX = screenTop.x - containerRect.left;
-    const balloonTopScreenY = screenTop.y - containerRect.top;
-    const balloonBottomScreenY = screenBottom.y - containerRect.top;
-
-    const pillW = pill.offsetWidth || 240;
-    const pillH = pill.offsetHeight || 36;
-
-    // Espaço lateral disponível (margem esquerda e clearance da barra vertical à direita)
-    const minLeft = 10;
-    const maxRight = quickBarRect && quickBarRect.left > containerRect.left
-      ? (quickBarRect.left - containerRect.left - 10)
-      : (containerRect.width - 56);
-
-    // Calcula 'left' exato da pílula (sem depender de transform translate(-50%))
-    let pillLeft = Math.round(balloonScreenX - pillW / 2);
-    if (pillLeft < minLeft) {
-      pillLeft = minLeft;
-    } else if (pillLeft + pillW > maxRight) {
-      pillLeft = Math.max(minLeft, Math.round(maxRight - pillW));
-    }
-
-    // Posicionamento vertical: acima do balão por padrão, ou abaixo se faltar espaço no topo
-    const placeBelow = (balloonTopScreenY - pillH - 12 < 10);
-
-    let pillTop: number;
-    if (placeBelow) {
-      pill.classList.remove('placement-top');
-      pill.classList.add('placement-bottom');
-      pillTop = Math.round(balloonBottomScreenY + 10);
-    } else {
-      pill.classList.remove('placement-bottom');
-      pill.classList.add('placement-top');
-      pillTop = Math.round(balloonTopScreenY - pillH - 10);
-    }
-
-    // Garante que não corte nem no topo nem na base do container
-    pillTop = Math.max(8, Math.min(containerRect.height - pillH - 10, pillTop));
-
-    // Calcula a posição da setinha (arrow) apontando exatamente no balão
-    const arrowOffset = Math.round(balloonScreenX - pillLeft);
-    const clampedArrow = Math.max(18, Math.min(pillW - 18, arrowOffset));
-    pill.style.setProperty('--arrow-x', `${clampedArrow}px`);
-
-    pill.style.left = `${pillLeft}px`;
-    pill.style.top = `${pillTop}px`;
+    // Barra contextual fixa na base (zona do polegar) — sem reposicionamento flutuante sobre o arranjo
   }
 
-  // ----------------------------------------------------------------------
-  // FAIXA DA PALETA (CORES DA FESTA COM NOMES REAIS E ACABAMENTOS)
-  // ----------------------------------------------------------------------
-
   private syncPaletteSwatches(): void {
-    const strip = document.getElementById('bs-palette-strip-bar');
-    if (strip) {
-      // Exibe a barra de cores APENAS quando a aba Cores estiver aberta
-      strip.style.display = (this.activeBottomTab === 'cores' && this.isBottomDrawerOpen) ? 'flex' : 'none';
+    if (this.selectedPieceIds.size > 0 || this.isMultiSelectMode) {
+      this.renderSelectionDock();
     }
-
-    const container = document.getElementById('bs-swatches-container');
-    if (!container) return;
-
-    const allSlots: ('A' | 'B' | 'C' | 'D' | 'E')[] = ['A', 'B', 'C', 'D', 'E'];
-    const activeSlots = allSlots.slice(0, this.activeColorCount);
-    container.innerHTML = activeSlots.map((s) => {
-      const hex = (this.palette as any)[s] || (s === 'E' ? '#f8fafc' : '#ffffff');
-      const hasCover = Boolean(this.palette.covers && this.palette.covers[s]);
-      const coverUrl = this.palette.covers?.[s];
-      const name = hasCover
-        ? (this.palette.coverNames?.[s] || `Capa ${s}`)
-        : (this.palette.names?.[s] || getFriendlyColorName(hex));
-      const activeClass = this.activeColorSlot === s ? 'active' : '';
-
-      const circleStyle = hasCover
-        ? `background-image: url('${coverUrl}'); background-size: cover; background-position: center; border: 1.5px solid #d4af37;`
-        : `background: ${hex};`;
-
-      return `
-        <div class="bs-palette-swatch ${activeClass}" data-slot="${s}" title="Família ${s} (${name})">
-          <span class="bs-swatch-circle" style="${circleStyle}"></span>
-          <span class="bs-swatch-name">${name}</span>
-        </div>
-      `;
-    }).join('');
-
-    container.querySelectorAll('.bs-palette-swatch').forEach((sw) => {
-      sw.addEventListener('click', (e) => {
-        const slot = (e.currentTarget as HTMLElement).dataset.slot as BalloonSlot;
-        if (slot) {
-          this.activeColorSlot = slot;
-          this.openColorSheet(slot);
-          this.syncPaletteSwatches();
-        }
-      });
-    });
   }
 
   // ----------------------------------------------------------------------
@@ -2468,10 +2552,10 @@ export class BalloonStudioModal {
   }
 
   // ----------------------------------------------------------------------
-  // DOCK DE 3 ABAS COM TOGGLE: CORES | INCLUIR | AJUSTES
+  // DOCK DE 3 ABAS COM TOGGLE: CORES | INCLUIR | ARRANJO
   // ----------------------------------------------------------------------
 
-  public toggleBottomTab(tab: 'cores' | 'incluir' | 'ajustes'): void {
+  public toggleBottomTab(tab: 'cores' | 'incluir' | 'arranjo'): void {
     if (this.isBottomDrawerOpen && this.activeBottomTab === tab) {
       this.closeBottomDrawer();
     } else {
@@ -2493,16 +2577,13 @@ export class BalloonStudioModal {
       panel.innerHTML = '';
     }
 
-    const strip = document.getElementById('bs-palette-strip-bar');
-    if (strip) strip.style.display = 'none';
-
-    // Ao fechar a gaveta, o modo de inserção é desativado voltando para ajustar
-    if (this.activeTouchTool !== 'adjust' && this.activeTouchTool !== 'eraser') {
+    // Ao fechar a gaveta, volta para o modo padrão de interação
+    if (this.activeTouchTool !== 'adjust') {
       this.setActiveTouchTool('adjust');
     }
   }
 
-  public openBottomDrawer(tab: 'cores' | 'incluir' | 'ajustes'): void {
+  public openBottomDrawer(tab: 'cores' | 'incluir' | 'arranjo'): void {
     this.isBottomDrawerOpen = true;
     this.activeBottomTab = tab;
     this.overlayEl?.querySelectorAll('.bs-dock-tab').forEach((b) => {
@@ -2513,17 +2594,16 @@ export class BalloonStudioModal {
     const panel = document.getElementById('bs-tab-active-panel');
     if (panel) panel.style.display = 'block';
 
-    this.syncPaletteSwatches();
     this.renderTabActivePanel();
   }
 
-  private setBottomTab(tab: 'cores' | 'incluir' | 'ajustes'): void {
+  private setBottomTab(tab: 'cores' | 'incluir' | 'arranjo'): void {
     this.openBottomDrawer(tab);
   }
 
   private renderTabActivePanel(): void {
     const panel = document.getElementById('bs-tab-active-panel');
-    if (!panel) return;
+    if (!panel || !this.isBottomDrawerOpen) return;
 
     // ABA 1: CORES
     if (this.activeBottomTab === 'cores') {
@@ -2548,7 +2628,7 @@ export class BalloonStudioModal {
 
       panel.innerHTML = `
         <div class="bs-panel-cores">
-                    <!-- Topo: Título da seção + Seletor de Quantidade de Cores -->
+          <!-- Topo: Título da seção + Seletor de Quantidade de Cores -->
           <div class="bs-cores-header-row">
             <span class="bs-cores-main-title">Cores do Arranjo</span>
             <div class="bs-color-count-chips" id="bs-color-count-selector">
@@ -2559,7 +2639,7 @@ export class BalloonStudioModal {
             </div>
           </div>
 
-          <!-- Lista de Cores do Arranjo (1 coluna fluida, 100% legível em qualquer tela) -->
+          <!-- Lista de Cores do Arranjo -->
           <div class="bs-color-slots-list">
             ${activeSlots.map((s) => {
               const hex = (this.palette as any)[s] || (s === 'E' ? '#f8fafc' : '#d4af37');
@@ -2624,7 +2704,6 @@ export class BalloonStudioModal {
         </div>
       `;
 
-      // Eventos dos cards de cores
       panel.querySelectorAll('.bs-color-family-card').forEach((card) => {
         card.addEventListener('click', (e) => {
           const slot = (e.currentTarget as HTMLElement).dataset.slot as BalloonSlot;
@@ -2635,7 +2714,6 @@ export class BalloonStudioModal {
         });
       });
 
-      // Seletor de quantidade de cores
       panel.querySelectorAll('#bs-color-count-selector .bs-count-chip').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           const count = Number((e.currentTarget as HTMLElement).dataset.colorCount);
@@ -2645,7 +2723,6 @@ export class BalloonStudioModal {
         });
       });
 
-      // Paletas Prontas
       panel.querySelectorAll('.bs-preset-card').forEach((card) => {
         card.addEventListener('click', (e) => {
           const id = (e.currentTarget as HTMLElement).dataset.presetId;
@@ -2654,7 +2731,6 @@ export class BalloonStudioModal {
         });
       });
 
-      // Modo de Distribuição
       panel.querySelectorAll('.bs-seg-btn[data-mode]').forEach((btn) => {
         btn.addEventListener('click', (e) => {
           const mode = (e.currentTarget as HTMLElement).dataset.mode as any;
@@ -2664,7 +2740,7 @@ export class BalloonStudioModal {
       return;
     }
 
-    // ABA 2: INCLUIR (MEIO, DESTACADO)
+    // ABA 2: INCLUIR (PEÇAS + CLUSTERS + SOMAR OUTRO MODELO)
     if (this.activeBottomTab === 'incluir') {
       panel.innerHTML = `
         <div class="bs-panel-incluir">
@@ -2672,61 +2748,42 @@ export class BalloonStudioModal {
             <span>Toque na peça para adicionar ao cenário:</span>
           </div>
           <div class="bs-elements-catalog-grid">
-            <!-- 5 polegadas -->
             <div class="bs-element-card" data-tool="balloon-5" data-type="balloon-5">
               <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-5"></div></div>
               <strong class="bs-elem-title">5"</strong>
             </div>
-
-            <!-- 7 polegadas -->
             <div class="bs-element-card" data-tool="balloon-7" data-type="balloon-7">
               <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-7"></div></div>
               <strong class="bs-elem-title">7"</strong>
             </div>
-
-            <!-- 9 polegadas -->
             <div class="bs-element-card" data-tool="balloon-9" data-type="balloon-9">
               <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-9"></div></div>
               <strong class="bs-elem-title">9"</strong>
             </div>
-
-            <!-- 10 polegadas -->
             <div class="bs-element-card" data-tool="balloon-10" data-type="balloon-10">
               <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-10"></div></div>
               <strong class="bs-elem-title">10"</strong>
             </div>
-
-            <!-- 12 polegadas -->
             <div class="bs-element-card" data-tool="balloon-12" data-type="balloon-12">
               <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-12"></div></div>
               <strong class="bs-elem-title">12"</strong>
             </div>
-
-            <!-- 16 polegadas -->
             <div class="bs-element-card" data-tool="balloon-16" data-type="balloon-16">
               <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-16"></div></div>
               <strong class="bs-elem-title">16"</strong>
             </div>
-
-            <!-- 18 polegadas -->
             <div class="bs-element-card" data-tool="balloon-18" data-type="balloon-18">
               <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-18"></div></div>
               <strong class="bs-elem-title">18"</strong>
             </div>
-
-            <!-- 24 polegadas -->
             <div class="bs-element-card" data-tool="balloon-24" data-type="balloon-24">
               <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-24"></div></div>
               <strong class="bs-elem-title">24"</strong>
             </div>
-
-            <!-- 36 polegadas -->
             <div class="bs-element-card" data-tool="balloon-36" data-type="balloon-36">
               <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-balloon bs-size-36"></div></div>
               <strong class="bs-elem-title">36"</strong>
             </div>
-
-            <!-- Estrela 18" Foil -->
             <div class="bs-element-card" data-tool="balloon-star" data-type="balloon-star">
               <div class="bs-elem-thumb-box">
                 <svg class="bs-elem-thumb-star-svg" viewBox="0 0 24 24" width="20" height="20">
@@ -2735,127 +2792,303 @@ export class BalloonStudioModal {
               </div>
               <strong class="bs-elem-title">Estrela 18"</strong>
             </div>
-
-            <!-- Cluster Quad -->
             <div class="bs-element-card" data-tool="cluster-quad" data-type="cluster-quad">
               <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-cluster"><i></i><i></i><i></i><i></i></div></div>
               <strong class="bs-elem-title">Cluster 4x</strong>
             </div>
-
-            <!-- Tufo Trio -->
             <div class="bs-element-card" data-tool="cluster-trio" data-type="cluster-trio">
               <div class="bs-elem-thumb-box"><div class="bs-elem-thumb-trio"><i></i><i></i><i></i></div></div>
               <strong class="bs-elem-title">Tufo 3x</strong>
             </div>
           </div>
+
+          <button type="button" id="bs-btn-incluir-append-model" class="bs-incluir-append-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><line x1="17.5" y1="14" x2="17.5" y2="21"></line><line x1="14" y1="17.5" x2="21" y2="17.5"></line></svg>
+            <span>Somar outro modelo ao arranjo</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="bs-incluir-append-arrow"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
         </div>
       `;
 
-      // Clique direto no card: insere a peça imediatamente no centro do cenário
       panel.querySelectorAll('.bs-element-card').forEach((card) => {
         card.addEventListener('click', (e) => {
           const el = e.currentTarget as HTMLElement;
           const type = el.dataset.type as any;
           if (type) {
             this.insertPieceAtCenter(type);
-            el.classList.add('bs-card-pulse');
-            setTimeout(() => el.classList.remove('bs-card-pulse'), 250);
           }
         });
+      });
+
+      document.getElementById('bs-btn-incluir-append-model')?.addEventListener('click', () => {
+        this.openModelSheet('append');
       });
       return;
     }
 
-    // ABA 3: AJUSTES (VOLUME E MODELOS)
-    if (this.activeBottomTab === 'ajustes') {
+    // ABA 3: ARRANJO (ESTRUTURA, ESCALA REAL, CENÁRIO DE REFERÊNCIA E LISTA DE COMPRAS)
+    if (this.activeBottomTab === 'arranjo') {
+      const stats = calculateArrangementStats(this.pieces, this.palette);
+      const scaleLabels: Record<'compacto' | 'padrao' | 'grande', string> = {
+        compacto: '85% · Compacto',
+        padrao: '100% · Padrão',
+        grande: '115% · Grande'
+      };
+
       panel.innerHTML = `
-        <div class="bs-panel-forma">
-          <!-- 1. Volume do Arranjo -->
-          <div class="bs-label-row">
-            <span>Volume do Arranjo:</span>
-            <em>${this.currentVolumeLevel === 'enxuto' ? 'Enxuto' : (this.currentVolumeLevel === 'cheio' ? 'Super Cheio' : 'Padrão')}</em>
-          </div>
-          <div class="bs-segmented-control">
-            <button class="bs-seg-btn ${this.currentVolumeLevel === 'enxuto' ? 'active' : ''}" data-volume="enxuto">Enxuto</button>
-            <button class="bs-seg-btn ${this.currentVolumeLevel === 'padrao' ? 'active' : ''}" data-volume="padrao">Padrão</button>
-            <button class="bs-seg-btn ${this.currentVolumeLevel === 'cheio' ? 'active' : ''}" data-volume="cheio">Super Cheio</button>
+        <div class="bs-panel-arranjo">
+          <!-- 1. Estrutura & Modelo -->
+          <div class="bs-arranjo-section">
+            <div class="bs-label-row">
+              <span>Estrutura & Modelo:</span>
+            </div>
+            <div class="bs-arranjo-actions-grid">
+              <button type="button" id="bs-btn-arranjo-mirror" class="bs-arranjo-action-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2.5 2.5"></line>
+                  <path d="M8 7 2 12l6 5V7z" fill="currentColor" fill-opacity="0.18"></path>
+                  <path d="M16 7l6 5-6 5V7z" fill="currentColor" fill-opacity="0.78"></path>
+                </svg>
+                <span>Inverter Lado</span>
+              </button>
+              <button type="button" id="bs-btn-arranjo-replace-model" class="bs-arranjo-action-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="17 1 21 5 17 9"></polyline>
+                  <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                  <polyline points="7 23 3 19 7 15"></polyline>
+                  <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                </svg>
+                <span>Trocar Modelo</span>
+              </button>
+            </div>
           </div>
 
-          <!-- 2. Ações do Arranjo (Botões amplos, sem quebras nem corte) -->
-          <div class="bs-ajustes-actions" style="margin-top:12px">
-            <button id="bs-btn-forma-append-model" class="bs-btn-ajuste-full" title="Somar outro modelo ao arranjo atual">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              <span>Adicionar Modelo</span>
-            </button>
-            <button id="bs-btn-forma-variar" class="bs-btn-ajuste-full bs-btn-ajuste-secondary" title="Sortear novas posições e mesclas de cores">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
-              <span>Variar Arranjo</span>
+          <!-- 2. Escala Real do Arranjo -->
+          <div class="bs-arranjo-section">
+            <div class="bs-label-row">
+              <span>Escala Real do Arranjo:</span>
+              <em>${scaleLabels[this.currentScaleLevel]} · ${stats.widthCm}×${stats.heightCm} cm</em>
+            </div>
+            <div class="bs-segmented-control">
+              <button type="button" class="bs-seg-btn ${this.currentScaleLevel === 'compacto' ? 'active' : ''}" data-scale="compacto">85% Menor</button>
+              <button type="button" class="bs-seg-btn ${this.currentScaleLevel === 'padrao' ? 'active' : ''}" data-scale="padrao">100% Padrão</button>
+              <button type="button" class="bs-seg-btn ${this.currentScaleLevel === 'grande' ? 'active' : ''}" data-scale="grande">115% Maior</button>
+            </div>
+          </div>
+
+          <!-- 3. Cenário de Referência (Guia de Fundo) -->
+          <div class="bs-arranjo-section">
+            <div class="bs-label-row">
+              <span>Guia de Fundo (Escala Real):</span>
+            </div>
+            <div class="bs-backdrop-chips-grid">
+              <button type="button" class="bs-backdrop-chip ${this.backdropMode === 'redondo' ? 'active' : ''}" data-backdrop="redondo">Redondo Ø1,5m</button>
+              <button type="button" class="bs-backdrop-chip ${this.backdropMode === 'romano' ? 'active' : ''}" data-backdrop="romano">Romano 1×2m</button>
+              <button type="button" class="bs-backdrop-chip ${this.backdropMode === 'cilindro' ? 'active' : ''}" data-backdrop="cilindro">Cilindros</button>
+              <button type="button" class="bs-backdrop-chip ${this.backdropMode === 'livre' ? 'active' : ''}" data-backdrop="livre">Livre</button>
+            </div>
+            <button type="button" id="bs-btn-toggle-person-ref" class="bs-person-toggle-row ${this.showPersonRef ? 'active' : ''}">
+              <span class="bs-person-toggle-left">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.5"></circle><path d="M9 20v-6l-1.5-4.5A2 2 0 0 1 9.4 7h5.2a2 2 0 0 1 1.9 2.5L15 14v6"></path></svg>
+                <span>Referência de Pessoa (1,70 m)</span>
+              </span>
+              <span class="bs-switch-pill"><span class="bs-switch-knob"></span></span>
             </button>
           </div>
+
+          <!-- 4. Lista de Balões & Compras -->
+          <button type="button" id="bs-btn-arranjo-shopping" class="bs-arranjo-shopping-cta">
+            <span class="bs-arranjo-shopping-left">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"></path><rect x="9" y="3" width="6" height="4" rx="1"></rect><line x1="9" y1="12" x2="15" y2="12"></line><line x1="9" y1="16" x2="13" y2="16"></line></svg>
+              <span>Lista de Balões & Compras</span>
+            </span>
+            <span class="bs-arranjo-shopping-count">${stats.totalCount} un. ›</span>
+          </button>
         </div>
       `;
 
-      // Volume do arranjo
-      panel.querySelectorAll('.bs-seg-btn[data-volume]').forEach((btn) => {
+      document.getElementById('bs-btn-arranjo-mirror')?.addEventListener('click', () => {
+        this.mirrorArrangement();
+      });
+
+      document.getElementById('bs-btn-arranjo-replace-model')?.addEventListener('click', () => {
+        this.openModelSheet('replace');
+      });
+
+      panel.querySelectorAll('.bs-seg-btn[data-scale]').forEach((btn) => {
         btn.addEventListener('click', (e) => {
-          const vol = (e.currentTarget as HTMLElement).dataset.volume as any;
-          if (vol) this.setVolumeLevel(vol);
+          const scale = (e.currentTarget as HTMLElement).dataset.scale as 'compacto' | 'padrao' | 'grande';
+          if (scale) this.setArrangementScale(scale);
         });
       });
 
-      // Variar com confirmação na 1ª vez
-      document.getElementById('bs-btn-forma-variar')?.addEventListener('click', () => {
-        this.variateColorsAndSizes();
+      panel.querySelectorAll('.bs-backdrop-chip[data-backdrop]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const mode = (e.currentTarget as HTMLElement).dataset.backdrop as 'redondo' | 'romano' | 'cilindro' | 'livre';
+          if (mode) this.setBackdropMode(mode);
+        });
       });
 
-      // Adicionar arranjo modelo à cena
-      document.getElementById('bs-btn-forma-append-model')?.addEventListener('click', () => {
-        this.toggleSheet('bs-append-model-sheet', true);
+      document.getElementById('bs-btn-toggle-person-ref')?.addEventListener('click', () => {
+        this.showPersonRef = !this.showPersonRef;
+        this.renderStaticBackdrop(true);
+        this.renderTabActivePanel();
+      });
+
+      document.getElementById('bs-btn-arranjo-shopping')?.addEventListener('click', () => {
+        this.openShoppingModal();
       });
     }
   }
 
   // ----------------------------------------------------------------------
-  // AÇÕES DO ARRANJO: INVERTER, VARIAR, VOLUME, FERRAMENTAS
+  // AÇÕES DO ARRANJO: INVERTER, TROCAR MODELO, ESCALA REAL, GUIA DE FUNDO
   // ----------------------------------------------------------------------
+
+  private openModelSheet(mode: 'append' | 'replace'): void {
+    this.modelSheetMode = mode;
+    const titleEl = document.getElementById('bs-append-sheet-title');
+    const subEl = document.getElementById('bs-append-sheet-subtitle');
+    if (mode === 'replace') {
+      if (titleEl) titleEl.textContent = 'Trocar Modelo Base';
+      if (subEl) subEl.textContent = 'Escolha outro formato mantendo sua paleta de cores atual:';
+    } else {
+      if (titleEl) titleEl.textContent = 'Somar Outro Modelo';
+      if (subEl) subEl.textContent = 'Escolha um modelo para somar ao arranjo atual:';
+    }
+    this.toggleSheet('bs-append-model-sheet', true);
+  }
+
+  private replaceModelKeepingPalette(templateId: string): void {
+    const tmpl = BALLOON_STUDIO_TEMPLATES.find((t) => t.id === templateId);
+    if (!tmpl) return;
+
+    this.selectedTemplateId = tmpl.id;
+    if (!this.hasCustomName) {
+      this.arrangementTitle = tmpl.name;
+      const titleEl = document.getElementById('bs-editor-current-title');
+      if (titleEl) titleEl.textContent = this.arrangementTitle;
+    }
+
+    const freshPieces: BalloonPiece[] = JSON.parse(JSON.stringify(tmpl.pieces)).map((p: any) => ({
+      ...p,
+      source: 'model' as const
+    }));
+
+    // Mantém integralmente a paleta, acabamentos, número de cores e modo de distribuição do usuário
+    this.pieces = distributeColors(freshPieces, this.currentDistributionMode, this.activeColorCount, this.palette);
+    this.baseTemplatePieces = JSON.parse(JSON.stringify(this.pieces));
+    this.currentScaleLevel = 'padrao';
+    this.scaleOrigins.clear();
+    this.exitMultiSelectMode(true);
+
+    this.toggleSheet('bs-append-model-sheet', false);
+    this.saveHistory();
+    this.computeBaseViewBox();
+    this.renderCanvas();
+    if (this.isBottomDrawerOpen) this.renderTabActivePanel();
+    this.showToast(`Modelo trocado para ${tmpl.name}`);
+  }
+
+  private getScaleFactor(level: 'compacto' | 'padrao' | 'grande'): number {
+    if (level === 'compacto') return 0.85;
+    if (level === 'grande') return 1.15;
+    return 1.0;
+  }
+
+  private closestCommercialSize(targetRadius: number): BalloonSizeInches {
+    const commercialSizes: BalloonSizeInches[] = [5, 7, 9, 10, 12, 16, 18, 24, 36];
+    let best: BalloonSizeInches = 12;
+    let bestDiff = Infinity;
+    for (const sz of commercialSizes) {
+      const r = BALLOON_SIZE_RADIUS_MAP[sz] || 28;
+      const diff = Math.abs(r - targetRadius);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        best = sz;
+      }
+    }
+    return best;
+  }
+
+  private setArrangementScale(level: 'compacto' | 'padrao' | 'grande'): void {
+    if (this.pieces.length === 0 || level === this.currentScaleLevel) return;
+
+    const prevFactor = this.getScaleFactor(this.currentScaleLevel);
+    const nextFactor = this.getScaleFactor(level);
+
+    // Garante que cada peça atual tenha sua origem em 100% registrada de forma não-destrutiva
+    let currentMinX = Infinity;
+    let currentMaxX = -Infinity;
+    let currentMaxY = -Infinity;
+    for (const p of this.pieces) {
+      const r = BALLOON_SIZE_RADIUS_MAP[p.sizeInches] || 28;
+      if (p.x - r < currentMinX) currentMinX = p.x - r;
+      if (p.x + r > currentMaxX) currentMaxX = p.x + r;
+      if (p.y + r > currentMaxY) currentMaxY = p.y + r;
+    }
+    const curAnchorX = (currentMinX + currentMaxX) / 2;
+    const curAnchorY = currentMaxY;
+
+    for (const p of this.pieces) {
+      if (!this.scaleOrigins.has(p.id)) {
+        const invX = prevFactor !== 1 ? curAnchorX + (p.x - curAnchorX) / prevFactor : p.x;
+        const invY = prevFactor !== 1 ? curAnchorY + (p.y - curAnchorY) / prevFactor : p.y;
+        this.scaleOrigins.set(p.id, {
+          x: Math.round(invX),
+          y: Math.round(invY),
+          sizeInches: p.sizeInches
+        });
+      }
+    }
+
+    // Calcula âncora estável (centro horizontal + base no chão) a partir das origens 100%
+    let origMinX = Infinity;
+    let origMaxX = -Infinity;
+    let origMaxY = -Infinity;
+    for (const p of this.pieces) {
+      const orig = this.scaleOrigins.get(p.id);
+      if (!orig) continue;
+      const r = BALLOON_SIZE_RADIUS_MAP[orig.sizeInches] || 28;
+      if (orig.x - r < origMinX) origMinX = orig.x - r;
+      if (orig.x + r > origMaxX) origMaxX = orig.x + r;
+      if (orig.y + r > origMaxY) origMaxY = orig.y + r;
+    }
+    const anchorX = (origMinX + origMaxX) / 2;
+    const anchorY = origMaxY;
+
+    for (const p of this.pieces) {
+      const orig = this.scaleOrigins.get(p.id);
+      if (!orig) continue;
+      p.x = Math.round(anchorX + (orig.x - anchorX) * nextFactor);
+      p.y = Math.round(anchorY + (orig.y - anchorY) * nextFactor);
+      if (p.shape !== 'star') {
+        const origR = BALLOON_SIZE_RADIUS_MAP[orig.sizeInches] || 28;
+        p.sizeInches = nextFactor === 1 ? orig.sizeInches : this.closestCommercialSize(origR * nextFactor);
+      }
+    }
+
+    this.currentScaleLevel = level;
+    this.saveHistory();
+    this.renderCanvas(true);
+    if (this.isBottomDrawerOpen) this.renderTabActivePanel();
+  }
+
+  private setBackdropMode(mode: 'redondo' | 'romano' | 'cilindro' | 'livre'): void {
+    this.backdropMode = mode;
+    this.renderStaticBackdrop(true);
+    if (this.isBottomDrawerOpen) this.renderTabActivePanel();
+  }
 
   private mirrorArrangement(): void {
     if (this.pieces.length === 0) return;
     this.pieces = mirrorArrangementHorizontal(this.pieces);
     this.baseTemplatePieces = mirrorArrangementHorizontal(this.baseTemplatePieces);
+    this.scaleOrigins.clear();
+    this.currentScaleLevel = 'padrao';
     this.saveHistory();
     this.renderCanvas();
-    this.updateBalloonPillPosition();
-  }
-
-  private variateColorsAndSizes(): void {
-    if (!this.hasConfirmedVariar) {
-      const ok = window.confirm('Deseja redistribuir as posições e variações dos balões do arranjo?');
-      if (!ok) return;
-      this.hasConfirmedVariar = true;
-    }
-
-    this.pieces = variateArrangement(this.pieces);
-    this.saveHistory();
-    this.renderCanvas();
-  }
-
-  // Ajusta volume alterando APENAS as peças dos modelos, preservando as inseridas pelo usuário
-  private setVolumeLevel(volume: 'enxuto' | 'padrao' | 'cheio'): void {
-    this.currentVolumeLevel = volume;
-    if (this.baseTemplatePieces.length > 0) {
-      const userPieces = this.pieces.filter((p) => p.source === 'user');
-      const modelTemplatePieces = this.baseTemplatePieces.filter((p) => p.source !== 'user');
-      const adjustedModelPieces = applyVolumeLevel(modelTemplatePieces, volume).map((p) => ({
-        ...p,
-        source: 'model' as const
-      }));
-
-      this.pieces = [...adjustedModelPieces, ...userPieces];
-      this.saveHistory();
-      this.renderCanvas();
-    }
-    this.renderTabActivePanel();
+    if (this.isBottomDrawerOpen) this.renderTabActivePanel();
   }
 
   private setDistributionMode(mode: 'mesclado' | 'degrade' | 'blocos'): void {
@@ -2895,27 +3128,16 @@ export class BalloonStudioModal {
       source: 'model' as const
     }));
 
-    this.pieces.push(...newPieces);
-    this.baseTemplatePieces.push(...newPieces);
+    const coloredNewPieces = distributeColors(newPieces, this.currentDistributionMode, this.activeColorCount, this.palette);
+    this.pieces.push(...coloredNewPieces);
+    this.baseTemplatePieces.push(...coloredNewPieces);
 
     this.toggleSheet('bs-append-model-sheet', false);
     this.saveHistory();
     this.computeBaseViewBox();
     this.renderCanvas();
-    this.renderTabActivePanel();
-  }
-
-  // Atualiza a ferramenta ativa com feedback visual claro e destaque na quick bar
-
-  // Exibe as legendas da barra de ações por 2 segundos ao abrir o estúdio
-  private triggerQuickBarPreview(): void {
-    const bar = document.getElementById('bs-canvas-quick-bar');
-    if (!bar) return;
-    bar.classList.add('bs-quick-bar-preview');
-    if (this.quickBarPreviewTimer) clearTimeout(this.quickBarPreviewTimer);
-    this.quickBarPreviewTimer = window.setTimeout(() => {
-      bar.classList.remove('bs-quick-bar-preview');
-    }, 2000);
+    if (this.isBottomDrawerOpen) this.renderTabActivePanel();
+    this.showToast(`${tmpl.name} somado ao arranjo`);
   }
 
   private setActiveTouchTool(tool: 'adjust' | 'multi-select' | 'pan' | 'eraser' | 'balloon-5' | 'balloon-7' | 'balloon-9' | 'balloon-10' | 'balloon-12' | 'balloon-16' | 'balloon-18' | 'balloon-24' | 'balloon-36' | 'balloon-star' | 'cluster-quad' | 'cluster-trio' | 'base-balloon' | 'light-point' | 'big-balloon'): void {
@@ -2928,80 +3150,15 @@ export class BalloonStudioModal {
     this.isPinching = false;
     this.multiSelectToggleCandidate = null;
 
-    // Atualiza classes do container do canvas para o cursor correto
     const container = document.getElementById('bs-canvas-container');
     if (container) {
       container.classList.toggle('tool-pan', tool === 'pan');
-      container.classList.toggle('tool-multiselect', tool === 'multi-select');
       container.classList.toggle('tool-eraser', tool === 'eraser');
       container.classList.remove('is-panning');
     }
 
-    // Atualiza destaque na barra de ações rápidas
-    const btnAdjust = document.getElementById('bs-quick-btn-adjust');
-    const btnMulti = document.getElementById('bs-quick-btn-multiselect');
-    const btnEraser = document.getElementById('bs-quick-btn-eraser');
-    if (btnAdjust) btnAdjust.classList.toggle('active', tool === 'adjust');
-    if (btnMulti) btnMulti.classList.toggle('active', tool === 'multi-select');
-    if (btnEraser) btnEraser.classList.toggle('active', tool === 'eraser');
-
-    const banner = document.getElementById('bs-tool-active-banner');
-    const text = document.getElementById('bs-tool-banner-text');
-
-    const multiActions = document.getElementById('bs-multiselect-actions');
-    const cancelBtn = document.getElementById('bs-btn-cancel-tool');
-    const dropdown = document.getElementById('bs-multiselect-filter-dropdown');
-    if (dropdown) dropdown.style.display = 'none';
-
-    if (banner && text) {
-      if (tool === 'adjust') {
-        banner.style.display = 'none';
-      } else {
-        banner.style.display = 'flex';
-        if (tool === 'multi-select') {
-          text.style.display = 'none';
-          if (multiActions) multiActions.style.display = 'flex';
-          if (cancelBtn) cancelBtn.textContent = 'Concluir';
-          this.updateMultiSelectBadge();
-        } else {
-          text.style.display = 'block';
-          if (multiActions) multiActions.style.display = 'none';
-          if (cancelBtn) cancelBtn.textContent = 'Cancelar';
-          if (tool === 'pan') {
-          text.textContent = 'Arraste com um dedo para mover o cenário';
-        } else if (tool === 'eraser') {
-          text.textContent = 'Toque em qualquer balão para apagar';
-        } else if (tool === 'balloon-5' || tool === 'light-point') {
-          text.textContent = 'Toque no cenário para posicionar balão de 5"';
-        } else if (tool === 'balloon-7') {
-          text.textContent = 'Toque no cenário para posicionar balão de 7"';
-        } else if (tool === 'balloon-9') {
-          text.textContent = 'Toque no cenário para posicionar balão de 9"';
-        } else if (tool === 'balloon-10') {
-          text.textContent = 'Toque no cenário para posicionar balão de 10"';
-        } else if (tool === 'balloon-12' || tool === 'base-balloon') {
-          text.textContent = 'Toque no cenário para posicionar balão de 12"';
-        } else if (tool === 'balloon-16') {
-          text.textContent = 'Toque no cenário para posicionar balão de 16"';
-        } else if (tool === 'balloon-18' || tool === 'big-balloon') {
-          text.textContent = 'Toque no cenário para posicionar balão de 18"';
-        } else if (tool === 'balloon-24') {
-          text.textContent = 'Toque no cenário para posicionar balão de 24"';
-        } else if (tool === 'balloon-36') {
-          text.textContent = 'Toque no cenário para posicionar balão de 36"';
-        } else if (tool === 'balloon-star') {
-          text.textContent = 'Toque no cenário para posicionar balão estrela 18"';
-        } else if (tool === 'cluster-quad') {
-          text.textContent = 'Toque no cenário para posicionar cluster de 4 balões';
-        } else if (tool === 'cluster-trio') {
-          text.textContent = 'Toque no cenário para posicionar tufo de 3 balões';
-        }
-      }
-    }
-  }
-
-    if (this.activeBottomTab === 'incluir' && this.isBottomDrawerOpen) {
-      this.renderTabActivePanel();
+    if (tool === 'multi-select') {
+      this.enterMultiSelectMode();
     }
   }
 
@@ -3014,6 +3171,16 @@ export class BalloonStudioModal {
         this.toggleSheet(sheetId, false);
         return true;
       }
+    }
+
+    if (this.isMultiSelectMode || this.selectedPieceIds.size > 0) {
+      this.exitMultiSelectMode(true);
+      return true;
+    }
+
+    if (this.isBottomDrawerOpen) {
+      this.closeBottomDrawer();
+      return true;
     }
 
     if (this.currentScreen === 'editor') {
@@ -3050,10 +3217,13 @@ export class BalloonStudioModal {
     this.renderTabActivePanel();
   }
 
-  // Inserção no centro do canvas (usada pelo botão + Inserir)
+  // Inserção no centro do canvas (usada pela aba Incluir)
   private insertPieceAtCenter(type: string): void {
-    const cx = this.baseViewBox.x + this.baseViewBox.width / 2 + this.panOffset.x;
-    const cy = this.baseViewBox.y + this.baseViewBox.height / 2 + this.panOffset.y;
+    const cx = Math.round(this.baseViewBox.x + this.baseViewBox.width / 2 + this.panOffset.x);
+    const cy = Math.round(this.baseViewBox.y + this.baseViewBox.height / 2 + this.panOffset.y);
+
+    // Fecha a gaveta para exibir imediatamente a peça inserida com a barra contextual de edição
+    this.closeBottomDrawer();
 
     if (type === 'cluster-quad') {
       this.insertClusterQuadAt(cx, cy);
@@ -3078,18 +3248,19 @@ export class BalloonStudioModal {
     }
   }
 
-  // Inserção de balão individual (Single-shot: volta para ajustar imediatamente)
+  // Inserção de balão individual
   private insertSingleBalloonAt(x: number, y: number, sizeInches: BalloonSizeInches, shape: BalloonShape = 'round'): void {
     const slot = this.activeColorSlot;
     const finish = this.palette.finishes?.[slot as 'A' | 'B' | 'C' | 'D' | 'E'] || (shape === 'star' ? 'satin' : (sizeInches === 5 ? 'chrome' : 'satin'));
     const newPiece: BalloonPiece = {
       id: `p-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      x,
-      y,
+      x: Math.round(x),
+      y: Math.round(y),
       sizeInches,
       shape,
       slot,
       finish,
+      z: sizeInches === 5 ? 48 : 22,
       source: 'user'
     };
     this.pieces.push(newPiece);
@@ -3098,52 +3269,54 @@ export class BalloonStudioModal {
 
     this.saveHistory();
     this.renderCanvas();
-    this.showBalloonPill();
-
-    // Volta para ajustar para permitir mover a peça imediatamente
+    this.renderSelectionDock();
     this.setActiveTouchTool('adjust');
   }
 
-  // Inserção de cluster quad (4 balões)
+  // Inserção de cluster quad realista (4 balões de 10" com volume 3D)
   private insertClusterQuadAt(x: number, y: number): void {
-    const r = 24;
+    const r = 19;
     const baseId = Date.now();
     const activeSlots: BalloonSlot[] = (['A', 'B', 'C', 'D', 'E'] as const).slice(0, this.activeColorCount);
     const quadGroupId = `grp-c-${baseId}`;
+    const getFin = (s: BalloonSlot): BalloonFinish => this.palette.finishes?.[s] || 'satin';
+    const s0 = activeSlots[0] || 'A';
+    const s1 = activeSlots[1] || s0;
+    const s2 = activeSlots[2] || s0;
+    const s3 = activeSlots[3] || s1;
     const clusterPieces: BalloonPiece[] = [
-      { id: `c-${baseId}-1`, x: x - r, y: y - r, sizeInches: 10, slot: activeSlots[0] || 'A', finish: 'satin', groupId: quadGroupId, source: 'user' },
-      { id: `c-${baseId}-2`, x: x + r, y: y - r, sizeInches: 10, slot: activeSlots[1] || 'B', finish: 'satin', groupId: quadGroupId, source: 'user' },
-      { id: `c-${baseId}-3`, x: x - r, y: y + r, sizeInches: 10, slot: activeSlots[2] || activeSlots[0] || 'A', finish: 'chrome', groupId: quadGroupId, source: 'user' },
-      { id: `c-${baseId}-4`, x: x + r, y: y + r, sizeInches: 10, slot: activeSlots[3] || activeSlots[1] || 'B', finish: 'matte', groupId: quadGroupId, source: 'user' },
+      { id: `c-${baseId}-1`, x: Math.round(x - r), y: Math.round(y - r * 0.85), sizeInches: 10, slot: s0, finish: getFin(s0), z: 6, groupId: quadGroupId, source: 'user' },
+      { id: `c-${baseId}-2`, x: Math.round(x + r), y: Math.round(y - r * 0.85), sizeInches: 10, slot: s1, finish: getFin(s1), z: 12, groupId: quadGroupId, source: 'user' },
+      { id: `c-${baseId}-3`, x: Math.round(x - r * 0.9), y: Math.round(y + r * 0.95), sizeInches: 10, slot: s2, finish: getFin(s2), z: 18, groupId: quadGroupId, source: 'user' },
+      { id: `c-${baseId}-4`, x: Math.round(x + r * 0.9), y: Math.round(y + r * 0.95), sizeInches: 10, slot: s3, finish: getFin(s3), z: 24, groupId: quadGroupId, source: 'user' },
     ];
     this.pieces.push(...clusterPieces);
     this.selectedPieceIds.clear();
     clusterPieces.forEach((p) => this.selectedPieceIds.add(p.id));
     this.saveHistory();
     this.renderCanvas();
-    this.showBalloonPill();
-
+    this.renderSelectionDock();
     this.setActiveTouchTool('adjust');
   }
 
-  // Inserção de tufo trio (3 balões de 5")
+  // Inserção de tufo trio realista (roseta monocromática de 3 balões 5" na frente)
   private insertClusterTrioAt(x: number, y: number): void {
-    const r = 14;
+    const r = 12;
     const baseId = Date.now();
-    const activeSlots: BalloonSlot[] = (['A', 'B', 'C', 'D', 'E'] as const).slice(0, this.activeColorCount);
+    const slot = this.activeColorSlot || 'A';
+    const fin = this.palette.finishes?.[slot] || 'satin';
     const trioGroupId = `grp-t-${baseId}`;
     const trioPieces: BalloonPiece[] = [
-      { id: `t-${baseId}-1`, x, y: y - r * 0.8, sizeInches: 5, slot: activeSlots[0] || 'A', finish: 'chrome', groupId: trioGroupId, source: 'user' },
-      { id: `t-${baseId}-2`, x: x - r * 0.8, y: y + r * 0.6, sizeInches: 5, slot: activeSlots[1] || 'B', finish: 'satin', groupId: trioGroupId, source: 'user' },
-      { id: `t-${baseId}-3`, x: x + r * 0.8, y: y + r * 0.6, sizeInches: 5, slot: activeSlots[2] || activeSlots[0] || 'A', finish: 'chrome', groupId: trioGroupId, source: 'user' },
+      { id: `t-${baseId}-1`, x: Math.round(x), y: Math.round(y - r * 0.82), sizeInches: 5, slot, finish: fin, z: 46, groupId: trioGroupId, source: 'user' },
+      { id: `t-${baseId}-2`, x: Math.round(x - r * 0.85), y: Math.round(y + r * 0.62), sizeInches: 5, slot, finish: fin, z: 48, groupId: trioGroupId, source: 'user' },
+      { id: `t-${baseId}-3`, x: Math.round(x + r * 0.85), y: Math.round(y + r * 0.62), sizeInches: 5, slot, finish: fin, z: 50, groupId: trioGroupId, source: 'user' },
     ];
     this.pieces.push(...trioPieces);
     this.selectedPieceIds.clear();
     trioPieces.forEach((p) => this.selectedPieceIds.add(p.id));
     this.saveHistory();
     this.renderCanvas();
-    this.showBalloonPill();
-
+    this.renderSelectionDock();
     this.setActiveTouchTool('adjust');
   }
 
@@ -3158,19 +3331,24 @@ export class BalloonStudioModal {
   private deletePieceById(id: string): void {
     this.pieces = this.pieces.filter((p) => p.id !== id);
     this.selectedPieceIds.delete(id);
+    this.scaleOrigins.delete(id);
     this.saveHistory();
     this.renderCanvas();
-    this.hideBalloonPill();
+    this.renderSelectionDock();
   }
 
   private setSelectedPieceSlot(slot: BalloonSlot): void {
+    const finish = this.palette.finishes?.[slot] || 'satin';
     this.selectedPieceIds.forEach((id) => {
       const p = this.pieces.find((x) => x.id === id);
-      if (p) p.slot = slot;
+      if (p) {
+        p.slot = slot;
+        p.finish = finish;
+      }
     });
     this.saveHistory();
     this.renderCanvas();
-    this.showBalloonPill();
+    this.renderSelectionDock();
   }
 
   // ----------------------------------------------------------------------
@@ -3195,7 +3373,7 @@ export class BalloonStudioModal {
     });
     this.saveHistory();
     this.renderCanvas();
-    this.showBalloonPill();
+    this.renderSelectionDock();
   }
 
   public ungroupSelectedPieces(): void {
@@ -3206,7 +3384,7 @@ export class BalloonStudioModal {
     });
     this.saveHistory();
     this.renderCanvas();
-    this.showBalloonPill();
+    this.renderSelectionDock();
   }
 
   public toggleGroupSelected(): void {
@@ -3220,11 +3398,15 @@ export class BalloonStudioModal {
   private setSelectedPieceSize(size: BalloonSizeInches): void {
     this.selectedPieceIds.forEach((id) => {
       const p = this.pieces.find((x) => x.id === id);
-      if (p) p.sizeInches = size;
+      if (p && p.shape !== 'star') {
+        p.sizeInches = size;
+        const orig = this.scaleOrigins.get(id);
+        if (orig) orig.sizeInches = size;
+      }
     });
     this.saveHistory();
     this.renderCanvas();
-    this.showBalloonPill();
+    this.renderSelectionDock();
   }
 
   private duplicateSelected(): void {
@@ -3265,12 +3447,12 @@ export class BalloonStudioModal {
 
   private deleteSelected(): void {
     if (this.selectedPieceIds.size === 0) return;
+    this.selectedPieceIds.forEach((id) => this.scaleOrigins.delete(id));
     this.pieces = this.pieces.filter((p) => !this.selectedPieceIds.has(p.id));
-    this.selectedPieceIds.clear();
+    this.exitMultiSelectMode(true);
 
     this.saveHistory();
     this.renderCanvas();
-    this.hideBalloonPill();
   }
   // ----------------------------------------------------------------------
   // COMEÇAR DO ZERO & CARREGAR TEMPLATES
@@ -3310,16 +3492,18 @@ export class BalloonStudioModal {
       { id: 'c5', x: 252, y: 236, sizeInches: 5, slot: 'C', finish: 'chrome', source: 'user' }
     ];
     this.baseTemplatePieces = JSON.parse(JSON.stringify(this.pieces));
-    this.selectedPieceIds.clear();
+    this.currentScaleLevel = 'padrao';
+    this.scaleOrigins.clear();
+    this.exitMultiSelectMode(true);
     this.history = [];
     this.historyIndex = -1;
-        this.currentVolumeLevel = 'padrao';
+    this.currentVolumeLevel = 'padrao';
     this.hasConfirmedVariar = false;
     this.saveHistory();
 
     this.setScreen('editor');
     this.computeBaseViewBox();
-      }
+  }
 
   public loadTemplate(templateId: string): void {
     const tmpl = BALLOON_STUDIO_TEMPLATES.find((t) => t.id === templateId) || BALLOON_STUDIO_TEMPLATES[0];
@@ -3357,7 +3541,9 @@ export class BalloonStudioModal {
       this.palette.finishes = { A: 'satin', B: 'satin', C: 'chrome', D: 'matte', E: 'satin' };
     }
 
-    this.selectedPieceIds.clear();
+    this.currentScaleLevel = 'padrao';
+    this.scaleOrigins.clear();
+    this.exitMultiSelectMode(true);
     this.history = [];
     this.historyIndex = -1;
     this.currentVolumeLevel = 'padrao';
@@ -3370,7 +3556,6 @@ export class BalloonStudioModal {
 
     this.computeBaseViewBox();
     this.renderCanvas();
-    this.syncPaletteSwatches();
   }
 
   private applyPalettePreset(newPalette: BalloonPaletteConfig): void {
@@ -3692,6 +3877,13 @@ export class BalloonStudioModal {
   // HISTÓRICO UNDO / REDO
   // ----------------------------------------------------------------------
 
+  private updateUndoRedoButtons(): void {
+    const btnUndo = document.getElementById('bs-btn-header-undo') as HTMLButtonElement | null;
+    const btnRedo = document.getElementById('bs-btn-header-redo') as HTMLButtonElement | null;
+    if (btnUndo) btnUndo.disabled = this.historyIndex <= 0;
+    if (btnRedo) btnRedo.disabled = this.historyIndex >= this.history.length - 1;
+  }
+
   private saveHistory(): void {
     if (this.historyIndex < this.history.length - 1) {
       this.history = this.history.slice(0, this.historyIndex + 1);
@@ -3703,6 +3895,7 @@ export class BalloonStudioModal {
     if (this.history.length > 30) this.history.shift();
     this.historyIndex = this.history.length - 1;
 
+    this.updateUndoRedoButtons();
     this.markDirtyAndScheduleAutosave();
   }
 
@@ -3712,10 +3905,12 @@ export class BalloonStudioModal {
       const state = this.history[this.historyIndex];
       this.pieces = JSON.parse(JSON.stringify(state.pieces));
       this.palette = JSON.parse(JSON.stringify(state.palette));
+      this.scaleOrigins.clear();
+      this.currentScaleLevel = 'padrao';
+      this.updateUndoRedoButtons();
       this.renderCanvas();
-      this.syncPaletteSwatches();
-      this.renderTabActivePanel();
-      this.showBalloonPill();
+      if (this.isBottomDrawerOpen) this.renderTabActivePanel();
+      this.renderSelectionDock();
     }
   }
 
@@ -3725,10 +3920,12 @@ export class BalloonStudioModal {
       const state = this.history[this.historyIndex];
       this.pieces = JSON.parse(JSON.stringify(state.pieces));
       this.palette = JSON.parse(JSON.stringify(state.palette));
+      this.scaleOrigins.clear();
+      this.currentScaleLevel = 'padrao';
+      this.updateUndoRedoButtons();
       this.renderCanvas();
-      this.syncPaletteSwatches();
-      this.renderTabActivePanel();
-      this.showBalloonPill();
+      if (this.isBottomDrawerOpen) this.renderTabActivePanel();
+      this.renderSelectionDock();
     }
   }
 
@@ -3870,6 +4067,7 @@ export class BalloonStudioModal {
     if (proj.balloonData) {
       this.pieces = JSON.parse(JSON.stringify(proj.balloonData.pieces || []));
       this.palette = JSON.parse(JSON.stringify(proj.balloonData.palette || this.palette));
+      this.activeColorCount = this.palette.colorCount || 4;
       this.currentDistributionMode = (proj.balloonData.distributionMode as any) || 'mesclado';
       this.currentVolumeLevel = (proj.balloonData.volumeLevel as any) || 'padrao';
       this.selectedTemplateId = proj.balloonData.selectedTemplateId || '';
@@ -3892,6 +4090,9 @@ export class BalloonStudioModal {
       }
     }
 
+    this.currentScaleLevel = 'padrao';
+    this.scaleOrigins.clear();
+    this.exitMultiSelectMode(true);
     this.hasEverBeenSaved = true;
     this.isDirty = false;
     this.history = [];
@@ -3900,7 +4101,6 @@ export class BalloonStudioModal {
 
     this.setScreen('editor');
     this.renderCanvas();
-    this.syncPaletteSwatches();
   }
 
   
@@ -4056,11 +4256,11 @@ export class BalloonStudioModal {
   }
 
   public close(): void {
+    this.exitMultiSelectMode(true);
     if (this.overlayEl) {
       this.overlayEl.style.display = 'none';
       document.body.classList.remove('bs-studio-open');
       document.body.classList.remove('screen-balloon-studio');
-      this.hideBalloonPill();
     }
   }
 

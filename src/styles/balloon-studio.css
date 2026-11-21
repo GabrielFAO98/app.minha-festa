@@ -2448,117 +2448,612 @@ input:checked + .bs-slider-round:before {
   transform: translateX(-50%) translateY(0);
 }
 
-/* Ações Rápidas de Seleção Múltipla no Banner Superior */
-.bs-multiselect-actions {
+/* ======================================================================
+   BARRA CONTEXTUAL INFERIOR DE SELEÇÃO (ZONA DO POLEGAR — MOBILE-FIRST)
+   ====================================================================== */
+.bs-canvas-area.tool-marquee {
+  cursor: crosshair;
+}
+
+.bs-selection-dock {
+  background: #FFFFFF;
+  border-top: 1px solid var(--border-subtle, #E6E1DA);
+  box-shadow: 0 -6px 22px rgba(28, 25, 23, 0.08);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  z-index: 26;
+  padding-bottom: env(safe-area-inset-bottom, 6px);
+  animation: bsDockSlideUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+@keyframes bsDockSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Subpainel Inline (1 toque para Cor ou Tamanho) */
+.bs-selection-subpanel {
+  background: var(--bg-app, #FAF8F5);
+  border-bottom: 1px solid var(--border-subtle, #E6E1DA);
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  box-sizing: border-box;
+}
+
+.bs-sel-sub-scroll {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  width: 100%;
+}
+
+.bs-sel-sub-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.bs-sel-sub-hint {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted, #57534E);
+  width: 100%;
+  text-align: center;
+}
+
+.bs-sel-color-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 11px 0 7px;
+  border-radius: 999px;
+  background: #FFFFFF;
+  border: 1.5px solid var(--border-subtle, #E6E1DA);
+  color: var(--text-main, #1C1917);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.15s ease;
+}
+
+.bs-sel-color-chip.active {
+  border-color: var(--primary, #B58938);
+  background: var(--primary-light, #F7F1E3);
+  color: var(--primary-hover, #9A7229);
+  font-weight: 700;
+}
+
+.bs-sel-color-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(28, 25, 23, 0.14);
+  box-shadow: inset -2px -2px 4px rgba(0, 0, 0, 0.14);
+  flex-shrink: 0;
+}
+
+.bs-sel-size-chip {
+  flex-shrink: 0;
+  min-width: 44px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: #FFFFFF;
+  border: 1.5px solid var(--border-subtle, #E6E1DA);
+  color: var(--text-main, #1C1917);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.15s ease;
+}
+
+.bs-sel-size-chip.active {
+  background: #1C1917;
+  border-color: #1C1917;
+  color: #FFFFFF;
+}
+
+/* Faixa Superior Contextual (Resumo + "+ Vários" OU Chips de Seleção Múltipla) */
+.bs-selection-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border-bottom: 1px solid #F1ECE4;
+  min-height: 42px;
+  box-sizing: border-box;
+}
+
+.bs-sel-single-info {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  flex: 1;
+}
+
+.bs-sel-info-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(28, 25, 23, 0.14);
+  flex-shrink: 0;
+}
+
+.bs-sel-info-text {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-main, #1C1917);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bs-sel-single-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.bs-sel-multi-trigger {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--primary-light, #F7F1E3);
+  border: 1px solid #E7D6B3;
+  color: var(--primary-hover, #9A7229);
+  font-size: 11.5px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  touch-action: manipulation;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.bs-sel-multi-trigger:active {
+  transform: scale(0.96);
+}
+
+.bs-sel-close-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  background: var(--bg-app, #FAF8F5);
+  color: var(--text-muted, #57534E);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.bs-sel-chips-scroll {
   display: flex;
   align-items: center;
   gap: 6px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  flex: 1;
+  min-width: 0;
 }
 
-.bs-multiselect-actions::-webkit-scrollbar {
+.bs-sel-chips-scroll::-webkit-scrollbar {
   display: none;
 }
 
-.bs-multi-badge {
-  font-size: 11px;
-  font-weight: 700;
-  color: #D97706;
-  background: rgba(217, 119, 6, 0.18);
-  border: 1px solid rgba(217, 119, 6, 0.32);
-  padding: 2px 7px;
-  border-radius: 6px;
-  white-space: nowrap;
-}
-
-.bs-multi-chip-btn {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.20);
-  color: #FAF8F5;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 9px;
+.bs-sel-count-pill {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--primary-hover, #9A7229);
+  background: var(--primary-light, #F7F1E3);
+  border: 1px solid #E7D6B3;
+  padding: 4px 8px;
   border-radius: 999px;
-  cursor: pointer;
   white-space: nowrap;
-  touch-action: manipulation;
-  transition: all var(--transition-fast, 0.15s ease);
 }
 
-.bs-multi-chip-btn:hover {
-  background: rgba(255, 255, 255, 0.22);
-}
-
-.bs-multi-chip-btn:active {
-  transform: scale(0.95);
-  background: rgba(255, 255, 255, 0.30);
-}
-
-/* Dropdown flutuante de filtro por tamanho ou cor */
-.bs-multiselect-filter-dropdown {
-  position: absolute;
-  top: 42px;
-  left: 12px;
-  z-index: 70;
-  background: #1C1917;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 12px;
-  padding: 10px 12px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
-  color: #FAF8F5;
-  min-width: 200px;
-  max-width: 340px;
-  animation: bsSlideDown 0.15s ease-out;
-}
-
-.bs-filter-dropdown-title {
-  font-size: 10.5px;
-  font-weight: 700;
-  color: #A8A29E;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.bs-filter-dropdown-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.bs-filter-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #FAF8F5;
+.bs-sel-smart-chip {
+  flex-shrink: 0;
+  height: 29px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--bg-app, #FAF8F5);
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  color: var(--text-main, #1C1917);
   font-size: 11.5px;
   font-weight: 600;
-  padding: 5px 10px;
-  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   cursor: pointer;
   touch-action: manipulation;
+  white-space: nowrap;
   transition: all 0.15s ease;
 }
 
-.bs-filter-chip:hover {
-  background: rgba(217, 119, 6, 0.25);
-  border-color: #D97706;
+.bs-sel-smart-chip.active {
+  background: var(--primary, #B58938);
+  border-color: var(--primary, #B58938);
+  color: #FFFFFF;
+  font-weight: 700;
 }
 
-.bs-filter-chip:active {
+.bs-sel-smart-chip:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.bs-sel-done-btn {
+  flex-shrink: 0;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: none;
+  background: #1C1917;
+  color: #FFFFFF;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  white-space: nowrap;
+}
+
+.bs-sel-done-btn:active {
   transform: scale(0.96);
 }
 
-.bs-filter-dot {
-  width: 10px;
-  height: 10px;
+/* Faixa Principal de Ações na Zona do Polegar */
+.bs-selection-actions-row {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  padding: 6px 8px 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.bs-selection-actions-row::-webkit-scrollbar {
+  display: none;
+}
+
+.bs-sel-act-btn {
+  flex: 1 0 54px;
+  min-height: 48px;
+  padding: 5px 4px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-main, #1C1917);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.14s ease;
+}
+
+.bs-sel-act-btn span {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.bs-sel-act-btn:hover {
+  background: var(--bg-app, #FAF8F5);
+}
+
+.bs-sel-act-btn:active {
+  transform: scale(0.95);
+  background: #F1ECE4;
+}
+
+.bs-sel-act-btn.active {
+  background: var(--primary-light, #F7F1E3);
+  border-color: #E7D6B3;
+  color: var(--primary-hover, #9A7229);
+}
+
+.bs-sel-act-btn:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.bs-sel-act-swatch {
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  display: inline-block;
+  border: 1.5px solid rgba(28, 25, 23, 0.16);
+  box-shadow: inset -2px -2px 3px rgba(0, 0, 0, 0.14);
+}
+
+.bs-sel-act-size-pill {
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--bg-app, #FAF8F5);
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  color: var(--text-main, #1C1917);
+  line-height: 1.4 !important;
+}
+
+.bs-sel-act-btn.active .bs-sel-act-size-pill {
+  background: #FFFFFF;
+  border-color: var(--primary, #B58938);
+  color: var(--primary-hover, #9A7229);
+}
+
+.bs-sel-act-danger {
+  color: #DC2626;
+}
+
+.bs-sel-act-danger:hover {
+  background: #FEF2F2;
+}
+
+/* ======================================================================
+   ABA INCLUIR — BOTÃO SOMAR OUTRO MODELO
+   ====================================================================== */
+.bs-incluir-append-btn {
+  margin-top: 10px;
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--bg-app, #FAF8F5);
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  color: var(--text-main, #1C1917);
+  font-size: 12.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.bs-incluir-append-btn:hover {
+  border-color: var(--primary, #B58938);
+  background: var(--primary-light, #F7F1E3);
+  color: var(--primary-hover, #9A7229);
+}
+
+.bs-incluir-append-btn:active {
+  transform: scale(0.985);
+}
+
+.bs-incluir-append-arrow {
+  margin-left: auto;
+  opacity: 0.6;
+}
+
+/* ======================================================================
+   ABA ARRANJO (ESTRUTURA, ESCALA REAL, CENÁRIO DE REFERÊNCIA, COMPRAS)
+   ====================================================================== */
+.bs-panel-arranjo {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.bs-arranjo-section {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.bs-arranjo-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.bs-arranjo-action-btn {
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: var(--bg-app, #FAF8F5);
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  color: var(--text-main, #1C1917);
+  font-size: 12.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.bs-arranjo-action-btn:hover {
+  background: #FFFFFF;
+  border-color: var(--primary, #B58938);
+  color: var(--primary-hover, #9A7229);
+}
+
+.bs-arranjo-action-btn:active {
+  transform: scale(0.97);
+}
+
+.bs-backdrop-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+@media (max-width: 390px) {
+  .bs-backdrop-chips-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.bs-backdrop-chip {
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 10px;
+  background: var(--bg-app, #FAF8F5);
+  border: 1.5px solid var(--border-subtle, #E6E1DA);
+  color: var(--text-muted, #57534E);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bs-backdrop-chip.active {
+  background: var(--primary-light, #F7F1E3);
+  border-color: var(--primary, #B58938);
+  color: var(--primary-hover, #9A7229);
+}
+
+.bs-person-toggle-row {
+  margin-top: 2px;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--bg-app, #FAF8F5);
+  border: 1px solid var(--border-subtle, #E6E1DA);
+  color: var(--text-main, #1C1917);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-sizing: border-box;
+}
+
+.bs-person-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-main, #1C1917);
+}
+
+.bs-switch-pill {
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: #D6D3D1;
+  position: relative;
+  transition: background 0.18s ease;
+  flex-shrink: 0;
+}
+
+.bs-switch-knob {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+  transition: transform 0.18s ease;
+}
+
+.bs-person-toggle-row.active .bs-switch-pill {
+  background: var(--primary, #B58938);
+}
+
+.bs-person-toggle-row.active .bs-switch-knob {
+  transform: translateX(16px);
+}
+
+.bs-arranjo-shopping-cta {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--primary-light, #F7F1E3);
+  border: 1.5px solid #E7D6B3;
+  color: var(--primary-hover, #9A7229);
+  font-size: 12.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.bs-arranjo-shopping-cta:active {
+  transform: scale(0.985);
+}
+
+.bs-arranjo-shopping-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bs-arranjo-shopping-count {
+  font-size: 12px;
+  font-weight: 800;
+  background: #FFFFFF;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid #E7D6B3;
+}
+
+/* Responsividade do topo em celulares estreitos (Undo/Redo + Salvar sem estourar) */
+@media (max-width: 400px) {
+  .bs-header-right-actions {
+    gap: 5px;
+    flex-shrink: 0;
+  }
+
+  .bs-btn-header-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .bs-btn-conclude {
+    height: 34px;
+    padding: 0 11px;
+    font-size: 12px;
+    gap: 5px;
+  }
 }
 
 /* Camada do Retângulo de Seleção (Marquee Box) */

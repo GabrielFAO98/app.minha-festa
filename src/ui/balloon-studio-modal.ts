@@ -2860,7 +2860,7 @@ export class BalloonStudioModal {
 
   private setDistributionMode(mode: 'mesclado' | 'degrade' | 'blocos'): void {
     this.currentDistributionMode = mode;
-    this.pieces = distributeColors(this.pieces, mode, this.activeColorCount);
+    this.pieces = distributeColors(this.pieces, mode, this.activeColorCount, this.palette);
     this.saveHistory();
     this.renderCanvas();
     this.renderTabActivePanel();
@@ -3043,7 +3043,7 @@ export class BalloonStudioModal {
 
     this.palette.colorCount = this.activeColorCount;
 
-    this.pieces = distributeColors(this.pieces, this.currentDistributionMode, this.activeColorCount);
+    this.pieces = distributeColors(this.pieces, this.currentDistributionMode, this.activeColorCount, this.palette);
     this.saveHistory();
     this.renderCanvas();
     this.syncPaletteSwatches();

@@ -702,12 +702,81 @@ interface ColorMetaPiece {
   locked?: boolean;
 }
 
+// Helper: calcula luminância perceptual (0..255) para ordenação suave no Degradê
+function getHexLuminance(hex: string): number {
+  const { r, g, b } = hexToRgb(hex || '#ffffff');
+  return r * 0.299 + g * 0.587 + b * 0.114;
+}
+
+// Helper: limpa ilhas isoladas em Blocos e Degradê para nenhuma cor "pular" sozinha dentro de outra banda
+function cleanIsolatedIslands(structural: ColorMetaPiece[]): void {
+  for (let pass = 0; pass < 2; pass++) {
+    for (const m of structural) {
+      if (m.locked) continue;
+      const neighs = structural.filter(
+        (o) =>
+          o.origIdx !== m.origIdx &&
+          Math.hypot(o.piece.x - m.piece.x, o.piece.y - m.piece.y) < (m.r + o.r) * 1.12
+      );
+      if (neighs.length < 2) continue;
+      const sameCount = neighs.filter((n) => n.slot === m.slot).length;
+      if (sameCount === 0) {
+        const freq: Record<string, number> = {};
+        for (const n of neighs) {
+          if (n.locked) continue;
+          freq[n.slot] = (freq[n.slot] || 0) + (n.piece.sizeInches >= 16 ? 2 : 1);
+        }
+        let bestSlot: BalloonSlot | null = null;
+        let bestScore = 0;
+        for (const [sl, sc] of Object.entries(freq)) {
+          if (sc > bestScore) {
+            bestScore = sc;
+            bestSlot = sl as BalloonSlot;
+          }
+        }
+        if (bestSlot && bestScore >= 2) {
+          m.slot = bestSlot;
+        }
+      }
+    }
+  }
+}
+
+// Helper: descobre a cor dominante dos balões grandes fisicamente encostados em uma roseta de 5"
+function getDominantNeighborSlot(
+  ros: ColorMetaPiece[],
+  structural: ColorMetaPiece[],
+  fallback: BalloonSlot
+): BalloonSlot {
+  const cx = ros.reduce((s, m) => s + m.piece.x, 0) / ros.length;
+  const cy = ros.reduce((s, m) => s + m.piece.y, 0) / ros.length;
+  const weights: Record<string, number> = {};
+  for (const s of structural) {
+    const d = Math.hypot(s.piece.x - cx, s.piece.y - cy);
+    if (d < s.r + 36) {
+      const w = (d < s.r + 22 ? 3.0 : 1.0) * (s.piece.sizeInches >= 16 ? 1.8 : 1.0);
+      weights[s.slot] = (weights[s.slot] || 0) + w;
+    }
+  }
+  let best = fallback;
+  let bestW = -1;
+  for (const [sl, w] of Object.entries(weights)) {
+    if (w > bestW) {
+      bestW = w;
+      best = sl as BalloonSlot;
+    }
+  }
+  return best;
+}
+
 // Distribui as cores da paleta no arranjo seguindo a geometria real da curva,
-// preservando rosetas de 5" monocromáticas, moldura contrastante nos 16"/18" e ritmo equilibrado
+// sem cores pulando por cima de outras em Blocos/Degradê, com rosetas de 5" monocromáticas
+// e ritmo equilibrado em Mesclado (2 a 5 cores)
 export function distributeColors(
   pieces: BalloonPiece[],
   mode: 'mesclado' | 'degrade' | 'blocos',
-  activeCount: number = 4
+  activeCount: number = 4,
+  palette?: BalloonPaletteConfig
 ): BalloonPiece[] {
   if (pieces.length === 0) return [];
   const allSlots: BalloonSlot[] = ['A', 'B', 'C', 'D', 'E'];
@@ -802,6 +871,7 @@ export function distributeColors(
 
   const bigs = meta.filter((m) => m.kind === 'big').sort((a, b) => a.t - b.t);
   const quads = meta.filter((m) => m.kind === 'quad').sort((a, b) => a.t - b.t);
+  const structural = [...quads, ...bigs];
   quads.forEach((q, i) => {
     q.clusterIdx = Math.floor(i / 4);
   });
@@ -816,84 +886,127 @@ export function distributeColors(
   }
   const rosettes = [...rosettesMap.values()].sort((a, b) => a[0].t - b[0].t);
 
-  // MODO DEGRADÊ SUAVE (Ombré ao longo da curva real com transição esfumada)
+  // =========================================================================
+  // MODO 1: DEGRADÊ SUAVE (Ombré real do mais escuro ao mais claro, ZERO saltos!)
+  // =========================================================================
   if (mode === 'degrade') {
-    const pickGradSlot = (m: ColorMetaPiece, feather: number = 0.072): BalloonSlot => {
-      const hash = Math.sin(m.piece.x * 0.137 + m.piece.y * 0.193 + (m.piece.z ?? 0) * 0.11);
-      const tJitter = Math.max(0, Math.min(0.9999, m.t + hash * feather));
-      return activeSlots[Math.min(activeSlots.length - 1, Math.floor(tJitter * activeSlots.length))];
-    };
-    for (const b of [...quads, ...bigs]) {
-      b.slot = pickGradSlot(b, 0.072);
+    // Se a paleta for informada, ordena automaticamente da cor mais escura/intensa para a mais clara
+    // (evitando saltos escuro -> claro -> escuro -> claro no meio do degradê!)
+    const gradOrder: BalloonSlot[] = palette
+      ? [...activeSlots].sort((sa, sb) => {
+          const hexA = (palette as any)[sa] || '#ffffff';
+          const hexB = (palette as any)[sb] || '#ffffff';
+          return getHexLuminance(hexA) - getHexLuminance(hexB);
+        })
+      : activeSlots;
+
+    // Fronteira limpa e contínua (micro-variação orgânica de 0.02 apenas na borda, nunca pulando no meio!)
+    for (const b of structural) {
+      const microOrganic = Math.sin(b.piece.x * 0.11 + b.piece.y * 0.13) * 0.018;
+      const u = Math.max(0, Math.min(0.9999, b.t + microOrganic));
+      b.slot = gradOrder[Math.min(gradOrder.length - 1, Math.floor(u * gradOrder.length))];
     }
+
+    // Remover qualquer balão isolado que tenha pulado para dentro de outra banda
+    cleanIsolatedIslands(structural);
+
+    // Rosetas de 5" SEMPRE seguem exatamente a cor dominante dos balões grandes que as abraçam
     for (const ros of rosettes) {
       const avgT = ros.reduce((s, m) => s + m.t, 0) / ros.length;
-      const slot = activeSlots[Math.min(activeSlots.length - 1, Math.floor(Math.max(0, Math.min(0.9999, avgT)) * activeSlots.length))];
-      for (const m of ros) m.slot = slot;
+      const fallback = gradOrder[Math.min(gradOrder.length - 1, Math.floor(Math.max(0, Math.min(0.9999, avgT)) * gradOrder.length))];
+      const domSlot = getDominantNeighborSlot(ros, structural, fallback);
+      for (const m of ros) m.slot = domSlot;
     }
+
     return meta.map((m) => ({ ...m.piece, slot: m.slot }));
   }
 
-  // MODO BLOCOS ORGÂNICOS (Color Blocking real em nuvens transversais + acento C nas costuras)
+  // =========================================================================
+  // MODO 2: BLOCOS ORGÂNICOS (Color Blocking real, ZERO rosetas intrusas!)
+  // =========================================================================
   if (mode === 'blocos') {
-    const bodyOrder: BalloonSlot[] =
-      count === 2 ? ['A', 'B', 'A', 'B']
-      : count === 3 ? ['A', 'B', 'C', 'A']
-      : count === 4 ? ['A', 'D', 'B', 'A']
-      : ['A', 'B', 'D', 'E', 'A'];
-    const numBlocks = meta.length < 65 ? Math.min(3, bodyOrder.length) : bodyOrder.length;
-    const seq = bodyOrder.slice(0, numBlocks);
+    const isLarge = meta.length >= 65;
+    let seq: BalloonSlot[];
+    let cuts: number[];
+
+    if (count === 2) {
+      seq = isLarge ? ['A', 'B', 'A', 'B'] : ['A', 'B', 'A'];
+      cuts = isLarge ? [0.25, 0.50, 0.75] : [0.34, 0.67];
+    } else if (count === 3) {
+      seq = isLarge ? ['A', 'B', 'C', 'A'] : ['A', 'B', 'C'];
+      cuts = isLarge ? [0.26, 0.52, 0.77] : [0.34, 0.67];
+    } else if (count === 4) {
+      seq = isLarge ? ['A', 'D', 'B', 'A'] : ['A', 'D', 'B'];
+      cuts = isLarge ? [0.23, 0.48, 0.74] : [0.34, 0.67];
+    } else {
+      seq = isLarge ? ['A', 'D', 'B', 'E', 'A'] : ['A', 'D', 'B', 'E'];
+      cuts = isLarge ? [0.20, 0.40, 0.60, 0.80] : [0.25, 0.50, 0.75];
+    }
 
     const blockFor = (tVal: number, snVal: number, zVal: number): BalloonSlot => {
-      const seamTilt = snVal / 720;
-      const organicWave = Math.sin(tVal * 19 + zVal * 0.11) * 0.016;
+      const seamTilt = snVal / 850;
+      const organicWave = Math.sin(tVal * 17 + zVal * 0.09) * 0.012;
       const u = Math.max(0, Math.min(0.9999, tVal + seamTilt + organicWave));
-      return seq[Math.min(seq.length - 1, Math.floor(u * seq.length))];
+      for (let i = 0; i < cuts.length; i++) {
+        if (u < cuts[i]) return seq[i];
+      }
+      return seq[seq.length - 1];
     };
 
-    for (const b of [...quads, ...bigs]) {
+    for (const b of structural) {
       b.slot = blockFor(b.t, b.sn, b.piece.z ?? 0);
     }
 
-    if (count >= 4) {
-      const seamTs: number[] = [];
-      for (let k = 1; k < seq.length; k++) seamTs.push(k / seq.length);
+    // Limpar eventuais balões soltos que tenham cruzado a linha do bloco
+    cleanIsolatedIslands(structural);
 
-      const maxCRosettes = rosettes.length >= 4 ? 2 : 1;
-      const scoredRos = rosettes.map((ros, rIdx) => {
+    if (count >= 4) {
+      // Em Color Blocking de 4–5 cores, 'C' (cromo/acento) entra EXCLUSIVAMENTE nas COSTURAS entre blocos!
+      // Rosetas de 5" dentro de um bloco SEMPRE acompanham a cor do próprio bloco (ZERO manchas intrusas!).
+      const cRosCenters: { cx: number; cy: number }[] = [];
+      const maxCRosettes = isLarge ? 2 : 1;
+
+      const rosInfo = rosettes.map((ros, rIdx) => {
         const avgT = ros.reduce((s, m) => s + m.t, 0) / ros.length;
         const cx = ros.reduce((s, m) => s + m.piece.x, 0) / ros.length;
         const cy = ros.reduce((s, m) => s + m.piece.y, 0) / ros.length;
-        const minSeamDist = seamTs.length ? Math.min(...seamTs.map((st) => Math.abs(avgT - st))) : 0.5;
+        const minSeamDist = cuts.length ? Math.min(...cuts.map((st) => Math.abs(avgT - st))) : 1;
         return { ros, rIdx, avgT, cx, cy, minSeamDist };
-      }).sort((a, b) => a.minSeamDist - b.minSeamDist);
-
-      const cRosSet = new Set<number>();
-      const cRosCenters: { cx: number; cy: number }[] = [];
-      for (const sr of scoredRos) {
-        if (cRosSet.size >= maxCRosettes) break;
-        if (cRosCenters.some((c) => Math.hypot(c.cx - sr.cx, c.cy - sr.cy) < 115)) continue;
-        cRosSet.add(sr.rIdx);
-        cRosCenters.push({ cx: sr.cx, cy: sr.cy });
-      }
-
-      rosettes.forEach((ros, rIdx) => {
-        const avgT = ros.reduce((s, m) => s + m.t, 0) / ros.length;
-        const localSlot = blockFor(avgT, 0, 10);
-        const contrastPool: BalloonSlot[] = (['D', 'B', 'A'] as BalloonSlot[]).filter((s) => s !== localSlot);
-        const rosSlot: BalloonSlot = cRosSet.has(rIdx) ? 'C' : contrastPool[rIdx % contrastPool.length];
-        for (const m of ros) m.slot = rosSlot;
       });
 
+      const cRosSet = new Set<number>();
+      for (const ri of [...rosInfo].sort((a, b) => a.minSeamDist - b.minSeamDist)) {
+        if (cRosSet.size >= maxCRosettes) break;
+        // Só vira roseta C se estiver REALMENTE na costura (<= 0.085 da divisória!)
+        if (ri.minSeamDist > 0.085) continue;
+        if (cRosCenters.some((c) => Math.hypot(c.cx - ri.cx, c.cy - ri.cy) < 115)) continue;
+        cRosSet.add(ri.rIdx);
+        cRosCenters.push({ cx: ri.cx, cy: ri.cy });
+      }
+
+      for (const ri of rosInfo) {
+        let rosSlot: BalloonSlot;
+        if (cRosSet.has(ri.rIdx)) {
+          rosSlot = 'C';
+        } else {
+          // Acompanha fielmente a cor dominante dos vizinhos do bloco!
+          const fallback = blockFor(ri.avgT, 0, 10);
+          rosSlot = getDominantNeighborSlot(ri.ros, structural, fallback);
+        }
+        for (const m of ri.ros) m.slot = rosSlot;
+      }
+
+      // Balões médios de destaque C ESTRITAMENTE nas costuras (|t - seamT| <= 0.055)
       const chosenC: ColorMetaPiece[] = [];
-      for (const st of seamTs) {
+      for (const st of cuts) {
         let best: ColorMetaPiece | null = null;
         let bestScore = Infinity;
         for (const q of quads) {
           if (q.piece.sizeInches < 7 || q.piece.sizeInches > 10 || (q.piece.z ?? 0) < 4) continue;
-          if (chosenC.some((c) => Math.hypot(c.piece.x - q.piece.x, c.piece.y - q.piece.y) < 82)) continue;
-          if (cRosCenters.some((c) => Math.hypot(c.cx - q.piece.x, c.cy - q.piece.y) < 62)) continue;
           const d = Math.abs(q.t - st);
+          if (d > 0.055) continue;
+          if (chosenC.some((c) => Math.hypot(c.piece.x - q.piece.x, c.piece.y - q.piece.y) < 82)) continue;
+          if (cRosCenters.some((c) => Math.hypot(c.cx - q.piece.x, c.cy - q.piece.y) < 68)) continue;
           if (d < bestScore) { bestScore = d; best = q; }
         }
         if (best) {
@@ -902,19 +1015,24 @@ export function distributeColors(
         }
       }
     } else {
-      rosettes.forEach((ros, rIdx) => {
+      // 2 ou 3 cores: cada roseta de 5" acompanha fielmente a cor do seu próprio bloco (ZERO cor intrusa!)
+      for (const ros of rosettes) {
         const avgT = ros.reduce((s, m) => s + m.t, 0) / ros.length;
-        const localSlot = blockFor(avgT, 0, 10);
-        const others = activeSlots.filter((s) => s !== localSlot);
-        const rosSlot = others[rIdx % others.length] || activeSlots[0];
-        for (const m of ros) m.slot = rosSlot;
-      });
+        const fallback = blockFor(avgT, 0, 10);
+        const domSlot = getDominantNeighborSlot(ros, structural, fallback);
+        for (const m of ros) m.slot = domSlot;
+      }
     }
 
     return meta.map((m) => ({ ...m.piece, slot: m.slot }));
   }
 
-  // MODO MESCLADO ORGÂNICO (Padrão consistente por duplas + moldura nos 16"/18" + rosetas 5" monocromáticas)
+  // =========================================================================
+  // MODO 3: MESCLADO ORGÂNICO (Ritmo consistente por duplas + rosetas contrastantes limpas)
+  // =========================================================================
+  const isChromeSlot = (s: BalloonSlot): boolean =>
+    Boolean(palette?.finishes && (palette.finishes as any)[s] === 'chrome');
+
   const bodySlots: BalloonSlot[] =
     count === 2 ? ['A', 'B']
     : count === 3 ? ['A', 'B', 'C']
@@ -922,22 +1040,35 @@ export function distributeColors(
     : ['A', 'B', 'D', 'E'];
   const accentSlot: BalloonSlot | null = count >= 4 ? 'C' : null;
 
+  // Evitar colocar balão gigante 18" em cromo quando houver cores não-cromo disponíveis
+  const bigCandidates = bodySlots.filter((s) => !isChromeSlot(s));
+  const bigPool = bigCandidates.length > 0 ? bigCandidates : bodySlots;
   bigs.forEach((b, idx) => {
-    b.slot = bodySlots[idx % bodySlots.length];
+    b.slot = bigPool[idx % bigPool.length];
     b.locked = true;
   });
 
+  const cIsChromeIn3 = count === 3 && isChromeSlot('C');
   const quadRecipes: BalloonSlot[][] =
     count === 2 ? [
       ['A', 'A', 'B', 'B'],
       ['B', 'A', 'A', 'B'],
       ['A', 'B', 'B', 'A']
-    ] : count === 3 ? [
-      ['A', 'A', 'B', 'C'],
-      ['B', 'B', 'C', 'A'],
-      ['A', 'C', 'B', 'A'],
-      ['C', 'B', 'A', 'B']
-    ] : count === 4 ? [
+    ] : count === 3 ? (
+      cIsChromeIn3
+        ? [
+            ['A', 'A', 'B', 'B'],
+            ['B', 'A', 'C', 'B'],
+            ['A', 'B', 'A', 'B'],
+            ['B', 'A', 'B', 'C']
+          ]
+        : [
+            ['A', 'A', 'B', 'C'],
+            ['B', 'B', 'C', 'A'],
+            ['C', 'A', 'B', 'A'],
+            ['B', 'C', 'A', 'B']
+          ]
+    ) : count === 4 ? [
       ['A', 'A', 'B', 'D'],
       ['B', 'B', 'D', 'A'],
       ['D', 'A', 'A', 'B'],
@@ -969,31 +1100,35 @@ export function distributeColors(
     });
   });
 
-  const structural = [...quads, ...bigs];
   const getTouching = (target: ColorMetaPiece, list: ColorMetaPiece[], factor: number = 1.05): ColorMetaPiece[] =>
     list.filter((o) => o.origIdx !== target.origIdx && Math.hypot(o.piece.x - target.piece.x, o.piece.y - target.piece.y) < (target.r + o.r) * factor);
 
-  for (const big of bigs) {
-    for (const q of getTouching(big, quads, 1.04).filter((x) => !x.locked && (x.piece.z ?? 0) >= -8)) {
-      if (q.slot === big.slot) {
-        const qn = getTouching(q, structural, 1.05);
-        const cands = bodySlots.filter((s) => s !== big.slot);
-        q.slot = cands.sort((a, b) => qn.filter((n) => n.slot === a).length - qn.filter((n) => n.slot === b).length)[0];
+  // Moldura contrastante nos 16"/18" (apenas quando temos >= 3 cores de corpo, para não criar anel de 5 iguais em 2 cores!)
+  if (bodySlots.length >= 3) {
+    for (const big of bigs) {
+      for (const q of getTouching(big, quads, 1.04).filter((x) => !x.locked && (x.piece.z ?? 0) >= -8)) {
+        if (q.slot === big.slot) {
+          const qn = getTouching(q, structural, 1.05);
+          const cands = bodySlots.filter((s) => s !== big.slot);
+          q.slot = cands.sort((a, b) => qn.filter((n) => n.slot === a).length - qn.filter((n) => n.slot === b).length)[0];
+        }
       }
     }
   }
 
+  // Anti-mancha pesada (2 passagens)
+  const clumpLimit = count === 2 ? 4 : 3;
   for (let pass = 0; pass < 2; pass++) {
     for (const q of quads) {
       if (q.locked) continue;
       const neighs = getTouching(q, structural, 1.05).filter((n) => (n.piece.z ?? 0) >= -10);
       const sameCnt = neighs.filter((n) => n.slot === q.slot).length;
-      if (sameCnt >= 3) {
+      if (sameCnt >= clumpLimit) {
         let bestS = q.slot;
         let bestCnt = sameCnt;
         for (const s of bodySlots) {
           if (s === q.slot) continue;
-          const touchesSameBig = neighs.some((n) => n.kind === 'big' && n.slot === s);
+          const touchesSameBig = count >= 3 && neighs.some((n) => n.kind === 'big' && n.slot === s);
           const cnt = neighs.filter((n) => n.slot === s).length + (touchesSameBig ? 3 : 0);
           if (cnt < bestCnt) { bestCnt = cnt; bestS = s; }
         }
@@ -1002,14 +1137,17 @@ export function distributeColors(
     }
   }
 
-  // Rosetas de 5" monocromáticas (escolhendo primeiro as rosetas de destaque C)
+  // Rosetas de 5" monocromáticas com forte peso nos vizinhos fisicamente encostados
   const rosetteMeta = rosettes.map((ros, idx) => {
     const cx = ros.reduce((s, m) => s + m.piece.x, 0) / ros.length;
     const cy = ros.reduce((s, m) => s + m.piece.y, 0) / ros.length;
     const neighborCounts: Record<string, number> = {};
     for (const s of structural) {
-      if (Math.hypot(s.piece.x - cx, s.piece.y - cy) < s.r + 44 && (s.piece.z ?? 0) >= -8) {
-        neighborCounts[s.slot] = (neighborCounts[s.slot] || 0) + (s.piece.sizeInches >= 16 ? 3.5 : 1);
+      const d = Math.hypot(s.piece.x - cx, s.piece.y - cy);
+      if (d < s.r + 44 && (s.piece.z ?? 0) >= -8) {
+        const directTouch = d < s.r + 22;
+        const w = directTouch ? (s.piece.sizeInches >= 16 ? 8.0 : 6.0) : (s.piece.sizeInches >= 16 ? 3.0 : 1.0);
+        neighborCounts[s.slot] = (neighborCounts[s.slot] || 0) + w;
       }
     }
     return { ros, idx, cx, cy, neighborCounts };
@@ -1038,9 +1176,9 @@ export function distributeColors(
       let bestS = prefOrder[0];
       let bestPenalty = Infinity;
       for (const s of prefOrder) {
-        const neighPen = (rm.neighborCounts[s] || 0) * 3.0;
-        const repeatPen = usedBodyRosSlots[usedBodyRosSlots.length - 1] === s ? 2.8 : 0;
-        const countPen = usedBodyRosSlots.filter((x) => x === s).length * 1.4;
+        const neighPen = rm.neighborCounts[s] || 0;
+        const repeatPen = usedBodyRosSlots[usedBodyRosSlots.length - 1] === s ? 3.0 : 0;
+        const countPen = usedBodyRosSlots.filter((x) => x === s).length * 1.5;
         const pen = neighPen + repeatPen + countPen;
         if (pen < bestPenalty) { bestPenalty = pen; bestS = s; }
       }
@@ -1050,10 +1188,10 @@ export function distributeColors(
     for (const m of rm.ros) m.slot = chosenSlot;
   });
 
-  // Balões médios de acento C triangulados e espaçados das rosetas C
+  // Balões médios de acento C triangulados e BEM afastados das rosetas C (>= 78px!)
   if (accentSlot) {
     const accentPieces: ColorMetaPiece[] = [];
-    const targetAccentTs = meta.length < 65 ? [0.22, 0.54, 0.86] : [0.16, 0.40, 0.62, 0.85];
+    const targetAccentTs = meta.length < 60 ? [0.22, 0.54, 0.85] : [0.16, 0.40, 0.62, 0.85];
     const desiredSides = [1, -1, 1, -1];
 
     targetAccentTs.forEach((targetT, idx) => {
@@ -1065,7 +1203,7 @@ export function distributeColors(
         if (q.piece.sizeInches !== 7 && q.piece.sizeInches !== 9 && q.piece.sizeInches !== 10) continue;
         if ((q.piece.z ?? 0) < 4) continue;
         if (accentPieces.some((a) => Math.hypot(a.piece.x - q.piece.x, a.piece.y - q.piece.y) < 88)) continue;
-        if (cRosetteCenters.some((c) => Math.hypot(c.cx - q.piece.x, c.cy - q.piece.y) < 64)) continue;
+        if (cRosetteCenters.some((c) => Math.hypot(c.cx - q.piece.x, c.cy - q.piece.y) < 78)) continue;
         const dt = Math.abs(q.t - targetT);
         if (dt > 0.16) continue;
         const sideBonus = Math.sign(q.sn) === wantSide ? 0.04 : 0;
@@ -1664,21 +1802,21 @@ export const BALLOON_STUDIO_TEMPLATES: BalloonModelTemplate[] = [
     defaultWidthCm: 222,
     defaultHeightCm: 241,
     pieces: [
-      { id: "q25", x: 85, y: 323, z: -13, sizeInches: 12, slot: "D", finish: "satin", rotation: 2 },
+      { id: "q25", x: 85, y: 323, z: -13, sizeInches: 12, slot: "A", finish: "satin", rotation: 2 },
       { id: "q31", x: 88, y: 276, z: -13, sizeInches: 12, slot: "D", finish: "satin", rotation: 2 },
       { id: "q43", x: 104, y: 188, z: -13, sizeInches: 12, slot: "B", finish: "satin", rotation: 5 },
-      { id: "q19", x: 84, y: 370, z: -13, sizeInches: 12, slot: "D", finish: "satin", rotation: 1 },
+      { id: "q19", x: 84, y: 370, z: -13, sizeInches: 12, slot: "A", finish: "satin", rotation: 1 },
       { id: "q1", x: 142, y: 469, z: -12, sizeInches: 12, slot: "A", finish: "satin", rotation: -9 },
       { id: "q47", x: 65, y: 130, z: -10, sizeInches: 12, slot: "B", finish: "satin", rotation: -20 },
       { id: "q81", x: 331, y: 130, z: -10, sizeInches: 7, slot: "A", finish: "satin", rotation: -10 },
       { id: "big100", x: 166, y: 82, z: -9, sizeInches: 16, slot: "B", finish: "satin", rotation: -4 },
       { id: "q73", x: 277, y: 148, z: -9, sizeInches: 9, slot: "A", finish: "satin", rotation: 17 },
       { id: "q88", x: 355, y: 148, z: -8, sizeInches: 7, slot: "A", finish: "satin", rotation: -8 },
-      { id: "big99", x: 30, y: 192, z: -7, sizeInches: 18, slot: "D", finish: "satin", rotation: -2 },
-      { id: "q37", x: 95, y: 233, z: -7, sizeInches: 12, slot: "B", finish: "satin", rotation: 4 },
+      { id: "big99", x: 30, y: 192, z: -7, sizeInches: 18, slot: "B", finish: "satin", rotation: -2 },
+      { id: "q37", x: 95, y: 233, z: -7, sizeInches: 12, slot: "D", finish: "satin", rotation: 4 },
       { id: "q71", x: 274, y: 96, z: -6, sizeInches: 9, slot: "A", finish: "satin", rotation: -10 },
       { id: "q67", x: 244, y: 139, z: -6, sizeInches: 9, slot: "A", finish: "satin", rotation: 16 },
-      { id: "q23", x: 18, y: 342, z: -6, sizeInches: 12, slot: "A", finish: "satin", rotation: -25 },
+      { id: "q23", x: 18, y: 342, z: -6, sizeInches: 12, slot: "D", finish: "satin", rotation: -25 },
       { id: "q29", x: 23, y: 294, z: -4, sizeInches: 12, slot: "D", finish: "satin", rotation: -25 },
       { id: "q86", x: 331, y: 182, z: -3, sizeInches: 7, slot: "A", finish: "satin", rotation: 21 },
       { id: "q96", x: 381, y: 181, z: -2, sizeInches: 7, slot: "A", finish: "satin", rotation: -8 },
@@ -1691,7 +1829,7 @@ export const BALLOON_STUDIO_TEMPLATES: BalloonModelTemplate[] = [
       { id: "q35", x: 26, y: 248, z: 4, sizeInches: 12, slot: "D", finish: "satin", rotation: -25 },
       { id: "q91", x: 363, y: 167, z: 4, sizeInches: 5, slot: "A", finish: "satin", rotation: -5 },
       { id: "q55", x: 164, y: 154, z: 5, sizeInches: 12, slot: "B", finish: "satin", rotation: 13 },
-      { id: "q61", x: 209, y: 148, z: 5, sizeInches: 12, slot: "A", finish: "satin", rotation: 15 },
+      { id: "q61", x: 209, y: 148, z: 5, sizeInches: 12, slot: "B", finish: "satin", rotation: 15 },
       { id: "q6", x: 105, y: 491, z: 7, sizeInches: 7, slot: "A", finish: "satin", rotation: -12 },
       { id: "q65", x: 236, y: 91, z: 8, sizeInches: 9, slot: "A", finish: "satin", rotation: -11 },
       { id: "q53", x: 116, y: 96, z: 8, sizeInches: 12, slot: "B", finish: "satin", rotation: -15 },
@@ -1701,28 +1839,28 @@ export const BALLOON_STUDIO_TEMPLATES: BalloonModelTemplate[] = [
       { id: "q4", x: 111, y: 457, z: 13, sizeInches: 10, slot: "A", finish: "satin", rotation: -8 },
       { id: "q74", x: 284, y: 116, z: 14, sizeInches: 7, slot: "A", finish: "satin", rotation: -7 },
       { id: "q76", x: 297, y: 141, z: 15, sizeInches: 7, slot: "A", finish: "satin", rotation: 20 },
-      { id: "q62", x: 209, y: 108, z: 15, sizeInches: 9, slot: "B", finish: "satin", rotation: -9 },
+      { id: "q62", x: 209, y: 108, z: 15, sizeInches: 9, slot: "A", finish: "satin", rotation: -9 },
       { id: "q70", x: 267, y: 136, z: 16, sizeInches: 7, slot: "A", finish: "satin", rotation: 20 },
       { id: "q44", x: 68, y: 159, z: 17, sizeInches: 10, slot: "B", finish: "satin", rotation: -19 },
       { id: "q80", x: 324, y: 133, z: 17, sizeInches: 7, slot: "A", finish: "satin", rotation: -7 },
       { id: "q82", x: 327, y: 162, z: 17, sizeInches: 7, slot: "A", finish: "satin", rotation: 22 },
       { id: "q28", x: 74, y: 299, z: 18, sizeInches: 10, slot: "D", finish: "satin", rotation: 3 },
       { id: "m103", x: 64, y: 404, z: 18, sizeInches: 5, slot: "C", finish: "satin", rotation: 11 },
-      { id: "q22", x: 72, y: 345, z: 18, sizeInches: 10, slot: "D", finish: "satin", rotation: 3 },
+      { id: "q22", x: 72, y: 345, z: 18, sizeInches: 10, slot: "A", finish: "satin", rotation: 3 },
       { id: "q50", x: 94, y: 129, z: 18, sizeInches: 10, slot: "B", finish: "satin", rotation: -15 },
       { id: "q90", x: 349, y: 180, z: 18, sizeInches: 7, slot: "A", finish: "satin", rotation: 24 },
       { id: "q40", x: 89, y: 202, z: 18, sizeInches: 10, slot: "C", finish: "satin", rotation: 5 },
-      { id: "m107", x: 56, y: 245, z: 18, sizeInches: 5, slot: "A", finish: "satin", rotation: -1 },
+      { id: "m107", x: 56, y: 245, z: 18, sizeInches: 5, slot: "D", finish: "satin", rotation: -1 },
       { id: "q46", x: 104, y: 164, z: 19, sizeInches: 10, slot: "B", finish: "satin", rotation: 9 },
       { id: "m116", x: 254, y: 109, z: 19, sizeInches: 5, slot: "C", finish: "satin", rotation: -8 },
       { id: "q16", x: 65, y: 384, z: 19, sizeInches: 10, slot: "A", finish: "satin", rotation: 3 },
       { id: "q38", x: 60, y: 229, z: 19, sizeInches: 10, slot: "D", finish: "satin", rotation: -22 },
       { id: "q10", x: 67, y: 449, z: 20, sizeInches: 10, slot: "A", finish: "satin", rotation: 1 },
-      { id: "q26", x: 43, y: 321, z: 21, sizeInches: 10, slot: "C", finish: "satin", rotation: -23 },
+      { id: "q26", x: 43, y: 321, z: 21, sizeInches: 10, slot: "D", finish: "satin", rotation: -23 },
       { id: "q8", x: 52, y: 483, z: 21, sizeInches: 10, slot: "A", finish: "satin", rotation: 23 },
-      { id: "m105", x: 55, y: 262, z: 22, sizeInches: 5, slot: "A", finish: "satin", rotation: 10 },
+      { id: "m105", x: 55, y: 262, z: 22, sizeInches: 5, slot: "D", finish: "satin", rotation: 10 },
       { id: "q2", x: 131, y: 485, z: 22, sizeInches: 10, slot: "A", finish: "satin", rotation: 21 },
-      { id: "m112", x: 149, y: 128, z: 23, sizeInches: 5, slot: "D", finish: "satin", rotation: -6 },
+      { id: "m112", x: 149, y: 128, z: 23, sizeInches: 5, slot: "B", finish: "satin", rotation: -6 },
       { id: "q34", x: 81, y: 256, z: 23, sizeInches: 10, slot: "D", finish: "satin", rotation: 3 },
       { id: "q20", x: 39, y: 360, z: 23, sizeInches: 10, slot: "D", finish: "satin", rotation: -25 },
       { id: "q58", x: 180, y: 126, z: 23, sizeInches: 10, slot: "B", finish: "satin", rotation: 17 },
@@ -1730,22 +1868,22 @@ export const BALLOON_STUDIO_TEMPLATES: BalloonModelTemplate[] = [
       { id: "m101", x: 51, y: 393, z: 24, sizeInches: 5, slot: "C", finish: "satin", rotation: -10 },
       { id: "q32", x: 48, y: 276, z: 24, sizeInches: 10, slot: "D", finish: "satin", rotation: -22 },
       { id: "q14", x: 51, y: 414, z: 24, sizeInches: 10, slot: "A", finish: "satin", rotation: -25 },
-      { id: "q59", x: 186, y: 94, z: 25, sizeInches: 9, slot: "C", finish: "satin", rotation: -13 },
+      { id: "q59", x: 186, y: 94, z: 25, sizeInches: 9, slot: "A", finish: "satin", rotation: -13 },
       { id: "m114", x: 238, y: 104, z: 25, sizeInches: 5, slot: "C", finish: "satin", rotation: -10 },
       { id: "q64", x: 236, y: 124, z: 25, sizeInches: 10, slot: "A", finish: "satin", rotation: 18 },
       { id: "q56", x: 151, y: 106, z: 27, sizeInches: 10, slot: "B", finish: "satin", rotation: -12 },
-      { id: "m110", x: 166, y: 128, z: 29, sizeInches: 5, slot: "D", finish: "satin" },
+      { id: "m110", x: 166, y: 128, z: 29, sizeInches: 5, slot: "B", finish: "satin" },
       { id: "q5", x: 90, y: 480, z: 34, sizeInches: 12, slot: "A", finish: "satin", rotation: 18 },
-      { id: "m108", x: 65, y: 252, z: 35, sizeInches: 5, slot: "A", finish: "satin", rotation: -11 },
-      { id: "m106", x: 47, y: 250, z: 36, sizeInches: 5, slot: "A", finish: "satin", rotation: 10 },
+      { id: "m108", x: 65, y: 252, z: 35, sizeInches: 5, slot: "D", finish: "satin", rotation: -11 },
+      { id: "m106", x: 47, y: 250, z: 36, sizeInches: 5, slot: "D", finish: "satin", rotation: 10 },
       { id: "q41", x: 60, y: 192, z: 37, sizeInches: 12, slot: "B", finish: "satin", rotation: -24 },
       { id: "m104", x: 54, y: 407, z: 37, sizeInches: 5, slot: "C", finish: "satin", rotation: 2 },
       { id: "m117", x: 247, y: 116, z: 38, sizeInches: 5, slot: "C", finish: "satin", rotation: 11 },
       { id: "m102", x: 64, y: 393, z: 40, sizeInches: 5, slot: "C", finish: "satin", rotation: 12 },
       { id: "m115", x: 250, y: 99, z: 41, sizeInches: 5, slot: "C", finish: "satin", rotation: -10 },
-      { id: "m113", x: 154, y: 119, z: 42, sizeInches: 5, slot: "D", finish: "satin", rotation: 6 },
-      { id: "m111", x: 156, y: 136, z: 45, sizeInches: 5, slot: "D", finish: "satin", rotation: -4 },
-      { id: "m109", x: 57, y: 253, z: 53, sizeInches: 5, slot: "A", finish: "satin", rotation: 8 }
+      { id: "m113", x: 154, y: 119, z: 42, sizeInches: 5, slot: "B", finish: "satin", rotation: 6 },
+      { id: "m111", x: 156, y: 136, z: 45, sizeInches: 5, slot: "B", finish: "satin", rotation: -4 },
+      { id: "m109", x: 57, y: 253, z: 53, sizeInches: 5, slot: "D", finish: "satin", rotation: 8 }
     ]
   },
   {
